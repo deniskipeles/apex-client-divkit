@@ -1,0 +1,47 @@
+-- WorkspaceDatabase.sq
+-- SQLDelight schema for a single tenant workspace.
+-- Each workspace gets its own SQLite file, physically isolated.
+
+CREATE TABLE op_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ts INTEGER NOT NULL,
+    op TEXT NOT NULL,
+    duration_ms INTEGER NOT NULL,
+    rowcount INTEGER,
+    error TEXT
+);
+
+CREATE INDEX idx_op_log_ts ON op_log(ts);
+
+CREATE TABLE pending_sync (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    client_uuid TEXT UNIQUE NOT NULL,
+    op TEXT NOT NULL,
+    payload TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    attempts INTEGER NOT NULL DEFAULT 0,
+    last_error TEXT
+);
+
+-- Example app tables — these are created by the app's own migration,
+-- not the engine. Shown here so the registry's PRAGMA checks work.
+-- Real apps ship their own .sq files alongside this one.
+
+insertOpLog:
+INSERT INTO op_log (ts, op, duration_ms, rowcount, error) VALUES (?, ?, ?, ?, ?);
+
+insertPendingSync:
+INSERT OR IGNORE INTO pending_sync (client_uuid, op, payload, created_at) VALUES (?, ?, ?, ?);
+
+selectPendingBatch:
+SELECT id, client_uuid, op, payload, attempts FROM pending_sync
+WHERE attempts < ? ORDER BY id LIMIT ?;
+
+deletePendingSync:
+DELETE FROM pending_sync WHERE client_uuid = ?;
+
+incrementPendingAttempts:
+UPDATE pending_sync SET attempts = attempts + 1 WHERE client_uuid = ?;
+
+markPendingDead:
+UPDATE pending_sync SET attempts = attempts + 1, last_error = ? WHERE client_uuid = ?;

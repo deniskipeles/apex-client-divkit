@@ -1,0 +1,7 @@
+-- Migrations.sq
+-- Tenant POS & Workspace tables initialized per workspace (<workspace>_orders, <workspace>_inventory, <workspace>_terminals)
+
+CREATE TABLE IF NOT EXISTS pos_schema_migrations (
+    version INTEGER PRIMARY KEY NOT NULL,
+    applied_at INTEGER NOT NULL
+);

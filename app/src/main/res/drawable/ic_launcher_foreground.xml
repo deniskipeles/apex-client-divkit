@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Dynamic SDUI Grid & POS Terminal Blocks -->
+    <path
+        android:fillColor="#38BDF8"
+        android:pathData="M28,28 L50,28 C52.2,28 54,29.8 54,32 L54,50 C54,52.2 52.2,54 50,54 L28,54 C25.8,54 24,52.2 24,50 L24,32 C24,29.8 25.8,28 28,28 Z" />
+    <path
+        android:fillColor="#818CF8"
+        android:pathData="M62,28 L80,28 C82.2,28 84,29.8 84,32 L84,50 C84,52.2 82.2,54 80,54 L62,54 C59.8,54 58,52.2 58,50 L58,32 C58,29.8 59.8,28 62,28 Z" />
+    <path
+        android:fillColor="#34D399"
+        android:pathData="M28,60 L80,60 C82.2,60 84,61.8 84,64 L84,78 C84,80.2 82.2,82 80,82 L28,82 C25.8,82 24,80.2 24,78 L24,64 C24,61.8 25.8,60 28,60 Z" />
+    <!-- Terminal Verification Shield / Pulse Dot -->
+    <path
+        android:fillColor="#0F172A"
+        android:pathData="M34,68 L58,68 L58,74 L34,74 Z" />
+    <path
+        android:fillColor="#0F172A"
+        android:pathData="M66,68 L74,68 L74,74 L66,74 Z" />
+</vector>

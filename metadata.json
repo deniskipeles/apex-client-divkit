@@ -1,0 +1,6 @@
+{
+  "name": "DivKit SDUI POS",
+  "description": "Multi-tenancy KMP Server-Driven UI (SDUI) engine using DivKit for dynamic on-the-fly component rendering across POS terminals and workspaces.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

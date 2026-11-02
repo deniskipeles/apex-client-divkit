@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">DivKit SDUI POS</string>
+    <string name="terminal_pos_tab">POS Terminal</string>
+    <string name="sdui_builder_tab">SDUI Builder</string>
+    <string name="db_audit_tab">DB &amp; Sync</string>
+    <string name="security_tab">Security &amp; KMP</string>
+    <string name="workspace_selector">Active Workspace</string>
+    <string name="verify_and_render">Sign, Verify &amp; Render</string>
+    <string name="sync_now">Sync Pending Outbox</string>
+    <string name="clear_workspace">Nuclear Reset Workspace</string>
+</resources>
