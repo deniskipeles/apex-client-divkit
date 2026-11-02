@@ -239,6 +239,88 @@ fun SduiBuilderTab(
                         Text("+ hardware://drawer", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                     }
                 }
+
+                HorizontalDivider(color = colorScheme.outline.copy(alpha = 0.5f))
+
+                Text(
+                    "CUSTOM DIVKIT CHART BLOCKS (KMP KOALAPLOT • ANDROID VICO • IOS SWIFT CHARTS / DGCHARTS)",
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = colorScheme.primary
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    FilledTonalButton(
+                        onClick = {
+                            val block = SduiOnFlyBuilder.buildSduiChartBlock(
+                                spec = spec,
+                                chartType = "bar",
+                                dataSource = "orders"
+                            )
+                            viewModel.injectOnFlyComponent(
+                                block = block,
+                                description = "sdui_chart Bar (Revenue by SKU)",
+                                prepend = true
+                            )
+                            onSwitchToTerminalPreview()
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .defaultMinSize(minHeight = 48.dp)
+                            .testTag("inject_bar_chart_button"),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
+                    ) {
+                        Text("+ Bar Chart", fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                    }
+
+                    FilledTonalButton(
+                        onClick = {
+                            val block = SduiOnFlyBuilder.buildHourlyTrendChartBlock(
+                                spec = spec,
+                                chartType = "area"
+                            )
+                            viewModel.injectOnFlyComponent(
+                                block = block,
+                                description = "sdui_chart Area (Hourly Throughput)",
+                                prepend = true
+                            )
+                            onSwitchToTerminalPreview()
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .defaultMinSize(minHeight = 48.dp)
+                            .testTag("inject_area_chart_button"),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
+                    ) {
+                        Text("+ Area Trend", fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                    }
+
+                    FilledTonalButton(
+                        onClick = {
+                            val block = SduiOnFlyBuilder.buildSduiChartBlock(
+                                spec = spec,
+                                chartType = "donut",
+                                dataSource = "inventory"
+                            )
+                            viewModel.injectOnFlyComponent(
+                                block = block,
+                                description = "sdui_chart Donut (Inventory Stock)",
+                                prepend = true
+                            )
+                            onSwitchToTerminalPreview()
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .defaultMinSize(minHeight = 48.dp)
+                            .testTag("inject_donut_chart_button"),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
+                    ) {
+                        Text("+ Donut Stock", fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                }
             }
         }
 

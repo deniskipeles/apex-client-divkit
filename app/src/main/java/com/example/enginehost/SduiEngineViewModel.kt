@@ -139,12 +139,12 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
      * so version rollback is immediately available to test.
      */
     private suspend fun ensureTenantInitiatedWithCachedSchema(spec: TenantWorkspaceSpec) {
-        val needsInitialSeed = workspaceManager.useDatabase(spec.tenantId) { db ->
+        val existingVersions = workspaceManager.useDatabase(spec.tenantId) { db ->
             WorkspaceProvisioner.ensureTenantSchemaAndSeed(db, spec, registry)
-            db.workspaceQueries.selectAllSchemaVersions().isEmpty()
+            db.workspaceQueries.selectAllSchemaVersions()
         }
-        if (needsInitialSeed) {
-            val verifier = getVerifier(spec.tenantId)
+        val verifier = getVerifier(spec.tenantId)
+        if (existingVersions.isEmpty()) {
             // Receive & verify v1.0 baseline schema
             val v10Raw = SduiOnFlyBuilder.buildInventoryTerminalBlueprint(spec)
             val v10Jti = UUID.randomUUID().toString()
@@ -157,7 +157,7 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
             )
             val v10Verified = verifier.verify(v10Env)
 
-            // Receive & verify v1.1 active POS Register schema
+            // Receive & verify v1.1 active POS Register + SDUI Charts schema
             val v11Raw = WorkspaceProvisioner.buildDefaultDivKitCardJson(spec)
             val v11Jti = UUID.randomUUID().toString()
             val v11Env = PayloadVerifier.createSignedEnvelope(
@@ -176,7 +176,7 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                     signedEnvelope = v10Env,
                     verifiedPayload = v10Verified,
                     receivedAt = currentTimeMillis() - 120_000L,
-                    summary = "v1.0 • Initial Stock & Inventory Schema"
+                    summary = "v1.0 • Initial Stock & Inventory Donut Chart Schema"
                 )
                 db.workspaceQueries.cacheAndActivateSchemaVersion(
                     schemaVersion = "1.1",
@@ -184,7 +184,29 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                     signedEnvelope = v11Env,
                     verifiedPayload = v11Verified,
                     receivedAt = currentTimeMillis(),
-                    summary = "v1.1 • Full POS Register + Hardware Bridge Schema"
+                    summary = "v1.1 • Full POS Register + Live KMP SDUI Chart Schema"
+                )
+            }
+        } else if (existingVersions.none { it.divkitJson.contains("sdui_chart") }) {
+            // Upgrade existing cached tenant with new v1.2 schema containing the custom sdui_chart block
+            val v12Raw = WorkspaceProvisioner.buildDefaultDivKitCardJson(spec)
+            val v12Jti = UUID.randomUUID().toString()
+            val v12Env = PayloadVerifier.createSignedEnvelope(
+                tenant = spec.tenantId,
+                schemaVersion = "1.2",
+                payloadJson = v12Raw,
+                keyPair = keyPair,
+                jtiOverride = v12Jti
+            )
+            val v12Verified = verifier.verify(v12Env)
+            workspaceManager.useDatabase(spec.tenantId) { db ->
+                db.workspaceQueries.cacheAndActivateSchemaVersion(
+                    schemaVersion = "1.2",
+                    jti = v12Jti,
+                    signedEnvelope = v12Env,
+                    verifiedPayload = v12Verified,
+                    receivedAt = currentTimeMillis(),
+                    summary = "v1.2 • POS Register + Live KMP SDUI Chart (Vico / Swift Charts)"
                 )
             }
         }

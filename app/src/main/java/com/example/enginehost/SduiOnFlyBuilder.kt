@@ -197,6 +197,83 @@ object SduiOnFlyBuilder {
     }
 
     /**
+     * Builds a DivKit `custom` chart component (`"custom_type": "sdui_chart"`) bound to a
+     * reactive `EngineStateBridge` JSON array variable (`user.orders_json` or `user.inventory_json`).
+     * Rendered via Vico / Compose M3 Canvas on Android and Swift Charts / DGCharts on iOS.
+     */
+    fun buildSduiChartBlock(
+        spec: TenantWorkspaceSpec,
+        chartType: String = "bar",
+        dataSource: String = "orders"
+    ): JsonObject = buildJsonObject {
+        val isOrders = dataSource == "orders"
+        put("type", "custom")
+        put("custom_type", "sdui_chart")
+        put("id", "onfly_chart_${chartType}_$dataSource")
+        putJsonObject("custom_props") {
+            put("chart_type", chartType)
+            put(
+                "title",
+                if (isOrders) {
+                    "LIVE REVENUE BY SKU (${spec.terminalCode})"
+                } else {
+                    "STOCK DISTRIBUTION BY SKU (${spec.tenantId}_inventory)"
+                }
+            )
+            put(
+                "subtitle",
+                if (isOrders) {
+                    "Reactive DivKit sdui_chart → user.orders_json (Vico Android / Swift Charts iOS)"
+                } else {
+                    "Reactive DivKit sdui_chart → user.inventory_json (KoalaPlot KMP / Vico / DGCharts)"
+                }
+            )
+            put("data_var", if (isOrders) "user.orders_json" else "user.inventory_json")
+            put("label_field", "sku")
+            put("value_field", if (isOrders) "price" else "stock")
+            put("value_prefix", if (isOrders) "$" else "")
+            put("value_suffix", if (isOrders) "" else " units")
+            put("accent_color", spec.accentHex)
+            put("height", 210)
+            put("show_grid", true)
+            put("show_legend", true)
+            put("interactive", true)
+        }
+    }
+
+    /**
+     * Builds an inline-points DivKit `sdui_chart` (Area / Line chart) for hourly terminal telemetry.
+     */
+    fun buildHourlyTrendChartBlock(spec: TenantWorkspaceSpec, chartType: String = "area"): JsonObject = buildJsonObject {
+        put("type", "custom")
+        put("custom_type", "sdui_chart")
+        put("id", "onfly_hourly_${chartType}_${spec.tenantId}")
+        putJsonObject("custom_props") {
+            put("chart_type", chartType)
+            put("title", "HOURLY POS THROUGHPUT (${spec.terminalCode})")
+            put("subtitle", "Custom DivKit ${chartType.uppercase()} Chart • KMP KoalaPlot + Vico M3 + iOS Swift Charts")
+            put("value_prefix", "$")
+            put("accent_color", spec.accentHex)
+            put("height", 200)
+            put("show_grid", true)
+            put("show_legend", true)
+            putJsonArray("points") {
+                val palette = listOf("#38BDF8", "#34D399", "#818CF8", "#F59E0B", "#EC4899", "#A78BFA")
+                val hours = listOf("09:00", "11:00", "13:00", "15:00", "17:00", "19:00")
+                val totals = listOf(145.0, 310.5, 540.0, 390.0, 620.75, 485.25)
+                hours.indices.forEach { idx ->
+                    addJsonObject {
+                        put("label", hours[idx])
+                        put("value", totals[idx])
+                        put("color", palette[idx % palette.size])
+                        put("subtitle", "Window ${hours[idx]}")
+                    }
+                }
+            }
+        }
+    }
+
+    /**
      * Alternative SDUI Blueprint: Warehouse & Stock Replenishment Terminal
      */
     fun buildInventoryTerminalBlueprint(spec: TenantWorkspaceSpec): String {
@@ -216,6 +293,13 @@ object SduiOnFlyBuilder {
                                         title = "${spec.displayName} • Stock Controller",
                                         variableExpr = "@{user.inventory_count} SKUs",
                                         accentHex = "#34D399"
+                                    )
+                                )
+                                add(
+                                    buildSduiChartBlock(
+                                        spec = spec,
+                                        chartType = "donut",
+                                        dataSource = "inventory"
                                     )
                                 )
                                 add(buildInventoryJsonListBlock(spec))

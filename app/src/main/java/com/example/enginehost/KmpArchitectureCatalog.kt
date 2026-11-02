@@ -101,16 +101,40 @@ SecKeyVerifySignature(
             """.trimIndent()
         ),
         KmpFileEntry(
-            path = "iosApp/EngineCustomBlockFactory.swift",
-            moduleLayer = "iosApp (Swift)",
-            summary = "Only unavoidable Swift UI file: implements DivCustomBlockFactory + UITableViewDataSource for json_list custom blocks.",
+            path = "shared/src/commonMain/kotlin/engine/ui/DivChartSpec.kt",
+            moduleLayer = "commonMain (KoalaPlot KMP)",
+            summary = "Cross-platform DivKit custom chart parser (`sdui_chart`, `bar_chart`, `line_chart`, `area_chart`, `donut_chart`) bound to reactive user.* variables.",
             snippet = """
-final class EngineJsonListBlockFactory: DivCustomBlockFactory {
-    func makeBlock(data: DivCustomBlockData) -> UIView {
-        let dataVar = (data.customProps["data_var"] as? String) ?? "user.items"
-        let rowCard = data.customProps["row_card"] as? [String: Any] ?? [:]
-        let emptyText = (data.customProps["empty_text"] as? String) ?? ""
-        return JsonListBlockView(...)
+object DivChartParser {
+    val supportedCustomTypes = setOf(
+        "sdui_chart", "chart", "bar_chart", "line_chart", "area_chart", "donut_chart", "pie_chart"
+    )
+    fun parse(node: JsonObject, variables: Map<String, DivVariableValue>): DivChartSpec { ... }
+}
+            """.trimIndent()
+        ),
+        KmpFileEntry(
+            path = "app/src/main/java/com/yandex/divkit/multiplatform/DivKitChartRenderer.kt",
+            moduleLayer = "androidMain (Vico M3 + Compose)",
+            summary = "Android custom DivKit chart renderer powered by Vico M3 (com.patrykandpatrick.vico:compose-m3:2.0.0) & Jetpack Compose Canvas with live chart switcher.",
+            snippet = """
+@Composable
+fun RenderDivChartBlock(
+    spec: DivChartSpec,
+    onPointSelected: (DivChartPoint) -> Unit = {}
+)
+            """.trimIndent()
+        ),
+        KmpFileEntry(
+            path = "iosApp/EngineCustomBlockFactory.swift",
+            moduleLayer = "iosApp (Swift Charts + DGCharts)",
+            summary = "iOS DivCustomBlockFactory for `json_list` (UITableView) and `sdui_chart` using Apple Swift Charts (iOS 16+) and DGCharts (~> 5.1.0).",
+            snippet = """
+final class EngineChartBlockFactory: DivCustomBlockFactory {
+    func makeBlock(data: DivCustomBlockData, context: DivBlockModelingContext) -> UIView {
+        return SduiNativeChartBlockView(
+            chartType: chartType, dataVar: dataVar, storage: variableStorage
+        ) // Renders Swift Charts BarMark/LineMark/AreaMark/SectorMark + DGCharts fallback
     }
 }
             """.trimIndent()

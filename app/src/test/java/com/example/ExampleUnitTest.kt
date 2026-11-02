@@ -1,9 +1,13 @@
 package com.example
 
+import com.example.enginehost.SduiOnFlyBuilder
+import com.example.enginehost.WorkspaceProvisioner
 import engine.config.EngineConfig
 import engine.crypto.CanonicalJson
 import engine.state.DivVariableValue
 import engine.state.EngineStateBridge
+import engine.ui.DivChartParser
+import engine.ui.DivChartType
 import org.junit.Assert.*
 import org.junit.Test
 
@@ -40,5 +44,26 @@ class ExampleUnitTest {
     @Test(expected = IllegalArgumentException::class)
     fun engineStateBridge_rejectsNonUserNamespace() {
         EngineStateBridge.pushUpdate("engine.error", DivVariableValue.Str("compromised"))
+    }
+
+    @Test
+    fun divChartParser_parsesReactiveOrderJsonAndAggregatesSkus() {
+        val spec = WorkspaceProvisioner.defaultWorkspaces.first()
+        val chartNode = SduiOnFlyBuilder.buildSduiChartBlock(spec, chartType = "bar", dataSource = "orders")
+        val mockOrdersJson = """
+            [
+              {"sku":"ACM-101","item_name":"Wagyu Smash Burger","price":16.5,"qty":2},
+              {"sku":"ACM-102","item_name":"Truffle Parmesan Fries","price":8.0,"qty":1},
+              {"sku":"ACM-101","item_name":"Wagyu Smash Burger","price":16.5,"qty":1}
+            ]
+        """.trimIndent()
+        val parsed = DivChartParser.parse(
+            node = chartNode,
+            variables = mapOf("user.orders_json" to DivVariableValue.Str(mockOrdersJson))
+        )
+        assertEquals(DivChartType.BAR, parsed.chartType)
+        assertEquals(2, parsed.points.size)
+        val acm101 = parsed.points.first { it.label == "ACM-101" }
+        assertEquals(49.5, acm101.value, 0.01)
     }
 }

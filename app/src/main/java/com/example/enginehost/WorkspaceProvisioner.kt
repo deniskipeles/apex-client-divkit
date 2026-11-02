@@ -690,7 +690,16 @@ object WorkspaceProvisioner {
                                     }
                                 }
 
-                                // 5. Native Custom Block `json_list` bound to `user.orders_json`
+                                // 5. Custom DivKit Chart Block (`"custom_type": "sdui_chart"`) bound to `user.orders_json`
+                                add(
+                                    SduiOnFlyBuilder.buildSduiChartBlock(
+                                        spec = spec,
+                                        chartType = "bar",
+                                        dataSource = "orders"
+                                    )
+                                )
+
+                                // 6. Native Custom Block `json_list` bound to `user.orders_json`
                                 addJsonObject {
                                     put("type", "container")
                                     put("orientation", "horizontal")

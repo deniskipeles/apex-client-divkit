@@ -61,6 +61,7 @@ shared/
     sync/SyncEngine.kt                      # Idempotent batch outbox sync with backoff & dead-letter
     sync/BackgroundSyncScheduler.kt         # expect class for WorkManager (Android) / BGTaskScheduler (iOS)
     ui/EngineScreen.kt                      # Shared Compose entry point wrapping DivKit & DivView
+    ui/DivChartSpec.kt                      # KMP custom DivKit chart AST parser (sdui_chart, bar, line, area, donut, pie)
   src/androidMain/kotlin/engine/
     crypto/Ed25519.android.kt               # Android JCA Ed25519 + X.509 SPKI DER key parser
     db/WorkspaceDriverFactory.android.kt    # AndroidSqliteDriver per workspace_<id>.db
@@ -74,22 +75,38 @@ shared/
 
 iosApp/
   Info.plist                                # BGTaskSchedulerPermittedIdentifiers (com.example.engine.sync)
-  EngineCustomBlockFactory.swift            # Native UITableView DivCustomBlockFactory for json_list
+  EngineCustomBlockFactory.swift            # DivCustomBlockFactory for json_list (UITableView) & sdui_chart (Swift Charts + DGCharts)
   AppDelegate.swift                         # Registers KMP sync handler on launch
 
 app/
   src/main/java/
     engine/...                              # Android runtime compilation of the KMP engine
-    com/yandex/divkit/multiplatform/...     # Compose DivKit SDUI renderer & json_list custom block
+    com/yandex/divkit/multiplatform/
+      DivKitMultiplatform.kt                # Compose DivKit SDUI renderer, json_list & sdui_chart custom blocks
+      DivKitChartRenderer.kt                # Android Vico M3 + Compose Canvas interactive chart renderer
     com/example/
       MainActivity.kt                       # Root navigation, EngineThemeMode switching & Launcher TopBar
       enginehost/WorkspaceProvisioner.kt    # Connected tenant specs, tool permissions & seed data
-      enginehost/SduiOnFlyBuilder.kt        # On-the-fly DivKit AST component injector & blueprints
+      enginehost/SduiOnFlyBuilder.kt        # On-the-fly DivKit AST component & chart injector
       enginehost/SduiEngineViewModel.kt     # Schema cache, rollback, theme mode, settings & Ed25519 lab
       ui/TenantLauncherScreen.kt            # 2-column grid / 1-column list launcher, search & + FAB
       ui/EngineModalsAndSheets.kt           # App Settings, Connect Workspace & Workspace Settings sheets
       ui/PosTerminalTab.kt                  # Dedicated tenant workspace, standout pill, AppBar & rollback sheet
-      ui/SduiBuilderTab.kt                  # Interactive DivKit component builder, JSON editor & version rollback
+      ui/SduiBuilderTab.kt                  # Interactive DivKit component & chart builder, JSON editor & rollback
       ui/DatabaseAndSyncTab.kt              # SQLite PRAGMA, op_log & pending_sync inspector
       ui/SecurityAndKmpTab.kt               # Zero-trust threat simulator & KMP/Swift code browser
 ```
+
+---
+
+## Custom DivKit Chart Components (`sdui_chart`)
+
+Tenants can declare interactive charts directly inside their signed DivKit JSON schema using `"type": "custom"` with `"custom_type": "sdui_chart"` (or `"bar_chart"`, `"line_chart"`, `"area_chart"`, `"donut_chart"`, `"pie_chart"`):
+
+- **KMP Common (`shared/src/commonMain/kotlin/engine/ui/DivChartSpec.kt` + `io.github.koalaplot:koalaplot-core:0.6.3`)**:
+  - `DivChartParser` parses `custom_props` and binds to either a live reactive `EngineStateBridge` JSON array variable (`"data_var": "user.orders_json"` or `"user.inventory_json"` with automatic SKU aggregation) or inline `"points"`.
+- **Android (`DivKitChartRenderer.kt` + Vico `com.patrykandpatrick.vico:compose-m3:2.0.0` + Jetpack Compose Canvas)**:
+  - Renders interactive Material 3 **Bar**, **Line**, **Area**, and **Donut/Pie** charts with live chart-type switcher pills, KPI chips (`TOTAL`, `PEAK`, selected point), tap-to-inspect data points (writes to `user.selected_chart_point`), and animated transitions.
+- **iOS (`iosApp/EngineCustomBlockFactory.swift` — `EngineChartBlockFactory: DivCustomBlockFactory`)**:
+  - Wired to Apple **Swift Charts** (`Charts.framework`: `BarMark`, `LineMark`, `AreaMark`, `SectorMark` via `UIHostingController`) on iOS 16+ and **DGCharts** (`~> 5.1.0`: `BarChartView`, `LineChartView`, `PieChartView`) fallback on iOS 15, subscribed to `DivVariableStorage.publisher(for: dataVar)`.
+

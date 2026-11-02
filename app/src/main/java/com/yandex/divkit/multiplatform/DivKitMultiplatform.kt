@@ -464,9 +464,26 @@ private fun RenderDivNode(
             )
         }
 
-        "json_list", "custom" -> {
+        "json_list", "sdui_chart", "chart", "bar_chart", "line_chart", "area_chart", "donut_chart", "pie_chart", "custom" -> {
             val customType = node["custom_type"]?.jsonPrimitive?.contentOrNull ?: type
-            if (customType == "json_list" || type == "json_list") {
+            if (engine.ui.DivChartParser.isChartCustomType(customType) || engine.ui.DivChartParser.isChartCustomType(type)) {
+                val actions = extractActions(node)
+                RenderDivChartBlock(
+                    node = node,
+                    variables = variables,
+                    isDark = isDark,
+                    modifier = boxModifier,
+                    onPointSelected = { pt ->
+                        if (actions.isNotEmpty()) {
+                            val ptContext = rowContext + mapOf(
+                                "label" to pt.label,
+                                "value" to pt.value
+                            )
+                            dispatchAllActions(actions, variables, ptContext, onDispatchAction)
+                        }
+                    }
+                )
+            } else if (customType == "json_list" || type == "json_list") {
                 val props = node["custom_props"]?.jsonObject ?: node
                 val dataVar = props["data_var"]?.jsonPrimitive?.contentOrNull ?: "user.items"
                 val emptyText = props["empty_text"]?.jsonPrimitive?.contentOrNull ?: "No records"
