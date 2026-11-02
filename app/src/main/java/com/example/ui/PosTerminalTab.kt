@@ -9,6 +9,9 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -24,6 +27,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -32,12 +37,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.enginehost.SduiEngineUiState
 import com.example.enginehost.SduiEngineViewModel
+import engine.db.CachedSchemaVersion
 import engine.state.EngineStateBridge
 import engine.ui.EngineScreen
 import engine.ui.rememberDivKitDependencies
+import kotlin.math.abs
 
 private enum class ActiveHostOverlay {
     NONE,
+    SCHEMA_ROLLBACK,
     SDUI_BUILDER,
     DB_AND_SYNC,
     SECURITY_KMP
@@ -46,12 +54,13 @@ private enum class ActiveHostOverlay {
 /**
  * Self-Contained Full-Screen Tenant Workspace View.
  *
- * Gives 100% of the screen space to the tenant's dynamically rendered DivKit UI
- * ([EngineScreen] -> [com.yandex.divkit.multiplatform.DivView]).
- *
- * Features a top-center non-shadowing **Standout Pill** (visible on both Light and
- * Dark system themes) that expands on click into the **Hub AppBar** (`< Hub` exit
- * button, tenant title & tunnel status, Refresh button, and 3-dot Menu).
+ * - Renders the tenant's active cached DivKit JSON schema (`uiState.verifiedDivKitJson`)
+ *   across 100% of the screen space.
+ * - Top-center **Standout Pill** (zero shadow, high-contrast on both Dark and Light system themes)
+ *   opens the `< Hub` AppBar when clicked.
+ * - Once opened, the **AppBar remains open unless the active workspace screen is clicked
+ *   or the `< Hub` exit button is clicked**.
+ * - Supports full **Schema Caching & Version Rollback** (`sdui_schema_versions` in SQLite).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -65,20 +74,44 @@ fun PosTerminalTab(
     val colorScheme = MaterialTheme.colorScheme
     val isDark = colorScheme.background.luminance() < 0.5f
 
-    // Controls whether the top-center Standout Pill has been clicked to reveal the `< Hub` AppBar
+    // Controls whether the top-center Standout Pill has been clicked to open the AppBar.
+    // Remains open unless the active workspace screen is clicked or the Exit (`< Hub`) button is clicked.
     var isAppBarExpanded by remember(uiState.activeWorkspace.tenantId) { mutableStateOf(false) }
     var showOverflowMenu by remember { mutableStateOf(false) }
     var activeOverlay by remember { mutableStateOf(ActiveHostOverlay.NONE) }
+
+    val activeSchemaTag = uiState.activeSchemaVersion?.let { "v${it.schemaVersion}" } ?: "v1.1"
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(colorScheme.background)
     ) {
-        // 1. Full-Screen Self-Contained Tenant SDUI Content
+        // 1. Active Workspace Screen (Full-Screen Self-Contained Tenant SDUI Content)
+        // Clicking anywhere on the active workspace screen while the AppBar is open dismisses the AppBar.
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .testTag("workspace_active_screen_area")
+                .pointerInput(isAppBarExpanded) {
+                    if (!isAppBarExpanded) return@pointerInput
+                    awaitEachGesture {
+                        val down = awaitFirstDown(
+                            requireUnconsumed = false,
+                            pass = PointerEventPass.Initial
+                        )
+                        val downPos = down.position
+                        val up = waitForUpOrCancellation(pass = PointerEventPass.Initial)
+                        if (up != null) {
+                            val dx = abs(up.position.x - downPos.x)
+                            val dy = abs(up.position.y - downPos.y)
+                            // Treat as a click/tap on the active workspace screen (not a drag/scroll)
+                            if (dx < viewConfiguration.touchSlop && dy < viewConfiguration.touchSlop) {
+                                isAppBarExpanded = false
+                            }
+                        }
+                    }
+                }
                 .verticalScroll(rememberScrollState())
                 .padding(
                     start = 14.dp,
@@ -89,24 +122,78 @@ fun PosTerminalTab(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             if (uiState.verifiedDivKitJson.isNotBlank()) {
-                EngineScreen(
-                    divKitDependencies = divKitDeps,
-                    initialJson = uiState.verifiedDivKitJson,
-                    cardId = "pos_card_${uiState.activeWorkspace.tenantId}",
-                    onAction = { url, payload ->
-                        viewModel.dispatchDivKitAction(url, payload)
-                    }
-                )
+                // Keyed by versionId + cardHash so rolling back or receiving a new schema immediately re-renders
+                key(
+                    uiState.activeSchemaVersion?.versionId ?: 0L,
+                    uiState.verifiedDivKitJson.hashCode()
+                ) {
+                    EngineScreen(
+                        divKitDependencies = divKitDeps,
+                        initialJson = uiState.verifiedDivKitJson,
+                        cardId = "pos_card_${uiState.activeWorkspace.tenantId}_${activeSchemaTag}",
+                        onAction = { url, payload ->
+                            viewModel.dispatchDivKitAction(url, payload)
+                        }
+                    )
+                }
             }
 
-            // Compact reactive variable footer inside the tenant scroll view
+            // Cached Schema Status & Version Rollback Quick Bar inside the workspace footer
             Surface(
                 color = colorScheme.surface,
                 shape = RoundedCornerShape(12.dp),
                 border = BorderStroke(1.dp, colorScheme.outline),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "CACHED DIVKIT SCHEMA • ${activeSchemaTag.uppercase()} ACTIVE",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = colorScheme.primary
+                            )
+                            Text(
+                                text = uiState.activeSchemaVersion?.changeSummary
+                                    ?: "Cached in SQLite (sdui_schema_versions)",
+                                fontSize = 11.sp,
+                                color = colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        FilledTonalButton(
+                            onClick = { activeOverlay = ActiveHostOverlay.SCHEMA_ROLLBACK },
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                            modifier = Modifier
+                                .defaultMinSize(minHeight = 36.dp)
+                                .testTag("open_schema_rollback_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.History,
+                                contentDescription = "Schema Rollback",
+                                modifier = Modifier.size(15.dp)
+                            )
+                            Spacer(Modifier.width(4.dp))
+                            Text(
+                                text = "Rollback (${uiState.schemaVersions.size})",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+
+                    HorizontalDivider(color = colorScheme.outline.copy(alpha = 0.5f))
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -189,7 +276,7 @@ fun PosTerminalTab(
             }
         }
 
-        // 3. Expanded Top AppBar with `< Hub` Exit Button, Refresh, and 3-Dot Menu (Screenshot 3)
+        // 3. Expanded Top AppBar — Remains open unless the active workspace screen is clicked or `< Hub` Exit is clicked
         AnimatedVisibility(
             visible = isAppBarExpanded,
             enter = fadeIn() + expandVertically(),
@@ -197,11 +284,12 @@ fun PosTerminalTab(
             modifier = Modifier.align(Alignment.TopCenter)
         ) {
             Surface(
-                color = colorScheme.surface.copy(alpha = 0.97f),
+                color = colorScheme.surface.copy(alpha = 0.98f),
                 shadowElevation = 0.dp,
                 tonalElevation = 0.dp,
                 modifier = Modifier
                     .fillMaxWidth()
+                    .clickable(enabled = false) { /* Consumes nothing; stays open while interacting with AppBar */ }
                     .testTag("workspace_expanded_appbar")
             ) {
                 Column {
@@ -212,13 +300,16 @@ fun PosTerminalTab(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        // Left: `< Hub` Exit Button
+                        // Left: `< Hub` Exit Button (closes workspace and returns to 2-column Hub launcher)
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier
                                 .defaultMinSize(minHeight = 40.dp)
                                 .clip(RoundedCornerShape(8.dp))
-                                .clickable { onExitWorkspace() }
+                                .clickable {
+                                    isAppBarExpanded = false
+                                    onExitWorkspace()
+                                }
                                 .padding(horizontal = 6.dp, vertical = 6.dp)
                                 .testTag("appbar_exit_hub_button")
                         ) {
@@ -238,13 +329,12 @@ fun PosTerminalTab(
 
                         Spacer(Modifier.width(6.dp))
 
-                        // Center: Tenant Icon + Title + Tunnel/Mode Subtitle (tap to collapse back to pill)
+                        // Center: Tenant Icon + Title + Tunnel & Cached Schema Version Subtitle
+                        // (Does NOT close the AppBar when clicked — AppBar remains open until workspace screen or Exit is clicked)
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier
                                 .weight(1f)
-                                .clip(RoundedCornerShape(8.dp))
-                                .clickable { isAppBarExpanded = false }
                                 .padding(horizontal = 4.dp, vertical = 2.dp)
                         ) {
                             Surface(
@@ -278,7 +368,7 @@ fun PosTerminalTab(
                                     )
                                     Spacer(Modifier.width(4.dp))
                                     Text(
-                                        text = "${uiState.activeWorkspace.mode.name} Tunnel • ${uiState.activeWorkspace.terminalCode}",
+                                        text = "${uiState.activeWorkspace.mode.name} Tunnel • Schema $activeSchemaTag (${uiState.schemaVersions.size} cached)",
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.SemiBold,
                                         color = colorScheme.primary,
@@ -296,7 +386,7 @@ fun PosTerminalTab(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            // Refresh Button (`↻`)
+                            // Refresh Button (`↻`) — reloads cached active schema & re-runs SQLite queries
                             Box(
                                 modifier = Modifier
                                     .size(38.dp)
@@ -310,7 +400,7 @@ fun PosTerminalTab(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Refresh,
-                                    contentDescription = "Refresh Workspace Schema",
+                                    contentDescription = "Refresh Cached Workspace Schema",
                                     tint = colorScheme.onSurface,
                                     modifier = Modifier.size(20.dp)
                                 )
@@ -349,7 +439,20 @@ fun PosTerminalTab(
                                     onDismissRequest = { showOverflowMenu = false }
                                 ) {
                                     DropdownMenuItem(
-                                        text = { Text("On-the-Fly SDUI Builder", fontWeight = FontWeight.SemiBold) },
+                                        text = {
+                                            Text(
+                                                "Schema Cache & Rollback ($activeSchemaTag)",
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        },
+                                        leadingIcon = { Icon(Icons.Default.History, contentDescription = null) },
+                                        onClick = {
+                                            showOverflowMenu = false
+                                            activeOverlay = ActiveHostOverlay.SCHEMA_ROLLBACK
+                                        }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Receive / Build New SDUI Schema", fontWeight = FontWeight.SemiBold) },
                                         leadingIcon = { Icon(Icons.Default.DynamicForm, contentDescription = null) },
                                         onClick = {
                                             showOverflowMenu = false
@@ -375,14 +478,6 @@ fun PosTerminalTab(
                                     )
                                     HorizontalDivider()
                                     DropdownMenuItem(
-                                        text = { Text("Hide AppBar (Standout Pill Only)") },
-                                        leadingIcon = { Icon(Icons.Default.Fullscreen, contentDescription = null) },
-                                        onClick = {
-                                            showOverflowMenu = false
-                                            isAppBarExpanded = false
-                                        }
-                                    )
-                                    DropdownMenuItem(
                                         text = { Text("Exit to Tenant Hub", color = MaterialTheme.colorScheme.error) },
                                         leadingIcon = {
                                             Icon(
@@ -393,6 +488,7 @@ fun PosTerminalTab(
                                         },
                                         onClick = {
                                             showOverflowMenu = false
+                                            isAppBarExpanded = false
                                             onExitWorkspace()
                                         }
                                     )
@@ -406,7 +502,7 @@ fun PosTerminalTab(
         }
     }
 
-    // Host Engine Overlay Modal Sheets (launched from the 3-dot menu so the workspace stays 100% full-screen)
+    // Host Engine Overlay Modal Sheets (launched from the 3-dot menu or footer rollback button)
     if (activeOverlay != ActiveHostOverlay.NONE) {
         ModalBottomSheet(
             onDismissRequest = { activeOverlay = ActiveHostOverlay.NONE },
@@ -423,14 +519,20 @@ fun PosTerminalTab(
                 ) {
                     Text(
                         text = when (activeOverlay) {
-                            ActiveHostOverlay.SDUI_BUILDER -> "On-the-Fly SDUI Schema Builder"
-                            ActiveHostOverlay.DB_AND_SYNC -> "Workspace SQLite & Sync (${uiState.activeWorkspace.tenantId})"
-                            ActiveHostOverlay.SECURITY_KMP -> "Zero-Trust Security & KMP Architecture"
+                            ActiveHostOverlay.SCHEMA_ROLLBACK ->
+                                "Cached DivKit Schemas & Version Rollback (${uiState.activeWorkspace.tenantId})"
+                            ActiveHostOverlay.SDUI_BUILDER ->
+                                "Receive / Build New DivKit SDUI Schema"
+                            ActiveHostOverlay.DB_AND_SYNC ->
+                                "Workspace SQLite & Sync (${uiState.activeWorkspace.tenantId})"
+                            ActiveHostOverlay.SECURITY_KMP ->
+                                "Zero-Trust Security & KMP Architecture"
                             ActiveHostOverlay.NONE -> ""
                         },
                         fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp,
-                        color = colorScheme.onBackground
+                        fontSize = 15.sp,
+                        color = colorScheme.onBackground,
+                        modifier = Modifier.weight(1f)
                     )
                     TextButton(onClick = { activeOverlay = ActiveHostOverlay.NONE }) {
                         Text("Done")
@@ -438,6 +540,16 @@ fun PosTerminalTab(
                 }
                 HorizontalDivider(color = colorScheme.outline)
                 when (activeOverlay) {
+                    ActiveHostOverlay.SCHEMA_ROLLBACK -> SchemaVersionRollbackSheet(
+                        uiState = uiState,
+                        onRollback = { targetVersion ->
+                            viewModel.rollbackToSchemaVersion(targetVersion)
+                            activeOverlay = ActiveHostOverlay.NONE
+                        },
+                        onOpenBuilder = {
+                            activeOverlay = ActiveHostOverlay.SDUI_BUILDER
+                        }
+                    )
                     ActiveHostOverlay.SDUI_BUILDER -> SduiBuilderTab(
                         uiState = uiState,
                         viewModel = viewModel,
@@ -452,6 +564,171 @@ fun PosTerminalTab(
                         viewModel = viewModel
                     )
                     ActiveHostOverlay.NONE -> Unit
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Displays all cached DivKit JSON schema versions stored in `sdui_schema_versions`
+ * for the active tenant and allows one-click version rollback.
+ */
+@Composable
+fun SchemaVersionRollbackSheet(
+    uiState: SduiEngineUiState,
+    onRollback: (CachedSchemaVersion) -> Unit,
+    onOpenBuilder: () -> Unit
+) {
+    val colorScheme = MaterialTheme.colorScheme
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Surface(
+            color = colorScheme.surface,
+            shape = RoundedCornerShape(14.dp),
+            border = BorderStroke(1.dp, colorScheme.primary),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text(
+                    text = "PERSISTENT SCHEMA CACHE & ROLLBACK LEDGER",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = colorScheme.primary
+                )
+                Text(
+                    text = "A tenant is initiated when its signed DivKit JSON schema is received. Every verified schema is stored in SQLite (workspace_${uiState.activeWorkspace.tenantId}.db → sdui_schema_versions). When a new schema arrives, it is cached as a new version so you can roll back at any time.",
+                    fontSize = 12.sp,
+                    color = colorScheme.onSurfaceVariant
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "${uiState.schemaVersions.size} Cached Versions in SQLite",
+                        fontSize = 11.sp,
+                        fontFamily = FontFamily.Monospace,
+                        color = colorScheme.tertiary
+                    )
+                    FilledTonalButton(
+                        onClick = onOpenBuilder,
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                        Icon(Icons.Default.AddCircleOutline, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Receive New Schema Version", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+
+        uiState.schemaVersions.forEach { ver ->
+            val borderColor = if (ver.isActive) colorScheme.tertiary else colorScheme.outline
+            Surface(
+                color = colorScheme.surface,
+                shape = RoundedCornerShape(12.dp),
+                border = BorderStroke(if (ver.isActive) 1.5.dp else 1.dp, borderColor),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("schema_version_card_${ver.schemaVersion}")
+            ) {
+                Column(
+                    modifier = Modifier.padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Surface(
+                                color = if (ver.isActive) colorScheme.tertiary.copy(alpha = 0.16f)
+                                else colorScheme.primary.copy(alpha = 0.14f),
+                                shape = RoundedCornerShape(6.dp)
+                            ) {
+                                Text(
+                                    text = "v${ver.schemaVersion}",
+                                    fontSize = 12.sp,
+                                    fontFamily = FontFamily.Monospace,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (ver.isActive) colorScheme.tertiary else colorScheme.primary,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
+                            Column {
+                                Text(
+                                    text = ver.changeSummary,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = colorScheme.onSurface
+                                )
+                                Text(
+                                    text = "version_id=#${ver.versionId} • jti=${ver.envelopeJti}",
+                                    fontSize = 10.sp,
+                                    fontFamily = FontFamily.Monospace,
+                                    color = colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+
+                        if (ver.isActive) {
+                            Surface(
+                                color = colorScheme.tertiary.copy(alpha = 0.15f),
+                                shape = RoundedCornerShape(6.dp)
+                            ) {
+                                Text(
+                                    text = "ACTIVE",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = FontFamily.Monospace,
+                                    color = colorScheme.tertiary,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
+                        } else {
+                            Button(
+                                onClick = { onRollback(ver) },
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                                modifier = Modifier
+                                    .defaultMinSize(minHeight = 38.dp)
+                                    .testTag("rollback_to_v_${ver.schemaVersion}_button")
+                            ) {
+                                Icon(
+                                    Icons.Default.Restore,
+                                    contentDescription = "Rollback to v${ver.schemaVersion}",
+                                    modifier = Modifier.size(15.dp)
+                                )
+                                Spacer(Modifier.width(4.dp))
+                                Text(
+                                    text = "Rollback to v${ver.schemaVersion}",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+
+                    Text(
+                        text = "Payload size: ${ver.divkitJson.length} bytes • Cached in workspace_${uiState.activeWorkspace.tenantId}.db",
+                        fontSize = 11.sp,
+                        fontFamily = FontFamily.Monospace,
+                        color = colorScheme.onSurfaceVariant
+                    )
                 }
             }
         }

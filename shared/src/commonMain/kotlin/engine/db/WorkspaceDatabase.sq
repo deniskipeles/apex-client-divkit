@@ -23,9 +23,20 @@ CREATE TABLE pending_sync (
     last_error TEXT
 );
 
--- Example app tables — these are created by the app's own migration,
--- not the engine. Shown here so the registry's PRAGMA checks work.
--- Real apps ship their own .sq files alongside this one.
+-- Persistent DivKit SDUI Schema Cache & Version Rollback Ledger
+-- Stores every verified DivKit JSON schema received for this tenant workspace.
+CREATE TABLE sdui_schema_versions (
+    version_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    schema_version TEXT NOT NULL,
+    jti TEXT NOT NULL,
+    signed_envelope TEXT NOT NULL,
+    verified_payload TEXT NOT NULL,
+    received_at INTEGER NOT NULL,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    summary TEXT NOT NULL
+);
+
+CREATE INDEX idx_sdui_schema_active ON sdui_schema_versions(is_active, version_id DESC);
 
 insertOpLog:
 INSERT INTO op_log (ts, op, duration_ms, rowcount, error) VALUES (?, ?, ?, ?, ?);
@@ -45,3 +56,21 @@ UPDATE pending_sync SET attempts = attempts + 1 WHERE client_uuid = ?;
 
 markPendingDead:
 UPDATE pending_sync SET attempts = attempts + 1, last_error = ? WHERE client_uuid = ?;
+
+deactivateAllSchemaVersions:
+UPDATE sdui_schema_versions SET is_active = 0;
+
+insertSchemaVersion:
+INSERT INTO sdui_schema_versions (schema_version, jti, signed_envelope, verified_payload, received_at, is_active, summary)
+VALUES (?, ?, ?, ?, ?, 1, ?);
+
+activateSchemaVersionById:
+UPDATE sdui_schema_versions SET is_active = CASE WHEN version_id = ? THEN 1 ELSE 0 END;
+
+selectActiveSchemaVersion:
+SELECT version_id, schema_version, jti, signed_envelope, verified_payload, received_at, is_active, summary
+FROM sdui_schema_versions WHERE is_active = 1 ORDER BY version_id DESC LIMIT 1;
+
+selectAllSchemaVersions:
+SELECT version_id, schema_version, jti, signed_envelope, verified_payload, received_at, is_active, summary
+FROM sdui_schema_versions ORDER BY version_id DESC;

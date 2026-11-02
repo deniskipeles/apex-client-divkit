@@ -22,6 +22,21 @@ data class PendingSyncEntry(
     val lastError: String?
 )
 
+data class CachedSchemaVersion(
+    val versionId: Long,
+    val schemaVersion: String,
+    val jti: String,
+    val signedEnvelope: String,
+    val verifiedPayload: String,
+    val receivedAt: Long,
+    val isActive: Boolean,
+    val summary: String
+) {
+    val changeSummary: String get() = summary
+    val envelopeJti: String get() = jti
+    val divkitJson: String get() = verifiedPayload
+}
+
 /**
  * Generated-equivalent SQLDelight wrapper for `WorkspaceDatabase.sq`.
  * Physical database per tenant (`workspace_<id>.db`).
@@ -31,7 +46,7 @@ class WorkspaceDatabase(val driver: SqlDriver) {
     val workspaceQueries = WorkspaceQueries(driver)
 
     object Schema : SqlSchema {
-        override val version: Long = 1L
+        override val version: Long = 2L
 
         override fun create(driver: SqlDriver) {
             driver.executeUpdate(
@@ -68,6 +83,27 @@ class WorkspaceDatabase(val driver: SqlDriver) {
                 """.trimIndent(),
                 0
             )
+            driver.executeUpdate(
+                null,
+                """
+                CREATE TABLE IF NOT EXISTS sdui_schema_versions (
+                    version_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    schema_version TEXT NOT NULL,
+                    jti TEXT NOT NULL,
+                    signed_envelope TEXT NOT NULL,
+                    verified_payload TEXT NOT NULL,
+                    received_at INTEGER NOT NULL,
+                    is_active INTEGER NOT NULL DEFAULT 1,
+                    summary TEXT NOT NULL
+                )
+                """.trimIndent(),
+                0
+            )
+            driver.executeUpdate(
+                null,
+                "CREATE INDEX IF NOT EXISTS idx_sdui_schema_active ON sdui_schema_versions(is_active, version_id DESC)",
+                0
+            )
         }
 
         override fun migrate(driver: SqlDriver, oldVersion: Long, newVersion: Long) {
@@ -80,6 +116,25 @@ class WorkspaceQueries(private val driver: SqlDriver) {
 
     fun transaction(block: () -> Unit) {
         block()
+    }
+
+    fun ensureSchemaCacheTable() {
+        driver.executeUpdate(
+            null,
+            """
+            CREATE TABLE IF NOT EXISTS sdui_schema_versions (
+                version_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                schema_version TEXT NOT NULL,
+                jti TEXT NOT NULL,
+                signed_envelope TEXT NOT NULL,
+                verified_payload TEXT NOT NULL,
+                received_at INTEGER NOT NULL,
+                is_active INTEGER NOT NULL DEFAULT 1,
+                summary TEXT NOT NULL
+            )
+            """.trimIndent(),
+            0
+        )
     }
 
     fun insertOpLog(ts: Long, op: String, duration_ms: Long, rowcount: Long?, error: String?) {
@@ -138,6 +193,106 @@ class WorkspaceQueries(private val driver: SqlDriver) {
             if (last_error != null) bindString(0, last_error) else bindNull(0)
             bindString(1, client_uuid)
         }
+    }
+
+    fun cacheAndActivateSchemaVersion(
+        schemaVersion: String,
+        jti: String,
+        signedEnvelope: String,
+        verifiedPayload: String,
+        receivedAt: Long,
+        summary: String
+    ): Long {
+        ensureSchemaCacheTable()
+        driver.executeUpdate(null, "UPDATE sdui_schema_versions SET is_active = 0", 0)
+        driver.executeUpdate(
+            null,
+            """
+            INSERT INTO sdui_schema_versions
+            (schema_version, jti, signed_envelope, verified_payload, received_at, is_active, summary)
+            VALUES (?, ?, ?, ?, ?, 1, ?)
+            """.trimIndent(),
+            6
+        ) {
+            bindString(0, schemaVersion)
+            bindString(1, jti)
+            bindString(2, signedEnvelope)
+            bindString(3, verifiedPayload)
+            bindLong(4, receivedAt)
+            bindString(5, summary)
+        }
+        return driver.lastInsertedRowId()
+    }
+
+    fun activateSchemaVersionById(versionId: Long) {
+        ensureSchemaCacheTable()
+        driver.executeUpdate(null, "UPDATE sdui_schema_versions SET is_active = 0", 0)
+        driver.executeUpdate(
+            null,
+            "UPDATE sdui_schema_versions SET is_active = 1 WHERE version_id = ?",
+            1
+        ) {
+            bindLong(0, versionId)
+        }
+    }
+
+    fun selectActiveSchemaVersion(): CachedSchemaVersion? {
+        ensureSchemaCacheTable()
+        var result: CachedSchemaVersion? = null
+        driver.executeQuery(
+            null,
+            """
+            SELECT version_id, schema_version, jti, signed_envelope, verified_payload, received_at, is_active, summary
+            FROM sdui_schema_versions
+            WHERE is_active = 1
+            ORDER BY version_id DESC LIMIT 1
+            """.trimIndent(),
+            0
+        ).use { c ->
+            if (c.next().value) {
+                result = CachedSchemaVersion(
+                    versionId = c.getLong(0) ?: 0L,
+                    schemaVersion = c.getString(1) ?: "1.0",
+                    jti = c.getString(2) ?: "",
+                    signedEnvelope = c.getString(3) ?: "",
+                    verifiedPayload = c.getString(4) ?: "",
+                    receivedAt = c.getLong(5) ?: 0L,
+                    isActive = (c.getLong(6) ?: 0L) == 1L,
+                    summary = c.getString(7) ?: ""
+                )
+            }
+        }
+        return result
+    }
+
+    fun selectAllSchemaVersions(): List<CachedSchemaVersion> {
+        ensureSchemaCacheTable()
+        val list = mutableListOf<CachedSchemaVersion>()
+        driver.executeQuery(
+            null,
+            """
+            SELECT version_id, schema_version, jti, signed_envelope, verified_payload, received_at, is_active, summary
+            FROM sdui_schema_versions
+            ORDER BY version_id DESC
+            """.trimIndent(),
+            0
+        ).use { c ->
+            while (c.next().value) {
+                list.add(
+                    CachedSchemaVersion(
+                        versionId = c.getLong(0) ?: 0L,
+                        schemaVersion = c.getString(1) ?: "1.0",
+                        jti = c.getString(2) ?: "",
+                        signedEnvelope = c.getString(3) ?: "",
+                        verifiedPayload = c.getString(4) ?: "",
+                        receivedAt = c.getLong(5) ?: 0L,
+                        isActive = (c.getLong(6) ?: 0L) == 1L,
+                        summary = c.getString(7) ?: ""
+                    )
+                )
+            }
+        }
+        return list
     }
 
     fun selectRecentOpLogs(limit: Int = 50): List<OpLogEntry> {

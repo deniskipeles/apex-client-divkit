@@ -11,7 +11,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -29,9 +28,12 @@ fun SduiBuilderTab(
     onSwitchToTerminalPreview: () -> Unit
 ) {
     val spec = uiState.activeWorkspace
+    val colorScheme = MaterialTheme.colorScheme
     var customBtnLabel by remember { mutableStateOf("Seasonal Flash Special") }
     var customBtnSku by remember { mutableStateOf("FLS-777") }
     var customBtnPrice by remember { mutableStateOf("14.99") }
+
+    val activeVerTag = uiState.activeSchemaVersion?.let { "v${it.schemaVersion}" } ?: "v1.1"
 
     Column(
         modifier = Modifier
@@ -42,9 +44,9 @@ fun SduiBuilderTab(
     ) {
         // Header Card
         Surface(
-            color = Color(0xFF1E293B),
+            color = colorScheme.surface,
             shape = RoundedCornerShape(14.dp),
-            border = BorderStroke(1.dp, Color(0xFF38BDF8)),
+            border = BorderStroke(1.dp, colorScheme.primary),
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -54,39 +56,100 @@ fun SduiBuilderTab(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        "ON-THE-FLY DIVKIT SDUI BUILDER",
-                        fontSize = 13.sp,
+                        "ON-THE-FLY DIVKIT SDUI BUILDER & SCHEMA CACHE",
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF38BDF8)
+                        color = colorScheme.primary
                     )
                     Text(
-                        "Target: ${spec.tenantId}",
+                        "Active: $activeVerTag (${uiState.schemaVersions.size} cached)",
                         fontSize = 11.sp,
                         fontFamily = FontFamily.Monospace,
-                        color = Color(0xFF34D399)
+                        color = colorScheme.tertiary
                     )
                 }
                 Text(
-                    "Dynamically assemble DivKit components (buttons, user.* reactive banners, hardware:// triggers, or json_list blocks), sign the canonical envelope with Ed25519, and hot-render on the POS terminal.",
+                    "Whenever a new DivKit JSON schema is received and Ed25519-verified, it is cached in workspace_${spec.tenantId}.db (sdui_schema_versions) as a new version, allowing instant rollback to any prior schema.",
                     fontSize = 12.sp,
-                    color = Color(0xFF94A3B8)
+                    color = colorScheme.onSurfaceVariant
                 )
             }
         }
 
-        // 1. One-Tap Component Palette (Injects directly into the DivKit JSON AST)
+        // Cached Schema History & Instant Version Rollback Card
         Surface(
-            color = Color(0xFF152033),
+            color = colorScheme.surface,
             shape = RoundedCornerShape(12.dp),
-            border = BorderStroke(1.dp, Color(0xFF334155)),
+            border = BorderStroke(1.dp, colorScheme.outline),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    "CACHED SCHEMA VERSIONS (ROLLBACK READY)",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = colorScheme.primary
+                )
+                uiState.schemaVersions.forEach { ver ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "v${ver.schemaVersion} — ${ver.changeSummary}",
+                                fontSize = 12.sp,
+                                fontWeight = if (ver.isActive) FontWeight.Bold else FontWeight.Medium,
+                                color = if (ver.isActive) colorScheme.tertiary else colorScheme.onSurface
+                            )
+                            Text(
+                                text = "jti: ${ver.envelopeJti} • ${ver.divkitJson.length} bytes",
+                                fontSize = 10.sp,
+                                fontFamily = FontFamily.Monospace,
+                                color = colorScheme.onSurfaceVariant
+                            )
+                        }
+                        if (ver.isActive) {
+                            Text(
+                                text = "ACTIVE",
+                                fontSize = 10.sp,
+                                fontFamily = FontFamily.Monospace,
+                                fontWeight = FontWeight.Bold,
+                                color = colorScheme.tertiary
+                            )
+                        } else {
+                            OutlinedButton(
+                                onClick = {
+                                    viewModel.rollbackToSchemaVersion(ver)
+                                    onSwitchToTerminalPreview()
+                                },
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                                modifier = Modifier.defaultMinSize(minHeight = 34.dp)
+                            ) {
+                                Icon(Icons.Default.Restore, contentDescription = null, modifier = Modifier.size(14.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text("Rollback to v${ver.schemaVersion}", fontSize = 11.sp)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 1. One-Tap Component Palette (Injects directly into the DivKit JSON AST & caches new version)
+        Surface(
+            color = colorScheme.surface,
+            shape = RoundedCornerShape(12.dp),
+            border = BorderStroke(1.dp, colorScheme.outline),
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(
-                    "1. INJECT DYNAMIC DIVKIT COMPONENT ON THE FLY",
+                    "1. INJECT DYNAMIC DIVKIT COMPONENT (STORES NEW VERSION)",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF94A3B8)
+                    color = colorScheme.onSurfaceVariant
                 )
 
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
@@ -136,7 +199,7 @@ fun SduiBuilderTab(
                 ) {
                     Icon(Icons.Default.AddCircle, contentDescription = "Inject POS Button")
                     Spacer(Modifier.width(8.dp))
-                    Text("Inject POS Button → Sign & Render in Terminal", fontWeight = FontWeight.Bold)
+                    Text("Inject POS Button → Cache New Version & Render", fontWeight = FontWeight.Bold)
                 }
 
                 Row(
@@ -179,19 +242,19 @@ fun SduiBuilderTab(
             }
         }
 
-        // 2. Preset Blueprint Switcher
+        // 2. Receive New Full Schema Blueprint (Caches as New Version)
         Surface(
-            color = Color(0xFF152033),
+            color = colorScheme.surface,
             shape = RoundedCornerShape(12.dp),
-            border = BorderStroke(1.dp, Color(0xFF334155)),
+            border = BorderStroke(1.dp, colorScheme.outline),
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    "2. SWITCH TERMINAL SDUI BLUEPRINT",
+                    "2. RECEIVE & CACHE NEW DIVKIT SCHEMA BLUEPRINT",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF94A3B8)
+                    color = colorScheme.onSurfaceVariant
                 )
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -205,27 +268,27 @@ fun SduiBuilderTab(
                         },
                         modifier = Modifier.weight(1f).defaultMinSize(minHeight = 48.dp)
                     ) {
-                        Text("POS Register Card", fontSize = 12.sp)
+                        Text("POS Register Schema", fontSize = 12.sp)
                     }
                     OutlinedButton(
                         onClick = {
                             val json = SduiOnFlyBuilder.buildInventoryTerminalBlueprint(spec)
-                            viewModel.applySduiBlueprint(json, "Stock & SKU Replenishment Card")
+                            viewModel.applySduiBlueprint(json, "Stock & SKU Replenishment Schema")
                             onSwitchToTerminalPreview()
                         },
                         modifier = Modifier.weight(1f).defaultMinSize(minHeight = 48.dp)
                     ) {
-                        Text("Stock Controller Card", fontSize = 12.sp)
+                        Text("Stock Controller Schema", fontSize = 12.sp)
                     }
                 }
             }
         }
 
-        // 3. Live DivKit JSON Payload Editor + Ed25519 Envelope Sign & Verify
+        // 3. Live DivKit JSON Payload Editor + Ed25519 Envelope Sign, Cache & Verify
         Surface(
-            color = Color(0xFF0F172A),
+            color = colorScheme.surface,
             shape = RoundedCornerShape(12.dp),
-            border = BorderStroke(1.dp, Color(0xFF334155)),
+            border = BorderStroke(1.dp, colorScheme.outline),
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -238,7 +301,7 @@ fun SduiBuilderTab(
                         "3. RAW DIVKIT SDUI PAYLOAD (JSON AST)",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF38BDF8)
+                        color = colorScheme.primary
                     )
                     Button(
                         onClick = {
@@ -247,9 +310,9 @@ fun SduiBuilderTab(
                         },
                         modifier = Modifier.testTag("sign_and_deploy_json_button")
                     ) {
-                        Icon(Icons.Default.Verified, contentDescription = "Sign & Render", modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.Verified, contentDescription = "Sign & Cache", modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(6.dp))
-                        Text("Sign, Verify & Render", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Text("Sign, Cache & Render", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     }
                 }
 
@@ -259,7 +322,7 @@ fun SduiBuilderTab(
                     textStyle = LocalTextStyle.current.copy(
                         fontFamily = FontFamily.Monospace,
                         fontSize = 11.sp,
-                        color = Color(0xFFE2E8F0)
+                        color = colorScheme.onSurface
                     ),
                     minLines = 10,
                     maxLines = 16,

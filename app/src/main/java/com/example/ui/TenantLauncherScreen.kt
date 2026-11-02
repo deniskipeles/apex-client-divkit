@@ -35,8 +35,9 @@ import engine.config.EngineConfig
  * Home Page Multi-Tenant Grid Launcher (2 Columns).
  *
  * Adapts to the system theme (Light or Dark) and displays connected tenants
- * in a two-column grid. Clicking any tenant opens its full-screen self-contained
- * workspace rendered on the fly from its signed DivKit schema.
+ * in a two-column grid. Each tenant is initiated upon receiving its signed DivKit
+ * JSON schema, which is cached in SQLite (`sdui_schema_versions`) and kept until a
+ * new schema version is received (enabling instant version rollback).
  */
 @Composable
 fun TenantLauncherScreen(
@@ -94,7 +95,7 @@ fun TenantLauncherScreen(
                                     color = colorScheme.primary
                                 )
                                 Text(
-                                    text = "Select a Tenant to Launch Full-Screen SDUI",
+                                    text = "Select a Tenant to Launch Cached SDUI",
                                     fontSize = 15.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = colorScheme.onSurface
@@ -104,7 +105,7 @@ fun TenantLauncherScreen(
                     }
 
                     Text(
-                        text = "Each tenant runs as a self-contained full-screen app built on the fly from its signed DivKit schema, with a top-center standout pill for Hub controls.",
+                        text = "Each tenant is initiated when its signed DivKit JSON schema is received and cached in SQLite (sdui_schema_versions). New schemas are stored as versioned snapshots, enabling instant rollback.",
                         fontSize = 12.sp,
                         color = colorScheme.onSurfaceVariant
                     )
@@ -125,7 +126,7 @@ fun TenantLauncherScreen(
                                 modifier = Modifier.size(15.dp)
                             )
                             Text(
-                                text = "${uiState.workspaces.size} Connected Tenants • Ed25519 Active",
+                                text = "${uiState.workspaces.size} Connected Tenants • Schema Cache Active",
                                 fontSize = 11.sp,
                                 fontFamily = FontFamily.Monospace,
                                 color = colorScheme.tertiary
@@ -155,6 +156,7 @@ fun TenantLauncherScreen(
         ) { spec ->
             ConnectedTenantGridCard(
                 spec = spec,
+                cachedBadge = uiState.tenantCachedBadgeMap[spec.tenantId] ?: "Schema v1.1 (2 cached)",
                 onClick = { viewModel.openTenantWorkspace(spec) }
             )
         }
@@ -174,6 +176,7 @@ fun TenantLauncherScreen(
 @Composable
 private fun ConnectedTenantGridCard(
     spec: TenantWorkspaceSpec,
+    cachedBadge: String,
     onClick: () -> Unit
 ) {
     val colorScheme = MaterialTheme.colorScheme
@@ -191,7 +194,7 @@ private fun ConnectedTenantGridCard(
         border = BorderStroke(1.2.dp, accentColor.copy(alpha = 0.5f)),
         modifier = Modifier
             .fillMaxWidth()
-            .defaultMinSize(minHeight = 196.dp)
+            .defaultMinSize(minHeight = 206.dp)
             .clip(RoundedCornerShape(16.dp))
             .clickable(onClick = onClick)
             .testTag("tenant_grid_card_${spec.tenantId}")
@@ -272,7 +275,7 @@ private fun ConnectedTenantGridCard(
                     )
                 }
 
-                // Physical SQLite DB & Schema Tag
+                // Physical SQLite DB & Cached Schema Version Tag
                 Surface(
                     color = colorScheme.surfaceVariant,
                     shape = RoundedCornerShape(8.dp),
@@ -282,6 +285,15 @@ private fun ConnectedTenantGridCard(
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
                         verticalArrangement = Arrangement.spacedBy(2.dp)
                     ) {
+                        Text(
+                            text = cachedBadge,
+                            fontSize = 10.sp,
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.Bold,
+                            color = colorScheme.tertiary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                         Text(
                             text = "DB: workspace_${spec.tenantId}.db",
                             fontSize = 10.sp,
@@ -350,11 +362,11 @@ fun ProvisionTenantDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Connect New Tenant Workspace", fontWeight = FontWeight.Bold, fontSize = 17.sp) },
+        title = { Text("Initiate New Tenant via DivKit Schema", fontWeight = FontWeight.Bold, fontSize = 16.sp) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    "Provisions an isolated SQLite file (workspace_<id>.db), signs a new EngineConfig, and generates a DivKit SDUI schema on the fly.",
+                    "Initiates a new tenant upon receiving its signed DivKit JSON schema, caches v1.0 & v1.1 in workspace_<id>.db (sdui_schema_versions), and enables version rollback.",
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -419,7 +431,7 @@ fun ProvisionTenantDialog(
                 },
                 modifier = Modifier.testTag("confirm_create_workspace_button")
             ) {
-                Text("Connect & Open Workspace")
+                Text("Receive Schema & Open")
             }
         },
         dismissButton = {

@@ -60,5 +60,35 @@ class ExampleRobolectricTest {
         val verifier = PayloadVerifier(spec.tenantId, keyPair.publicKeyDerBase64)
         val verified = verifier.verify(envelope)
         assertTrue(verified.contains("Verified POS"))
+
+        manager.useDatabase(spec.tenantId) { db ->
+            db.workspaceQueries.cacheAndActivateSchemaVersion(
+                schemaVersion = "1.0",
+                jti = "jti-10",
+                signedEnvelope = envelope,
+                verifiedPayload = """{"card":{"log_id":"v10"}}""",
+                receivedAt = 1000L,
+                summary = "Initial Schema v1.0"
+            )
+            db.workspaceQueries.cacheAndActivateSchemaVersion(
+                schemaVersion = "1.1",
+                jti = "jti-11",
+                signedEnvelope = envelope,
+                verifiedPayload = """{"card":{"log_id":"v11"}}""",
+                receivedAt = 2000L,
+                summary = "Updated Schema v1.1"
+            )
+            val activeBefore = db.workspaceQueries.selectActiveSchemaVersion()
+            assertEquals("1.1", activeBefore?.schemaVersion)
+
+            val all = db.workspaceQueries.selectAllSchemaVersions()
+            assertEquals(2, all.size)
+            val v10 = all.first { it.schemaVersion == "1.0" }
+            db.workspaceQueries.activateSchemaVersionById(v10.versionId)
+
+            val activeAfterRollback = db.workspaceQueries.selectActiveSchemaVersion()
+            assertEquals("1.0", activeAfterRollback?.schemaVersion)
+            assertTrue(activeAfterRollback?.divkitJson?.contains("v10") == true)
+        }
     }
 }

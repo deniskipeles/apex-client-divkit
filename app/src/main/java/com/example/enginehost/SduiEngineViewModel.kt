@@ -10,6 +10,7 @@ import engine.crypto.Ed25519
 import engine.crypto.PayloadVerifier
 import engine.crypto.SigningKeyPair
 import engine.crypto.currentTimeMillis
+import engine.db.CachedSchemaVersion
 import engine.db.EngineRegistry
 import engine.db.OpLogEntry
 import engine.db.PendingSyncEntry
@@ -31,6 +32,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.*
+import java.util.UUID
 
 data class SecurityEventLog(
     val timestamp: Long,
@@ -55,6 +57,9 @@ data class SduiEngineUiState(
     val lastSignedEnvelopeJson: String = "",
     val lastVerificationStatus: String = "Initializing Ed25519 Verifier...",
     val isEnvelopeVerified: Boolean = true,
+    val activeSchemaVersion: CachedSchemaVersion? = null,
+    val schemaVersions: List<CachedSchemaVersion> = emptyList(),
+    val tenantCachedBadgeMap: Map<String, String> = emptyMap(),
     val opLogs: List<OpLogEntry> = emptyList(),
     val pendingSyncEntries: List<PendingSyncEntry> = emptyList(),
     val schemaTables: List<SchemaTableInfo> = emptyList(),
@@ -75,7 +80,6 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
 
     private val keyPair: SigningKeyPair = Ed25519.generateKeyPair("sdui-kmp-edge-key")
     private val verifiers = mutableMapOf<String, PayloadVerifier>()
-    private val customCardByTenant = mutableMapOf<String, String>()
 
     private var activeRouter: EngineRouter? = null
 
@@ -86,34 +90,20 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
 
     init {
         currentAndroidContext = { context }
-        // Pre-warm default tenant databases so the 2-column home launcher shows live DB status
+        // Initiate connected tenants by receiving, verifying, and caching their initial DivKit schemas in SQLite
         viewModelScope.launch(Dispatchers.IO) {
             WorkspaceProvisioner.defaultWorkspaces.forEach { spec ->
-                workspaceManager.useDatabase(spec.tenantId) { db ->
-                    WorkspaceProvisioner.ensureTenantSchemaAndSeed(db, spec, registry)
-                }
+                ensureTenantInitiatedWithCachedSchema(spec)
             }
+            refreshTenantCachedBadges()
             val dbFiles = workspaceManager.activeDatabaseFileNames()
             _uiState.update {
                 it.copy(
                     activeDbFiles = dbFiles,
-                    statusBannerMessage = "${WorkspaceProvisioner.defaultWorkspaces.size} connected tenants ready in launcher"
+                    statusBannerMessage = "${WorkspaceProvisioner.defaultWorkspaces.size} tenants initiated & cached in SQLite"
                 )
             }
-        }
-        switchWorkspace(WorkspaceProvisioner.defaultWorkspaces.first(), openDedicatedScreen = false)
-    }
-
-    fun openTenantWorkspace(spec: TenantWorkspaceSpec) {
-        switchWorkspace(spec, openDedicatedScreen = true)
-    }
-
-    fun returnToLauncher() {
-        _uiState.update {
-            it.copy(
-                isWorkspaceOpen = false,
-                statusBannerMessage = "Select a connected tenant to launch its on-the-fly SDUI workspace"
-            )
+            switchWorkspace(WorkspaceProvisioner.defaultWorkspaces.first(), openDedicatedScreen = false)
         }
     }
 
@@ -125,16 +115,111 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
             )
         }
 
+    /**
+     * Initiates a tenant when its DivKit JSON schema is received, verifying the Ed25519 envelope
+     * and storing it in `sdui_schema_versions` inside `workspace_<tenant>.db`.
+     * Seeds v1.0 (Stock Blueprint) and v1.1 (Full POS Register Blueprint) on first initiation
+     * so version rollback is immediately available to test.
+     */
+    private suspend fun ensureTenantInitiatedWithCachedSchema(spec: TenantWorkspaceSpec) {
+        val needsInitialSeed = workspaceManager.useDatabase(spec.tenantId) { db ->
+            WorkspaceProvisioner.ensureTenantSchemaAndSeed(db, spec, registry)
+            db.workspaceQueries.selectAllSchemaVersions().isEmpty()
+        }
+        if (needsInitialSeed) {
+            val verifier = getVerifier(spec.tenantId)
+            // Receive & verify v1.0 baseline schema
+            val v10Raw = SduiOnFlyBuilder.buildInventoryTerminalBlueprint(spec)
+            val v10Jti = UUID.randomUUID().toString()
+            val v10Env = PayloadVerifier.createSignedEnvelope(
+                tenant = spec.tenantId,
+                schemaVersion = "1.0",
+                payloadJson = v10Raw,
+                keyPair = keyPair,
+                jtiOverride = v10Jti
+            )
+            val v10Verified = verifier.verify(v10Env)
+
+            // Receive & verify v1.1 active POS Register schema
+            val v11Raw = WorkspaceProvisioner.buildDefaultDivKitCardJson(spec)
+            val v11Jti = UUID.randomUUID().toString()
+            val v11Env = PayloadVerifier.createSignedEnvelope(
+                tenant = spec.tenantId,
+                schemaVersion = "1.1",
+                payloadJson = v11Raw,
+                keyPair = keyPair,
+                jtiOverride = v11Jti
+            )
+            val v11Verified = verifier.verify(v11Env)
+
+            workspaceManager.useDatabase(spec.tenantId) { db ->
+                db.workspaceQueries.cacheAndActivateSchemaVersion(
+                    schemaVersion = "1.0",
+                    jti = v10Jti,
+                    signedEnvelope = v10Env,
+                    verifiedPayload = v10Verified,
+                    receivedAt = currentTimeMillis() - 120_000L,
+                    summary = "v1.0 • Initial Stock & Inventory Schema"
+                )
+                db.workspaceQueries.cacheAndActivateSchemaVersion(
+                    schemaVersion = "1.1",
+                    jti = v11Jti,
+                    signedEnvelope = v11Env,
+                    verifiedPayload = v11Verified,
+                    receivedAt = currentTimeMillis(),
+                    summary = "v1.1 • Full POS Register + Hardware Bridge Schema"
+                )
+            }
+        }
+    }
+
+    private suspend fun refreshTenantCachedBadges() {
+        val badgeMap = mutableMapOf<String, String>()
+        for (spec in _uiState.value.workspaces) {
+            workspaceManager.useDatabase(spec.tenantId) { db ->
+                val all = db.workspaceQueries.selectAllSchemaVersions()
+                val active = all.firstOrNull { it.isActive } ?: all.firstOrNull()
+                if (active != null) {
+                    badgeMap[spec.tenantId] = "Schema v${active.schemaVersion} (${all.size} cached)"
+                } else {
+                    badgeMap[spec.tenantId] = "Schema v1.0 (Cached)"
+                }
+            }
+        }
+        _uiState.update { it.copy(tenantCachedBadgeMap = badgeMap) }
+    }
+
+    fun openTenantWorkspace(spec: TenantWorkspaceSpec) {
+        switchWorkspace(spec, openDedicatedScreen = true)
+    }
+
+    fun returnToLauncher() {
+        viewModelScope.launch(Dispatchers.IO) {
+            refreshTenantCachedBadges()
+        }
+        _uiState.update {
+            it.copy(
+                isWorkspaceOpen = false,
+                statusBannerMessage = "Select a connected tenant to launch its cached SDUI workspace"
+            )
+        }
+    }
+
     fun switchWorkspace(spec: TenantWorkspaceSpec, openDedicatedScreen: Boolean = true) {
         viewModelScope.launch {
             try {
                 // 1. Verify EngineConfig via PayloadVerifier -> EngineConfig.fromVerifiedPayload
                 val verifiedConfig = WorkspaceProvisioner.createVerifiedConfig(spec, keyPair)
 
-                // 2. Initialize isolated SQLite database (`workspace_<tenant>.db`) & seed tables
+                // 2. Ensure tenant DB & cached DivKit schema versions exist in `workspace_<tenant>.db`
+                var cachedActive: CachedSchemaVersion? = null
+                var allCachedVersions: List<CachedSchemaVersion> = emptyList()
                 withContext(Dispatchers.IO) {
+                    ensureTenantInitiatedWithCachedSchema(spec)
                     workspaceManager.useDatabase(spec.tenantId) { db ->
-                        WorkspaceProvisioner.ensureTenantSchemaAndSeed(db, spec, registry)
+                        allCachedVersions = db.workspaceQueries.selectAllSchemaVersions()
+                        cachedActive = db.workspaceQueries.selectActiveSchemaVersion()
+                            ?: allCachedVersions.firstOrNull()
                     }
                 }
 
@@ -171,18 +256,11 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                     )
                 )
 
-                // 6. Sign & Verify the DivKit SDUI Card Envelope before passing to EngineScreen
-                val rawCard = customCardByTenant[spec.tenantId]
+                // 6. Load the stored/cached verified DivKit JSON schema for this tenant
+                val activeSchema = cachedActive
+                val verifiedCardPayload = activeSchema?.verifiedPayload
                     ?: WorkspaceProvisioner.buildDefaultDivKitCardJson(spec)
-                customCardByTenant[spec.tenantId] = rawCard
-
-                val envelope = PayloadVerifier.createSignedEnvelope(
-                    tenant = spec.tenantId,
-                    schemaVersion = verifiedConfig.schemaVersion,
-                    payloadJson = rawCard,
-                    keyPair = keyPair
-                )
-                val verifiedCardPayload = getVerifier(spec.tenantId).verify(envelope)
+                val activeVersionLabel = activeSchema?.schemaVersion ?: "1.0"
 
                 // 7. Execute initial queries via EngineRouter so DivKit variables (`user.orders_json`, counts) are populated
                 router.handle(
@@ -208,12 +286,14 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                         isWorkspaceOpen = openDedicatedScreen,
                         activeConfig = verifiedConfig,
                         verifiedDivKitJson = verifiedCardPayload,
-                        draftDivKitJson = rawCard,
-                        lastSignedEnvelopeJson = envelope,
-                        lastVerificationStatus = "Ed25519 Verified • tenant=${spec.tenantId} • schema=${verifiedConfig.schemaVersion}",
+                        draftDivKitJson = verifiedCardPayload,
+                        lastSignedEnvelopeJson = activeSchema?.signedEnvelope ?: "",
+                        activeSchemaVersion = activeSchema,
+                        schemaVersions = allCachedVersions,
+                        lastVerificationStatus = "Cached Schema v$activeVersionLabel (${allCachedVersions.size} stored) • Ed25519 Verified",
                         isEnvelopeVerified = true,
                         statusBannerMessage = if (openDedicatedScreen) {
-                            "Built UI on the fly from ${spec.tenantId} schema (workspace_${spec.tenantId}.db)"
+                            "Loaded cached Schema v$activeVersionLabel from workspace_${spec.tenantId}.db"
                         } else {
                             it.statusBannerMessage
                         }
@@ -229,6 +309,57 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                     )
                 }
             }
+        }
+    }
+
+    /**
+     * Rolls back (or rolls forward) the active tenant workspace UI to any previously
+     * cached DivKit JSON schema stored in `sdui_schema_versions`.
+     */
+    fun rollbackToSchemaVersion(targetVersion: CachedSchemaVersion) {
+        val spec = _uiState.value.activeWorkspace
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                workspaceManager.useDatabase(spec.tenantId) { db ->
+                    db.workspaceQueries.activateSchemaVersionById(targetVersion.versionId)
+                }
+                refreshTenantCachedBadges()
+            }
+            // Refresh database telemetry and state variables for the rolled-back UI
+            activeRouter?.handle(
+                "local-db://op/db.query",
+                WorkspaceProvisioner.buildQueryOrdersAction()["payload"]?.jsonObject
+            )
+            activeRouter?.handle(
+                "local-db://op/db.count",
+                WorkspaceProvisioner.buildCountOrdersAction()["payload"]?.jsonObject
+            )
+            activeRouter?.handle(
+                "local-db://op/db.query",
+                WorkspaceProvisioner.buildQueryInventoryAction()["payload"]?.jsonObject
+            )
+            activeRouter?.handle(
+                "local-db://op/db.count",
+                WorkspaceProvisioner.buildCountInventoryAction()["payload"]?.jsonObject
+            )
+
+            refreshDatabaseTelemetry(spec.tenantId)
+            _uiState.update {
+                it.copy(
+                    verifiedDivKitJson = targetVersion.verifiedPayload,
+                    draftDivKitJson = targetVersion.verifiedPayload,
+                    lastSignedEnvelopeJson = targetVersion.signedEnvelope,
+                    activeSchemaVersion = targetVersion.copy(isActive = true),
+                    lastVerificationStatus = "Rolled back to cached Schema v${targetVersion.schemaVersion} • Ed25519 Verified",
+                    isEnvelopeVerified = true,
+                    statusBannerMessage = "Rolled back ${spec.tenantId} UI to cached Schema v${targetVersion.schemaVersion}"
+                )
+            }
+            logSecurityEvent(
+                title = "Schema Rollback → v${targetVersion.schemaVersion} (${spec.tenantId})",
+                detail = "Restored cached signed schema (jti=${targetVersion.jti.take(8)}...) from workspace_${spec.tenantId}.db",
+                passed = true
+            )
         }
     }
 
@@ -268,7 +399,6 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                     "user.last_hardware_event",
                     DivVariableValue.Str("SCANNER OK: ${randomProd.sku} (${randomProd.name})")
                 )
-                // Also insert the scanned product into orders via EngineRouter!
                 activeRouter?.handle(
                     "local-db://op/db.insert",
                     WorkspaceProvisioner.buildInsertOrderAction(
@@ -325,36 +455,66 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
     }
 
     /**
-     * Signs the current draft DivKit JSON with Ed25519, runs it through [PayloadVerifier.verify],
-     * and hot-renders it in [EngineScreen].
+     * Receives a new DivKit JSON schema for the active tenant, signs & verifies it via
+     * [PayloadVerifier.verify], stores it as a new version row in `sdui_schema_versions`
+     * (preserving prior versions for rollback), and hot-renders it in [EngineScreen].
      */
-    fun signVerifyAndDeployDraft(customDraft: String = _uiState.value.draftDivKitJson) {
+    fun signVerifyAndDeployDraft(
+        customDraft: String = _uiState.value.draftDivKitJson,
+        changeSummary: String = "Custom Schema Update"
+    ) {
         val spec = _uiState.value.activeWorkspace
         viewModelScope.launch {
             try {
                 // Validate JSON syntax first
                 Json.parseToJsonElement(customDraft).jsonObject
+                val currentVersions = _uiState.value.schemaVersions
+                val nextMinor = currentVersions.size + 1
+                val newVersionStr = "1.$nextMinor"
+                val newJti = UUID.randomUUID().toString()
+
                 val signedEnvelope = PayloadVerifier.createSignedEnvelope(
                     tenant = spec.tenantId,
-                    schemaVersion = "1.0",
+                    schemaVersion = newVersionStr,
                     payloadJson = customDraft,
-                    keyPair = keyPair
+                    keyPair = keyPair,
+                    jtiOverride = newJti
                 )
                 val verifiedPayload = getVerifier(spec.tenantId).verify(signedEnvelope)
-                customCardByTenant[spec.tenantId] = customDraft
+
+                var updatedVersions: List<CachedSchemaVersion> = emptyList()
+                var newlyActive: CachedSchemaVersion? = null
+                withContext(Dispatchers.IO) {
+                    workspaceManager.useDatabase(spec.tenantId) { db ->
+                        db.workspaceQueries.cacheAndActivateSchemaVersion(
+                            schemaVersion = newVersionStr,
+                            jti = newJti,
+                            signedEnvelope = signedEnvelope,
+                            verifiedPayload = verifiedPayload,
+                            receivedAt = currentTimeMillis(),
+                            summary = "v$newVersionStr • $changeSummary"
+                        )
+                        updatedVersions = db.workspaceQueries.selectAllSchemaVersions()
+                        newlyActive = db.workspaceQueries.selectActiveSchemaVersion()
+                    }
+                    refreshTenantCachedBadges()
+                }
+
                 _uiState.update {
                     it.copy(
                         draftDivKitJson = customDraft,
                         verifiedDivKitJson = verifiedPayload,
                         lastSignedEnvelopeJson = signedEnvelope,
-                        lastVerificationStatus = "Ed25519 Signature Verified • Hot-Deployed to ${spec.terminalCode}",
+                        activeSchemaVersion = newlyActive,
+                        schemaVersions = updatedVersions,
+                        lastVerificationStatus = "Cached Schema v$newVersionStr (${updatedVersions.size} stored) • Ed25519 Verified",
                         isEnvelopeVerified = true,
-                        statusBannerMessage = "Signed & hot-rendered SDUI card for ${spec.tenantId}"
+                        statusBannerMessage = "Stored & rendered new Schema v$newVersionStr ($changeSummary)"
                     )
                 }
                 logSecurityEvent(
-                    title = "Signed SDUI Envelope Deployed (${spec.tenantId})",
-                    detail = "CanonicalJson + Ed25519 signature verified; rendered in DivView.",
+                    title = "New Schema v$newVersionStr Cached (${spec.tenantId})",
+                    detail = "Verified & stored in sdui_schema_versions ($changeSummary). Rollback available.",
                     passed = true
                 )
             } catch (e: Exception) {
@@ -375,19 +535,17 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
             newBlock = block,
             prepend = prepend
         )
-        signVerifyAndDeployDraft(updatedJson)
-        _uiState.update {
-            it.copy(statusBannerMessage = "Injected $description & Ed25519 re-verified!")
-        }
+        signVerifyAndDeployDraft(updatedJson, changeSummary = "Added $description")
     }
 
     fun applySduiBlueprint(blueprintJson: String, label: String) {
-        signVerifyAndDeployDraft(blueprintJson)
-        _uiState.update {
-            it.copy(statusBannerMessage = "Switched SDUI Blueprint: $label")
-        }
+        signVerifyAndDeployDraft(blueprintJson, changeSummary = label)
     }
 
+    /**
+     * Initiates a brand-new tenant when its initial DivKit JSON schema is received.
+     * Verifies and caches the schema as v1.0 in `workspace_<tenant_id>.db`.
+     */
     fun createNewWorkspace(
         tenantIdInput: String,
         displayName: String,
@@ -401,7 +559,7 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
             tenantId = cleanId,
             displayName = displayName.ifBlank { "Custom POS ($cleanId)" },
             terminalCode = terminalCode.ifBlank { "TERM-${cleanId.take(4).uppercase()}" },
-            subtitle = "${mode.name} Workspace • Isolated SQLite DB",
+            subtitle = "${mode.name} Workspace • Initiated via DivKit Schema",
             accentHex = "#F472B6",
             mode = mode,
             capabilities = capabilities,
@@ -418,7 +576,7 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
             val updatedList = state.workspaces.filterNot { it.tenantId == cleanId } + newSpec
             state.copy(workspaces = updatedList)
         }
-        switchWorkspace(newSpec)
+        switchWorkspace(newSpec, openDedicatedScreen = true)
     }
 
     fun triggerSyncNow() {
@@ -444,65 +602,20 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
         val spec = _uiState.value.activeWorkspace
         viewModelScope.launch {
             activeRouter?.handle("workspace://clear_all", null)
-            customCardByTenant.remove(spec.tenantId)
-            // Re-initialize schema so the user can continue using or re-seed
             withContext(Dispatchers.IO) {
-                workspaceManager.useDatabase(spec.tenantId) { db ->
-                    val ordersTable = "${spec.tenantId}_orders"
-                    val inventoryTable = "${spec.tenantId}_inventory"
-                    db.driver.executeUpdate(
-                        null,
-                        """
-                        CREATE TABLE IF NOT EXISTS $ordersTable (
-                            id INTEGER PRIMARY KEY AUTOINCREMENT,
-                            item_name TEXT NOT NULL,
-                            sku TEXT NOT NULL,
-                            price REAL NOT NULL,
-                            qty INTEGER NOT NULL DEFAULT 1,
-                            terminal_id TEXT NOT NULL,
-                            status TEXT NOT NULL DEFAULT 'OPEN'
-                        )
-                        """.trimIndent(),
-                        0
-                    )
-                    db.driver.executeUpdate(
-                        null,
-                        """
-                        CREATE TABLE IF NOT EXISTS $inventoryTable (
-                            id INTEGER PRIMARY KEY AUTOINCREMENT,
-                            item_name TEXT NOT NULL,
-                            sku TEXT UNIQUE NOT NULL,
-                            price REAL NOT NULL,
-                            stock INTEGER NOT NULL DEFAULT 0,
-                            category TEXT NOT NULL
-                        )
-                        """.trimIndent(),
-                        0
-                    )
-                }
+                ensureTenantInitiatedWithCachedSchema(spec)
+                refreshTenantCachedBadges()
             }
-            EngineStateBridge.pushBatch(
-                mapOf(
-                    "user.workspace_title" to DivVariableValue.Str("${spec.displayName} (RESET)"),
-                    "user.orders_json" to DivVariableValue.Str("[]"),
-                    "user.inventory_json" to DivVariableValue.Str("[]"),
-                    "user.order_count" to DivVariableValue.IntVal(0L),
-                    "user.inventory_count" to DivVariableValue.IntVal(0L),
-                    "user.last_order_id" to DivVariableValue.IntVal(0L),
-                    "user.sync_status" to DivVariableValue.Str("cleared"),
-                    "user.engine_error" to DivVariableValue.Str("Workspace wiped via workspace://clear_all")
-                )
-            )
-            refreshDatabaseTelemetry(spec.tenantId)
+            switchWorkspace(spec, openDedicatedScreen = _uiState.value.isWorkspaceOpen)
             _uiState.update {
-                it.copy(statusBannerMessage = "Executed workspace://clear_all on workspace_${spec.tenantId}.db")
+                it.copy(statusBannerMessage = "Executed workspace://clear_all & re-initiated baseline schema")
             }
         }
     }
 
     fun reseedActiveWorkspace() {
         val spec = _uiState.value.activeWorkspace
-        switchWorkspace(spec)
+        switchWorkspace(spec, openDedicatedScreen = _uiState.value.isWorkspaceOpen)
     }
 
     fun refreshDatabaseTelemetry(workspaceId: String = _uiState.value.activeWorkspace.tenantId) {
@@ -511,12 +624,16 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                 workspaceManager.useDatabase(workspaceId) { db ->
                     val logs = db.workspaceQueries.selectRecentOpLogs(40)
                     val pending = db.workspaceQueries.selectAllPendingSync()
+                    val versions = db.workspaceQueries.selectAllSchemaVersions()
+                    val activeVer = db.workspaceQueries.selectActiveSchemaVersion()
                     val tables = inspectWorkspaceTables(db)
                     val dbFiles = workspaceManager.activeDatabaseFileNames()
                     _uiState.update {
                         it.copy(
                             opLogs = logs,
                             pendingSyncEntries = pending,
+                            schemaVersions = versions,
+                            activeSchemaVersion = activeVer,
                             schemaTables = tables,
                             activeDbFiles = dbFiles
                         )
@@ -564,7 +681,6 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                         payloadJson = """{"type":"text","text":"Original $10.00"}""",
                         keyPair = keyPair
                     )
-                    // Tamper with payload after signing
                     val tampered = validEnv.replace("Original $10.00", "Tampered $0.01")
                     try {
                         verifier.verify(tampered)
@@ -587,8 +703,8 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                         jtiOverride = fixedJti
                     )
                     try {
-                        verifier.verify(env) // 1st time succeeds
-                        verifier.verify(env) // 2nd time with same jti must throw!
+                        verifier.verify(env)
+                        verifier.verify(env)
                         logSecurityEvent("Replay JTI Test", "Unexpectedly allowed duplicate jti", false)
                     } catch (e: SecurityException) {
                         logSecurityEvent(
@@ -600,7 +716,7 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                 }
 
                 "expired_iat" -> {
-                    val expiredIat = currentTimeMillis() - 600_000L // 10 mins old (> 5m maxSkewMs)
+                    val expiredIat = currentTimeMillis() - 600_000L
                     val env = PayloadVerifier.createSignedEnvelope(
                         tenant = spec.tenantId,
                         payloadJson = """{"type":"text","text":"Stale envelope"}""",
@@ -685,14 +801,5 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                 statusBannerMessage = "$title — $detail"
             )
         }
-    }
-
-    fun getCanonicalJsonSample(): String {
-        val map = mapOf(
-            "z_last_key" to 42.0,
-            "a_first_key" to "sorted-deterministically",
-            "nested" to mapOf("b" to true, "a" to listOf(1, 2, 3))
-        )
-        return CanonicalJson.canonicalize(map)
     }
 }
