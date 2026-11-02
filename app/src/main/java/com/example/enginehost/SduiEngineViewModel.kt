@@ -34,6 +34,12 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.*
 import java.util.UUID
 
+enum class EngineThemeMode(val label: String) {
+    SYSTEM("System"),
+    LIGHT("Light"),
+    DARK("Dark")
+}
+
 data class SecurityEventLog(
     val timestamp: Long,
     val title: String,
@@ -50,6 +56,17 @@ data class SduiEngineUiState(
     val workspaces: List<TenantWorkspaceSpec> = WorkspaceProvisioner.defaultWorkspaces,
     val activeWorkspace: TenantWorkspaceSpec = WorkspaceProvisioner.defaultWorkspaces.first(),
     val isWorkspaceOpen: Boolean = false,
+    val themeMode: EngineThemeMode = EngineThemeMode.SYSTEM,
+    val isGridView: Boolean = true,
+    val searchQuery: String = "",
+    val pushGatewayBase: String = "https://kipeles-apexkit.hf.space/tenant/apexapp-push",
+    val hardwareDeviceId: String = "89909045832b6844",
+    val fcmPushToken: String = "fxF-S18CSsehc3lubcw_Ys:APA91bE4FCZ0XrmpHB7gVK-dMOk2sicVlcPX137g5MZ5zRgAF9MK14bc",
+    val wsConnected: Boolean = true,
+    val tenantToolsMap: Map<String, WorkspaceToolPermissions> =
+        WorkspaceProvisioner.defaultWorkspaces.associate { it.tenantId to it.defaultTools },
+    val activeRoutePath: String = "/",
+    val activeRouteQueries: String = "(none)",
     val activeConfig: EngineConfig? = null,
     val keyPair: SigningKeyPair? = null,
     val verifiedDivKitJson: String = "",
@@ -542,6 +559,167 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
         signVerifyAndDeployDraft(blueprintJson, changeSummary = label)
     }
 
+    fun setThemeMode(mode: EngineThemeMode) {
+        _uiState.update {
+            it.copy(
+                themeMode = mode,
+                statusBannerMessage = "Engine theme switched to ${mode.label}"
+            )
+        }
+    }
+
+    fun toggleLauncherLayoutMode() {
+        _uiState.update {
+            val nextGrid = !it.isGridView
+            it.copy(
+                isGridView = nextGrid,
+                statusBannerMessage = if (nextGrid) "2-Column Grid Launcher Active" else "List View Launcher Active"
+            )
+        }
+    }
+
+    fun updateSearchQuery(query: String) {
+        _uiState.update { it.copy(searchQuery = query) }
+    }
+
+    fun updatePushGatewayBase(url: String) {
+        _uiState.update { it.copy(pushGatewayBase = url) }
+    }
+
+    fun resyncFcmToken() {
+        val suffix = UUID.randomUUID().toString().replace("-", "").take(12)
+        val refreshedToken = "fxF-S18CSsehc3lubcw_Ys:APA91bE4FCZ0XrmpHB7gVK-dMOk2sicVlc$suffix"
+        _uiState.update {
+            it.copy(
+                fcmPushToken = refreshedToken,
+                statusBannerMessage = "FCM Push Token re-synced with gateway"
+            )
+        }
+    }
+
+    fun reconnectRealtimeWs() {
+        _uiState.update {
+            it.copy(
+                wsConnected = true,
+                statusBannerMessage = "Realtime WebSocket reconnected to ${it.pushGatewayBase}"
+            )
+        }
+    }
+
+    fun saveWorkspaceToolPermissions(tenantId: String, permissions: WorkspaceToolPermissions) {
+        val currentWorkspaces = _uiState.value.workspaces
+        val targetSpec = currentWorkspaces.find { it.tenantId == tenantId } ?: return
+        val updatedCapabilities = permissions.toCapabilitiesSet(targetSpec.capabilities)
+        val updatedSpec = targetSpec.copy(
+            capabilities = updatedCapabilities,
+            defaultTools = permissions
+        )
+        _uiState.update { state ->
+            val updatedMap = state.tenantToolsMap.toMutableMap().apply {
+                put(tenantId, permissions)
+            }
+            val updatedList = state.workspaces.map { if (it.tenantId == tenantId) updatedSpec else it }
+            state.copy(
+                workspaces = updatedList,
+                activeWorkspace = if (state.activeWorkspace.tenantId == tenantId) updatedSpec else state.activeWorkspace,
+                tenantToolsMap = updatedMap,
+                statusBannerMessage = "Saved ${permissions.activeCount} active bridge tools for ${updatedSpec.displayName}"
+            )
+        }
+        if (_uiState.value.activeWorkspace.tenantId == tenantId) {
+            switchWorkspace(updatedSpec, openDedicatedScreen = _uiState.value.isWorkspaceOpen)
+        }
+    }
+
+    fun disconnectWorkspace(tenantId: String) {
+        val current = _uiState.value.workspaces
+        if (current.size <= 1) {
+            _uiState.update {
+                it.copy(statusBannerMessage = "At least one workspace must remain connected")
+            }
+            return
+        }
+        val remaining = current.filterNot { it.tenantId == tenantId }
+        val nextActive = if (_uiState.value.activeWorkspace.tenantId == tenantId) {
+            remaining.first()
+        } else {
+            _uiState.value.activeWorkspace
+        }
+        _uiState.update {
+            it.copy(
+                workspaces = remaining,
+                activeWorkspace = nextActive,
+                isWorkspaceOpen = false,
+                statusBannerMessage = "Disconnected workspace $tenantId"
+            )
+        }
+    }
+
+    fun switchActiveRoute(path: String, queries: String) {
+        _uiState.update {
+            it.copy(
+                activeRoutePath = path,
+                activeRouteQueries = queries,
+                statusBannerMessage = "Switched route to $path${if (queries != "(none)") "?$queries" else ""}"
+            )
+        }
+        EngineStateBridge.pushUpdate(
+            "user.last_hardware_event",
+            DivVariableValue.Str("Route Active: $path ${if (queries != "(none)") "?$queries" else ""}")
+        )
+    }
+
+    fun connectNewWorkspaceFromSheet(
+        displayName: String,
+        localLanUrl: String,
+        tunnelUrl: String,
+        pullEndpoint: String,
+        openImmediately: Boolean = true
+    ) {
+        val cleanName = displayName.trim().ifBlank { "Custom POS Register" }
+        val cleanId = cleanName.lowercase().replace(Regex("[^a-z0-9_-]"), "_").take(32).ifBlank {
+            "pos_${UUID.randomUUID().toString().take(6)}"
+        }
+        val effectiveTunnel = tunnelUrl.trim().ifBlank {
+            localLanUrl.trim().ifBlank { "https://apexkit-$cleanId.trycloudflare.com" }
+        }
+        val newSpec = TenantWorkspaceSpec(
+            tenantId = cleanId,
+            displayName = cleanName,
+            terminalCode = "TERM-${cleanId.take(4).uppercase()}",
+            subtitle = "Public Tunnel: $effectiveTunnel",
+            accentHex = "#0284C7",
+            mode = EngineConfig.Mode.HYBRID,
+            capabilities = setOf("printer", "nfc"),
+            isBuiltInDemo = false,
+            tunnelUrl = effectiveTunnel,
+            localLanUrl = localLanUrl.trim().ifBlank { "http://192.168.1.50:8080" },
+            pullEndpoint = pullEndpoint.trim().ifBlank { "/webhook/edge_notifications/pull-notifications" },
+            publicClientId = "pk_live_${UUID.randomUUID().toString().replace("-", "").take(20)}",
+            unreadCount = 0,
+            defaultTools = WorkspaceToolPermissions(), // Tools off by default for security
+            defaultProducts = listOf(
+                SeedProduct("Signature Espresso", "CSP-01", 4.50, 100, "Coffee", "#0284C7"),
+                SeedProduct("Avocado Sourdough", "CSP-02", 11.00, 45, "Bakery", "#4F46E5"),
+                SeedProduct("Matcha Oat Latte", "CSP-03", 6.25, 80, "Beverages", "#0D9488")
+            ),
+            defaultOrders = listOf(
+                SeedOrder("Signature Espresso", "CSP-01", 4.50, 1, "TERM-01", "OPEN")
+            )
+        )
+        _uiState.update { state ->
+            val updatedList = state.workspaces.filterNot { it.tenantId == cleanId } + newSpec
+            val updatedTools = state.tenantToolsMap.toMutableMap().apply {
+                put(cleanId, WorkspaceToolPermissions())
+            }
+            state.copy(
+                workspaces = updatedList,
+                tenantToolsMap = updatedTools
+            )
+        }
+        switchWorkspace(newSpec, openDedicatedScreen = openImmediately)
+    }
+
     /**
      * Initiates a brand-new tenant when its initial DivKit JSON schema is received.
      * Verifies and caches the schema as v1.0 in `workspace_<tenant_id>.db`.
@@ -559,10 +737,15 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
             tenantId = cleanId,
             displayName = displayName.ifBlank { "Custom POS ($cleanId)" },
             terminalCode = terminalCode.ifBlank { "TERM-${cleanId.take(4).uppercase()}" },
-            subtitle = "${mode.name} Workspace • Initiated via DivKit Schema",
-            accentHex = "#F472B6",
+            subtitle = "Public Tunnel: https://$cleanId.trycloudflare.com",
+            accentHex = "#0284C7",
             mode = mode,
             capabilities = capabilities,
+            tunnelUrl = "https://$cleanId.trycloudflare.com",
+            publicClientId = "pk_live_${UUID.randomUUID().toString().replace("-", "").take(20)}",
+            defaultTools = WorkspaceToolPermissions(
+                cameraBarcodeScanner = "scanner" in capabilities
+            ),
             defaultProducts = listOf(
                 SeedProduct("Signature Espresso", "CSP-01", 4.50, 100, "Coffee", "#DB2777"),
                 SeedProduct("Avocado Sourdough", "CSP-02", 11.00, 45, "Bakery", "#9333EA"),
@@ -574,7 +757,13 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
         )
         _uiState.update { state ->
             val updatedList = state.workspaces.filterNot { it.tenantId == cleanId } + newSpec
-            state.copy(workspaces = updatedList)
+            val updatedTools = state.tenantToolsMap.toMutableMap().apply {
+                put(cleanId, newSpec.defaultTools)
+            }
+            state.copy(
+                workspaces = updatedList,
+                tenantToolsMap = updatedTools
+            )
         }
         switchWorkspace(newSpec, openDedicatedScreen = true)
     }
@@ -608,14 +797,24 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
             }
             switchWorkspace(spec, openDedicatedScreen = _uiState.value.isWorkspaceOpen)
             _uiState.update {
-                it.copy(statusBannerMessage = "Executed workspace://clear_all & re-initiated baseline schema")
+                it.copy(statusBannerMessage = "Cleared offline cache & re-verified baseline schema for ${spec.displayName}")
             }
         }
     }
 
     fun reseedActiveWorkspace() {
+        // Preserves activeRoutePath and activeRouteQueries on refresh!
         val spec = _uiState.value.activeWorkspace
+        val preservedPath = _uiState.value.activeRoutePath
+        val preservedQueries = _uiState.value.activeRouteQueries
         switchWorkspace(spec, openDedicatedScreen = _uiState.value.isWorkspaceOpen)
+        _uiState.update {
+            it.copy(
+                activeRoutePath = preservedPath,
+                activeRouteQueries = preservedQueries,
+                statusBannerMessage = "Refreshed ${spec.displayName} (Preserved route $preservedPath)"
+            )
+        }
     }
 
     fun refreshDatabaseTelemetry(workspaceId: String = _uiState.value.activeWorkspace.tenantId) {

@@ -8,6 +8,41 @@ import engine.db.OpResult
 import engine.db.WorkspaceDatabase
 import kotlinx.serialization.json.*
 
+data class WorkspaceToolPermissions(
+    val hapticVibration: Boolean = false,
+    val hardwareBeeperAudio: Boolean = false,
+    val cameraBarcodeScanner: Boolean = false,
+    val supervisorBiometricAuth: Boolean = false,
+    val clipboardAccess: Boolean = false,
+    val backgroundAlertsPush: Boolean = false,
+    val offlinePageCaching: Boolean = false,
+    val realtimeEngineWsSse: Boolean = false
+) {
+    val activeCount: Int
+        get() = listOf(
+            hapticVibration,
+            hardwareBeeperAudio,
+            cameraBarcodeScanner,
+            supervisorBiometricAuth,
+            clipboardAccess,
+            backgroundAlertsPush,
+            offlinePageCaching,
+            realtimeEngineWsSse
+        ).count { it }
+
+    fun toCapabilitiesSet(baseCapabilities: Set<String> = emptySet()): Set<String> = buildSet {
+        addAll(baseCapabilities)
+        if (cameraBarcodeScanner) add("scanner") else remove("scanner")
+        if (hapticVibration) add("haptics")
+        if (hardwareBeeperAudio) add("beeper")
+        if (supervisorBiometricAuth) add("biometrics")
+        if (clipboardAccess) add("clipboard")
+        if (backgroundAlertsPush) add("push")
+        if (offlinePageCaching) add("offline_cache")
+        if (realtimeEngineWsSse) add("realtime_ws")
+    }
+}
+
 data class TenantWorkspaceSpec(
     val tenantId: String,
     val displayName: String,
@@ -17,7 +52,14 @@ data class TenantWorkspaceSpec(
     val mode: EngineConfig.Mode,
     val capabilities: Set<String>,
     val defaultProducts: List<SeedProduct>,
-    val defaultOrders: List<SeedOrder>
+    val defaultOrders: List<SeedOrder>,
+    val isBuiltInDemo: Boolean = false,
+    val tunnelUrl: String = "https://apexkit-pos.trycloudflare.com",
+    val localLanUrl: String = "http://192.168.1.42:8080",
+    val pullEndpoint: String = "/webhook/edge_notifications/pull-notifications",
+    val publicClientId: String = "pk_live_bdbc75560c43b6605370bf4a",
+    val unreadCount: Int = 0,
+    val defaultTools: WorkspaceToolPermissions = WorkspaceToolPermissions()
 )
 
 data class SeedProduct(
@@ -43,12 +85,27 @@ object WorkspaceProvisioner {
     val defaultWorkspaces: List<TenantWorkspaceSpec> = listOf(
         TenantWorkspaceSpec(
             tenantId = "acme_pos",
-            displayName = "Acme Bistro & Grill",
+            displayName = "Apex POS Terminal Demo",
             terminalCode = "POS-TERM-01",
-            subtitle = "Hybrid Hospitality POS • Full Hardware Grants",
-            accentHex = "#38BDF8",
+            subtitle = "Built-in Terminal Demo",
+            accentHex = "#0284C7",
             mode = EngineConfig.Mode.HYBRID,
-            capabilities = setOf("scanner", "printer", "nfc", "cash_drawer"),
+            capabilities = setOf("scanner", "printer", "nfc", "cash_drawer", "haptics", "beeper"),
+            isBuiltInDemo = true,
+            tunnelUrl = "https://apex-terminal.local/",
+            localLanUrl = "http://192.168.1.10:8080",
+            publicClientId = "pk_live_bdbc75560c43b6605370bf4a",
+            unreadCount = 4,
+            defaultTools = WorkspaceToolPermissions(
+                hapticVibration = true,
+                hardwareBeeperAudio = true,
+                cameraBarcodeScanner = true,
+                supervisorBiometricAuth = true,
+                clipboardAccess = true,
+                backgroundAlertsPush = true,
+                offlinePageCaching = false,
+                realtimeEngineWsSse = false
+            ),
             defaultProducts = listOf(
                 SeedProduct("Wagyu Smash Burger", "ACM-101", 16.50, 42, "Entrees", "#0284C7"),
                 SeedProduct("Truffle Parmesan Fries", "ACM-102", 8.00, 65, "Sides", "#0D9488"),
@@ -65,10 +122,16 @@ object WorkspaceProvisioner {
             tenantId = "nova_retail",
             displayName = "Nova Electronics Express",
             terminalCode = "REG-04-WEST",
-            subtitle = "Online Flagship Retail • High-Throughput SKU Checkout",
+            subtitle = "Public Tunnel: https://apexkit-drive.hf.space",
             accentHex = "#818CF8",
             mode = EngineConfig.Mode.ONLINE,
             capabilities = setOf("scanner", "printer", "nfc"),
+            isBuiltInDemo = false,
+            tunnelUrl = "https://apexkit-drive.hf.space",
+            localLanUrl = "http://192.168.1.44:3000",
+            publicClientId = "pk_live_94fa8120c43b6605370e91b",
+            unreadCount = 0,
+            defaultTools = WorkspaceToolPermissions(), // Tools off (default) for security
             defaultProducts = listOf(
                 SeedProduct("USB-C GaN 100W Charger", "NVA-881", 49.00, 120, "Power", "#4F46E5"),
                 SeedProduct("ANC Studio Earbuds Pro", "NVA-410", 129.00, 34, "Audio", "#7C3AED"),
@@ -84,10 +147,16 @@ object WorkspaceProvisioner {
             tenantId = "zen_pharmacy",
             displayName = "Zenith Rx Clinic Kiosk",
             terminalCode = "KIOSK-RX-02",
-            subtitle = "Offline-First Sandbox • Scanner-Only Capability",
+            subtitle = "Public Tunnel: http://inspower-kiosk.local",
             accentHex = "#34D399",
             mode = EngineConfig.Mode.OFFLINE,
-            capabilities = setOf("scanner"), // Printer & NFC intentionally restricted to showcase capability sandboxing
+            capabilities = setOf("scanner"),
+            isBuiltInDemo = false,
+            tunnelUrl = "http://inspower-kiosk.local",
+            localLanUrl = "http://10.0.0.22:8080",
+            publicClientId = "pk_live_38cd1190c43b6605370a10c",
+            unreadCount = 0,
+            defaultTools = WorkspaceToolPermissions(), // Tools off (default)
             defaultProducts = listOf(
                 SeedProduct("Electrolyte Recovery Pack", "ZEN-011", 14.00, 90, "Wellness", "#059669"),
                 SeedProduct("Digital Thermometer Pro", "ZEN-045", 24.50, 31, "Devices", "#0D9488"),
@@ -100,12 +169,18 @@ object WorkspaceProvisioner {
         ),
         TenantWorkspaceSpec(
             tenantId = "metro_coffee",
-            displayName = "Metro Roasters Cafe",
+            displayName = "ApexKit Administration",
             terminalCode = "BAR-POS-03",
-            subtitle = "Express Barista Terminal • Contactless & Receipt",
+            subtitle = "Public Tunnel: https://kipeles-apexkit.hf.space",
             accentHex = "#F59E0B",
             mode = EngineConfig.Mode.HYBRID,
             capabilities = setOf("scanner", "printer", "nfc"),
+            isBuiltInDemo = false,
+            tunnelUrl = "https://kipeles-apexkit.hf.space",
+            localLanUrl = "http://192.168.1.88:5173",
+            publicClientId = "pk_live_77ea4450c43b6605370d88f",
+            unreadCount = 0,
+            defaultTools = WorkspaceToolPermissions(), // Tools off (default)
             defaultProducts = listOf(
                 SeedProduct("Single Origin Cortado", "MTR-110", 5.25, 140, "Espresso", "#D97706"),
                 SeedProduct("Pistachio Croissant", "MTR-205", 6.75, 38, "Pastry", "#059669"),

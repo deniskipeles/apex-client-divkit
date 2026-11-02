@@ -1,5 +1,13 @@
 package com.example.ui
 
+import android.content.Context
+import android.media.AudioManager
+import android.media.ToneGenerator
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -18,6 +26,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -29,15 +38,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.enginehost.SduiEngineUiState
 import com.example.enginehost.SduiEngineViewModel
 import engine.db.CachedSchemaVersion
+import engine.state.DivVariableValue
 import engine.state.EngineStateBridge
 import engine.ui.EngineScreen
 import engine.ui.rememberDivKitDependencies
@@ -45,6 +57,7 @@ import kotlin.math.abs
 
 private enum class ActiveHostOverlay {
     NONE,
+    WORKSPACE_SETTINGS,
     SCHEMA_ROLLBACK,
     SDUI_BUILDER,
     DB_AND_SYNC,
@@ -56,11 +69,14 @@ private enum class ActiveHostOverlay {
  *
  * - Renders the tenant's active cached DivKit JSON schema (`uiState.verifiedDivKitJson`)
  *   across 100% of the screen space.
- * - Top-center **Standout Pill** (zero shadow, high-contrast on both Dark and Light system themes)
- *   opens the `< Hub` AppBar when clicked.
+ * - Top-center **Standout Pill** (zero shadow, high-contrast on both Dark and Light themes)
+ *   opens the AppBar when clicked.
  * - Once opened, the **AppBar remains open unless the active workspace screen is clicked
- *   or the `< Hub` exit button is clicked**.
- * - Supports full **Schema Caching & Version Rollback** (`sdui_schema_versions` in SQLite).
+ *   or the Exit (`< Hub`) button is clicked**.
+ * - Includes the Expanded AppBar (Back/Exit, QR, Refresh, Bell, 3-Dot Menu with Refresh Page,
+ *   Workspace Settings, Clear Offline Cache, Schema Cache & Rollback, Return to Hub),
+ *   Origin-Scoped Public Client ID & cURL Dispatch card, Route Path & URL Queries (Preserved on Refresh),
+ *   and Hardware Audio & Haptics tester.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,17 +85,20 @@ fun PosTerminalTab(
     viewModel: SduiEngineViewModel,
     onExitWorkspace: () -> Unit = { viewModel.returnToLauncher() }
 ) {
+    val context = LocalContext.current
     val divKitDeps = rememberDivKitDependencies()
     val bridgeVars by EngineStateBridge.state.collectAsState()
     val colorScheme = MaterialTheme.colorScheme
     val isDark = colorScheme.background.luminance() < 0.5f
 
     // Controls whether the top-center Standout Pill has been clicked to open the AppBar.
-    // Remains open unless the active workspace screen is clicked or the Exit (`< Hub`) button is clicked.
+    // Remains open unless the active workspace screen is clicked or the Exit button is clicked.
     var isAppBarExpanded by remember(uiState.activeWorkspace.tenantId) { mutableStateOf(false) }
     var showOverflowMenu by remember { mutableStateOf(false) }
     var activeOverlay by remember { mutableStateOf(ActiveHostOverlay.NONE) }
 
+    val spec = uiState.activeWorkspace
+    val permissions = uiState.tenantToolsMap[spec.tenantId] ?: spec.defaultTools
     val activeSchemaTag = uiState.activeSchemaVersion?.let { "v${it.schemaVersion}" } ?: "v1.1"
 
     Box(
@@ -87,7 +106,7 @@ fun PosTerminalTab(
             .fillMaxSize()
             .background(colorScheme.background)
     ) {
-        // 1. Active Workspace Screen (Full-Screen Self-Contained Tenant SDUI Content)
+        // 1. Active Workspace Screen (Full-Screen Self-Contained Tenant SDUI Content + Native Bridge Cards)
         // Clicking anywhere on the active workspace screen while the AppBar is open dismisses the AppBar.
         Column(
             modifier = Modifier
@@ -105,7 +124,6 @@ fun PosTerminalTab(
                         if (up != null) {
                             val dx = abs(up.position.x - downPos.x)
                             val dy = abs(up.position.y - downPos.y)
-                            // Treat as a click/tap on the active workspace screen (not a drag/scroll)
                             if (dx < viewConfiguration.touchSlop && dy < viewConfiguration.touchSlop) {
                                 isAppBarExpanded = false
                             }
@@ -117,12 +135,12 @@ fun PosTerminalTab(
                     start = 14.dp,
                     end = 14.dp,
                     top = if (isAppBarExpanded) 68.dp else 18.dp,
-                    bottom = 20.dp
+                    bottom = 24.dp
                 ),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            // A. Dynamic DivKit SDUI Schema Card (Rendered on the fly from cached SQLite schema)
             if (uiState.verifiedDivKitJson.isNotBlank()) {
-                // Keyed by versionId + cardHash so rolling back or receiving a new schema immediately re-renders
                 key(
                     uiState.activeSchemaVersion?.versionId ?: 0L,
                     uiState.verifiedDivKitJson.hashCode()
@@ -130,7 +148,7 @@ fun PosTerminalTab(
                     EngineScreen(
                         divKitDependencies = divKitDeps,
                         initialJson = uiState.verifiedDivKitJson,
-                        cardId = "pos_card_${uiState.activeWorkspace.tenantId}_${activeSchemaTag}",
+                        cardId = "pos_card_${spec.tenantId}_${activeSchemaTag}",
                         onAction = { url, payload ->
                             viewModel.dispatchDivKitAction(url, payload)
                         }
@@ -138,7 +156,370 @@ fun PosTerminalTab(
                 }
             }
 
-            // Cached Schema Status & Version Rollback Quick Bar inside the workspace footer
+            // B. Public Client ID (Origin-Scoped) & cURL Dispatch Card (Screenshots 7 & 11)
+            Surface(
+                color = colorScheme.surface,
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.dp, colorScheme.primary.copy(alpha = 0.6f)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "🔑 PUBLIC CLIENT ID (ORIGIN-SCOPED)",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "SYNCED TO GATEWAY",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = colorScheme.primary
+                        )
+                    }
+
+                    Surface(
+                        color = colorScheme.background,
+                        shape = RoundedCornerShape(10.dp),
+                        border = BorderStroke(1.dp, colorScheme.outline),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = spec.publicClientId,
+                            fontSize = 14.sp,
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.SemiBold,
+                            color = colorScheme.onSurface,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)
+                        )
+                    }
+
+                    Button(
+                        onClick = {
+                            if (!permissions.clipboardAccess) {
+                                Toast.makeText(
+                                    context,
+                                    "Clipboard Access is OFF in Workspace Settings — enabling copy via host",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                            copyToSystemClipboard(context, "Public Client ID", spec.publicClientId)
+                        },
+                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = colorScheme.primary),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(44.dp)
+                            .testTag("copy_public_client_id_button")
+                    ) {
+                        Text(
+                            text = "📋 Copy Client ID",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+
+                    Text(
+                        text = "Test dispatching to this terminal with cURL:",
+                        fontSize = 11.sp,
+                        color = colorScheme.onSurfaceVariant
+                    )
+
+                    val curlSnippet = remember(spec.publicClientId, uiState.pushGatewayBase) {
+                        """
+                        curl -X POST ${uiState.pushGatewayBase}/api/v1/webhook/fcm/dispatch \
+                          -H "Authorization: Bearer gwk_live_4a8f9c1b2e3d5a7e9f012345" \
+                          -H "Content-Type: application/json" \
+                          -d '{"clientId": "${spec.publicClientId}", "event": "ORDER_READY", "notification": {"title": "Kitchen Alert", "body": "Order #4091 is ready for pick-up!"}}'
+                        """.trimIndent()
+                    }
+
+                    Surface(
+                        color = colorScheme.background,
+                        shape = RoundedCornerShape(10.dp),
+                        border = BorderStroke(1.dp, colorScheme.outline),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = curlSnippet,
+                            fontSize = 11.sp,
+                            fontFamily = FontFamily.Monospace,
+                            color = colorScheme.onSurface,
+                            modifier = Modifier.padding(12.dp)
+                        )
+                    }
+                }
+            }
+
+            // C. Native Android Bridge Security Notice Banner (Screenshots 7 & 11)
+            Surface(
+                color = colorScheme.primary.copy(alpha = 0.10f),
+                shape = RoundedCornerShape(14.dp),
+                border = BorderStroke(1.dp, colorScheme.primary.copy(alpha = 0.4f)),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .clickable { activeOverlay = ActiveHostOverlay.WORKSPACE_SETTINGS }
+            ) {
+                Column(
+                    modifier = Modifier.padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = "⚡ Native Android Bridge (${permissions.activeCount}/8 tools active): By default, native bridged tools (Haptics, Beep, Scanner, Biometrics, Clipboard, Push, Realtime) are turned OFF for security. Tap here or open the ⋮ (3-dot menu) at the top and select Workspace Settings.",
+                        fontSize = 12.sp,
+                        color = colorScheme.onSurface
+                    )
+                }
+            }
+
+            // D. Active Route Path & URL Queries — Preserved on Refresh (Screenshot 1 from earlier turn)
+            Surface(
+                color = colorScheme.surface,
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.dp, colorScheme.outline),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "🌐 ACTIVE ROUTE PATH & URL QUERIES",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = colorScheme.onSurfaceVariant,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(
+                            text = "PRESERVED ON REFRESH",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = colorScheme.tertiary
+                        )
+                    }
+
+                    val fullUrl = buildString {
+                        append(spec.tunnelUrl.trimEnd('/'))
+                        append(uiState.activeRoutePath)
+                        if (uiState.activeRouteQueries != "(none)") {
+                            append("?")
+                            append(uiState.activeRouteQueries)
+                        }
+                    }
+
+                    Surface(
+                        color = colorScheme.background,
+                        shape = RoundedCornerShape(10.dp),
+                        border = BorderStroke(1.dp, colorScheme.outline),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Text(
+                                text = "Full URL: $fullUrl",
+                                fontSize = 12.sp,
+                                fontFamily = FontFamily.Monospace,
+                                color = colorScheme.onSurface
+                            )
+                            Text(
+                                text = "Path: ${uiState.activeRoutePath}",
+                                fontSize = 12.sp,
+                                fontFamily = FontFamily.Monospace,
+                                color = colorScheme.primary
+                            )
+                            Text(
+                                text = "Queries: ${uiState.activeRouteQueries}",
+                                fontSize = 12.sp,
+                                fontFamily = FontFamily.Monospace,
+                                color = Color(0xFFF59E0B)
+                            )
+                        }
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        RoutePresetButton(
+                            title = "🛒 POS Register 01",
+                            queries = "station=1&cashier=john",
+                            onClick = { viewModel.switchActiveRoute("/register", "station=1&cashier=john") },
+                            modifier = Modifier.weight(1f)
+                        )
+                        RoutePresetButton(
+                            title = "🍳 Kitchen KDS Grill",
+                            queries = "station=grill&priority=urgent",
+                            onClick = { viewModel.switchActiveRoute("/kds", "station=grill&priority=urgent") },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        RoutePresetButton(
+                            title = "📦 Inventory Stock",
+                            queries = "category=beverage",
+                            onClick = { viewModel.switchActiveRoute("/inventory", "category=beverage") },
+                            modifier = Modifier.weight(1f)
+                        )
+                        RoutePresetButton(
+                            title = "📊 Sales Report",
+                            queries = "date=today&format=summary",
+                            onClick = { viewModel.switchActiveRoute("/reports", "date=today&format=summary") },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            }
+
+            // E. Hardware Audio & Haptics Tester (ToneGenerator / VibratorManager)
+            Surface(
+                color = colorScheme.surface,
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.dp, colorScheme.outline),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "🔊 HARDWARE AUDIO & HAPTICS",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "TONEGENERATOR / VIBRATORMANAGER",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        HardwareTestButton(
+                            title = "🔔 POS Ring",
+                            subtitle = "1200 Hz",
+                            onClick = {
+                                playPosTone(
+                                    context = context,
+                                    enabled = permissions.hardwareBeeperAudio,
+                                    toneType = ToneGenerator.TONE_PROP_BEEP,
+                                    label = "POS Ring (1200 Hz)",
+                                    onBlocked = { activeOverlay = ActiveHostOverlay.WORKSPACE_SETTINGS }
+                                )
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                        HardwareTestButton(
+                            title = "⚠️ Alert Beep",
+                            subtitle = "2400 Hz",
+                            onClick = {
+                                playPosTone(
+                                    context = context,
+                                    enabled = permissions.hardwareBeeperAudio,
+                                    toneType = ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD,
+                                    label = "Alert Beep (2400 Hz)",
+                                    onBlocked = { activeOverlay = ActiveHostOverlay.WORKSPACE_SETTINGS }
+                                )
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                        HardwareTestButton(
+                            title = "❌ Error Buzz",
+                            subtitle = "600 Hz",
+                            onClick = {
+                                playPosTone(
+                                    context = context,
+                                    enabled = permissions.hardwareBeeperAudio,
+                                    toneType = ToneGenerator.TONE_SUP_ERROR,
+                                    label = "Error Buzz (600 Hz)",
+                                    onBlocked = { activeOverlay = ActiveHostOverlay.WORKSPACE_SETTINGS }
+                                )
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        HardwareTestButton(
+                            title = "📳 Light",
+                            subtitle = "15ms Tick",
+                            onClick = {
+                                triggerPosHaptic(
+                                    context = context,
+                                    enabled = permissions.hapticVibration,
+                                    durationMs = 15L,
+                                    label = "Light Haptic (15ms)",
+                                    onBlocked = { activeOverlay = ActiveHostOverlay.WORKSPACE_SETTINGS }
+                                )
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                        HardwareTestButton(
+                            title = "📳 Click",
+                            subtitle = "35ms Click",
+                            onClick = {
+                                triggerPosHaptic(
+                                    context = context,
+                                    enabled = permissions.hapticVibration,
+                                    durationMs = 35L,
+                                    label = "Click Haptic (35ms)",
+                                    onBlocked = { activeOverlay = ActiveHostOverlay.WORKSPACE_SETTINGS }
+                                )
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                        HardwareTestButton(
+                            title = "📳 Heavy",
+                            subtitle = "80ms Heavy",
+                            onClick = {
+                                triggerPosHaptic(
+                                    context = context,
+                                    enabled = permissions.hapticVibration,
+                                    durationMs = 80L,
+                                    label = "Heavy Haptic (80ms)",
+                                    onBlocked = { activeOverlay = ActiveHostOverlay.WORKSPACE_SETTINGS }
+                                )
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            }
+
+            // F. Cached Schema Status & Version Rollback Quick Bar + EngineStateBridge
             Surface(
                 color = colorScheme.surface,
                 shape = RoundedCornerShape(12.dp),
@@ -250,8 +631,6 @@ fun PosTerminalTab(
                     .testTag("workspace_standout_pill"),
                 contentAlignment = Alignment.Center
             ) {
-                // High-contrast pill body that stands out on both Dark (#0B1120) and Light (#F1F5F9 / #FFFFFF) themes
-                // Zero shadow (no shadowElevation / no tonalElevation) so nothing in the workspace is shadowed
                 val pillFill = if (isDark) Color(0xFF64748B) else Color(0xFF8E95A2)
                 val pillBorder = if (isDark) Color(0xFFCBD5E1) else Color(0xFF475569)
 
@@ -264,7 +643,6 @@ fun PosTerminalTab(
                         .border(1.dp, pillBorder, RoundedCornerShape(50)),
                     contentAlignment = Alignment.Center
                 ) {
-                    // Crisp inner white handle bar (matching Screenshot 2)
                     Box(
                         modifier = Modifier
                             .width(24.dp)
@@ -276,7 +654,7 @@ fun PosTerminalTab(
             }
         }
 
-        // 3. Expanded Top AppBar — Remains open unless the active workspace screen is clicked or `< Hub` Exit is clicked
+        // 3. Expanded Top AppBar — Remains open unless the active workspace screen is clicked or Exit is clicked
         AnimatedVisibility(
             visible = isAppBarExpanded,
             enter = fadeIn() + expandVertically(),
@@ -289,18 +667,18 @@ fun PosTerminalTab(
                 tonalElevation = 0.dp,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable(enabled = false) { /* Consumes nothing; stays open while interacting with AppBar */ }
+                    .clickable(enabled = false) {}
                     .testTag("workspace_expanded_appbar")
             ) {
                 Column {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 10.dp, vertical = 8.dp),
+                            .padding(horizontal = 8.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        // Left: `< Hub` Exit Button (closes workspace and returns to 2-column Hub launcher)
+                        // Left: Back / `< Hub` Exit Button
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier
@@ -314,14 +692,15 @@ fun PosTerminalTab(
                                 .testTag("appbar_exit_hub_button")
                         ) {
                             Icon(
-                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                                contentDescription = "Exit to Hub",
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Return to Hub",
                                 tint = colorScheme.primary,
                                 modifier = Modifier.size(22.dp)
                             )
+                            Spacer(Modifier.width(4.dp))
                             Text(
                                 text = "Hub",
-                                fontSize = 15.sp,
+                                fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = colorScheme.primary
                             )
@@ -329,108 +708,107 @@ fun PosTerminalTab(
 
                         Spacer(Modifier.width(6.dp))
 
-                        // Center: Tenant Icon + Title + Tunnel & Cached Schema Version Subtitle
-                        // (Does NOT close the AppBar when clicked — AppBar remains open until workspace screen or Exit is clicked)
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
+                        // Center: Tenant Name + Subtitle (Built-in Demo or Public Tunnel + Cached Schema Version)
+                        Column(
                             modifier = Modifier
                                 .weight(1f)
-                                .padding(horizontal = 4.dp, vertical = 2.dp)
+                                .padding(horizontal = 4.dp)
                         ) {
-                            Surface(
-                                color = colorScheme.tertiary.copy(alpha = 0.15f),
-                                shape = RoundedCornerShape(8.dp),
-                                border = BorderStroke(1.dp, colorScheme.tertiary.copy(alpha = 0.4f))
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.ElectricBolt,
-                                    contentDescription = null,
-                                    tint = colorScheme.tertiary,
-                                    modifier = Modifier.padding(5.dp).size(16.dp)
-                                )
-                            }
-                            Spacer(Modifier.width(8.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = uiState.activeWorkspace.displayName,
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = colorScheme.onSurface,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        imageVector = Icons.Default.Public,
-                                        contentDescription = null,
-                                        tint = colorScheme.primary,
-                                        modifier = Modifier.size(12.dp)
-                                    )
-                                    Spacer(Modifier.width(4.dp))
-                                    Text(
-                                        text = "${uiState.activeWorkspace.mode.name} Tunnel • Schema $activeSchemaTag (${uiState.schemaVersions.size} cached)",
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = colorScheme.primary,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                }
-                            }
+                            Text(
+                                text = spec.displayName,
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = colorScheme.onSurface,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Text(
+                                text = if (spec.isBuiltInDemo) "⚡ Built-in Demo • $activeSchemaTag"
+                                else "🌍 Public Tunnel • $activeSchemaTag",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = colorScheme.primary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
                         }
 
-                        Spacer(Modifier.width(6.dp))
-
-                        // Right: Outlined Refresh Button + Outlined 3-Dot Menu Button with Status Dot
+                        // Right Actions (Screenshots 7 & 11): QR Scanner, Refresh, Notification Bell with Red Dot, 3-Dot Menu
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(2.dp)
                         ) {
-                            // Refresh Button (`↻`) — reloads cached active schema & re-runs SQLite queries
-                            Box(
-                                modifier = Modifier
-                                    .size(38.dp)
-                                    .clip(RoundedCornerShape(10.dp))
-                                    .border(1.dp, colorScheme.outline, RoundedCornerShape(10.dp))
-                                    .clickable {
-                                        viewModel.reseedActiveWorkspace()
-                                    }
-                                    .testTag("appbar_refresh_button"),
-                                contentAlignment = Alignment.Center
+                            // QR Scanner Button
+                            IconButton(
+                                onClick = {
+                                    viewModel.dispatchDivKitAction(
+                                        "hardware://scanner?cmd=scan",
+                                        null
+                                    )
+                                },
+                                modifier = Modifier.size(38.dp).testTag("appbar_qr_button")
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.Refresh,
-                                    contentDescription = "Refresh Cached Workspace Schema",
+                                    imageVector = Icons.Default.QrCodeScanner,
+                                    contentDescription = "Scan Barcode / QR",
                                     tint = colorScheme.onSurface,
                                     modifier = Modifier.size(20.dp)
                                 )
                             }
 
-                            // 3-Dot Menu Button (`⋮`) with status indicator dot
+                            // Refresh Page Button (`↻`)
+                            IconButton(
+                                onClick = { viewModel.reseedActiveWorkspace() },
+                                modifier = Modifier.size(38.dp).testTag("appbar_refresh_button")
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Refresh,
+                                    contentDescription = "Refresh Page",
+                                    tint = colorScheme.onSurface,
+                                    modifier = Modifier.size(21.dp)
+                                )
+                            }
+
+                            // Notification Bell Icon with Red Dot Badge
                             Box {
+                                IconButton(
+                                    onClick = {
+                                        Toast.makeText(
+                                            context,
+                                            "${spec.unreadCount} kitchen/POS alerts logged for ${spec.displayName}",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    },
+                                    modifier = Modifier.size(38.dp).testTag("appbar_notifications_button")
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Notifications,
+                                        contentDescription = "Workspace Alerts",
+                                        tint = colorScheme.onSurface,
+                                        modifier = Modifier.size(21.dp)
+                                    )
+                                }
                                 Box(
                                     modifier = Modifier
-                                        .size(38.dp)
-                                        .clip(RoundedCornerShape(10.dp))
-                                        .border(1.dp, colorScheme.outline, RoundedCornerShape(10.dp))
-                                        .clickable { showOverflowMenu = true }
-                                        .testTag("appbar_more_menu_button"),
-                                    contentAlignment = Alignment.Center
+                                        .align(Alignment.TopEnd)
+                                        .padding(top = 6.dp, end = 6.dp)
+                                        .size(8.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(0xFFEF4444))
+                                )
+                            }
+
+                            // 3-Dot Overflow Menu (`⋮`) (Matching Screenshot 7 + Schema Rollback & Builder)
+                            Box {
+                                IconButton(
+                                    onClick = { showOverflowMenu = true },
+                                    modifier = Modifier.size(38.dp).testTag("appbar_more_menu_button")
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.MoreVert,
                                         contentDescription = "Workspace Options",
                                         tint = colorScheme.onSurface,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                    // Red status dot in top-right corner of the 3-dot button (matching Screenshot 3)
-                                    Box(
-                                        modifier = Modifier
-                                            .align(Alignment.TopEnd)
-                                            .padding(top = 6.dp, end = 6.dp)
-                                            .size(6.dp)
-                                            .clip(CircleShape)
-                                            .background(Color(0xFFEF4444))
+                                        modifier = Modifier.size(21.dp)
                                     )
                                 }
 
@@ -439,10 +817,35 @@ fun PosTerminalTab(
                                     onDismissRequest = { showOverflowMenu = false }
                                 ) {
                                     DropdownMenuItem(
+                                        text = { Text("Refresh Page", fontWeight = FontWeight.Medium) },
+                                        leadingIcon = { Icon(Icons.Default.Refresh, contentDescription = null) },
+                                        onClick = {
+                                            showOverflowMenu = false
+                                            viewModel.reseedActiveWorkspace()
+                                        }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Workspace Settings", fontWeight = FontWeight.Medium) },
+                                        leadingIcon = { Icon(Icons.Default.Tune, contentDescription = null) },
+                                        onClick = {
+                                            showOverflowMenu = false
+                                            activeOverlay = ActiveHostOverlay.WORKSPACE_SETTINGS
+                                        }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Clear Offline Cache", fontWeight = FontWeight.Medium) },
+                                        leadingIcon = { Icon(Icons.Default.CleaningServices, contentDescription = null) },
+                                        onClick = {
+                                            showOverflowMenu = false
+                                            viewModel.clearActiveWorkspace()
+                                        }
+                                    )
+                                    HorizontalDivider()
+                                    DropdownMenuItem(
                                         text = {
                                             Text(
                                                 "Schema Cache & Rollback ($activeSchemaTag)",
-                                                fontWeight = FontWeight.Bold
+                                                fontWeight = FontWeight.SemiBold
                                             )
                                         },
                                         leadingIcon = { Icon(Icons.Default.History, contentDescription = null) },
@@ -452,7 +855,7 @@ fun PosTerminalTab(
                                         }
                                     )
                                     DropdownMenuItem(
-                                        text = { Text("Receive / Build New SDUI Schema", fontWeight = FontWeight.SemiBold) },
+                                        text = { Text("On-the-Fly SDUI Builder") },
                                         leadingIcon = { Icon(Icons.Default.DynamicForm, contentDescription = null) },
                                         onClick = {
                                             showOverflowMenu = false
@@ -478,12 +881,11 @@ fun PosTerminalTab(
                                     )
                                     HorizontalDivider()
                                     DropdownMenuItem(
-                                        text = { Text("Exit to Tenant Hub", color = MaterialTheme.colorScheme.error) },
+                                        text = { Text("Return to Hub", fontWeight = FontWeight.SemiBold) },
                                         leadingIcon = {
                                             Icon(
-                                                Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                                                contentDescription = null,
-                                                tint = MaterialTheme.colorScheme.error
+                                                Icons.AutoMirrored.Filled.ArrowBack,
+                                                contentDescription = null
                                             )
                                         },
                                         onClick = {
@@ -502,8 +904,20 @@ fun PosTerminalTab(
         }
     }
 
-    // Host Engine Overlay Modal Sheets (launched from the 3-dot menu or footer rollback button)
-    if (activeOverlay != ActiveHostOverlay.NONE) {
+    // Per-Tenant Workspace Settings Bottom Sheet (8 Native Bridge Tools & Hardware Permissions)
+    if (activeOverlay == ActiveHostOverlay.WORKSPACE_SETTINGS) {
+        WorkspaceSettingsBottomSheet(
+            spec = spec,
+            initialPermissions = permissions,
+            onSave = { updated ->
+                viewModel.saveWorkspaceToolPermissions(spec.tenantId, updated)
+            },
+            onDismiss = { activeOverlay = ActiveHostOverlay.NONE }
+        )
+    }
+
+    // Other Host Engine Overlay Modal Sheets (Schema Rollback, SDUI Builder, SQLite & Sync, Security & KMP)
+    if (activeOverlay != ActiveHostOverlay.NONE && activeOverlay != ActiveHostOverlay.WORKSPACE_SETTINGS) {
         ModalBottomSheet(
             onDismissRequest = { activeOverlay = ActiveHostOverlay.NONE },
             containerColor = colorScheme.background,
@@ -520,14 +934,14 @@ fun PosTerminalTab(
                     Text(
                         text = when (activeOverlay) {
                             ActiveHostOverlay.SCHEMA_ROLLBACK ->
-                                "Cached DivKit Schemas & Version Rollback (${uiState.activeWorkspace.tenantId})"
+                                "Cached DivKit Schemas & Version Rollback (${spec.tenantId})"
                             ActiveHostOverlay.SDUI_BUILDER ->
                                 "Receive / Build New DivKit SDUI Schema"
                             ActiveHostOverlay.DB_AND_SYNC ->
-                                "Workspace SQLite & Sync (${uiState.activeWorkspace.tenantId})"
+                                "Workspace SQLite & Sync (${spec.tenantId})"
                             ActiveHostOverlay.SECURITY_KMP ->
                                 "Zero-Trust Security & KMP Architecture"
-                            ActiveHostOverlay.NONE -> ""
+                            else -> ""
                         },
                         fontWeight = FontWeight.Bold,
                         fontSize = 15.sp,
@@ -563,11 +977,167 @@ fun PosTerminalTab(
                         uiState = uiState,
                         viewModel = viewModel
                     )
-                    ActiveHostOverlay.NONE -> Unit
+                    else -> Unit
                 }
             }
         }
     }
+}
+
+@Composable
+private fun RoutePresetButton(
+    title: String,
+    queries: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val colorScheme = MaterialTheme.colorScheme
+    Surface(
+        color = colorScheme.background,
+        shape = RoundedCornerShape(12.dp),
+        border = BorderStroke(1.dp, colorScheme.outline),
+        modifier = modifier
+            .defaultMinSize(minHeight = 68.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+    ) {
+        Column(
+            modifier = Modifier.padding(10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = title,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = colorScheme.onSurface,
+                textAlign = TextAlign.Center
+            )
+            Spacer(Modifier.height(2.dp))
+            Text(
+                text = "?$queries",
+                fontSize = 10.sp,
+                fontFamily = FontFamily.Monospace,
+                color = colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+@Composable
+private fun HardwareTestButton(
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val colorScheme = MaterialTheme.colorScheme
+    Surface(
+        color = colorScheme.background,
+        shape = RoundedCornerShape(12.dp),
+        border = BorderStroke(1.dp, colorScheme.outline),
+        modifier = modifier
+            .defaultMinSize(minHeight = 62.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+    ) {
+        Column(
+            modifier = Modifier.padding(8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = title,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = colorScheme.onSurface,
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = subtitle,
+                fontSize = 10.sp,
+                fontFamily = FontFamily.Monospace,
+                color = colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+private fun playPosTone(
+    context: Context,
+    enabled: Boolean,
+    toneType: Int,
+    label: String,
+    onBlocked: () -> Unit
+) {
+    if (!enabled) {
+        EngineStateBridge.pushUpdate(
+            "user.last_hardware_event",
+            DivVariableValue.Str("DENIED: Enable 'Hardware Beeper Audio' in Workspace Settings")
+        )
+        Toast.makeText(
+            context,
+            "Hardware Beeper Audio is OFF. Enable it in Workspace Settings.",
+            Toast.LENGTH_SHORT
+        ).show()
+        onBlocked()
+        return
+    }
+    try {
+        val toneGen = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 85)
+        toneGen.startTone(toneType, 180)
+    } catch (_: Exception) {
+    }
+    EngineStateBridge.pushUpdate(
+        "user.last_hardware_event",
+        DivVariableValue.Str("TONEGENERATOR OK: Played $label")
+    )
+}
+
+private fun triggerPosHaptic(
+    context: Context,
+    enabled: Boolean,
+    durationMs: Long,
+    label: String,
+    onBlocked: () -> Unit
+) {
+    if (!enabled) {
+        EngineStateBridge.pushUpdate(
+            "user.last_hardware_event",
+            DivVariableValue.Str("DENIED: Enable 'Haptic Vibration' in Workspace Settings")
+        )
+        Toast.makeText(
+            context,
+            "Haptic Vibration is OFF. Enable it in Workspace Settings.",
+            Toast.LENGTH_SHORT
+        ).show()
+        onBlocked()
+        return
+    }
+    try {
+        val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val vm = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager
+            vm?.defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            vibrator?.vibrate(VibrationEffect.createOneShot(durationMs, VibrationEffect.DEFAULT_AMPLITUDE))
+        } else {
+            @Suppress("DEPRECATION")
+            vibrator?.vibrate(durationMs)
+        }
+    } catch (_: Exception) {
+    }
+    EngineStateBridge.pushUpdate(
+        "user.last_hardware_event",
+        DivVariableValue.Str("VIBRATORMANAGER OK: Triggered $label")
+    )
 }
 
 /**

@@ -5,24 +5,29 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.enginehost.EngineThemeMode
 import com.example.enginehost.SduiEngineViewModel
+import com.example.ui.AppSettingsBottomSheet
 import com.example.ui.DatabaseAndSyncTab
 import com.example.ui.PosTerminalTab
 import com.example.ui.SecurityAndKmpTab
@@ -34,10 +39,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            // Defaults to system theme (Light or Dark)
-            MyApplicationTheme {
-                SduiPosEngineApp()
-            }
+            SduiPosEngineRoot()
         }
     }
 }
@@ -48,9 +50,8 @@ private enum class LauncherSection {
     SECURITY_KMP
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SduiPosEngineApp() {
+fun SduiPosEngineRoot() {
     val context = LocalContext.current
     val viewModel: SduiEngineViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
@@ -60,9 +61,27 @@ fun SduiPosEngineApp() {
             }
         }
     )
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
+    // Engine theme defaults to System (EngineThemeMode.SYSTEM), and can be switched in App Settings
+    val isDark = when (uiState.themeMode) {
+        EngineThemeMode.SYSTEM -> isSystemInDarkTheme()
+        EngineThemeMode.LIGHT -> false
+        EngineThemeMode.DARK -> true
+    }
+
+    MyApplicationTheme(darkTheme = isDark) {
+        SduiPosEngineApp(viewModel = viewModel)
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SduiPosEngineApp(viewModel: SduiEngineViewModel) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var launcherSection by remember { mutableStateOf(LauncherSection.TENANT_GRID) }
+    var showAppSettingsSheet by remember { mutableStateOf(false) }
+    var showConnectWorkspaceSheet by remember { mutableStateOf(false) }
     val colorScheme = MaterialTheme.colorScheme
 
     // Handle system Back button inside opened tenant workspace or secondary launcher sections
@@ -87,38 +106,81 @@ fun SduiPosEngineApp() {
             if (!uiState.isWorkspaceOpen) {
                 TopAppBar(
                     title = {
-                        Column {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = "DivKit SDUI Hub",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 18.sp,
-                                    color = colorScheme.onSurface
-                                )
-                                Spacer(Modifier.width(8.dp))
-                                Surface(
-                                    color = colorScheme.primary.copy(alpha = 0.15f),
-                                    shape = MaterialTheme.shapes.small
-                                ) {
-                                    Text(
-                                        text = "${uiState.workspaces.size} tenants",
-                                        fontSize = 11.sp,
-                                        fontFamily = FontFamily.Monospace,
-                                        fontWeight = FontWeight.Bold,
-                                        color = colorScheme.primary,
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Surface(
+                                color = colorScheme.primary,
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.size(42.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = Icons.Default.Terminal,
+                                        contentDescription = "Engine Logo",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(24.dp)
                                     )
                                 }
                             }
-                            uiState.statusBannerMessage?.let { msg ->
+                            Column {
                                 Text(
-                                    text = msg,
-                                    fontSize = 11.sp,
-                                    fontFamily = FontFamily.Monospace,
+                                    text = "DivKit SDUI POS",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 18.sp,
+                                    color = colorScheme.onSurface,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    text = uiState.statusBannerMessage
+                                        ?: "Enterprise Workspaces & POS Terminals",
+                                    fontSize = 12.sp,
                                     color = colorScheme.onSurfaceVariant,
-                                    maxLines = 1
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                             }
+                        }
+                    },
+                    actions = {
+                        // 1. Grid / List View Toggle (Defaults to 2-column Grid View)
+                        IconButton(
+                            onClick = { viewModel.toggleLauncherLayoutMode() },
+                            modifier = Modifier.testTag("top_bar_toggle_grid_list_button")
+                        ) {
+                            Icon(
+                                imageVector = if (uiState.isGridView) Icons.Default.ViewList
+                                else Icons.Default.GridView,
+                                contentDescription = if (uiState.isGridView) "Switch to List View"
+                                else "Switch to 2-Column Grid View",
+                                tint = colorScheme.onSurface
+                            )
+                        }
+
+                        // 2. QR Code Pairing / Connect Workspace Button
+                        IconButton(
+                            onClick = { showConnectWorkspaceSheet = true },
+                            modifier = Modifier.testTag("top_bar_qr_pair_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.QrCodeScanner,
+                                contentDescription = "Scan Desktop Pairing QR Code",
+                                tint = colorScheme.onSurface
+                            )
+                        }
+
+                        // 3. App / Engine Settings Gear Button (Opens App Settings with Theme Switching defaulting to System)
+                        IconButton(
+                            onClick = { showAppSettingsSheet = true },
+                            modifier = Modifier.testTag("top_bar_app_settings_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Settings,
+                                contentDescription = "Engine & App Settings",
+                                tint = colorScheme.onSurface
+                            )
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
@@ -128,8 +190,6 @@ fun SduiPosEngineApp() {
             }
         },
         bottomBar = {
-            // Only show the host NavigationBar on the Home Launcher!
-            // Opened tenant workspaces run full-screen like a self-contained app.
             if (!uiState.isWorkspaceOpen) {
                 NavigationBar(
                     containerColor = colorScheme.surface,
@@ -169,7 +229,6 @@ fun SduiPosEngineApp() {
                 .padding(innerPadding)
         ) {
             if (uiState.isWorkspaceOpen) {
-                // Full-screen self-contained tenant workspace with top-center Standout Pill -> `< Hub` AppBar
                 PosTerminalTab(
                     uiState = uiState,
                     viewModel = viewModel,
@@ -179,7 +238,9 @@ fun SduiPosEngineApp() {
                 when (launcherSection) {
                     LauncherSection.TENANT_GRID -> TenantLauncherScreen(
                         uiState = uiState,
-                        viewModel = viewModel
+                        viewModel = viewModel,
+                        showConnectWorkspaceSheet = showConnectWorkspaceSheet,
+                        onShowConnectWorkspaceSheetChange = { showConnectWorkspaceSheet = it }
                     )
                     LauncherSection.DB_INSPECTOR -> DatabaseAndSyncTab(
                         uiState = uiState,
@@ -192,5 +253,14 @@ fun SduiPosEngineApp() {
                 }
             }
         }
+    }
+
+    // Engine / App Settings Bottom Sheet (with Theme Switching defaulting to System)
+    if (showAppSettingsSheet) {
+        AppSettingsBottomSheet(
+            uiState = uiState,
+            viewModel = viewModel,
+            onDismiss = { showAppSettingsSheet = false }
+        )
     }
 }
