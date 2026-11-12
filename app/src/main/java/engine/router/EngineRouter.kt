@@ -191,6 +191,10 @@ class EngineRouter(
                 requireVar(v)
                 EngineStateBridge.pushUpdate(v, toDivValue(result.value))
             }
+            is OpResult.SchemaImported -> output?.get("collections")?.jsonPrimitive?.contentOrNull?.let { v ->
+                requireVar(v)
+                EngineStateBridge.pushUpdate(v, DivVariableValue.IntVal(result.collectionsCount.toLong()))
+            }
             OpResult.Empty -> Unit
         }
     }

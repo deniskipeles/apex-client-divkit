@@ -49,18 +49,17 @@ class LibSignalTool : ToolHandler {
                 }
 
                 "create_session", "establish_session" -> {
-                    val hasSession = LibSignalEngine.hasSession(tenantId, peerId, deviceId)
-                    if (!hasSession) {
-                        val bundle = LibSignalEngine.exportBundle(tenantId)
-                        LibSignalEngine.processPreKeyBundle(tenantId, peerId, deviceId, bundle)
-                    }
-                    val safetyNumber = LibSignalEngine.getSafetyNumber(tenantId, peerId, deviceId)
+                    // createOrGetSession seeds the local ratchet from the peer's
+                    // advertised PreKeyBundle on first use and is idempotent.
+                    val session = LibSignalEngine.createOrGetSession(tenantId, peerId, deviceId)
                     ToolResult.Success(
                         mapOf(
                             "status" to "ESTABLISHED",
+                            "session_id" to session.sessionId,
                             "peer_id" to peerId,
                             "device_id" to deviceId,
-                            "safety_number" to safetyNumber,
+                            "safety_number" to session.fingerprint,
+                            "fingerprint" to session.fingerprint,
                             "cipher" to "DoubleRatchet + X3DH + Curve25519"
                         )
                     )

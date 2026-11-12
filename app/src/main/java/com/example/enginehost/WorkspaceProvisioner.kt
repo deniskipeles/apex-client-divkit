@@ -230,8 +230,9 @@ object WorkspaceProvisioner {
     }
 
     /**
-     * Ensures tenant-specific SQLite tables (`<ws>_orders` and `<ws>_inventory`) exist
-     * inside `workspace_<ws>.db` so `EngineRegistry`'s `PRAGMA table_info` check succeeds.
+     * Registers the tenant's `orders` and `inventory` collections in the ApexKit
+     * schema and seeds them through `EngineRegistry`, so `db.count`/`db.insert`/
+     * `db.query` resolve against the generic `collections`/`records` store.
      */
     fun ensureTenantSchemaAndSeed(
         db: WorkspaceDatabase,
@@ -239,39 +240,25 @@ object WorkspaceProvisioner {
         registry: EngineRegistry
     ) {
         val ws = spec.tenantId
-        val ordersTable = "${ws}_orders"
-        val inventoryTable = "${ws}_inventory"
+        val apexEngine = engine.db.ApexKitDatabaseEngine(db.driver)
 
-        db.driver.executeUpdate(
-            null,
-            """
-            CREATE TABLE IF NOT EXISTS $ordersTable (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                item_name TEXT NOT NULL,
-                sku TEXT NOT NULL,
-                price REAL NOT NULL,
-                qty INTEGER NOT NULL DEFAULT 1,
-                terminal_id TEXT NOT NULL,
-                status TEXT NOT NULL DEFAULT 'OPEN'
+        // Collections are INSERT OR REPLACE'd by import, which would cascade-delete
+        // existing records, so only import when the tenant schema is absent.
+        if (apexEngine.getCollection("orders") == null) {
+            registry.execute(
+                "db.import_schema",
+                db,
+                ws,
+                buildJsonObject {
+                    putJsonObject("schema") {
+                        putJsonArray("collections") {
+                            add(collectionJson(id = 1L, name = "orders", fields = ORDERS_FIELDS))
+                            add(collectionJson(id = 2L, name = "inventory", fields = INVENTORY_FIELDS))
+                        }
+                    }
+                }
             )
-            """.trimIndent(),
-            0
-        )
-
-        db.driver.executeUpdate(
-            null,
-            """
-            CREATE TABLE IF NOT EXISTS $inventoryTable (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                item_name TEXT NOT NULL,
-                sku TEXT UNIQUE NOT NULL,
-                price REAL NOT NULL,
-                stock INTEGER NOT NULL DEFAULT 0,
-                category TEXT NOT NULL
-            )
-            """.trimIndent(),
-            0
-        )
+        }
 
         // Check if inventory is empty; if so, seed via EngineRegistry
         val invCount = (registry.execute(
@@ -957,4 +944,29 @@ object WorkspaceProvisioner {
             }
         }
     }
+
+    private fun collectionJson(id: Long, name: String, fields: List<String>): JsonObject = buildJsonObject {
+        put("id", id)
+        put("name", name)
+        putJsonObject("schema") {
+            putJsonObject("fields") {
+                for (field in fields) {
+                    putJsonObject(field) {
+                        put("type", if (field == "price") "number" else "string")
+                        put("required", false)
+                        put("uid", "${name}_$field")
+                    }
+                }
+            }
+            putJsonObject("policies") {
+                put("read", "public")
+                put("create", "public")
+                put("update", "admin")
+                put("delete", "admin")
+            }
+        }
+    }
+
+    private val ORDERS_FIELDS = listOf("item_name", "sku", "price", "qty", "terminal_id", "status")
+    private val INVENTORY_FIELDS = listOf("item_name", "sku", "price", "stock", "category")
 }

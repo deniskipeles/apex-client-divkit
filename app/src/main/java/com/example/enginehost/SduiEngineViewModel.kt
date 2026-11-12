@@ -441,6 +441,33 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
         }
     }
 
+    /**
+     * Generic, unopinionated dispatcher for any native tool URL (e.g. "tools://beeper/tone").
+     * Callers supply only the tool URL and an optional payload; all tool semantics, default
+     * options, and hardware specifics live in the tool registry, never in the host UI.
+     */
+    fun dispatchTool(toolUrl: String, payloadJson: String? = null) {
+        val router = activeRouter ?: return
+        viewModelScope.launch {
+            val payloadObj = payloadJson?.let {
+                try {
+                    Json.parseToJsonElement(it).jsonObject
+                } catch (_: Exception) {
+                    null
+                }
+            }
+            val outcome = withContext(Dispatchers.IO) {
+                router.handle(toolUrl, payloadObj)
+            }
+            val banner = when (outcome) {
+                is EngineRouter.ActionOutcome.Handled -> "Tool executed: $toolUrl"
+                is EngineRouter.ActionOutcome.Error -> "Tool blocked ($toolUrl): ${outcome.message}"
+                is EngineRouter.ActionOutcome.Unhandled -> "Unhandled tool scheme: $toolUrl"
+            }
+            _uiState.update { it.copy(statusBannerMessage = banner) }
+        }
+    }
+
     private suspend fun handleHardwareCapability(
         spec: TenantWorkspaceSpec,
         capability: String,
@@ -510,10 +537,10 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                     )
                     return false
                 }
-                engine.tools.impl.PosTonePlayer.playTone(frequencyHz = 1200.0, durationMs = 180)
+                engine.tools.NativeToolsSuite.execute("tools://beeper/ring", kotlinx.serialization.json.JsonObject(emptyMap()))
                 EngineStateBridge.pushUpdate(
                     "user.last_hardware_event",
-                    DivVariableValue.Str("BEEPER AUDIO OK: Synthesized POS Ring 1200 Hz")
+                    DivVariableValue.Str("BEEPER OK: Tone emitted via tools://beeper")
                 )
                 true
             }

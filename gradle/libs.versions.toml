@@ -42,6 +42,7 @@ credentials = "1.5.0"
 googleid = "1.1.1"
 kotlinxSerializationJson = "1.8.0"
 workRuntimeKtx = "2.10.0"
+libsignal = "2.8.1"
 
 
 [libraries]
@@ -98,6 +99,7 @@ firebase-auth = { group = "com.google.firebase", name = "firebase-auth" }
 androidx-credentials = { group = "androidx.credentials", name = "credentials", version.ref = "credentials" }
 androidx-credentials-play-services = { group = "androidx.credentials", name = "credentials-play-services-auth", version.ref = "credentials" }
 googleid = { group = "com.google.android.libraries.identity.googleid", name = "googleid", version.ref = "googleid" }
+libsignal = { group = "org.whispersystems", name = "signal-protocol-android", version.ref = "libsignal" }
 
 
 [plugins]

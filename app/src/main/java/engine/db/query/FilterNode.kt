@@ -95,6 +95,7 @@ sealed class FilterNode {
                             FilterOp.LT -> "<"
                             FilterOp.LTE -> "<="
                             FilterOp.LIKE, FilterOp.CONTAINS -> "LIKE"
+                            FilterOp.IN, FilterOp.NIN -> "IN"
                         }
 
                         var finalVal = jsonToSqlVal(value)

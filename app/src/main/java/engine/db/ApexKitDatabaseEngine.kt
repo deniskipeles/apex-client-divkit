@@ -4,6 +4,7 @@ import app.cash.sqldelight.db.SqlDriver
 import engine.db.auth.Claims
 import engine.db.auth.PolicyEngine
 import engine.db.models.*
+import engine.db.models.Collection
 import kotlinx.serialization.json.*
 
 class ApexKitDatabaseEngine(private val driver: SqlDriver) {

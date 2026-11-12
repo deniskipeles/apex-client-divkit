@@ -59,8 +59,8 @@ object QueryEngine {
 
         // 2. Filter Predicate
         var whereSql = wherePrefix
-        if (query.r#where != null) {
-            val node = FilterNode.parse(query.r#where)
+        if (query.where != null) {
+            val node = FilterNode.parse(query.where)
             val filterSql = node.toSql(params)
             if (filterSql != null) {
                 whereSql += " AND ($filterSql)"

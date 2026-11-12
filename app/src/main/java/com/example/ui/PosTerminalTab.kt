@@ -1,15 +1,6 @@
 package com.example.ui
 
 import android.content.Context
-import android.media.AudioAttributes
-import android.media.AudioFormat
-import android.media.AudioManager
-import android.media.AudioTrack
-import android.media.ToneGenerator
-import android.os.Build
-import android.os.VibrationEffect
-import android.os.Vibrator
-import android.os.VibratorManager
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -56,10 +47,6 @@ import engine.state.DivVariableValue
 import engine.state.EngineStateBridge
 import engine.ui.EngineScreen
 import engine.ui.rememberDivKitDependencies
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlin.math.abs
 
 private enum class ActiveHostOverlay {
@@ -398,7 +385,8 @@ fun PosTerminalTab(
                 }
             }
 
-            // E. Hardware Audio & Haptics Tester (ToneGenerator / VibratorManager)
+            // E. Hardware capability tester — delegates to the generic tool registry
+            // (tools://beeper/*, tools://haptics/*); no host-side audio/vibration logic.
             Surface(
                 color = colorScheme.surface,
                 shape = RoundedCornerShape(16.dp),
@@ -415,13 +403,13 @@ fun PosTerminalTab(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "🔊 HARDWARE AUDIO & HAPTICS",
+                            text = "🔊 HARDWARE TOOLS",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             color = colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = "TONEGENERATOR / VIBRATORMANAGER",
+                            text = "tools://beeper • tools://haptics",
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
                             color = colorScheme.onSurfaceVariant
@@ -433,45 +421,42 @@ fun PosTerminalTab(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         HardwareTestButton(
-                            title = "🔔 POS Ring",
-                            subtitle = "1200 Hz",
+                            title = "🔔 Ring",
+                            subtitle = "beeper/ring",
                             onClick = {
-                                playPosTone(
+                                triggerBeeper(
                                     context = context,
                                     enabled = permissions.hardwareBeeperAudio,
-                                    toneType = ToneGenerator.TONE_PROP_BEEP,
-                                    frequencyHz = 1200.0,
-                                    label = "POS Ring (1200 Hz)",
+                                    operation = "ring",
+                                    dispatch = { viewModel.dispatchTool(it) },
                                     onBlocked = { activeOverlay = ActiveHostOverlay.WORKSPACE_SETTINGS }
                                 )
                             },
                             modifier = Modifier.weight(1f)
                         )
                         HardwareTestButton(
-                            title = "⚠️ Alert Beep",
-                            subtitle = "2400 Hz",
+                            title = "⚠️ Alert",
+                            subtitle = "beeper/alert",
                             onClick = {
-                                playPosTone(
+                                triggerBeeper(
                                     context = context,
                                     enabled = permissions.hardwareBeeperAudio,
-                                    toneType = ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD,
-                                    frequencyHz = 2400.0,
-                                    label = "Alert Beep (2400 Hz)",
+                                    operation = "alert",
+                                    dispatch = { viewModel.dispatchTool(it) },
                                     onBlocked = { activeOverlay = ActiveHostOverlay.WORKSPACE_SETTINGS }
                                 )
                             },
                             modifier = Modifier.weight(1f)
                         )
                         HardwareTestButton(
-                            title = "❌ Error Buzz",
-                            subtitle = "600 Hz",
+                            title = "❌ Error",
+                            subtitle = "beeper/error",
                             onClick = {
-                                playPosTone(
+                                triggerBeeper(
                                     context = context,
                                     enabled = permissions.hardwareBeeperAudio,
-                                    toneType = ToneGenerator.TONE_SUP_ERROR,
-                                    frequencyHz = 600.0,
-                                    label = "Error Buzz (600 Hz)",
+                                    operation = "error",
+                                    dispatch = { viewModel.dispatchTool(it) },
                                     onBlocked = { activeOverlay = ActiveHostOverlay.WORKSPACE_SETTINGS }
                                 )
                             },
@@ -484,14 +469,14 @@ fun PosTerminalTab(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         HardwareTestButton(
-                            title = "📳 Light",
-                            subtitle = "15ms Tick",
+                            title = "📳 Tick",
+                            subtitle = "haptics/tick",
                             onClick = {
-                                triggerPosHaptic(
+                                triggerHaptic(
                                     context = context,
                                     enabled = permissions.hapticVibration,
-                                    durationMs = 15L,
-                                    label = "Light Haptic (15ms)",
+                                    operation = "tick",
+                                    dispatch = { viewModel.dispatchTool(it) },
                                     onBlocked = { activeOverlay = ActiveHostOverlay.WORKSPACE_SETTINGS }
                                 )
                             },
@@ -499,13 +484,13 @@ fun PosTerminalTab(
                         )
                         HardwareTestButton(
                             title = "📳 Click",
-                            subtitle = "35ms Click",
+                            subtitle = "haptics/click",
                             onClick = {
-                                triggerPosHaptic(
+                                triggerHaptic(
                                     context = context,
                                     enabled = permissions.hapticVibration,
-                                    durationMs = 35L,
-                                    label = "Click Haptic (35ms)",
+                                    operation = "click",
+                                    dispatch = { viewModel.dispatchTool(it) },
                                     onBlocked = { activeOverlay = ActiveHostOverlay.WORKSPACE_SETTINGS }
                                 )
                             },
@@ -513,13 +498,13 @@ fun PosTerminalTab(
                         )
                         HardwareTestButton(
                             title = "📳 Heavy",
-                            subtitle = "80ms Heavy",
+                            subtitle = "haptics/heavy",
                             onClick = {
-                                triggerPosHaptic(
+                                triggerHaptic(
                                     context = context,
                                     enabled = permissions.hapticVibration,
-                                    durationMs = 80L,
-                                    label = "Heavy Haptic (80ms)",
+                                    operation = "heavy",
+                                    dispatch = { viewModel.dispatchTool(it) },
                                     onBlocked = { activeOverlay = ActiveHostOverlay.WORKSPACE_SETTINGS }
                                 )
                             },
@@ -1078,160 +1063,65 @@ private fun HardwareTestButton(
 }
 
 /**
- * Safe POS tone audio player that synthesizes pure sine waves via AudioTrack,
- * completely avoiding the Android legacy C++ ToneGenerator "Stop timed out"
- * race condition in emulators and unclocked audio streams.
+ * Generic hardware tool invoker for the SDUI host.
+ *
+ * The host never synthesizes audio, drives actuators, or hardcodes frequencies.
+ * It only forwards a tool URL to the engine's generic tool registry, which owns
+ * every hardware/audio semantic. This keeps the capability surface unopinionated
+ * and reusable by any DivKit action (including `tools://beeper/...` in JSON).
  */
-private object PosTonePlayer {
-    private val scope = CoroutineScope(Dispatchers.IO)
-    private var sharedToneGen: ToneGenerator? = null
-
-    fun playTone(
-        toneType: Int,
-        frequencyHz: Double,
-        durationMs: Int = 180,
-        volume: Float = 0.85f
-    ) {
-        scope.launch {
-            var played = false
-            try {
-                val sampleRate = 44100
-                val numSamples = (durationMs * sampleRate) / 1000
-                val pcm = ShortArray(numSamples)
-                val angularFreq = 2.0 * Math.PI * frequencyHz / sampleRate
-
-                val attackSamples = (sampleRate * 0.01).toInt().coerceAtMost(numSamples / 4)
-                val decaySamples = (sampleRate * 0.02).toInt().coerceAtMost(numSamples / 4)
-
-                for (i in 0 until numSamples) {
-                    val rawSine = Math.sin(angularFreq * i)
-                    val envelope = when {
-                        i < attackSamples -> i.toDouble() / attackSamples
-                        i > numSamples - decaySamples -> (numSamples - i).toDouble() / decaySamples
-                        else -> 1.0
-                    }
-                    pcm[i] = (rawSine * envelope * Short.MAX_VALUE * volume).toInt().toShort()
-                }
-
-                val track = AudioTrack.Builder()
-                    .setAudioAttributes(
-                        AudioAttributes.Builder()
-                            .setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
-                            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                            .build()
-                    )
-                    .setAudioFormat(
-                        AudioFormat.Builder()
-                            .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
-                            .setSampleRate(sampleRate)
-                            .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
-                            .build()
-                    )
-                    .setBufferSizeInBytes(pcm.size * 2)
-                    .setTransferMode(AudioTrack.MODE_STATIC)
-                    .build()
-
-                track.write(pcm, 0, pcm.size)
-                track.play()
-                played = true
-
-                delay(durationMs + 60L)
-                try {
-                    track.stop()
-                    track.release()
-                } catch (_: Exception) {}
-            } catch (_: Exception) {
-                played = false
-            }
-
-            // Fallback to shared persistent ToneGenerator if AudioTrack is unavailable
-            if (!played) {
-                try {
-                    synchronized(this) {
-                        if (sharedToneGen == null) {
-                            try {
-                                sharedToneGen = ToneGenerator(AudioManager.STREAM_MUSIC, 85)
-                            } catch (_: Exception) {
-                                sharedToneGen = ToneGenerator(AudioManager.STREAM_SYSTEM, 85)
-                            }
-                        }
-                        sharedToneGen?.startTone(toneType, durationMs)
-                    }
-                } catch (_: Exception) {}
-            }
-        }
-    }
-}
-
-private fun playPosTone(
+private fun invokeHardwareTool(
     context: Context,
     enabled: Boolean,
-    toneType: Int,
-    frequencyHz: Double = 1200.0,
-    label: String,
-    onBlocked: () -> Unit
+    toolUrl: String,
+    deniedEvent: String,
+    disabledMessage: String,
+    onBlocked: () -> Unit,
+    dispatch: (String) -> Unit
 ) {
     if (!enabled) {
         EngineStateBridge.pushUpdate(
             "user.last_hardware_event",
-            DivVariableValue.Str("DENIED: Enable 'Hardware Beeper Audio' in Workspace Settings")
+            DivVariableValue.Str("DENIED: $deniedEvent")
         )
-        Toast.makeText(
-            context,
-            "Hardware Beeper Audio is OFF. Enable it in Workspace Settings.",
-            Toast.LENGTH_SHORT
-        ).show()
+        Toast.makeText(context, disabledMessage, Toast.LENGTH_SHORT).show()
         onBlocked()
         return
     }
-    PosTonePlayer.playTone(toneType = toneType, frequencyHz = frequencyHz, durationMs = 180)
-    EngineStateBridge.pushUpdate(
-        "user.last_hardware_event",
-        DivVariableValue.Str("AUDIO OK: Played $label")
-    )
+    dispatch(toolUrl)
 }
 
-private fun triggerPosHaptic(
+private fun triggerBeeper(
     context: Context,
     enabled: Boolean,
-    durationMs: Long,
-    label: String,
+    operation: String,
+    dispatch: (String) -> Unit,
     onBlocked: () -> Unit
-) {
-    if (!enabled) {
-        EngineStateBridge.pushUpdate(
-            "user.last_hardware_event",
-            DivVariableValue.Str("DENIED: Enable 'Haptic Vibration' in Workspace Settings")
-        )
-        Toast.makeText(
-            context,
-            "Haptic Vibration is OFF. Enable it in Workspace Settings.",
-            Toast.LENGTH_SHORT
-        ).show()
-        onBlocked()
-        return
-    }
-    try {
-        val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val vm = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager
-            vm?.defaultVibrator
-        } else {
-            @Suppress("DEPRECATION")
-            context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            vibrator?.vibrate(VibrationEffect.createOneShot(durationMs, VibrationEffect.DEFAULT_AMPLITUDE))
-        } else {
-            @Suppress("DEPRECATION")
-            vibrator?.vibrate(durationMs)
-        }
-    } catch (_: Exception) {
-    }
-    EngineStateBridge.pushUpdate(
-        "user.last_hardware_event",
-        DivVariableValue.Str("VIBRATORMANAGER OK: Triggered $label")
-    )
-}
+) = invokeHardwareTool(
+    context = context,
+    enabled = enabled,
+    toolUrl = "tools://beeper/$operation",
+    deniedEvent = "Enable 'Hardware Beeper Audio' in Workspace Settings",
+    disabledMessage = "Hardware Beeper Audio is OFF. Enable it in Workspace Settings.",
+    onBlocked = onBlocked,
+    dispatch = dispatch
+)
+
+private fun triggerHaptic(
+    context: Context,
+    enabled: Boolean,
+    operation: String,
+    dispatch: (String) -> Unit,
+    onBlocked: () -> Unit
+) = invokeHardwareTool(
+    context = context,
+    enabled = enabled,
+    toolUrl = "tools://haptics/$operation",
+    deniedEvent = "Enable 'Haptic Vibration' in Workspace Settings",
+    disabledMessage = "Haptic Vibration is OFF. Enable it in Workspace Settings.",
+    onBlocked = onBlocked,
+    dispatch = dispatch
+)
 
 /**
  * Displays all cached DivKit JSON schema versions stored in `sdui_schema_versions`

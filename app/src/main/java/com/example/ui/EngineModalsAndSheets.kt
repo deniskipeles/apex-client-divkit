@@ -659,7 +659,7 @@ fun WorkspaceSettingsBottomSheet(
             PermissionToggleRow(
                 icon = Icons.Default.VolumeUp,
                 title = "Hardware Beeper Audio",
-                description = "Allow webapp to play POS ring, alert, and error ToneGenerator frequencies",
+                description = "Allow webapp to emit audio tones via the tools://beeper capability",
                 checked = perms.hardwareBeeperAudio,
                 onCheckedChange = { perms = perms.copy(hardwareBeeperAudio = it) },
                 testTag = "perm_toggle_beeper"

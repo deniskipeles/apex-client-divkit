@@ -75,22 +75,27 @@ class RemoveBackgroundTool : ToolHandler {
     }
 }
 
-class IdentifyProductTool : ToolHandler {
+class ProductClassifierTool : ToolHandler {
     override val capability = "vision.identify_product@1"
-    override val requiredPermissions = setOf("android.permission.CAMERA")
 
     override suspend fun invoke(args: ToolArgs, ctx: ToolContext): ToolResult {
-        val imageId = args["image"] ?: args["image_id"] ?: "img_snapshot"
-        return ToolResult.Success(
-            mapOf(
-                "state" to "exact",
-                "image_id" to imageId,
-                "product_id" to "ACM-101",
-                "product_name" to "Wagyu Smash Burger",
-                "source" to "visual",
-                "confidence" to 0.94
-            )
+        val imageId = args["image"] ?: args["image_id"] ?: "img_snapshot_live"
+        val payload = buildJsonObject {
+            put("image_id", imageId)
+            args["top_k"]?.let { put("top_k", it) }
+            args["min_confidence"]?.let { put("min_confidence", it) }
+        }
+
+        val outcome = engine.tools.NativeToolsSuite.execute(
+            url = "tools://MobileNetV4-small/classify",
+            payload = payload,
+            tenantId = ctx.workspaceId
         )
+
+        val resultMap = outcome.resultData.jsonObject.mapValues { (_, v) ->
+            v.jsonPrimitive.contentOrNull ?: v.toString()
+        }
+        return ToolResult.Success(mapOf("state" to "ok", "image_id" to imageId) + resultMap)
     }
 }
 

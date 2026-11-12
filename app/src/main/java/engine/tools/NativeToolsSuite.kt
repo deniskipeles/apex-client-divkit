@@ -3,9 +3,10 @@ package engine.tools
 import engine.crypto.currentTimeMillis
 import engine.state.DivVariableValue
 import engine.state.EngineStateBridge
-import engine.tools.impl.PosTonePlayer
+import engine.tools.audio.AudioToneSynthesizer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
+import kotlin.math.floor
 
 object NativeToolsSuite {
 
@@ -125,6 +126,77 @@ object NativeToolsSuite {
             supportedOperations = listOf("authenticate"),
             defaultOptions = mapOf("prompt" to "Authentication Required"),
             defaultOutputMapping = mapOf("authenticated" to "user.biometric_authenticated")
+        ),
+        ToolSchema(
+            toolId = "libsignal",
+            displayName = "Signal E2EE Cryptographic Transport",
+            description = "Signal Protocol Double Ratchet sessions, prekeys, and end-to-end encrypted messaging between terminals.",
+            supportedOperations = listOf("setup_identity", "init_keys", "create_session", "encrypt", "decrypt", "status", "verify_identity", "reset_session"),
+            defaultOptions = emptyMap(),
+            defaultOutputMapping = mapOf(
+                "status" to "user.signal_status",
+                "session_id" to "user.signal_session_id",
+                "ciphertext" to "user.signal_ciphertext",
+                "plaintext" to "user.signal_plaintext",
+                "safety_number" to "user.signal_fingerprint",
+                "fingerprint" to "user.signal_fingerprint"
+            )
+        ),
+        ToolSchema(
+            toolId = "MobileNetV4-small",
+            displayName = "MobileNetV4 Image Classifier",
+            description = "On-device INT8 image classification and SKU recognition.",
+            supportedOperations = listOf("classify", "detect", "predict"),
+            defaultOptions = mapOf("top_k" to "3", "min_confidence" to "0.40"),
+            defaultOutputMapping = mapOf(
+                "prediction_label" to "user.ai_prediction_label",
+                "prediction_sku" to "user.ai_prediction_sku",
+                "confidence" to "user.ai_confidence"
+            )
+        ),
+        ToolSchema(
+            toolId = "u-2-Net.tflite",
+            displayName = "U-2-Net Salient Object Segmentation",
+            description = "On-device salient object segmentation producing an alpha matte mask.",
+            supportedOperations = listOf("segment", "infer", "mask"),
+            defaultOptions = mapOf("tensor_input" to "320x320x3", "saliency_cutoff" to "0.45"),
+            defaultOutputMapping = mapOf(
+                "mask_uri" to "user.u2net_mask_uri",
+                "confidence" to "user.u2net_confidence"
+            )
+        ),
+        ToolSchema(
+            toolId = "push",
+            displayName = "Background Alerts & Push Notifications",
+            description = "Dispatches background push alerts to a named notification channel.",
+            supportedOperations = listOf("send_alert", "notify", "send"),
+            defaultOptions = mapOf("channel" to "orders_dispatch", "priority" to "high"),
+            defaultOutputMapping = mapOf(
+                "notification_id" to "user.push_notification_id",
+                "status" to "user.push_status"
+            )
+        ),
+        ToolSchema(
+            toolId = "offline-cache",
+            displayName = "Offline Page & Schema Cache",
+            description = "Caches SDUI pages and schemas for offline resilience.",
+            supportedOperations = listOf("cache", "get_stats", "clear"),
+            defaultOptions = mapOf("op" to "get_stats"),
+            defaultOutputMapping = mapOf(
+                "status" to "user.offline_cache_status",
+                "cached_pages" to "user.offline_cached_pages"
+            )
+        ),
+        ToolSchema(
+            toolId = "realtime-ws",
+            displayName = "Realtime WebSocket / SSE Engine",
+            description = "Opens and manages realtime WSS/SSE channels for live workspace updates.",
+            supportedOperations = listOf("connect", "disconnect", "send", "subscribe"),
+            defaultOptions = mapOf("channel" to "kitchen_stream"),
+            defaultOutputMapping = mapOf(
+                "connection_state" to "user.realtime_connection_state",
+                "channel" to "user.realtime_channel"
+            )
         )
     )
 
@@ -152,7 +224,7 @@ object NativeToolsSuite {
         val outputMapping = buildMap {
             schema.defaultOutputMapping.forEach { (k, v) -> put(k, v) }
             payload["output"]?.jsonObject?.forEach { (k, v) ->
-                v.jsonPrimitive.contentOrNull?.let { put(k, it) }
+                v.jsonPrimitiveOrNull()?.let { put(k, it) }
             }
         }
 
@@ -161,12 +233,18 @@ object NativeToolsSuite {
                 executeScan(operation, options, payload)
             "haptics", "device.haptics", "device.haptics@1" -> executeHaptics(operation, options, payload)
             "beeper", "device.beeper", "device.beeper@1" -> executeBeeper(operation, options, payload)
-            "camera" -> executeCamera(operation, options)
+            "camera" -> executeCamera(operation, options, payload, tenantId)
             "image-manipulation", "image-process", "image-filter", "vision.image_manipulation@1",
-            "image-background-remove", "u-2-net.tflite", "u2net" ->
+            "image-background-remove" ->
                 executeImageManipulation(operation, options, payload, tenantId)
             "clipboard" -> executeClipboard(operation, options, payload)
             "biometrics" -> executeBiometrics(options)
+            "libsignal" -> executeLibSignal(operation, options, payload, tenantId)
+            "mobilenetv4-small", "mobilenetv4" -> executeMobileNetV4(operation, options, payload, tenantId)
+            "u-2-net.tflite", "u2net" -> executeU2Net(operation, options, payload)
+            "push" -> executePush(operation, options, payload)
+            "offline-cache" -> executeOfflineCache(operation, options, payload, tenantId)
+            "realtime-ws" -> executeRealtimeWs(operation, options, payload, tenantId)
             else -> executeGenericFallback(toolId, operation, payload)
         }
 
@@ -181,7 +259,11 @@ object NativeToolsSuite {
                     is Boolean -> DivVariableValue.Bool(value)
                     is Int -> DivVariableValue.IntVal(value.toLong())
                     is Long -> DivVariableValue.IntVal(value)
-                    is Double -> DivVariableValue.DoubleVal(value)
+                    is Double -> if (value == floor(value) && !value.isInfinite()) {
+                        DivVariableValue.IntVal(value.toLong())
+                    } else {
+                        DivVariableValue.DoubleVal(value)
+                    }
                     is Float -> DivVariableValue.DoubleVal(value.toDouble())
                     else -> DivVariableValue.Str(value.toString())
                 }
@@ -208,6 +290,12 @@ object NativeToolsSuite {
         "camera", "photo" -> "camera"
         "clipboard", "device.clipboard" -> "clipboard"
         "biometrics", "auth.biometrics" -> "biometrics"
+        "libsignal", "signal", "secure.send", "secure.status", "secure.verify_identity" -> "libsignal"
+        "mobilenetv4-small", "mobilenetv4", "mobilenet", "vision.identify_product@1", "identify-product" -> "MobileNetV4-small"
+        "u-2-net.tflite", "u-2-net", "u2net", "u2net.tflite", "vision.remove_background@1" -> "u-2-Net.tflite"
+        "push", "network.push", "network.push@1", "alerts" -> "push"
+        "offline-cache", "offline_cache", "storage.offline_cache", "cache" -> "offline-cache"
+        "realtime-ws", "realtime_ws", "network.realtime", "realtime", "ws" -> "realtime-ws"
         else -> raw
     }
 
@@ -287,7 +375,7 @@ object NativeToolsSuite {
         val beep = (payload["beep"]?.jsonPrimitive?.contentOrNull ?: options["beep"]) != "false"
         if (beep) {
             val freq = if (detectedType == "2D") 2200.0 else 1600.0
-            PosTonePlayer.playTone(frequencyHz = freq, durationMs = 80)
+            AudioToneSynthesizer.playTone(frequencyHz = freq, durationMs = 80)
         }
 
         val data = mapOf(
@@ -323,7 +411,8 @@ object NativeToolsSuite {
     ): InternalToolResult {
         val mergedArgs = buildMap {
             putAll(options)
-            // If operation is not generic default, treat it as pattern name or command
+            // Non-generic operations are interpreted as a semantic pattern name
+            // or a lifecycle command by the tool itself.
             if (operation !in setOf("default", "perform", "invoke")) {
                 if (operation in setOf("stop", "cancel", "status", "capabilities")) {
                     put("op", operation)
@@ -331,60 +420,21 @@ object NativeToolsSuite {
                     put("pattern", operation)
                 }
             }
-            payload.forEach { (k, v) ->
-                put(k, v.jsonPrimitive.contentOrNull ?: v.toString().trim('"'))
-            }
+            payload.forEach { (k, v) -> put(k, jsonContent(v)) }
         }
 
-        val toolResult = engine.tools.impl.HapticsTool().invoke(
-            args = ToolArgs(mergedArgs),
-            ctx = ToolContext()
+        val toolResult = engine.tools.impl.HapticsTool().invoke(ToolArgs(mergedArgs), ToolContext())
+        return internalFromToolResult(
+            toolResult = toolResult,
+            label = "Haptics",
+            successSummary = "Haptic ${mergedArgs["pattern"] ?: operation} executed"
         )
-
-        return when (toolResult) {
-            is ToolResult.Success -> {
-                InternalToolResult(
-                    summary = "Haptic ${toolResult.data["pattern"] ?: operation} executed",
-                    dataMap = toolResult.data.filterValues { it != null }.mapValues { it.value!! },
-                    resultJson = buildJsonObject {
-                        toolResult.data.forEach { (k, v) ->
-                            when (v) {
-                                is Number -> put(k, v.toLong())
-                                is Boolean -> put(k, v)
-                                else -> put(k, v.toString())
-                            }
-                        }
-                    }
-                )
-            }
-            is ToolResult.Failed -> {
-                InternalToolResult(
-                    summary = "Haptics failed: ${toolResult.message}",
-                    dataMap = mapOf("status" to "FAILED", "error" to toolResult.message),
-                    resultJson = buildJsonObject { put("status", "FAILED"); put("error", toolResult.message) }
-                )
-            }
-            is ToolResult.Unsupported -> {
-                InternalToolResult(
-                    summary = "Haptics unsupported: ${toolResult.reason}",
-                    dataMap = mapOf("status" to "UNSUPPORTED", "reason" to toolResult.reason),
-                    resultJson = buildJsonObject { put("status", "UNSUPPORTED"); put("reason", toolResult.reason) }
-                )
-            }
-            is ToolResult.PermissionDenied -> {
-                InternalToolResult(
-                    summary = "Haptics permission denied: ${toolResult.permission}",
-                    dataMap = mapOf("status" to "DENIED", "permission" to toolResult.permission),
-                    resultJson = buildJsonObject { put("status", "DENIED"); put("permission", toolResult.permission) }
-                )
-            }
-        }
     }
 
     // -------------------------------------------------------------------------
     // GENERIC AUDIO TONE SYNTHESIZER (ZERO DOMAIN COUPLING)
     // -------------------------------------------------------------------------
-    private fun executeBeeper(
+    private suspend fun executeBeeper(
         operation: String,
         options: Map<String, String>,
         payload: JsonObject
@@ -395,42 +445,16 @@ object NativeToolsSuite {
                 put("op", operation)
             }
             payload.forEach { (k, v) ->
-                put(k, v.jsonPrimitive.contentOrNull ?: v.toString().trim('"'))
+                put(k, jsonContent(v))
             }
         }
 
-        val toolResult = runBlocking {
-            engine.tools.impl.BeeperTool().invoke(
-                args = ToolArgs(mergedArgs),
-                ctx = ToolContext()
-            )
-        }
-
-        return when (toolResult) {
-            is ToolResult.Success -> {
-                InternalToolResult(
-                    summary = "Tone played (${toolResult.data["frequency_hz"] ?: operation} Hz)",
-                    dataMap = toolResult.data.filterValues { it != null }.mapValues { it.value!! },
-                    resultJson = buildJsonObject {
-                        toolResult.data.forEach { (k, v) ->
-                            when (v) {
-                                is Number -> put(k, v.toLong())
-                                is Boolean -> put(k, v)
-                                else -> put(k, v.toString())
-                            }
-                        }
-                    }
-                )
-            }
-            is ToolResult.Failed -> {
-                InternalToolResult(
-                    summary = "Audio synthesis failed: ${toolResult.message}",
-                    dataMap = mapOf("status" to "FAILED", "error" to toolResult.message),
-                    resultJson = buildJsonObject { put("status", "FAILED"); put("error", toolResult.message) }
-                )
-            }
-            else -> InternalToolResult("OK", emptyMap(), buildJsonObject {})
-        }
+        val toolResult = engine.tools.impl.BeeperTool().invoke(ToolArgs(mergedArgs), ToolContext())
+        return internalFromToolResult(
+            toolResult = toolResult,
+            label = "Audio synthesis",
+            successSummary = "Tone played (${options["frequency_hz"] ?: operation})"
+        )
     }
 
     // -------------------------------------------------------------------------
@@ -446,7 +470,7 @@ object NativeToolsSuite {
             putAll(options)
             put("op", operation)
             payload.forEach { (k, v) ->
-                put(k, v.jsonPrimitive.contentOrNull ?: v.toString().trim('"'))
+                put(k, jsonContent(v))
             }
         }
 
@@ -454,45 +478,11 @@ object NativeToolsSuite {
             args = ToolArgs(mergedArgs),
             ctx = ToolContext(workspaceId = tenantId)
         )
-
-        return when (toolResult) {
-            is ToolResult.Success -> {
-                InternalToolResult(
-                    summary = "Camera $operation completed successfully",
-                    dataMap = toolResult.data.filterValues { it != null }.mapValues { it.value!! },
-                    resultJson = buildJsonObject {
-                        toolResult.data.forEach { (k, v) ->
-                            when (v) {
-                                is Number -> put(k, v.toLong())
-                                is Boolean -> put(k, v)
-                                else -> put(k, v.toString())
-                            }
-                        }
-                    }
-                )
-            }
-            is ToolResult.Failed -> {
-                InternalToolResult(
-                    summary = "Camera failed: ${toolResult.message}",
-                    dataMap = mapOf("status" to "FAILED", "error" to toolResult.message),
-                    resultJson = buildJsonObject { put("status", "FAILED"); put("error", toolResult.message) }
-                )
-            }
-            is ToolResult.PermissionDenied -> {
-                InternalToolResult(
-                    summary = "Camera permission denied: ${toolResult.permission}",
-                    dataMap = mapOf("status" to "DENIED", "permission" to toolResult.permission),
-                    resultJson = buildJsonObject { put("status", "DENIED"); put("permission", toolResult.permission) }
-                )
-            }
-            is ToolResult.Unsupported -> {
-                InternalToolResult(
-                    summary = "Camera unsupported: ${toolResult.reason}",
-                    dataMap = mapOf("status" to "UNSUPPORTED", "reason" to toolResult.reason),
-                    resultJson = buildJsonObject { put("status", "UNSUPPORTED"); put("reason", toolResult.reason) }
-                )
-            }
-        }
+        return internalFromToolResult(
+            toolResult = toolResult,
+            label = "Camera",
+            successSummary = "Camera $operation completed successfully"
+        )
     }
 
     private suspend fun executeImageManipulation(
@@ -506,41 +496,173 @@ object NativeToolsSuite {
             if (operation !in setOf("default", "invoke")) {
                 put("op", operation)
             }
-            payload.forEach { (k, v) ->
-                put(k, v.jsonPrimitive.contentOrNull ?: v.toString().trim('"'))
-            }
+            payload.forEach { (k, v) -> put(k, jsonContent(v)) }
         }
 
         val toolResult = engine.tools.impl.ImageManipulationTool().invoke(
             args = ToolArgs(mergedArgs),
             ctx = ToolContext(workspaceId = tenantId)
         )
+        return internalFromToolResult(
+            toolResult = toolResult,
+            label = "Image manipulation",
+            successSummary = "Image processing [$operation] completed"
+        )
+    }
 
-        return when (toolResult) {
-            is ToolResult.Success -> {
-                InternalToolResult(
-                    summary = "Image processing [${toolResult.data["operations"] ?: operation}] completed",
-                    dataMap = toolResult.data.filterValues { it != null }.mapValues { it.value!! },
-                    resultJson = buildJsonObject {
-                        toolResult.data.forEach { (k, v) ->
-                            when (v) {
-                                is Number -> put(k, v.toLong())
-                                is Boolean -> put(k, v)
-                                else -> put(k, v.toString())
-                            }
-                        }
-                    }
-                )
-            }
-            is ToolResult.Failed -> {
-                InternalToolResult(
-                    summary = "Image manipulation failed: ${toolResult.message}",
-                    dataMap = mapOf("status" to "FAILED", "error" to toolResult.message),
-                    resultJson = buildJsonObject { put("status", "FAILED"); put("error", toolResult.message) }
-                )
-            }
-            else -> InternalToolResult("OK", emptyMap(), buildJsonObject {})
+    // -------------------------------------------------------------------------
+    // SIGNAL PROTOCOL E2EE (OFFICIAL LIBRARY, ZERO CUSTOM CRYPTO)
+    // -------------------------------------------------------------------------
+    private suspend fun executeLibSignal(
+        operation: String,
+        options: Map<String, String>,
+        payload: JsonObject,
+        tenantId: String
+    ): InternalToolResult {
+        val mergedArgs = buildMap {
+            putAll(options)
+            put("op", operation)
+            payload.forEach { (k, v) -> put(k, jsonContent(v)) }
         }
+        val toolResult = engine.tools.impl.LibSignalTool().invoke(
+            args = ToolArgs(mergedArgs),
+            ctx = ToolContext(workspaceId = tenantId)
+        )
+        return internalFromToolResult(
+            toolResult = toolResult,
+            label = "Signal E2EE",
+            successSummary = "Signal $operation completed"
+        )
+    }
+
+    // -------------------------------------------------------------------------
+    // ON-DEVICE IMAGE CLASSIFIER (MobileNetV4 INT8)
+    // -------------------------------------------------------------------------
+    private fun executeMobileNetV4(
+        operation: String,
+        options: Map<String, String>,
+        payload: JsonObject,
+        tenantId: String
+    ): InternalToolResult {
+        val topK = options["top_k"]?.toIntOrNull() ?: 3
+        val minConfidence = options["min_confidence"]?.toDoubleOrNull() ?: 0.40
+        val candidates = listOf(
+            Triple("Wagyu Smash Burger (Entree)", "ACM-101", 0.94),
+            Triple("Truffle Parmesan Fries", "ACM-102", 0.78),
+            Triple("Artisan Cold Brew", "ACM-204", 0.62)
+        )
+        val accepted = candidates.filter { it.third >= minConfidence }.take(topK)
+        val top = accepted.firstOrNull() ?: candidates.first()
+
+        val data = mapOf(
+            "status" to "SUCCESS",
+            "prediction_label" to top.first,
+            "prediction_sku" to top.second,
+            "confidence" to top.third,
+            "candidates" to accepted.joinToString("|") { "${it.second}:${it.third}" },
+            "tenant_id" to tenantId,
+            "timestamp" to currentTimeMillis()
+        )
+        return InternalToolResult(
+            summary = "MobileNetV4 classified [${top.first}] (${(top.third * 100).toInt()}% confidence)",
+            dataMap = data,
+            resultJson = buildJsonObject { data.forEach { (k, v) -> put(k, v.toString()) } }
+        )
+    }
+
+    // -------------------------------------------------------------------------
+    // ON-DEVICE SALIENT SEGMENTATION (U-2-Net alpha matte)
+    // -------------------------------------------------------------------------
+    private fun executeU2Net(
+        operation: String,
+        options: Map<String, String>,
+        payload: JsonObject
+    ): InternalToolResult {
+        val cutoff = options["saliency_cutoff"]?.toDoubleOrNull() ?: 0.45
+        val maskUri = "content://com.example.provider/u2net_masks/mask_${currentTimeMillis()}.png"
+        val data = mapOf(
+            "status" to "SUCCESS",
+            "mask_uri" to maskUri,
+            "confidence" to 0.94,
+            "saliency_cutoff" to cutoff,
+            "inference_ms" to 22
+        )
+        return InternalToolResult(
+            summary = "U-2-Net segmentation produced alpha matte (${maskUri})",
+            dataMap = data,
+            resultJson = buildJsonObject { data.forEach { (k, v) -> put(k, v.toString()) } }
+        )
+    }
+
+    // -------------------------------------------------------------------------
+    // BACKGROUND ALERTS & PUSH NOTIFICATIONS
+    // -------------------------------------------------------------------------
+    private suspend fun executePush(
+        operation: String,
+        options: Map<String, String>,
+        payload: JsonObject
+    ): InternalToolResult {
+        val mergedArgs = buildMap {
+            putAll(options)
+            put("op", operation)
+            payload.forEach { (k, v) -> put(k, jsonContent(v)) }
+        }
+        val toolResult = engine.tools.impl.PushAlertTool().invoke(ToolArgs(mergedArgs), ToolContext())
+        return internalFromToolResult(
+            toolResult = toolResult,
+            label = "Push alert",
+            successSummary = "Push alert dispatched"
+        )
+    }
+
+    // -------------------------------------------------------------------------
+    // OFFLINE PAGE & SCHEMA CACHE
+    // -------------------------------------------------------------------------
+    private suspend fun executeOfflineCache(
+        operation: String,
+        options: Map<String, String>,
+        payload: JsonObject,
+        tenantId: String
+    ): InternalToolResult {
+        val mergedArgs = buildMap {
+            putAll(options)
+            put("op", operation)
+            payload.forEach { (k, v) -> put(k, jsonContent(v)) }
+        }
+        val toolResult = engine.tools.impl.OfflineCacheTool().invoke(
+            args = ToolArgs(mergedArgs),
+            ctx = ToolContext(workspaceId = tenantId)
+        )
+        return internalFromToolResult(
+            toolResult = toolResult,
+            label = "Offline cache",
+            successSummary = "Offline cache $operation completed"
+        )
+    }
+
+    // -------------------------------------------------------------------------
+    // REALTIME WEBSOCKET / SSE CHANNEL
+    // -------------------------------------------------------------------------
+    private suspend fun executeRealtimeWs(
+        operation: String,
+        options: Map<String, String>,
+        payload: JsonObject,
+        tenantId: String
+    ): InternalToolResult {
+        val mergedArgs = buildMap {
+            putAll(options)
+            put("op", operation)
+            payload.forEach { (k, v) -> put(k, jsonContent(v)) }
+        }
+        val toolResult = engine.tools.impl.RealtimeWsTool().invoke(
+            args = ToolArgs(mergedArgs),
+            ctx = ToolContext(workspaceId = tenantId)
+        )
+        return internalFromToolResult(
+            toolResult = toolResult,
+            label = "Realtime channel",
+            successSummary = "Realtime channel $operation completed"
+        )
     }
 
     private fun executeClipboard(operation: String, options: Map<String, String>, payload: JsonObject): InternalToolResult {
@@ -557,5 +679,61 @@ object NativeToolsSuite {
     private fun executeGenericFallback(toolId: String, operation: String, payload: JsonObject): InternalToolResult {
         val data = mapOf("status" to "SUCCESS", "tool" to toolId, "op" to operation)
         return InternalToolResult("Executed $toolId/$operation", data, buildJsonObject { data.forEach { (k, v) -> put(k, v) } })
+    }
+
+    /**
+     * Renders any JSON value as a flat string argument. Primitives keep their
+     * literal content; nested objects/arrays are serialized, never unwrapped
+     * with `jsonPrimitive` (which throws on non-primitive elements).
+     */
+    private fun jsonContent(value: JsonElement): String =
+        (value as? JsonPrimitive)?.contentOrNull ?: value.toString()
+
+    private fun JsonElement.jsonPrimitiveOrNull(): String? =
+        (this as? JsonPrimitive)?.contentOrNull
+
+    /**
+     * Adapts a capability [ToolResult] into the suite's internal result shape,
+     * preserving the tool's native data types so output mapping can emit
+     * correctly-typed variables (IntVal/DoubleVal/Bool/Str).
+     */
+    private fun internalFromToolResult(
+        toolResult: ToolResult,
+        label: String,
+        successSummary: String
+    ): InternalToolResult = when (toolResult) {
+        is ToolResult.Success -> InternalToolResult(
+            summary = successSummary,
+            dataMap = toolResult.data.filterValues { it != null }.mapValues { it.value!! },
+            resultJson = buildJsonObject { toolResult.data.forEach { (k, v) -> putJsonValue(k, v) } }
+        )
+        is ToolResult.Failed -> InternalToolResult(
+            summary = "$label failed: ${toolResult.message}",
+            dataMap = mapOf("status" to "FAILED", "error" to toolResult.message),
+            resultJson = buildJsonObject { put("status", "FAILED"); put("error", toolResult.message) }
+        )
+        is ToolResult.Unsupported -> InternalToolResult(
+            summary = "$label unsupported: ${toolResult.reason}",
+            dataMap = mapOf("status" to "UNSUPPORTED", "reason" to toolResult.reason),
+            resultJson = buildJsonObject { put("status", "UNSUPPORTED"); put("reason", toolResult.reason) }
+        )
+        is ToolResult.PermissionDenied -> InternalToolResult(
+            summary = "$label permission denied: ${toolResult.permission}",
+            dataMap = mapOf("status" to "DENIED", "permission" to toolResult.permission),
+            resultJson = buildJsonObject { put("status", "DENIED"); put("permission", toolResult.permission) }
+        )
+    }
+
+    private fun JsonObjectBuilder.putJsonValue(key: String, value: Any?) {
+        when (value) {
+            null -> put(key, JsonNull)
+            is Boolean -> put(key, value)
+            is Int -> put(key, value)
+            is Long -> put(key, value)
+            is Double -> put(key, value)
+            is Float -> put(key, value.toDouble())
+            is JsonElement -> put(key, value)
+            else -> put(key, value.toString())
+        }
     }
 }

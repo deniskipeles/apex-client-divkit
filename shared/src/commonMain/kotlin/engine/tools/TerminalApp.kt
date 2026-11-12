@@ -15,7 +15,7 @@ object TerminalApp {
             CapturePhotoTool(),
             EmbedImageTool(),
             RemoveBackgroundTool(),
-            IdentifyProductTool(),
+            ProductClassifierTool(),
             SecureSendTool(),
             SecureStatusTool(),
             SecureVerifyIdentityTool(),

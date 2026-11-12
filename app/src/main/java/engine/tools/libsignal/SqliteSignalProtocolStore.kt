@@ -4,6 +4,7 @@ import app.cash.sqldelight.db.SqlDriver
 import org.whispersystems.libsignal.IdentityKey
 import org.whispersystems.libsignal.IdentityKeyPair
 import org.whispersystems.libsignal.SignalProtocolAddress
+import org.whispersystems.libsignal.state.IdentityKeyStore
 import org.whispersystems.libsignal.state.PreKeyRecord
 import org.whispersystems.libsignal.state.SessionRecord
 import org.whispersystems.libsignal.state.SignalProtocolStore
@@ -24,42 +25,51 @@ class SqliteSignalProtocolStore(
     }
 
     private fun ensureSchema() {
-        driver.executeUpdate(
-            null,
+        // AndroidSqliteDriver compiles one statement per executeUpdate call, so
+        // each table must be issued separately.
+        val statements = listOf(
             """
             CREATE TABLE IF NOT EXISTS signal_identities (
                 tenant_id TEXT PRIMARY KEY,
                 registration_id INTEGER NOT NULL,
                 identity_key_pair BLOB NOT NULL
-            );
+            )
+            """,
+            """
             CREATE TABLE IF NOT EXISTS signal_trusted_keys (
                 tenant_id TEXT NOT NULL,
                 name TEXT NOT NULL,
                 identity_key BLOB NOT NULL,
                 PRIMARY KEY (tenant_id, name)
-            );
+            )
+            """,
+            """
             CREATE TABLE IF NOT EXISTS signal_prekeys (
                 tenant_id TEXT NOT NULL,
                 prekey_id INTEGER NOT NULL,
                 record_bytes BLOB NOT NULL,
                 PRIMARY KEY (tenant_id, prekey_id)
-            );
+            )
+            """,
+            """
             CREATE TABLE IF NOT EXISTS signal_signed_prekeys (
                 tenant_id TEXT NOT NULL,
                 prekey_id INTEGER NOT NULL,
                 record_bytes BLOB NOT NULL,
                 PRIMARY KEY (tenant_id, prekey_id)
-            );
+            )
+            """,
+            """
             CREATE TABLE IF NOT EXISTS signal_sessions (
                 tenant_id TEXT NOT NULL,
                 address_name TEXT NOT NULL,
                 device_id INTEGER NOT NULL,
                 record_bytes BLOB NOT NULL,
                 PRIMARY KEY (tenant_id, address_name, device_id)
-            );
-            """.trimIndent(),
-            0
+            )
+            """
         )
+        statements.forEach { driver.executeUpdate(null, it.trimIndent(), 0) }
     }
 
     // -------------------------------------------------------------
@@ -139,7 +149,7 @@ class SqliteSignalProtocolStore(
         return existing != null && existing != b64
     }
 
-    override fun isTrustedIdentity(address: SignalProtocolAddress, identityKey: IdentityKey, direction: SignalProtocolStore.Direction): Boolean {
+    override fun isTrustedIdentity(address: SignalProtocolAddress, identityKey: IdentityKey, direction: IdentityKeyStore.Direction): Boolean {
         var stored: IdentityKey? = null
         driver.executeQuery(
             null,

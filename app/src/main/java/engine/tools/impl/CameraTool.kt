@@ -76,16 +76,12 @@ class CameraTool : ToolHandler {
         val (width, height, bytes) = if (simulatedBase64 != null) {
             val decodedBytes = Base64.getDecoder().decode(simulatedBase64)
             outputFile.writeBytes(decodedBytes)
-            Triple(1280, 720, decodedBytes)
-        } else if (context != null) {
-            // Real device capture or fallback generated test frame
-            val generatedBytes = generateTestImageBytes(format, quality, maxDim)
-            outputFile.writeBytes(generatedBytes)
-            Triple(1280, 720, generatedBytes)
+            val (w, h) = decodeDimensions(decodedBytes, maxDim)
+            Triple(w, h, decodedBytes)
         } else {
-            val sampleBytes = generateTestImageBytes(format, quality, maxDim)
-            outputFile.writeBytes(sampleBytes)
-            Triple(1280, 720, sampleBytes)
+            val generated = generateTestImageBytes(format, quality, maxDim)
+            outputFile.writeBytes(generated.first)
+            Triple(generated.second, generated.third, generated.first)
         }
 
         val base64Str = if (encoding in setOf("base64", "data_url", "both")) {
@@ -171,7 +167,7 @@ class CameraTool : ToolHandler {
         )
     }
 
-    private fun generateTestImageBytes(format: String, quality: Int, maxDim: Int): ByteArray {
+    private fun generateTestImageBytes(format: String, quality: Int, maxDim: Int): Triple<ByteArray, Int, Int> {
         val w = minOf(maxDim, 1280)
         val h = (w * 3) / 4
         val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
@@ -179,6 +175,15 @@ class CameraTool : ToolHandler {
         val compressFormat = if (format.contains("png")) Bitmap.CompressFormat.PNG else Bitmap.CompressFormat.JPEG
         bitmap.compress(compressFormat, quality, stream)
         bitmap.recycle()
-        return stream.toByteArray()
+        return Triple(stream.toByteArray(), w, h)
+    }
+
+    private fun decodeDimensions(bytes: ByteArray, maxDim: Int): Pair<Int, Int> {
+        val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
+        val w = options.outWidth.coerceAtLeast(1)
+        val h = options.outHeight.coerceAtLeast(1)
+        val scale = if (maxDim > 0 && w > maxDim) maxDim.toDouble() / w else 1.0
+        return (w * scale).toInt().coerceAtLeast(1) to (h * scale).toInt().coerceAtLeast(1)
     }
 }
