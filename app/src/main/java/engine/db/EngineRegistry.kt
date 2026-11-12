@@ -1,44 +1,16 @@
 package engine.db
 
 import engine.crypto.currentTimeMillis
+import engine.db.auth.Claims
 import kotlinx.serialization.json.*
 import java.util.UUID
 
-/**
- * Whitelisted, injection-hardened operation set. The JSON never contains SQL;
- * it contains a named op + structured payload. This class owns the SQL.
- *
- * Security properties:
- *  - Table names and column names must match [IDENT_REGEX] AND exist in the
- *    schema (PRAGMA table_info check) — prevents `orders; DROP TABLE --`.
- *  - `where` is a structured filter DSL, never a raw string — prevents
- *    `UNION SELECT` and boolean-based injection.
- *  - `LIKE` patterns are constrained to alphanumerics + `% _ - space` —
- *    prevents heavy scans and wildcard abuse.
- *  - `limit` is clamped to [HARD_MAX_LIMIT] — prevents OOM from `SELECT *`.
- *  - `delete` without a filter requires `confirm_truncate: true`.
- *  - Payload size is capped before deserialisation.
- */
 class EngineRegistry(
-    private val clock: () -> Long = { currentTimeMillis() },
-    extensionOps: Map<String, (WorkspaceDatabase, String, JsonObject) -> OpResult> = emptyMap()
+    private val clock: () -> Long = { currentTimeMillis() }
 ) {
     companion object {
-        private val IDENT_REGEX = Regex("^[a-zA-Z][a-zA-Z0-9_]{0,62}$")
-        private val ALLOWED_OPS = setOf("=", "!=", "<", "<=", ">", ">=", "IN", "LIKE")
-        private val ALLOWED_LIKE_REGEX = Regex("^[%a-zA-Z0-9 _-]*$")
         private const val HARD_MAX_LIMIT = 500
-        private const val MAX_PAYLOAD_BYTES = 64 * 1024
-    }
-
-    private val operations: Map<String, (WorkspaceDatabase, String, JsonObject) -> OpResult> = buildMap {
-        put("db.insert", ::insert)
-        put("db.update", ::update)
-        put("db.delete", ::delete)
-        put("db.query", ::query)
-        put("db.query_one", ::queryOne)
-        put("db.count", ::count)
-        putAll(extensionOps) // app.* ops registered by the host app
+        private const val MAX_PAYLOAD_BYTES = 128 * 1024
     }
 
     fun execute(
@@ -49,277 +21,210 @@ class EngineRegistry(
     ): OpResult {
         val payloadBytes = payload.toString().encodeToByteArray()
         if (payloadBytes.size > MAX_PAYLOAD_BYTES) {
-            throw SecurityException("Payload exceeds ${MAX_PAYLOAD_BYTES} bytes")
+            throw SecurityException("Payload exceeds limit of ${MAX_PAYLOAD_BYTES} bytes")
         }
 
-        val op = operations[opName] ?: throw SecurityException("Unknown operation: $opName")
+        val apexEngine = ApexKitDatabaseEngine(db.driver)
         val started = clock()
+
         return try {
-            val result = op(db, workspaceId, payload)
-            if (opName == "db.insert" || opName == "db.update" || opName == "db.delete") {
-                val enqueueSync = payload["enqueue_sync"]?.jsonPrimitive?.booleanOrNull ?: true
-                if (enqueueSync) {
-                    val clientUuid = payload["client_uuid"]?.jsonPrimitive?.contentOrNull
-                        ?: UUID.randomUUID().toString()
-                    db.workspaceQueries.insertPendingSync(
-                        client_uuid = clientUuid,
-                        op = opName,
-                        payload = payload.toString(),
-                        created_at = clock()
-                    )
+            val result = when (opName) {
+                // Schema Management
+                "db.import_schema", "schema.import" -> {
+                    val schemaObj = payload["schema"]?.jsonObject ?: payload
+                    val count = apexEngine.importTenantSchemaJson(schemaObj.toString())
+                    OpResult.SchemaImported(count)
                 }
+
+                "db.list_collections", "schema.collections" -> {
+                    val cols = apexEngine.listCollections()
+                    val rows = cols.map { mapOf("id" to it.id, "name" to it.name, "index" to (it.index ?: "")) }
+                    OpResult.Rows(rows)
+                }
+
+                // Generic Record Insertion
+                "db.insert", "records.create" -> {
+                    val col = payload["collection"]?.jsonPrimitive?.contentOrNull
+                        ?: payload["table"]?.jsonPrimitive?.contentOrNull
+                        ?: error("Missing 'collection' parameter")
+
+                    val data = payload["data"]?.jsonObject
+                        ?: payload["values"]?.jsonObject
+                        ?: error("Missing 'data' or 'values' object")
+
+                    val userRole = payload["auth_role"]?.jsonPrimitive?.contentOrNull ?: "public"
+                    val userUid = payload["auth_uid"]?.jsonPrimitive?.longOrNull ?: 0L
+                    val claims = Claims(uid = userUid, role = userRole)
+
+                    val newId = apexEngine.insertRecord(col, data, claims)
+
+                    val enqueueSync = payload["enqueue_sync"]?.jsonPrimitive?.booleanOrNull ?: false
+                    if (enqueueSync) {
+                        val clientUuid = payload["client_uuid"]?.jsonPrimitive?.contentOrNull ?: UUID.randomUUID().toString()
+                        db.driver.executeUpdate(
+                            null,
+                            "INSERT OR IGNORE INTO pending_sync (client_uuid, op, payload, created_at) VALUES (?, ?, ?, ?)",
+                            4
+                        ) {
+                            bindString(0, clientUuid)
+                            bindString(1, opName)
+                            bindString(2, payload.toString())
+                            bindLong(3, clock())
+                        }
+                    }
+                    OpResult.RowId(newId)
+                }
+
+                // Generic Collection Query
+                // Advanced Schema-Driven Collection Query (ApexQuery AST with Pipelines)
+                "db.query", "records.query" -> {
+                    val colName = payload["from"]?.jsonPrimitive?.contentOrNull
+                        ?: payload["collection"]?.jsonPrimitive?.contentOrNull
+                        ?: payload["table"]?.jsonPrimitive?.contentOrNull
+                        ?: error("Missing 'from' or 'collection' parameter")
+
+                    val col = apexEngine.getCollection(colName)
+                    val colId = col?.id
+
+                    // Parse query options, projections, order, and limit
+                    val selectArray = payload["select"]?.jsonArray?.mapNotNull { el ->
+                        when (el) {
+                            is JsonPrimitive -> SelectField.Simple(el.content)
+                            is JsonObject -> {
+                                val field = el["field"]?.jsonPrimitive?.contentOrNull
+                                val expr = el["expr"]?.jsonPrimitive?.contentOrNull
+                                val fn = el["fn"]?.jsonPrimitive?.contentOrNull
+                                val alias = el["as"]?.jsonPrimitive?.contentOrNull
+                                SelectField.Complex(field = field, expr = expr, fn = fn, `as` = alias)
+                            }
+                            else -> null
+                        }
+                    } ?: emptyList()
+
+                    val whereClause = payload["where"] ?: payload["filter"]
+                    val sort = payload["sort"]?.jsonPrimitive?.contentOrNull
+                        ?: payload["order_by"]?.jsonPrimitive?.contentOrNull
+                    val limit = payload["limit"]?.jsonPrimitive?.longOrNull ?: 100L
+                    val offset = payload["offset"]?.jsonPrimitive?.longOrNull ?: 0L
+
+                    val apexQuery = ApexQuery(
+                        from = colName,
+                        select = selectArray,
+                        r#where = whereClause,
+                        sort = sort,
+                        limit = limit,
+                        offset = offset
+                    )
+
+                    val jsonResultArray = QueryEngine.execute(db.driver, apexQuery, colId)
+
+                    // Convert to map rows for OpResult.Rows
+                    val rows = jsonResultArray.map { el ->
+                        val obj = el.jsonObject
+                        obj.mapValues { (_, v) ->
+                            when (v) {
+                                is JsonPrimitive -> v.contentOrNull ?: v.toString()
+                                else -> v.toString()
+                            }
+                        }
+                    }
+
+                    OpResult.Rows(rows)
+                }
+
+                // Query Single Record
+                "db.query_one", "records.get" -> {
+                    val col = payload["collection"]?.jsonPrimitive?.contentOrNull
+                        ?: payload["table"]?.jsonPrimitive?.contentOrNull
+                        ?: error("Missing 'collection' parameter")
+
+                    val filters = parseFilters(payload["where"]?.jsonArray)
+                    val userRole = payload["auth_role"]?.jsonPrimitive?.contentOrNull ?: "public"
+                    val userUid = payload["auth_uid"]?.jsonPrimitive?.longOrNull ?: 0L
+                    val claims = Claims(uid = userUid, role = userRole)
+
+                    val records = apexEngine.queryRecords(col, filters, limit = 1, user = claims)
+                    val first = records.firstOrNull()
+                    val map = first?.data?.mapValues { (_, v) ->
+                        when (v) {
+                            is JsonPrimitive -> v.contentOrNull ?: v.toString()
+                            else -> v.toString()
+                        }
+                    }?.plus("id" to first.id)
+                    OpResult.Row(map)
+                }
+
+                // Count Records in Collection
+                "db.count", "records.count" -> {
+                    val col = payload["collection"]?.jsonPrimitive?.contentOrNull
+                        ?: payload["table"]?.jsonPrimitive?.contentOrNull
+                        ?: error("Missing 'collection' parameter")
+
+                    val filters = parseFilters(payload["where"]?.jsonArray)
+                    val userRole = payload["auth_role"]?.jsonPrimitive?.contentOrNull ?: "public"
+                    val userUid = payload["auth_uid"]?.jsonPrimitive?.longOrNull ?: 0L
+                    val claims = Claims(uid = userUid, role = userRole)
+
+                    val total = apexEngine.countRecords(col, filters, claims)
+                    OpResult.Count(total)
+                }
+
+                // Generic Record Deletion
+                "db.delete", "records.delete" -> {
+                    val col = payload["collection"]?.jsonPrimitive?.contentOrNull
+                        ?: payload["table"]?.jsonPrimitive?.contentOrNull
+                        ?: error("Missing 'collection' parameter")
+
+                    val recordId = payload["id"]?.jsonPrimitive?.longOrNull
+                        ?: payload["record_id"]?.jsonPrimitive?.longOrNull
+                        ?: error("Missing 'id' parameter for delete operation")
+
+                    val userRole = payload["auth_role"]?.jsonPrimitive?.contentOrNull ?: "public"
+                    val userUid = payload["auth_uid"]?.jsonPrimitive?.longOrNull ?: 0L
+                    val claims = Claims(uid = userUid, role = userRole)
+
+                    val deleted = apexEngine.deleteRecord(col, recordId, claims)
+                    OpResult.Count(if (deleted) 1L else 0L)
+                }
+
+                else -> throw SecurityException("Unknown operation: $opName")
             }
-            audit(db, opName, clock() - started, result, null)
+
+            db.queries.insertOpLog(
+                ts = clock(),
+                op = opName,
+                duration_ms = clock() - started,
+                rowcount = when (result) {
+                    is OpResult.Rows -> result.rows.size.toLong()
+                    is OpResult.Count -> result.n
+                    is OpResult.RowId -> 1L
+                    else -> null
+                },
+                error = null
+            )
             result
         } catch (e: Exception) {
-            audit(db, opName, clock() - started, null, e.message)
+            db.queries.insertOpLog(
+                ts = clock(),
+                op = opName,
+                duration_ms = clock() - started,
+                rowcount = null,
+                error = e.message
+            )
             throw e
         }
     }
 
-    // ---- Operations ----
-
-    private fun insert(db: WorkspaceDatabase, ws: String, p: JsonObject): OpResult {
-        val table = p.requireString("table").also(::requireIdent)
-        val actual = "${ws}_$table"
-        val values = p.getObject("values")
-        val keys = values.keys.toList()
-        keys.forEach(::requireIdent)
-        requireKnownColumns(db, actual, keys)
-
-        val idempotent = p["idempotent"]?.jsonPrimitive?.booleanOrNull ?: false
-        val conflictClause = if (idempotent) "OR IGNORE" else "OR ABORT"
-
-        val placeholders = keys.joinToString(",") { "?" }
-        val columnList = keys.joinToString(",") { "\"$it\"" }
-        val sql = "INSERT $conflictClause INTO $actual ($columnList) VALUES ($placeholders)"
-
-        val args = keys.map { values[it]?.toDbValue() }
-        db.workspaceQueries.transaction {
-            val cursor = db.driver.executeQuery(
-                null, sql, args.size
-            ) {
-                args.forEachIndexed { i, v -> bind(this, i, v) }
-            }
-            cursor.close()
-        }
-        return OpResult.RowId(db.driver.lastInsertedRowId())
-    }
-
-    private fun update(db: WorkspaceDatabase, ws: String, p: JsonObject): OpResult {
-        val table = p.requireString("table").also(::requireIdent)
-        val actual = "${ws}_$table"
-        val values = p.getObject("values")
-        val keys = values.keys.toList()
-        keys.forEach(::requireIdent)
-        requireKnownColumns(db, actual, keys)
-
-        val (whereSql, whereArgs) = buildWhere(p["where"]?.jsonArray, db, actual)
-        val setSql = keys.joinToString(", ") { "\"$it\" = ?" }
-        val sql = "UPDATE $actual SET $setSql WHERE $whereSql"
-        val args = keys.map { values[it]?.toDbValue() } + whereArgs
-
-        val affected = db.driver.executeUpdate(null, sql, args.size) {
-            args.forEachIndexed { i, v -> bind(this, i, v) }
-        }
-        return OpResult.Count(affected)
-    }
-
-    private fun delete(db: WorkspaceDatabase, ws: String, p: JsonObject): OpResult {
-        val table = p.requireString("table").also(::requireIdent)
-        val actual = "${ws}_$table"
-        val filters = p["where"]?.jsonArray
-        if ((filters == null || filters.isEmpty()) &&
-            (p["confirm_truncate"]?.jsonPrimitive?.booleanOrNull != true)
-        ) {
-            throw SecurityException("DELETE without WHERE requires confirm_truncate=true")
-        }
-        val (whereSql, whereArgs) = buildWhere(filters, db, actual)
-        val sql = "DELETE FROM $actual WHERE $whereSql"
-        val affected = db.driver.executeUpdate(null, sql, whereArgs.size) {
-            whereArgs.forEachIndexed { i, v -> bind(this, i, v) }
-        }
-        return OpResult.Count(affected)
-    }
-
-    private fun query(db: WorkspaceDatabase, ws: String, p: JsonObject): OpResult {
-        val table = p.requireString("table").also(::requireIdent)
-        val actual = "${ws}_$table"
-        val (whereSql, whereArgs) = buildWhere(p["where"]?.jsonArray, db, actual)
-        val limit = (p["limit"]?.jsonPrimitive?.intOrNull ?: 100).coerceIn(1, HARD_MAX_LIMIT)
-        val offset = (p["offset"]?.jsonPrimitive?.intOrNull ?: 0).coerceAtLeast(0)
-        val orderBy = p["order_by"]?.jsonPrimitive?.contentOrNull
-            ?.takeIf { it.isNotBlank() }
-            ?.also(::requireIdent)
-            ?.let { "ORDER BY \"$it\" DESC" } ?: ""
-        val sql = "SELECT * FROM $actual WHERE $whereSql $orderBy LIMIT $limit OFFSET $offset"
-
-        val rows = mutableListOf<Map<String, Any?>>()
-        db.driver.executeQuery(null, sql, whereArgs.size) {
-            whereArgs.forEachIndexed { i, v -> bind(this, i, v) }
-        }.use { cursor ->
-            while (cursor.next().value) {
-                val row = mutableMapOf<String, Any?>()
-                for (i in 0 until cursor.columnCount) {
-                    row[cursor.getColumnName(i)] = cursor.readValue(i)
-                }
-                rows.add(row)
-            }
-        }
-        return OpResult.Rows(rows)
-    }
-
-    private fun queryOne(db: WorkspaceDatabase, ws: String, p: JsonObject): OpResult {
-        val table = p.requireString("table").also(::requireIdent)
-        val actual = "${ws}_$table"
-        val (whereSql, whereArgs) = buildWhere(p["where"]?.jsonArray, db, actual)
-        val sql = "SELECT * FROM $actual WHERE $whereSql LIMIT 1"
-        var row: Map<String, Any?>? = null
-        db.driver.executeQuery(null, sql, whereArgs.size) {
-            whereArgs.forEachIndexed { i, v -> bind(this, i, v) }
-        }.use { cursor ->
-            if (cursor.next().value) {
-                val map = mutableMapOf<String, Any?>()
-                for (i in 0 until cursor.columnCount) {
-                    map[cursor.getColumnName(i)] = cursor.readValue(i)
-                }
-                row = map
-            }
-        }
-        return OpResult.Row(row)
-    }
-
-    private fun count(db: WorkspaceDatabase, ws: String, p: JsonObject): OpResult {
-        val table = p.requireString("table").also(::requireIdent)
-        val actual = "${ws}_$table"
-        val (whereSql, whereArgs) = buildWhere(p["where"]?.jsonArray, db, actual)
-        val sql = "SELECT COUNT(*) FROM $actual WHERE $whereSql"
-        var n = 0L
-        db.driver.executeQuery(null, sql, whereArgs.size) {
-            whereArgs.forEachIndexed { i, v -> bind(this, i, v) }
-        }.use { cursor ->
-            if (cursor.next().value) n = cursor.getLong(0) ?: 0L
-        }
-        return OpResult.Count(n)
-    }
-
-    // ---- Guards ----
-
-    private fun requireIdent(name: String) {
-        require(IDENT_REGEX.matches(name)) { "Invalid identifier: $name" }
-    }
-
-    private fun requireKnownColumns(db: WorkspaceDatabase, table: String, columns: Collection<String>) {
-        val known = mutableSetOf<String>()
-        db.driver.executeQuery(null, "PRAGMA table_info($table)", 0).use { c ->
-            while (c.next().value) {
-                c.getString(1)?.let { known.add(it) }
-            }
-        }
-        require(known.isNotEmpty()) { "Table does not exist: $table" }
-        for (col in columns) require(col in known) { "Unknown column: $col" }
-    }
-
-    private fun buildWhere(
-        filters: JsonArray?,
-        db: WorkspaceDatabase,
-        table: String
-    ): Pair<String, List<Any?>> {
-        requireKnownColumns(db, table, emptyList())
-        if (filters == null || filters.isEmpty()) return "1=1" to emptyList()
-        val cols = filters.map { it.jsonObject.requireString("column") }
-        requireKnownColumns(db, table, cols)
-
-        val clauses = mutableListOf<String>()
-        val args = mutableListOf<Any?>()
-        for (f in filters) {
-            val obj = f.jsonObject
-            val column = obj.requireString("column").also(::requireIdent)
-            val op = obj.requireString("op").uppercase()
-            require(op in ALLOWED_OPS) { "Disallowed operator: $op" }
-            when (op) {
-                "IN" -> {
-                    val arr = obj.getValue("value").jsonArray
-                    require(arr.size in 1..100) { "IN list out of range" }
-                    clauses += "\"$column\" IN (${List(arr.size) { "?" }.joinToString()})"
-                    arr.forEach { args += it.toDbValue() }
-                }
-                "LIKE" -> {
-                    val v = obj.requireString("value")
-                    require(ALLOWED_LIKE_REGEX.matches(v)) { "LIKE pattern rejected: $v" }
-                    clauses += "\"$column\" LIKE ?"
-                    args += v
-                }
-                else -> {
-                    clauses += "\"$column\" $op ?"
-                    args += obj.getValue("value").toDbValue()
-                }
-            }
-        }
-        return clauses.joinToString(" AND ") to args
-    }
-
-    private fun audit(db: WorkspaceDatabase, op: String, ms: Long, result: OpResult?, error: String?) {
-        try {
-            val rowCount = when (result) {
-                is OpResult.Rows -> result.rows.size.toLong()
-                is OpResult.Count -> result.n
-                is OpResult.RowId -> 1L
-                else -> null
-            }
-            db.workspaceQueries.insertOpLog(
-                ts = clock(),
-                op = op,
-                duration_ms = ms,
-                rowcount = rowCount,
-                error = error
-            )
-        } catch (_: Exception) {
-            // Logging must never break the op.
-        }
-    }
-}
-
-// ---- Helpers ----
-
-private fun JsonObject.requireString(key: String): String =
-    get(key)?.jsonPrimitive?.contentOrNull ?: error("Missing required string: $key")
-
-private fun JsonObject.getObject(key: String): JsonObject =
-    get(key)?.jsonObject ?: error("Missing required object: $key")
-
-private fun JsonElement.toDbValue(): Any? = when (this) {
-    is JsonNull -> null
-    is JsonPrimitive -> when {
-        isString -> content
-        content == "true" -> true
-        content == "false" -> false
-        content.toLongOrNull() != null -> content.toLong()
-        else -> content.toDouble()
-    }
-    else -> error("Cannot bind JSON array/object to SQL parameter")
-}
-
-private fun bind(stmt: app.cash.sqldelight.db.SqlPreparedStatement, index: Int, value: Any?) {
-    when (value) {
-        null -> stmt.bindNull(index)
-        is Long -> stmt.bindLong(index, value)
-        is Int -> stmt.bindLong(index, value.toLong())
-        is Boolean -> stmt.bindLong(index, if (value) 1L else 0L)
-        is Double -> stmt.bindDouble(index, value)
-        is String -> stmt.bindString(index, value)
-        else -> stmt.bindString(index, value.toString())
-    }
-}
-
-private fun app.cash.sqldelight.db.SqlCursor.readValue(index: Int): Any? {
-    return try {
-        getLong(index)
-    } catch (_: Exception) {
-        try {
-            getDouble(index)
-        } catch (_: Exception) {
-            getString(index)
+    private fun parseFilters(array: JsonArray?): List<QueryFilter> {
+        if (array == null || array.isEmpty()) return emptyList()
+        return array.mapNotNull { el ->
+            val obj = el as? JsonObject ?: return@mapNotNull null
+            val field = obj["field"]?.jsonPrimitive?.contentOrNull
+                ?: obj["column"]?.jsonPrimitive?.contentOrNull
+                ?: return@mapNotNull null
+            val op = obj["op"]?.jsonPrimitive?.contentOrNull ?: "="
+            val value = obj["value"]?.jsonPrimitive?.contentOrNull ?: obj["value"].toString().trim('"')
+            QueryFilter(field, op, value)
         }
     }
 }

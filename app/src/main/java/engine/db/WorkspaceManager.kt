@@ -2,15 +2,6 @@ package engine.db
 
 import app.cash.sqldelight.db.SqlDriver
 
-/**
- * Owns physical isolation between tenants.
- *
- * Invariants:
- *  - One SQLite file per workspaceId.
- *  - One directory per workspaceId.
- *  - workspaceId is validated against [WORKSPACE_ID_REGEX] at every entry point
- *    so filesystem escape (`../../`) is impossible even with compromised config.
- */
 class WorkspaceManager(
     private val driverFactory: WorkspaceDriverFactory
 ) {
@@ -22,7 +13,6 @@ class WorkspaceManager(
         require(idRegex.matches(id)) { "Invalid workspaceId: $id" }
     }
 
-    /** Opens or reuses a driver for the workspace. Caller owns closing on app teardown. */
     suspend fun getDriver(workspaceId: String): SqlDriver {
         validateWorkspaceId(workspaceId)
         lock.lock()
@@ -35,21 +25,16 @@ class WorkspaceManager(
         }
     }
 
-    fun getDatabase(workspaceId: String): WorkspaceDatabase {
-        // Must be called from a coroutine with a driver already acquired.
-        // Kept as a convenience; production code should use [useDatabase].
-        val driver = openDrivers[workspaceId]
-            ?: error("Driver not opened for $workspaceId — call getDriver first")
-        return WorkspaceDatabase(driver)
-    }
-
-    /** Runs [block] with a database bound to [workspaceId], closing nothing. */
     suspend fun <T> useDatabase(workspaceId: String, block: (WorkspaceDatabase) -> T): T {
         val driver = getDriver(workspaceId)
         return block(WorkspaceDatabase(driver))
     }
 
-    /** Nuclear option — deletes the SQLite file and workspace directory. */
+    suspend fun <T> useEngine(workspaceId: String, block: (ApexKitDatabaseEngine) -> T): T {
+        val driver = getDriver(workspaceId)
+        return block(ApexKitDatabaseEngine(driver))
+    }
+
     suspend fun deleteWorkspace(workspaceId: String) {
         validateWorkspaceId(workspaceId)
         lock.lock()

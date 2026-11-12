@@ -1,7 +1,10 @@
 package com.example.ui
 
 import android.content.Context
+import android.media.AudioAttributes
+import android.media.AudioFormat
 import android.media.AudioManager
+import android.media.AudioTrack
 import android.media.ToneGenerator
 import android.os.Build
 import android.os.VibrationEffect
@@ -53,6 +56,10 @@ import engine.state.DivVariableValue
 import engine.state.EngineStateBridge
 import engine.ui.EngineScreen
 import engine.ui.rememberDivKitDependencies
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlin.math.abs
 
 private enum class ActiveHostOverlay {
@@ -433,6 +440,7 @@ fun PosTerminalTab(
                                     context = context,
                                     enabled = permissions.hardwareBeeperAudio,
                                     toneType = ToneGenerator.TONE_PROP_BEEP,
+                                    frequencyHz = 1200.0,
                                     label = "POS Ring (1200 Hz)",
                                     onBlocked = { activeOverlay = ActiveHostOverlay.WORKSPACE_SETTINGS }
                                 )
@@ -447,6 +455,7 @@ fun PosTerminalTab(
                                     context = context,
                                     enabled = permissions.hardwareBeeperAudio,
                                     toneType = ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD,
+                                    frequencyHz = 2400.0,
                                     label = "Alert Beep (2400 Hz)",
                                     onBlocked = { activeOverlay = ActiveHostOverlay.WORKSPACE_SETTINGS }
                                 )
@@ -461,6 +470,7 @@ fun PosTerminalTab(
                                     context = context,
                                     enabled = permissions.hardwareBeeperAudio,
                                     toneType = ToneGenerator.TONE_SUP_ERROR,
+                                    frequencyHz = 600.0,
                                     label = "Error Buzz (600 Hz)",
                                     onBlocked = { activeOverlay = ActiveHostOverlay.WORKSPACE_SETTINGS }
                                 )
@@ -1067,10 +1077,97 @@ private fun HardwareTestButton(
     }
 }
 
+/**
+ * Safe POS tone audio player that synthesizes pure sine waves via AudioTrack,
+ * completely avoiding the Android legacy C++ ToneGenerator "Stop timed out"
+ * race condition in emulators and unclocked audio streams.
+ */
+private object PosTonePlayer {
+    private val scope = CoroutineScope(Dispatchers.IO)
+    private var sharedToneGen: ToneGenerator? = null
+
+    fun playTone(
+        toneType: Int,
+        frequencyHz: Double,
+        durationMs: Int = 180,
+        volume: Float = 0.85f
+    ) {
+        scope.launch {
+            var played = false
+            try {
+                val sampleRate = 44100
+                val numSamples = (durationMs * sampleRate) / 1000
+                val pcm = ShortArray(numSamples)
+                val angularFreq = 2.0 * Math.PI * frequencyHz / sampleRate
+
+                val attackSamples = (sampleRate * 0.01).toInt().coerceAtMost(numSamples / 4)
+                val decaySamples = (sampleRate * 0.02).toInt().coerceAtMost(numSamples / 4)
+
+                for (i in 0 until numSamples) {
+                    val rawSine = Math.sin(angularFreq * i)
+                    val envelope = when {
+                        i < attackSamples -> i.toDouble() / attackSamples
+                        i > numSamples - decaySamples -> (numSamples - i).toDouble() / decaySamples
+                        else -> 1.0
+                    }
+                    pcm[i] = (rawSine * envelope * Short.MAX_VALUE * volume).toInt().toShort()
+                }
+
+                val track = AudioTrack.Builder()
+                    .setAudioAttributes(
+                        AudioAttributes.Builder()
+                            .setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
+                            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                            .build()
+                    )
+                    .setAudioFormat(
+                        AudioFormat.Builder()
+                            .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                            .setSampleRate(sampleRate)
+                            .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
+                            .build()
+                    )
+                    .setBufferSizeInBytes(pcm.size * 2)
+                    .setTransferMode(AudioTrack.MODE_STATIC)
+                    .build()
+
+                track.write(pcm, 0, pcm.size)
+                track.play()
+                played = true
+
+                delay(durationMs + 60L)
+                try {
+                    track.stop()
+                    track.release()
+                } catch (_: Exception) {}
+            } catch (_: Exception) {
+                played = false
+            }
+
+            // Fallback to shared persistent ToneGenerator if AudioTrack is unavailable
+            if (!played) {
+                try {
+                    synchronized(this) {
+                        if (sharedToneGen == null) {
+                            try {
+                                sharedToneGen = ToneGenerator(AudioManager.STREAM_MUSIC, 85)
+                            } catch (_: Exception) {
+                                sharedToneGen = ToneGenerator(AudioManager.STREAM_SYSTEM, 85)
+                            }
+                        }
+                        sharedToneGen?.startTone(toneType, durationMs)
+                    }
+                } catch (_: Exception) {}
+            }
+        }
+    }
+}
+
 private fun playPosTone(
     context: Context,
     enabled: Boolean,
     toneType: Int,
+    frequencyHz: Double = 1200.0,
     label: String,
     onBlocked: () -> Unit
 ) {
@@ -1087,14 +1184,10 @@ private fun playPosTone(
         onBlocked()
         return
     }
-    try {
-        val toneGen = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 85)
-        toneGen.startTone(toneType, 180)
-    } catch (_: Exception) {
-    }
+    PosTonePlayer.playTone(toneType = toneType, frequencyHz = frequencyHz, durationMs = 180)
     EngineStateBridge.pushUpdate(
         "user.last_hardware_event",
-        DivVariableValue.Str("TONEGENERATOR OK: Played $label")
+        DivVariableValue.Str("AUDIO OK: Played $label")
     )
 }
 

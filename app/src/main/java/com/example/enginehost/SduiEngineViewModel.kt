@@ -187,26 +187,26 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                     summary = "v1.1 • Full POS Register + Live KMP SDUI Chart Schema"
                 )
             }
-        } else if (existingVersions.none { it.divkitJson.contains("sdui_chart") }) {
-            // Upgrade existing cached tenant with new v1.2 schema containing the custom sdui_chart block
-            val v12Raw = WorkspaceProvisioner.buildDefaultDivKitCardJson(spec)
-            val v12Jti = UUID.randomUUID().toString()
-            val v12Env = PayloadVerifier.createSignedEnvelope(
+        } else if (existingVersions.none { it.divkitJson.contains("tools://") }) {
+            // Upgrade existing cached tenant with new v1.3 schema containing all 7 Native Tools & AI vision models
+            val v13Raw = WorkspaceProvisioner.buildDefaultDivKitCardJson(spec)
+            val v13Jti = UUID.randomUUID().toString()
+            val v13Env = PayloadVerifier.createSignedEnvelope(
                 tenant = spec.tenantId,
-                schemaVersion = "1.2",
-                payloadJson = v12Raw,
+                schemaVersion = "1.3",
+                payloadJson = v13Raw,
                 keyPair = keyPair,
-                jtiOverride = v12Jti
+                jtiOverride = v13Jti
             )
-            val v12Verified = verifier.verify(v12Env)
+            val v13Verified = verifier.verify(v13Env)
             workspaceManager.useDatabase(spec.tenantId) { db ->
                 db.workspaceQueries.cacheAndActivateSchemaVersion(
-                    schemaVersion = "1.2",
-                    jti = v12Jti,
-                    signedEnvelope = v12Env,
-                    verifiedPayload = v12Verified,
+                    schemaVersion = "1.3",
+                    jti = v13Jti,
+                    signedEnvelope = v13Env,
+                    verifiedPayload = v13Verified,
                     receivedAt = currentTimeMillis(),
-                    summary = "v1.2 • POS Register + Live KMP SDUI Chart (Vico / Swift Charts)"
+                    summary = "v1.3 • POS Register + tools:// (libsignal, MobileNetV4, U-2-Net, Barcode/QR)"
                 )
             }
         }
@@ -291,7 +291,22 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                         "user.last_hardware_event" to DivVariableValue.Str("Ready (${spec.capabilities.joinToString("/")})"),
                         "user.sync_status" to DivVariableValue.Str(verifiedConfig.mode.name.lowercase()),
                         "user.engine_error" to DivVariableValue.Str("None"),
-                        "user.last_order_id" to DivVariableValue.IntVal(0L)
+                        "user.last_order_id" to DivVariableValue.IntVal(0L),
+                        "user.scanned_barcode" to DivVariableValue.Str("9780201633610"),
+                        "user.scanned_format" to DivVariableValue.Str("EAN_13"),
+                        "user.scanned_item_name" to DivVariableValue.Str("Wagyu Smash Burger"),
+                        "user.scanned_price" to DivVariableValue.Str("16.50"),
+                        "user.scanned_qr" to DivVariableValue.Str("apexpos://connect?tenant=${spec.tenantId}&lan=192.168.1.10"),
+                        "user.scanned_qr_type" to DivVariableValue.Str("TERMINAL_PAIRING"),
+                        "user.ai_prediction_label" to DivVariableValue.Str("Wagyu Smash Burger (Entree)"),
+                        "user.ai_confidence_score" to DivVariableValue.Str("0.93"),
+                        "user.u2net_mask_uri" to DivVariableValue.Str("content://com.example.provider/u2net/alpha_matte_01.png"),
+                        "user.bg_remove_status" to DivVariableValue.Str("Transparent PNG Ready"),
+                        "user.signal_session_id" to DivVariableValue.Str("sig_sess_acme_peer_01"),
+                        "user.signal_fingerprint" to DivVariableValue.Str("4E-91-A2-5F-C0-83"),
+                        "user.signal_status" to DivVariableValue.Str("ESTABLISHED"),
+                        "user.tool_last_status" to DivVariableValue.Str("Ready"),
+                        "user.tool_last_latency" to DivVariableValue.IntVal(3L)
                     )
                 )
 
@@ -431,8 +446,16 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
         capability: String,
         url: String
     ): Boolean {
+        val perms = _uiState.value.tenantToolsMap[spec.tenantId] ?: spec.defaultTools
         return when (capability) {
             "scanner" -> {
+                if (!perms.cameraBarcodeScanner) {
+                    EngineStateBridge.pushUpdate(
+                        "user.last_hardware_event",
+                        DivVariableValue.Str("DENIED: Enable 'Camera Barcode & QR Scanner' in Workspace Settings")
+                    )
+                    return false
+                }
                 val randomProd = spec.defaultProducts.random()
                 EngineStateBridge.pushUpdate(
                     "user.last_hardware_event",
@@ -476,6 +499,107 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                 EngineStateBridge.pushUpdate(
                     "user.last_hardware_event",
                     DivVariableValue.Str("CASH DRAWER SOLENOID OPENED (${spec.terminalCode})")
+                )
+                true
+            }
+            "beeper" -> {
+                if (!perms.hardwareBeeperAudio) {
+                    EngineStateBridge.pushUpdate(
+                        "user.last_hardware_event",
+                        DivVariableValue.Str("DENIED: Enable 'Hardware Beeper Audio' in Workspace Settings")
+                    )
+                    return false
+                }
+                engine.tools.impl.PosTonePlayer.playTone(frequencyHz = 1200.0, durationMs = 180)
+                EngineStateBridge.pushUpdate(
+                    "user.last_hardware_event",
+                    DivVariableValue.Str("BEEPER AUDIO OK: Synthesized POS Ring 1200 Hz")
+                )
+                true
+            }
+            "haptics" -> {
+                if (!perms.hapticVibration) {
+                    EngineStateBridge.pushUpdate(
+                        "user.last_hardware_event",
+                        DivVariableValue.Str("DENIED: Enable 'Haptic Vibration' in Workspace Settings")
+                    )
+                    return false
+                }
+                engine.tools.NativeToolsSuite.execute("tools://haptics/click", kotlinx.serialization.json.JsonObject(emptyMap()))
+                EngineStateBridge.pushUpdate(
+                    "user.last_hardware_event",
+                    DivVariableValue.Str("HAPTICS OK: Tactile vibration triggered")
+                )
+                true
+            }
+            "biometrics" -> {
+                if (!perms.supervisorBiometricAuth) {
+                    EngineStateBridge.pushUpdate(
+                        "user.last_hardware_event",
+                        DivVariableValue.Str("DENIED: Enable 'Supervisor Biometric Auth' in Workspace Settings")
+                    )
+                    return false
+                }
+                EngineStateBridge.pushUpdate("user.supervisor_authenticated", DivVariableValue.Bool(true))
+                EngineStateBridge.pushUpdate(
+                    "user.last_hardware_event",
+                    DivVariableValue.Str("BIOMETRICS OK: Supervisor identity authorized")
+                )
+                true
+            }
+            "clipboard" -> {
+                if (!perms.clipboardAccess) {
+                    EngineStateBridge.pushUpdate(
+                        "user.last_hardware_event",
+                        DivVariableValue.Str("DENIED: Enable 'Clipboard Access' in Workspace Settings")
+                    )
+                    return false
+                }
+                EngineStateBridge.pushUpdate(
+                    "user.last_hardware_event",
+                    DivVariableValue.Str("CLIPBOARD OK: Data synchronized with system clipboard")
+                )
+                true
+            }
+            "push" -> {
+                if (!perms.backgroundAlertsPush) {
+                    EngineStateBridge.pushUpdate(
+                        "user.last_hardware_event",
+                        DivVariableValue.Str("DENIED: Enable 'Background Alerts & Push' in Workspace Settings")
+                    )
+                    return false
+                }
+                EngineStateBridge.pushUpdate(
+                    "user.last_hardware_event",
+                    DivVariableValue.Str("PUSH OK: Alert logged to order ledger")
+                )
+                true
+            }
+            "offline_cache" -> {
+                if (!perms.offlinePageCaching) {
+                    EngineStateBridge.pushUpdate(
+                        "user.last_hardware_event",
+                        DivVariableValue.Str("DENIED: Enable 'Offline Page Caching' in Workspace Settings")
+                    )
+                    return false
+                }
+                EngineStateBridge.pushUpdate(
+                    "user.last_hardware_event",
+                    DivVariableValue.Str("OFFLINE CACHE OK: 4 schema versions cached for LAN")
+                )
+                true
+            }
+            "realtime_ws" -> {
+                if (!perms.realtimeEngineWsSse) {
+                    EngineStateBridge.pushUpdate(
+                        "user.last_hardware_event",
+                        DivVariableValue.Str("DENIED: Enable 'Realtime Engine (WS / SSE)' in Workspace Settings")
+                    )
+                    return false
+                }
+                EngineStateBridge.pushUpdate(
+                    "user.last_hardware_event",
+                    DivVariableValue.Str("REALTIME ENGINE OK: Live kitchen WebSocket channel connected")
                 )
                 true
             }

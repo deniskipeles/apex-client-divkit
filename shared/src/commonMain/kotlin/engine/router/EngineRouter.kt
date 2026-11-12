@@ -41,10 +41,50 @@ class EngineRouter(
      * All engine work runs on Dispatchers.Default / IO inside the caller.
      */
     suspend fun handle(url: String, payload: JsonObject?): ActionOutcome = when {
+        url.startsWith("div-action://") -> handleDivAction(url, payload)
         url.startsWith("local-db://op/") -> handleLocalDb(url, payload ?: JsonObject(emptyMap()))
         url.startsWith("hardware://") -> handleHardware(url, payload)
+        url.startsWith("tools://") -> handleTools(url, payload ?: JsonObject(emptyMap()))
         url == "workspace://clear_all" -> handleClearAll()
         else -> ActionOutcome.Unhandled
+    }
+
+    private suspend fun handleDivAction(url: String, payload: JsonObject?): ActionOutcome {
+        val ws = activeWorkspace()
+        val ctx = engine.tools.ToolContext(workspaceId = ws)
+        val result = engine.tools.TerminalApp.router.handle(
+            raw = url,
+            provenanceType = engine.tools.Provenance.Publisher,
+            ctx = ctx
+        )
+        return when (result) {
+            is engine.tools.ToolResult.Success -> ActionOutcome.Handled
+            is engine.tools.ToolResult.Unsupported -> {
+                emitError("Unsupported tool: ${result.reason}", payload ?: JsonObject(emptyMap()))
+                ActionOutcome.Error("Unsupported tool: ${result.reason}")
+            }
+            is engine.tools.ToolResult.PermissionDenied -> {
+                emitError("Permission denied: ${result.permission}", payload ?: JsonObject(emptyMap()))
+                ActionOutcome.Error("Permission denied: ${result.permission}")
+            }
+            is engine.tools.ToolResult.Failed -> {
+                emitError("Tool failed: ${result.message}", payload ?: JsonObject(emptyMap()))
+                ActionOutcome.Error("Tool failed: ${result.message}")
+            }
+            null -> ActionOutcome.Unhandled
+        }
+    }
+
+    private suspend fun handleTools(url: String, payload: JsonObject): ActionOutcome {
+        val ws = activeWorkspace()
+        return try {
+            engine.tools.NativeToolsSuite.execute(url, payload, tenantId = ws)
+            ActionOutcome.Handled
+        } catch (e: Exception) {
+            val msg = e.message ?: "Tool execution failed"
+            emitError(msg, payload)
+            ActionOutcome.Error(msg)
+        }
     }
 
     private suspend fun handleLocalDb(url: String, payload: JsonObject): ActionOutcome {

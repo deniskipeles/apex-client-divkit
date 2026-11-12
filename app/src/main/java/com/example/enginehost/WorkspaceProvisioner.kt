@@ -371,6 +371,86 @@ object WorkspaceProvisioner {
                         put("type", "string")
                         put("value", "None")
                     }
+                    addJsonObject {
+                        put("name", "user.scanned_barcode")
+                        put("type", "string")
+                        put("value", "9780201633610")
+                    }
+                    addJsonObject {
+                        put("name", "user.scanned_format")
+                        put("type", "string")
+                        put("value", "EAN_13")
+                    }
+                    addJsonObject {
+                        put("name", "user.scanned_item_name")
+                        put("type", "string")
+                        put("value", "Wagyu Smash Burger")
+                    }
+                    addJsonObject {
+                        put("name", "user.scanned_price")
+                        put("type", "string")
+                        put("value", "16.50")
+                    }
+                    addJsonObject {
+                        put("name", "user.scanned_qr")
+                        put("type", "string")
+                        put("value", "apexpos://connect?tenant=${spec.tenantId}&lan=192.168.1.10")
+                    }
+                    addJsonObject {
+                        put("name", "user.scanned_qr_type")
+                        put("type", "string")
+                        put("value", "TERMINAL_PAIRING")
+                    }
+                    addJsonObject {
+                        put("name", "user.ai_prediction_label")
+                        put("type", "string")
+                        put("value", "Wagyu Smash Burger (Entree)")
+                    }
+                    addJsonObject {
+                        put("name", "user.ai_confidence_score")
+                        put("type", "string")
+                        put("value", "0.93")
+                    }
+                    addJsonObject {
+                        put("name", "user.u2net_mask_uri")
+                        put("type", "string")
+                        put("value", "content://com.example.provider/u2net/alpha_matte_01.png")
+                    }
+                    addJsonObject {
+                        put("name", "user.bg_remove_status")
+                        put("type", "string")
+                        put("value", "Transparent PNG Ready")
+                    }
+                    addJsonObject {
+                        put("name", "user.signal_session_id")
+                        put("type", "string")
+                        put("value", "sig_sess_acme_peer_01")
+                    }
+                    addJsonObject {
+                        put("name", "user.signal_fingerprint")
+                        put("type", "string")
+                        put("value", "4E-91-A2-5F-C0-83")
+                    }
+                    addJsonObject {
+                        put("name", "user.signal_status")
+                        put("type", "string")
+                        put("value", "ESTABLISHED")
+                    }
+                    addJsonObject {
+                        put("name", "user.tool_last_latency")
+                        put("type", "integer")
+                        put("value", 3)
+                    }
+                    addJsonObject {
+                        put("name", "user.haptic_state")
+                        put("type", "string")
+                        put("value", "ready")
+                    }
+                    addJsonObject {
+                        put("name", "user.haptic_pattern")
+                        put("type", "string")
+                        put("value", "click")
+                    }
                 }
                 putJsonArray("states") {
                     addJsonObject {
@@ -690,7 +770,13 @@ object WorkspaceProvisioner {
                                     }
                                 }
 
-                                // 5. Custom DivKit Chart Block (`"custom_type": "sdui_chart"`) bound to `user.orders_json`
+                                // 5. Native Tools Suite Bridge (tools://*)
+                                add(SduiOnFlyBuilder.buildScannerToolBlock(spec))
+                                add(SduiOnFlyBuilder.buildMobileNetV4ClassifyToolBlock(spec))
+                                add(SduiOnFlyBuilder.buildU2NetToolBlock(spec))
+                                add(SduiOnFlyBuilder.buildLibSignalToolBlock(spec))
+
+                                // 6. Custom DivKit Chart Block (`"custom_type": "sdui_chart"`) bound to `user.orders_json`
                                 add(
                                     SduiOnFlyBuilder.buildSduiChartBlock(
                                         spec = spec,

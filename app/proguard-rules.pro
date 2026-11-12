@@ -1,21 +1,49 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# Android ProGuard & R8 Optimization Rules for SDUI POS Multi-Tenant Engine
+# Configured for maximum execution performance and safe resource shrinking without runtime latency penalties.
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# 1. Preserve Annotations, Signatures and Serialization for Kotlin & Compose
+-keepattributes *Annotation*,Signature,InnerClasses,EnclosingMethod
+-keepattributes SourceFile,LineNumberTable
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# KotlinX Serialization
+-keepclassmembers class * {
+    @kotlinx.serialization.Serializable <fields>;
+}
+-keepclassmembers class * {
+    @kotlinx.serialization.SerialName <fields>;
+}
+-keep class * implements kotlinx.serialization.KSerializer {
+    *;
+}
+-keep class kotlinx.serialization.** { *; }
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# 2. Engine Core, Routing, Dynamic Tools & SQLite Isolation
+-keep class engine.** { *; }
+-keepclassmembers class engine.** { *; }
+-keep class com.example.enginehost.** { *; }
+-keepclassmembers class com.example.enginehost.** { *; }
+
+# Native Tools Suite (libsignal, TFLite models, barcode/QR scanner)
+-keep class engine.tools.** { *; }
+-keepclassmembers class engine.tools.** { *; }
+
+# 3. Cryptography & Security Invariants (Ed25519, AES-GCM, CanonicalJson)
+-keep class javax.crypto.** { *; }
+-keep class java.security.** { *; }
+-keep class org.bouncycastle.** { *; }
+
+# 4. DivKit & UI Engine Components
+-keep class com.yandex.divkit.** { *; }
+-keep class com.yandex.div.** { *; }
+-keep class com.patrykandpatrick.vico.** { *; }
+
+# 5. Fast Execution Tuning: prevent aggressive micro-optimizations that degrade JIT warmup
+-optimizations !code/simplification/arithmetic,!code/simplification/cast,!field/*,!class/merging/*
+-repackageclasses
+-allowaccessmodification
+
+# 6. Optional TLS platform providers in OkHttp (not required on Android)
+-dontwarn org.bouncycastle.jsse.**
+-dontwarn org.conscrypt.**
+-dontwarn org.openjsse.**
+-dontwarn okhttp3.internal.platform.**

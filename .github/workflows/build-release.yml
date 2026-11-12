@@ -1,0 +1,93 @@
+name: Build & Release DivKit SDUI POS APKs
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch: # Allows manual triggering from GitHub UI if ever needed
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-release:
+    name: Build Multi-Architecture APKs
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'gradle'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Accept Android SDK Licenses & Install Platform Tools
+        run: |
+          yes | sdkmanager --licenses || true
+          sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0" || true
+
+      - name: Setup Environment Files
+        run: |
+          # Create placeholder .env to satisfy the Secrets Gradle Plugin if not present
+          touch .env
+          if [ ! -f .env.example ]; then
+            touch .env.example
+          fi
+
+      - name: Ensure Executable Permissions
+        run: |
+          chmod +x gradlew
+          chmod +x build-apks.sh
+
+      - name: Compile and Package Release APKs
+        env:
+          KEYSTORE_PATH: ${{ github.workspace }}/my-upload-key.jks
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD || 'storepass123' }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD || 'storepass123' }}
+        run: |
+          # Executes the automated build engine in --release mode:
+          # Produces arm64-v8a, armeabi-v7a, x86_64, and universal APKs + checksums.sha256 in ./dist-apks/
+          ./build-apks.sh --release --output-dir "${{ github.workspace }}/dist-apks"
+
+      - name: Display Artifacts & Checksums
+        run: |
+          echo "### Generated Build Artifacts"
+          ls -lh dist-apks/
+          echo ""
+          echo "### SHA-256 Checksums"
+          cat dist-apks/checksums.sha256
+
+      - name: Upload Build Artifacts to Actions Run
+        uses: actions/upload-artifact@v4
+        with:
+          name: divkit-sdui-pos-apks-${{ github.ref_name }}
+          path: dist-apks/*
+          retention-days: 30
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: DivKit SDUI POS Release ${{ github.ref_name }}
+          tag_name: ${{ github.ref_name }}
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-alpha') || contains(github.ref_name, '-beta') || contains(github.ref_name, '-rc') }}
+          generate_release_notes: true
+          files: |
+            dist-apks/*.apk
+            dist-apks/checksums.sha256
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

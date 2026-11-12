@@ -110,3 +110,98 @@ Tenants can declare interactive charts directly inside their signed DivKit JSON 
 - **iOS (`iosApp/EngineCustomBlockFactory.swift` — `EngineChartBlockFactory: DivCustomBlockFactory`)**:
   - Wired to Apple **Swift Charts** (`Charts.framework`: `BarMark`, `LineMark`, `AreaMark`, `SectorMark` via `UIHostingController`) on iOS 16+ and **DGCharts** (`~> 5.1.0`: `BarChartView`, `LineChartView`, `PieChartView`) fallback on iOS 15, subscribed to `DivVariableStorage.publisher(for: dataVar)`.
 
+---
+
+## Native Tools & AI Vision Suite (`tools://*`)
+
+Tenants can invoke hardware bridges, optical scanning, on-device AI vision models, and cryptographic protocols directly through standard DivKit actions using the `tools://` scheme:
+
+```json
+{
+  "log_id": "trigger_mobilenetv4",
+  "url": "tools://MobileNetV4-small/classify",
+  "payload": {
+    "operation": "classify",
+    "options": {
+      "top_k": 3,
+      "min_confidence": "0.40"
+    },
+    "output": {
+      "prediction_label": "user.ai_prediction_label",
+      "prediction_sku": "user.ai_prediction_sku",
+      "confidence": "user.ai_confidence_score"
+    }
+  }
+}
+```
+
+### Supported Tools & Generalized APIs
+
+| Tool URI | Display Name | Operations | Customizable Options | Default Output Mappings |
+|---|---|---|---|---|
+| `tools://libsignal` | **LibSignal E2EE Protocol** | `init_keys`, `create_session`, `encrypt`, `decrypt`, `fingerprint` | `cipher`, `key_derivation`, `ratchet_steps` | `user.signal_session_id`, `user.signal_fingerprint`, `user.signal_status`, `user.signal_ciphertext` |
+| `tools://scan-barcode` | **Optical Barcode Scanner (1D)** | `scan`, `continuous_scan`, `simulate` | `formats` (EAN_13, CODE_128, UPC_A), `auto_insert_db`, `confidence_threshold` | `user.scanned_barcode`, `user.scanned_format`, `user.scanned_sku`, `user.scanned_item_name`, `user.scanned_price` |
+| `tools://scan-qr` | **QR & Matrix Scanner (2D)** | `scan`, `generate`, `verify_pairing` | `prefix_filter`, `vibrate_on_match`, `auto_connect_workspace` | `user.scanned_qr`, `user.scanned_qr_type`, `user.scanned_qr_payload` |
+| `tools://image-background-remove` | **Background Removal Pipeline** | `process`, `composite_solid`, `crop_bounds` | `model`, `alpha_threshold`, `feather_radius`, `output_format` | `user.segmented_image_uri`, `user.bg_remove_status`, `user.bg_mask_coverage` |
+| `tools://camera` | **POS Camera Hardware Bridge** | `capture`, `torch_toggle`, `get_status` | `facing` (back/front), `flash_mode`, `resolution`, `aspect_ratio` | `user.camera_capture_uri`, `user.camera_timestamp`, `user.camera_torch_state` |
+| `tools://u-2-Net.tflite` | **U-2-Net TFLite Neural Segmenter** | `segment`, `compute_saliency_map`, `model_profile` | `tensor_input` (320x320x3), `quantization` (INT8), `saliency_cutoff` | `user.u2net_mask_uri`, `user.u2net_confidence`, `user.u2net_latency_ms` |
+| `tools://MobileNetV4-small` | **MobileNetV4-Small (Smallest Quant)** | `classify`, `detect_sku`, `model_benchmarks` | `model_variant` (INT8), `input_resolution` (224x224x3), `top_k`, `min_confidence` | `user.ai_prediction_label`, `user.ai_prediction_sku`, `user.ai_confidence_score`, `user.ai_candidates_json` |
+| `tools://haptics` | **Tactile Haptics Engine (`device.haptics@1`)** | `click`, `double_click`, `heavy_click`, `tick`, `selection`, `success`, `warning`, `error`, `buzz`, `vibrate` | `pattern`, `duration_ms` (10-1000ms), `amplitude` (1-255) | `user.haptic_state`, `user.haptic_pattern`, `user.haptic_duration_ms` |
+
+---
+
+## 📳 Terminal Tool Architecture & `div-action://` Invocation Contract
+
+The terminal engine implements the zero-trust **Terminal Tool Architecture**:
+
+1. **Globally Versioned Capabilities**:
+   - Capabilities are declared and registered with strict version tags (e.g. `device.haptics@1`, `vision.scan_code@1`, `secure.send@1`).
+   - Aliased identifiers (e.g. `haptics.perform@1`, `hardware.haptics@1`, `tools://haptics`) map to the primary capability handler.
+2. **Action Invocations (`div-action://terminal.tool.invoke`)**:
+   - `div-action://terminal.tool.invoke?tool=device.haptics@1&pattern=heavy_click&result_var=haptic_state`
+   - Non-blocking, fire-and-forget execution dispatched through `DivActionRouter`.
+3. **Four-Way Typed Result Resolution (`ToolResult`)**:
+   - `ToolResult.Success(data)`: Operation succeeded; bound into `${result_var}` and `${result_var}_<field>`.
+   - `ToolResult.Unsupported(capability, reason)`: Hardware or feature absent on this platform; writes `"unsupported"`.
+   - `ToolResult.PermissionDenied(capability, permission)`: Required permission denied; writes `"denied"`.
+   - `ToolResult.Failed(capability, message)`: Unexpected runtime failure; writes `"failed"`.
+4. **Provenance & Access Control**:
+   - `Provenance.Agency`: Full access to administrative, internal, and external capabilities.
+   - `Provenance.Publisher`: Restricted strictly to pre-approved tenant tool capabilities (`device.haptics@1`, `vision.scan_code@1`, `secure.send@1`, etc.) via `ProvenanceChecker`.
+5. **Real Platform Haptics**:
+   - Uses Android `Vibrator` / `VibratorManager` with `VibrationEffect.createPredefined` (Android 10+), dual-pulse waveforms (Android 8+), and legacy millisecond one-shots. Gracefully degrades if hardware or permissions are unavailable.
+
+## Multi-Architecture Packaging & R8 Minification
+
+The build produces **3 standalone architecture APKs** + **1 universal APK** + **1 AAB bundle**:
+
+- **`arm64-v8a`**: 64-bit modern Android devices and flagship POS hardware.
+- **`armeabi-v7a`**: 32-bit legacy POS terminals and embedded handhelds.
+- **`x86_64`**: Modern x86 kiosks, emulators, and ChromeOS devices.
+- **`universal`**: Fat APK bundling all 3 ABIs for single-file deployment.
+
+### R8 Minification & High-Speed Tuning
+
+Configured via `app/build.gradle.kts` and `app/proguard-rules.pro`:
+- `isMinifyEnabled = true` and `isShrinkResources = true` in `release`.
+- Preserves all KotlinX Serialization, SQLDelight/SQLite, DivKit, and crypto reflection.
+- `-optimizations !code/simplification/arithmetic,!code/simplification/cast,!field/*,!class/merging/*` prevents excessive obfuscation loops, ensuring fast JIT/AOT warmup and deterministic performance.
+
+### 🛠️ One-Click Zero-Config Build Script (`build-apks.sh`)
+
+Run `./build-apks.sh` to automatically detect and configure the environment (JDK 17/21, Android SDK, Licenses, Keystores, and Gradle wrapper) and build all multi-architecture APKs without manual OS setup:
+
+```bash
+# Build debug APK suite (arm64-v8a, armeabi-v7a, x86_64, universal)
+./build-apks.sh
+
+# Build minified production release APKs with R8 and resource shrinking
+./build-apks.sh --release
+
+# Build both debug and release suites into a custom directory
+./build-apks.sh --all --output-dir ./my-apks
+```
+
+Artifacts are automatically harvested to `./dist-apks/` with a verified `checksums.sha256` manifest.
+
+

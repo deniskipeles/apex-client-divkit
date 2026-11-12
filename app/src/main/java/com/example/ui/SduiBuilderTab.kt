@@ -321,6 +321,155 @@ fun SduiBuilderTab(
                         Text("+ Donut Stock", fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
                     }
                 }
+
+                HorizontalDivider(color = colorScheme.outline.copy(alpha = 0.5f))
+
+                Text(
+                    "NATIVE TOOLS & ON-DEVICE AI BLOCKS (tools://{libsignal, scan, camera, u-2-Net, MobileNetV4})",
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = colorScheme.primary
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    FilledTonalButton(
+                        onClick = {
+                            val block = SduiOnFlyBuilder.buildMobileNetV4ClassifyToolBlock(spec)
+                            viewModel.injectOnFlyComponent(block, "tools://MobileNetV4-small AI Classifier", prepend = true)
+                            onSwitchToTerminalPreview()
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .defaultMinSize(minHeight = 48.dp)
+                            .testTag("inject_mobilenetv4_button"),
+                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp)
+                    ) {
+                        Text("+ MobileNetV4 AI", fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                    }
+
+                    FilledTonalButton(
+                        onClick = {
+                            val block = SduiOnFlyBuilder.buildU2NetToolBlock(spec)
+                            viewModel.injectOnFlyComponent(block, "tools://u-2-Net.tflite Saliency Matte", prepend = true)
+                            onSwitchToTerminalPreview()
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .defaultMinSize(minHeight = 48.dp)
+                            .testTag("inject_u2net_button"),
+                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp)
+                    ) {
+                        Text("+ U-2-Net Matte", fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    FilledTonalButton(
+                        onClick = {
+                            val block = SduiOnFlyBuilder.buildScannerToolBlock(spec)
+                            viewModel.injectOnFlyComponent(block, "tools://scan-barcode Optical Suite", prepend = true)
+                            onSwitchToTerminalPreview()
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .defaultMinSize(minHeight = 48.dp)
+                            .testTag("inject_scanner_suite_button"),
+                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp)
+                    ) {
+                        Text("+ Optical Barcode/QR", fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                    }
+
+                    FilledTonalButton(
+                        onClick = {
+                            val block = SduiOnFlyBuilder.buildLibSignalToolBlock(spec)
+                            viewModel.injectOnFlyComponent(block, "tools://libsignal E2EE Ratchet", prepend = true)
+                            onSwitchToTerminalPreview()
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .defaultMinSize(minHeight = 48.dp)
+                            .testTag("inject_libsignal_button"),
+                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp)
+                    ) {
+                        Text("+ LibSignal E2EE", fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    FilledTonalButton(
+                        onClick = {
+                            val block = SduiOnFlyBuilder.buildHapticsToolBlock(spec)
+                            viewModel.injectOnFlyComponent(block, "device.haptics@1 Tactile Suite", prepend = true)
+                            onSwitchToTerminalPreview()
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .defaultMinSize(minHeight = 48.dp)
+                            .testTag("inject_haptics_button"),
+                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp)
+                    ) {
+                        Text("+ Haptics (device.haptics)", fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                    }
+
+                    FilledTonalButton(
+                        onClick = {
+                            val block = SduiOnFlyBuilder.buildBeeperToolBlock(spec)
+                            viewModel.injectOnFlyComponent(block, "device.beeper@1 Audio Suite", prepend = true)
+                            onSwitchToTerminalPreview()
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .defaultMinSize(minHeight = 48.dp)
+                            .testTag("inject_beeper_button"),
+                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp)
+                    ) {
+                        Text("+ Beeper Audio (1200Hz)", fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    FilledTonalButton(
+                        onClick = {
+                            val block = SduiOnFlyBuilder.buildBiometricsToolBlock(spec)
+                            viewModel.injectOnFlyComponent(block, "auth.biometrics@1 Supervisor Auth", prepend = true)
+                            onSwitchToTerminalPreview()
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .defaultMinSize(minHeight = 48.dp)
+                            .testTag("inject_biometrics_button"),
+                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp)
+                    ) {
+                        Text("+ Supervisor Biometrics", fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                    }
+
+                    FilledTonalButton(
+                        onClick = {
+                            val block = SduiOnFlyBuilder.buildClipboardAndPushToolBlock(spec)
+                            viewModel.injectOnFlyComponent(block, "device.clipboard@1 & network.push@1", prepend = true)
+                            onSwitchToTerminalPreview()
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .defaultMinSize(minHeight = 48.dp)
+                            .testTag("inject_clipboard_push_button"),
+                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp)
+                    ) {
+                        Text("+ Clipboard & Push Alerts", fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                }
             }
         }
 

@@ -33,6 +33,8 @@ object EngineStateBridge {
     }
 
     fun clear() { _state.value = emptyMap() }
+
+    fun getVariable(name: String): DivVariableValue? = _state.value[name]
 }
 
 /**
