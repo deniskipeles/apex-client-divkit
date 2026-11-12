@@ -126,7 +126,7 @@ fun SduiPosEngineApp(viewModel: SduiEngineViewModel) {
                             }
                             Column {
                                 Text(
-                                    text = "DivKit SDUI POS",
+                                    text = "ApexClient Terminal",
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 18.sp,
                                     color = colorScheme.onSurface,

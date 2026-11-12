@@ -91,24 +91,26 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
     private val driverFactory = WorkspaceDriverFactory(context)
     val workspaceManager = WorkspaceManager(driverFactory)
     val registry = EngineRegistry()
-    private val httpClient = createHttpClient()
-    val syncEngine = SyncEngine(workspaceManager, httpClient)
-    private val syncScheduler = BackgroundSyncScheduler(PlatformContext.Android(context))
 
-    private val keyPair: SigningKeyPair = Ed25519.generateKeyPair("sdui-kmp-edge-key")
+    // Constructed lazily so ViewModel creation (and therefore the first frame) stays cheap;
+    // these allocate OkHttp clients / WorkManager plumbing that is only needed on demand.
+    private val httpClient by lazy { createHttpClient() }
+    val syncEngine by lazy { SyncEngine(workspaceManager, httpClient) }
+    private val syncScheduler by lazy { BackgroundSyncScheduler(PlatformContext.Android(context)) }
+
+    private val keyPair: SigningKeyPair by lazy { Ed25519.generateKeyPair("sdui-kmp-edge-key") }
     private val verifiers = mutableMapOf<String, PayloadVerifier>()
 
     private var activeRouter: EngineRouter? = null
 
-    private val _uiState = MutableStateFlow(
-        SduiEngineUiState(keyPair = keyPair)
-    )
+    private val _uiState = MutableStateFlow(SduiEngineUiState())
     val uiState: StateFlow<SduiEngineUiState> = _uiState.asStateFlow()
 
     init {
         currentAndroidContext = { context }
         // Initiate connected tenants by receiving, verifying, and caching their initial DivKit schemas in SQLite
         viewModelScope.launch(Dispatchers.IO) {
+            _uiState.update { it.copy(keyPair = keyPair) }
             WorkspaceProvisioner.defaultWorkspaces.forEach { spec ->
                 ensureTenantInitiatedWithCachedSchema(spec)
             }
@@ -316,23 +318,26 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                     ?: WorkspaceProvisioner.buildDefaultDivKitCardJson(spec)
                 val activeVersionLabel = activeSchema?.schemaVersion ?: "1.0"
 
-                // 7. Execute initial queries via EngineRouter so DivKit variables (`user.orders_json`, counts) are populated
-                router.handle(
-                    "local-db://op/db.query",
-                    WorkspaceProvisioner.buildQueryOrdersAction()["payload"]?.jsonObject
-                )
-                router.handle(
-                    "local-db://op/db.count",
-                    WorkspaceProvisioner.buildCountOrdersAction()["payload"]?.jsonObject
-                )
-                router.handle(
-                    "local-db://op/db.query",
-                    WorkspaceProvisioner.buildQueryInventoryAction()["payload"]?.jsonObject
-                )
-                router.handle(
-                    "local-db://op/db.count",
-                    WorkspaceProvisioner.buildCountInventoryAction()["payload"]?.jsonObject
-                )
+                // 7. Execute initial queries via EngineRouter so DivKit variables (`user.orders_json`, counts) are populated.
+                //    These hit SQLite, so keep them off the main thread.
+                withContext(Dispatchers.IO) {
+                    router.handle(
+                        "local-db://op/db.query",
+                        WorkspaceProvisioner.buildQueryOrdersAction()["payload"]?.jsonObject
+                    )
+                    router.handle(
+                        "local-db://op/db.count",
+                        WorkspaceProvisioner.buildCountOrdersAction()["payload"]?.jsonObject
+                    )
+                    router.handle(
+                        "local-db://op/db.query",
+                        WorkspaceProvisioner.buildQueryInventoryAction()["payload"]?.jsonObject
+                    )
+                    router.handle(
+                        "local-db://op/db.count",
+                        WorkspaceProvisioner.buildCountInventoryAction()["payload"]?.jsonObject
+                    )
+                }
 
                 _uiState.update {
                     it.copy(

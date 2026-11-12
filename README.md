@@ -1,4 +1,4 @@
-# DivKit SDUI POS — Multi-Tenancy KMP App Engine
+# ApexClient Terminal — DivKit SDUI POS Multi-Tenancy KMP App Engine
 
 A Kotlin Multiplatform (KMP) Server-Driven UI (SDUI) application engine that uses **DivKit** for dynamic, on-the-fly component rendering across **Android** and **iOS**.
 
@@ -23,12 +23,10 @@ A Kotlin Multiplatform (KMP) Server-Driven UI (SDUI) application engine that use
 ## 🚀 Home Launcher, Engine Settings & Dedicated Workspace Flow
 
 1. **Multi-Tenant Hub Launcher (2-Column Grid Default + 1-Column List Toggle + Live Search)**:
-   - On launch, the app presents a **two-column grid launcher** (`TenantLauncherScreen`, toggleable to a **1-column list view** via the top-bar layout icon) and a live search bar (`"Search terminals, registers, URLs..."`):
-     - **Apex POS Terminal Demo** (`acme_pos` • `⚡ Built-in Demo` • `🛠️ 6 tools active` • `Schema v1.1 (2 cached)`)
-     - **Nova Electronics Express** (`nova_retail` • `🌍 Tunnel: apexkit-drive.hf.space` • `🔒 Tools off (default)`)
-     - **Zenith Rx Clinic Kiosk** (`zen_pharmacy` • `🌍 Tunnel: inspower-kiosk.local` • `🔒 Tools off (default)`)
-     - **ApexKit Administration** (`metro_coffee` • `🌍 Tunnel: kipeles-apexkit.hf.space` • `🔒 Tools off (default)`)
-   - **Tenant Card 3-Dot Menu (`⋮`)**: Every tenant card includes a context menu for **Workspace Settings**, **Open Terminal**, and **Disconnect Workspace**.
+   - On launch, the app presents a **two-column grid launcher** (`TenantLauncherScreen`, toggleable to a **1-column list view** via the top-bar layout icon) and a live search bar (`"Search terminals, registers, URLs..."`).
+   - Each **tenant card is a square**: the tenant icon occupies the **top third** (horizontally centered and flush with the top edge) with a soft accent wash behind it, while the title, status and schema badge sit at the bottom.
+   - A single built-in demo tenant ships by default — **Apex POS Terminal** (`acme_pos` • `⚡ DivKit SDUI Showcase` • all 8 native tools active • `Schema v1.1 (2 cached)`) — which showcases the DivKit SDUI surface (live charts, `json_list`, hardware testers) and the full unopinionated tool suite. Additional tenants are added at runtime through **Connect New Workspace** rather than shipped as static demos.
+   - **Tenant Context Menu (long-press)**: There is no 3-dot overflow button; **long-pressing a tenant card** opens the context menu with **Workspace Settings**, **Open Terminal**, and **Disconnect Workspace**.
    - **Connect New Workspace (`+` FAB & Top-Bar QR Button)**: Opens the **Connect New Workspace** bottom sheet featuring **Scan Desktop Pairing QR Code** (pairs with the Desktop Client-Server app and verifies the Gateway SDUI schema), **Fill Demo Terminal Preset**, `App / POS Terminal Name *`, `Local Wi-Fi LAN URL (Desktop Client-Server)`, `Public Tunnel / Cloudflare / FRP URL`, `Custom Background Pull Endpoint`, and **Save Workspace & Connect**.
 2. **Engine / App Settings with Theme Switching (Defaults to System)**:
    - Clicking the top-right **Settings (`⚙️`)** gear icon opens **App Settings** (`AppSettingsBottomSheet`):

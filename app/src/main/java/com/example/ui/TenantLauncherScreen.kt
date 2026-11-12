@@ -1,8 +1,9 @@
 package com.example.ui
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -15,10 +16,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -32,9 +35,10 @@ import com.example.enginehost.WorkspaceToolPermissions
  *
  * Includes:
  * - Search bar ("Search terminals, registers, URLs...")
- * - Connected tenant cards with notification badge, 3-dot context menu
- *   (Workspace Settings, Open Terminal, Disconnect Workspace), cached schema version badge,
- *   and tools status pill ("🛠️ 6 tools active" vs "🔒 Tools off (default)")
+ * - Connected tenant cards with notification badge, cached schema version badge and tools status
+ *   pill ("🛠️ 6 tools active" vs "🔒 Tools off (default)")
+ * - Context menu (Workspace Settings, Open Terminal, Disconnect Workspace) opened by
+ *   **long-pressing** a tenant card (the former 3-dot overflow button was removed)
  * - Floating `+` FAB to open Connect New Workspace bottom sheet.
  */
 @Composable
@@ -108,45 +112,56 @@ fun TenantLauncherScreen(
             )
 
             // 2-Column Grid (Default) or 1-Column List
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(if (uiState.isGridView) 2 else 1),
-                contentPadding = PaddingValues(
-                    start = 16.dp,
-                    end = 16.dp,
-                    top = 6.dp,
-                    bottom = 96.dp
-                ),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier
-                    .fillMaxSize()
-                    .testTag("tenant_launcher_grid")
-            ) {
-                items(
-                    items = filteredWorkspaces,
-                    key = { it.tenantId }
-                ) { spec ->
-                    val perms = uiState.tenantToolsMap[spec.tenantId] ?: spec.defaultTools
-                    val cachedBadge = uiState.tenantCachedBadgeMap[spec.tenantId] ?: "Schema v1.1 (2 cached)"
+            if (filteredWorkspaces.isEmpty()) {
+                EmptyLauncherState(
+                    hasSearch = uiState.searchQuery.isNotBlank(),
+                    onConnectWorkspace = { onShowConnectWorkspaceSheetChange(true) },
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(24.dp)
+                        .testTag("tenant_launcher_empty_state")
+                )
+            } else {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(if (uiState.isGridView) 2 else 1),
+                    contentPadding = PaddingValues(
+                        start = 16.dp,
+                        end = 16.dp,
+                        top = 6.dp,
+                        bottom = 96.dp
+                    ),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .testTag("tenant_launcher_grid")
+                ) {
+                    items(
+                        items = filteredWorkspaces,
+                        key = { it.tenantId }
+                    ) { spec ->
+                        val perms = uiState.tenantToolsMap[spec.tenantId] ?: spec.defaultTools
+                        val cachedBadge = uiState.tenantCachedBadgeMap[spec.tenantId] ?: "Schema v1.1 (2 cached)"
 
-                    if (uiState.isGridView) {
-                        ConnectedTenantGridCard(
-                            spec = spec,
-                            permissions = perms,
-                            cachedBadge = cachedBadge,
-                            onClick = { viewModel.openTenantWorkspace(spec) },
-                            onOpenWorkspaceSettings = { settingsTargetTenant = spec },
-                            onDisconnectWorkspace = { viewModel.disconnectWorkspace(spec.tenantId) }
-                        )
-                    } else {
-                        ConnectedTenantListCard(
-                            spec = spec,
-                            permissions = perms,
-                            cachedBadge = cachedBadge,
-                            onClick = { viewModel.openTenantWorkspace(spec) },
-                            onOpenWorkspaceSettings = { settingsTargetTenant = spec },
-                            onDisconnectWorkspace = { viewModel.disconnectWorkspace(spec.tenantId) }
-                        )
+                        if (uiState.isGridView) {
+                            ConnectedTenantGridCard(
+                                spec = spec,
+                                permissions = perms,
+                                cachedBadge = cachedBadge,
+                                onClick = { viewModel.openTenantWorkspace(spec) },
+                                onOpenWorkspaceSettings = { settingsTargetTenant = spec },
+                                onDisconnectWorkspace = { viewModel.disconnectWorkspace(spec.tenantId) }
+                            )
+                        } else {
+                            ConnectedTenantListCard(
+                                spec = spec,
+                                permissions = perms,
+                                cachedBadge = cachedBadge,
+                                onClick = { viewModel.openTenantWorkspace(spec) },
+                                onOpenWorkspaceSettings = { settingsTargetTenant = spec },
+                                onDisconnectWorkspace = { viewModel.disconnectWorkspace(spec.tenantId) }
+                            )
+                        }
                     }
                 }
             }
@@ -194,6 +209,54 @@ fun TenantLauncherScreen(
     }
 }
 
+/** Shown when no tenant matches the current search (or none are connected). */
+@Composable
+private fun EmptyLauncherState(
+    hasSearch: Boolean,
+    onConnectWorkspace: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val colorScheme = MaterialTheme.colorScheme
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Icon(
+                imageVector = if (hasSearch) Icons.Default.SearchOff else Icons.Default.Storefront,
+                contentDescription = null,
+                tint = colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(56.dp)
+            )
+            Text(
+                text = if (hasSearch) "No terminals match your search" else "No workspaces connected yet",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = colorScheme.onSurface
+            )
+            Text(
+                text = if (hasSearch) {
+                    "Try a different name, register code or URL."
+                } else {
+                    "Connect a Desktop Client-Server workspace to render its DivKit SDUI surface."
+                },
+                fontSize = 13.sp,
+                color = colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            if (!hasSearch) {
+                Spacer(Modifier.height(4.dp))
+                FilledTonalButton(onClick = onConnectWorkspace) {
+                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("Connect New Workspace")
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ConnectedTenantGridCard(
     spec: TenantWorkspaceSpec,
@@ -206,123 +269,89 @@ private fun ConnectedTenantGridCard(
     val colorScheme = MaterialTheme.colorScheme
     var showCardMenu by remember { mutableStateOf(false) }
     val activeTools = permissions.activeCount
+    val accent = remember(spec.accentHex) { parseAccentColor(spec.accentHex) }
 
     Surface(
         color = colorScheme.surface,
-        shape = RoundedCornerShape(20.dp),
-        border = BorderStroke(1.dp, colorScheme.outline.copy(alpha = 0.6f)),
+        shape = RoundedCornerShape(24.dp),
+        border = BorderStroke(1.dp, colorScheme.outline.copy(alpha = 0.5f)),
         modifier = Modifier
             .fillMaxWidth()
-            .defaultMinSize(minHeight = 198.dp)
-            .clip(RoundedCornerShape(20.dp))
-            .clickable(onClick = onClick)
+            // Square card: the icon claims the top third, the copy sits at the bottom.
+            .aspectRatio(1f)
+            .clip(RoundedCornerShape(24.dp))
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = { showCardMenu = true }
+            )
             .testTag("tenant_grid_card_${spec.tenantId}")
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(14.dp),
-            verticalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                // Top Row: Rounded Icon Box + Notification Count Badge + 3-Dot Menu
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+        Box(modifier = Modifier.fillMaxSize()) {
+            // Soft accent wash behind the icon zone, fading into the card surface.
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight(0.5f)
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                accent.copy(alpha = 0.22f),
+                                Color.Transparent
+                            )
+                        )
+                    )
+            )
+
+            Column(modifier = Modifier.fillMaxSize()) {
+                // Icon zone — the icon occupies exactly the top third of the square,
+                // horizontally centered and flush with the top edge.
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    contentAlignment = Alignment.TopCenter
                 ) {
-                    Surface(
-                        color = if (spec.isBuiltInDemo) colorScheme.primary
-                        else colorScheme.primary.copy(alpha = 0.14f),
-                        shape = RoundedCornerShape(14.dp),
-                        modifier = Modifier.size(48.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = if (spec.isBuiltInDemo) Icons.Default.Terminal
-                                else Icons.Default.PointOfSale,
-                                contentDescription = spec.displayName,
-                                tint = if (spec.isBuiltInDemo) Color.White else colorScheme.primary,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-                    }
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        if (spec.unreadCount > 0) {
-                            Surface(
-                                color = Color(0xFFEF4444),
-                                shape = RoundedCornerShape(50)
-                            ) {
-                                Text(
-                                    text = spec.unreadCount.toString(),
-                                    color = Color.White,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                                )
-                            }
-                        }
-
-                        Box {
-                            IconButton(
-                                onClick = { showCardMenu = true },
-                                modifier = Modifier
-                                    .size(32.dp)
-                                    .testTag("tenant_card_menu_${spec.tenantId}")
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.MoreVert,
-                                    contentDescription = "Tenant Options",
-                                    tint = colorScheme.onSurfaceVariant
-                                )
-                            }
-
-                            TenantCardOverflowMenu(
-                                expanded = showCardMenu,
-                                onDismiss = { showCardMenu = false },
-                                onWorkspaceSettings = {
-                                    showCardMenu = false
-                                    onOpenWorkspaceSettings()
-                                },
-                                onOpenTerminal = {
-                                    showCardMenu = false
-                                    onClick()
-                                },
-                                onDisconnectWorkspace = {
-                                    showCardMenu = false
-                                    onDisconnectWorkspace()
-                                }
-                            )
-                        }
-                    }
+                    Icon(
+                        imageVector = if (spec.isBuiltInDemo) Icons.Default.Terminal
+                        else Icons.Default.PointOfSale,
+                        contentDescription = spec.displayName,
+                        tint = accent,
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .aspectRatio(1f)
+                    )
                 }
 
-                // Tenant Title + Built-in Demo / Tunnel Subtitle + Cached Schema Version
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                // Copy zone — bottom two thirds, content pinned to the bottom.
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(2f)
+                        .padding(start = 14.dp, end = 14.dp, bottom = 14.dp),
+                    verticalArrangement = Arrangement.Bottom
+                ) {
                     Text(
                         text = spec.displayName,
-                        fontSize = 15.sp,
+                        fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = colorScheme.onSurface,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
 
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = if (spec.isBuiltInDemo) "⚡ Built-in Demo"
-                            else "🌍 Tunnel: ${spec.tunnelUrl.removePrefix("https://").removePrefix("http://")}",
-                            fontSize = 12.sp,
-                            fontWeight = if (spec.isBuiltInDemo) FontWeight.SemiBold else FontWeight.Normal,
-                            color = if (spec.isBuiltInDemo) colorScheme.primary else colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
+                    Spacer(Modifier.height(2.dp))
+
+                    Text(
+                        text = if (spec.isBuiltInDemo) "⚡ DivKit SDUI Showcase"
+                        else "🌍 ${spec.tunnelUrl.removePrefix("https://").removePrefix("http://")}",
+                        fontSize = 12.sp,
+                        fontWeight = if (spec.isBuiltInDemo) FontWeight.SemiBold else FontWeight.Normal,
+                        color = if (spec.isBuiltInDemo) accent else colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+
+                    Spacer(Modifier.height(4.dp))
 
                     Text(
                         text = cachedBadge,
@@ -333,17 +362,55 @@ private fun ConnectedTenantGridCard(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
+
+                    Spacer(Modifier.height(8.dp))
+
+                    ToolsStatusPill(activeTools = activeTools)
                 }
             }
 
-            Spacer(Modifier.height(8.dp))
+            // Unread badge (top-end). Long-press opens the tenant menu instead of a 3-dot button.
+            if (spec.unreadCount > 0) {
+                Surface(
+                    color = Color(0xFFEF4444),
+                    shape = RoundedCornerShape(50),
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(10.dp)
+                ) {
+                    Text(
+                        text = spec.unreadCount.toString(),
+                        color = Color.White,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                    )
+                }
+            }
 
-            // Bottom Tools Pill: "🛠️ 6 tools active" vs "🔒 Tools off (default)"
-            ToolsStatusPill(activeTools = activeTools)
+            Box(modifier = Modifier.align(Alignment.BottomEnd)) {
+                TenantCardOverflowMenu(
+                    expanded = showCardMenu,
+                    onDismiss = { showCardMenu = false },
+                    onWorkspaceSettings = {
+                        showCardMenu = false
+                        onOpenWorkspaceSettings()
+                    },
+                    onOpenTerminal = {
+                        showCardMenu = false
+                        onClick()
+                    },
+                    onDisconnectWorkspace = {
+                        showCardMenu = false
+                        onDisconnectWorkspace()
+                    }
+                )
+            }
         }
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ConnectedTenantListCard(
     spec: TenantWorkspaceSpec,
@@ -356,6 +423,7 @@ private fun ConnectedTenantListCard(
     val colorScheme = MaterialTheme.colorScheme
     var showCardMenu by remember { mutableStateOf(false) }
     val activeTools = permissions.activeCount
+    val accent = remember(spec.accentHex) { parseAccentColor(spec.accentHex) }
 
     Surface(
         color = colorScheme.surface,
@@ -364,7 +432,10 @@ private fun ConnectedTenantListCard(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
-            .clickable(onClick = onClick)
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = { showCardMenu = true }
+            )
             .testTag("tenant_list_card_${spec.tenantId}")
     ) {
         Row(
@@ -375,8 +446,7 @@ private fun ConnectedTenantListCard(
             horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Surface(
-                color = if (spec.isBuiltInDemo) colorScheme.primary
-                else colorScheme.primary.copy(alpha = 0.14f),
+                color = accent.copy(alpha = 0.14f),
                 shape = RoundedCornerShape(14.dp),
                 modifier = Modifier.size(50.dp)
             ) {
@@ -385,7 +455,7 @@ private fun ConnectedTenantListCard(
                         imageVector = if (spec.isBuiltInDemo) Icons.Default.Terminal
                         else Icons.Default.PointOfSale,
                         contentDescription = spec.displayName,
-                        tint = if (spec.isBuiltInDemo) Color.White else colorScheme.primary,
+                        tint = accent,
                         modifier = Modifier.size(25.dp)
                     )
                 }
@@ -404,7 +474,7 @@ private fun ConnectedTenantListCard(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = if (spec.isBuiltInDemo) "⚡ Built-in Terminal Demo • $cachedBadge"
+                    text = if (spec.isBuiltInDemo) "⚡ DivKit SDUI Showcase • $cachedBadge"
                     else "🌍 Public Tunnel: ${spec.tunnelUrl} • $cachedBadge",
                     fontSize = 12.sp,
                     color = colorScheme.onSurfaceVariant,
@@ -430,17 +500,6 @@ private fun ConnectedTenantListCard(
             }
 
             Box {
-                IconButton(
-                    onClick = { showCardMenu = true },
-                    modifier = Modifier.size(36.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.MoreVert,
-                        contentDescription = "Tenant Options",
-                        tint = colorScheme.onSurfaceVariant
-                    )
-                }
-
                 TenantCardOverflowMenu(
                     expanded = showCardMenu,
                     onDismiss = { showCardMenu = false },
@@ -460,6 +519,18 @@ private fun ConnectedTenantListCard(
             }
         }
     }
+}
+
+/** Parses a `#RRGGBB` accent string into a Compose [Color], falling back to the theme primary. */
+private fun parseAccentColor(hex: String, fallback: Color = Color(0xFF38BDF8)): Color {
+    val cleaned = hex.trim().removePrefix("#")
+    return runCatching {
+        when (cleaned.length) {
+            6 -> Color(("FF$cleaned").toLong(16))
+            8 -> Color(cleaned.toLong(16))
+            else -> fallback
+        }
+    }.getOrDefault(fallback)
 }
 
 @Composable
