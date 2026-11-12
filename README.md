@@ -16,7 +16,7 @@ A Kotlin Multiplatform (KMP) Server-Driven UI (SDUI) application engine that use
 3. **Hybrid Tenant Mobile App (Self-Contained SDUI Frontend)**:
    - The mobile app is a lightweight, multi-tenant **hybrid frontend** for the Desktop Client-Server app.
    - **Schema-Driven Initiation, SQLite Caching & Version Rollback**: A tenant is initiated when its Gateway-verified DivKit JSON schema is received. The verified schema is cached locally in `workspace_<tenant_id>.db` (`sdui_schema_versions`) until a newer schema version arrives from the Gateway Server—enabling instant **version rollback** (`v1.0`, `v1.1`, `v1.2`, ...) at any time.
-   - **Sandboxed Native Hardware Bridge**: By default, all 8 native bridged tools (Haptic Vibration, Hardware Beeper Audio, Camera Barcode & QR Scanner, Supervisor Biometric Auth, Clipboard Access, Background Alerts & Push, Offline Page Caching, Realtime Engine WS/SSE) are turned **OFF** for security and can be selectively enabled per workspace in **Workspace Settings**.
+   - **Sandboxed Native Hardware Bridge**: By default, all 8 native bridged tools (Haptic Vibration, Hardware Beeper Audio, Unified Optical Scanner (Barcode & QR), Supervisor Biometric Auth, Clipboard Access, Background Alerts & Push, Offline Page Caching, Realtime Engine WS/SSE) are turned **OFF** for security and can be selectively enabled per workspace in **Workspace Settings**.
 
 ---
 
@@ -58,6 +58,13 @@ shared/
     db/Migrations.sq                        # Tenant schema migrations
     router/EngineRouter.kt                  # Intercepts local-db://, hardware://, workspace://clear_all
     state/EngineStateBridge.kt              # StateFlow snapshot for user.* reactive variables
+    tools/NativeToolsSuite.kt               # Unopinionated tool schemas + unified `tools://` dispatch
+    tools/TerminalApp.kt                    # Composition root: capability + shorthand-alias registration
+    tools/ToolRegistry.kt                   # Versioned capability registry & ProvenanceChecker gate
+    tools/DivActionRouter.kt                # div-action://terminal.tool.invoke dispatcher
+    tools/impl/HapticsTool.kt               # hardware.haptics@1 (semantic patterns + W3C waveform arrays)
+    tools/impl/BeeperTool.kt                # hardware.beeper@1 (PCM tone synthesis, profiles, sequences)
+    tools/impl/TerminalToolsImpl.kt         # Shared tool implementations (crypto, clipboard, cache, …)
     sync/SyncEngine.kt                      # Idempotent batch outbox sync with backoff & dead-letter
     sync/BackgroundSyncScheduler.kt         # expect class for WorkManager (Android) / BGTaskScheduler (iOS)
     ui/EngineScreen.kt                      # Shared Compose entry point wrapping DivKit & DivView
@@ -77,10 +84,22 @@ iosApp/
   Info.plist                                # BGTaskSchedulerPermittedIdentifiers (com.example.engine.sync)
   EngineCustomBlockFactory.swift            # DivCustomBlockFactory for json_list (UITableView) & sdui_chart (Swift Charts + DGCharts)
   AppDelegate.swift                         # Registers KMP sync handler on launch
+  IosHapticsTool.swift                      # hardware.haptics@1 — UIFeedbackGenerator + waveform timings
+  IosBeeperTool.swift                       # hardware.beeper@1 — AVAudioEngine PCM synthesis, profiles, sequences
+  IosScannerTool.swift                      # vision.scan_code@1 — AVFoundation optical scanner
+  IosCameraTool.swift                       # vision.capture_photo@1 — camera capture & torch
+  IosSignalTool.swift                       # crypto.signal@1 — deterministic session identity & safety number
+  IosImageManipulationTool.swift            # vision.image_manipulation@1 — on-device image processing
 
 app/
   src/main/java/
     engine/...                              # Android runtime compilation of the KMP engine
+    engine/tools/NativeToolsSuite.kt        # Android tool schemas & unified `tools://` dispatch
+    engine/tools/TerminalApp.kt             # Android capability registry (mirrors shared TerminalApp)
+    engine/tools/impl/HapticsTool.kt        # hardware.haptics@1 — Vibrator/VibratorManager
+    engine/tools/impl/BeeperTool.kt         # hardware.beeper@1 — AudioToneSynthesizer PCM tones
+    engine/tools/audio/AudioToneSynthesizer.kt  # Shared PCM tone/waveform/sequence generator
+    engine/tools/image/ImageManipulationEngine.kt # On-device image ops (<4MB OS-model footprint)
     com/yandex/divkit/multiplatform/
       DivKitMultiplatform.kt                # Compose DivKit SDUI renderer, json_list & sdui_chart custom blocks
       DivKitChartRenderer.kt                # Android Vico M3 + Compose Canvas interactive chart renderer
@@ -137,16 +156,27 @@ Tenants can invoke hardware bridges, optical scanning, on-device AI vision model
 
 ### Supported Tools & Generalized APIs
 
+Every tool is deliberately **unopinionated**: it exposes a generic capability contract (a capability id, a set of operations, and free-form options) rather than any product-, vendor-, or SDK-specific logic. The same schema is registered on Android and iOS via the shared KMP `TerminalApp` composition root.
+
 | Tool URI | Display Name | Operations | Customizable Options | Default Output Mappings |
 |---|---|---|---|---|
-| `tools://libsignal` | **LibSignal E2EE Protocol** | `init_keys`, `create_session`, `encrypt`, `decrypt`, `fingerprint` | `cipher`, `key_derivation`, `ratchet_steps` | `user.signal_session_id`, `user.signal_fingerprint`, `user.signal_status`, `user.signal_ciphertext` |
-| `tools://scan-barcode` | **Optical Barcode Scanner (1D)** | `scan`, `continuous_scan`, `simulate` | `formats` (EAN_13, CODE_128, UPC_A), `auto_insert_db`, `confidence_threshold` | `user.scanned_barcode`, `user.scanned_format`, `user.scanned_sku`, `user.scanned_item_name`, `user.scanned_price` |
-| `tools://scan-qr` | **QR & Matrix Scanner (2D)** | `scan`, `generate`, `verify_pairing` | `prefix_filter`, `vibrate_on_match`, `auto_connect_workspace` | `user.scanned_qr`, `user.scanned_qr_type`, `user.scanned_qr_payload` |
-| `tools://image-background-remove` | **Background Removal Pipeline** | `process`, `composite_solid`, `crop_bounds` | `model`, `alpha_threshold`, `feather_radius`, `output_format` | `user.segmented_image_uri`, `user.bg_remove_status`, `user.bg_mask_coverage` |
-| `tools://camera` | **POS Camera Hardware Bridge** | `capture`, `torch_toggle`, `get_status` | `facing` (back/front), `flash_mode`, `resolution`, `aspect_ratio` | `user.camera_capture_uri`, `user.camera_timestamp`, `user.camera_torch_state` |
-| `tools://u-2-Net.tflite` | **U-2-Net TFLite Neural Segmenter** | `segment`, `compute_saliency_map`, `model_profile` | `tensor_input` (320x320x3), `quantization` (INT8), `saliency_cutoff` | `user.u2net_mask_uri`, `user.u2net_confidence`, `user.u2net_latency_ms` |
-| `tools://MobileNetV4-small` | **MobileNetV4-Small (Smallest Quant)** | `classify`, `detect_sku`, `model_benchmarks` | `model_variant` (INT8), `input_resolution` (224x224x3), `top_k`, `min_confidence` | `user.ai_prediction_label`, `user.ai_prediction_sku`, `user.ai_confidence_score`, `user.ai_candidates_json` |
-| `tools://haptics` | **Tactile Haptics Engine (`device.haptics@1`)** | `click`, `double_click`, `heavy_click`, `tick`, `selection`, `success`, `warning`, `error`, `buzz`, `vibrate` | `pattern`, `duration_ms` (10-1000ms), `amplitude` (1-255) | `user.haptic_state`, `user.haptic_pattern`, `user.haptic_duration_ms` |
+| `tools://scan` | **Unified Optical Scanner (`vision.scan_code@1`)** | `scan`, `continuous_scan`, `simulate`, `parse` | `target_format` (`both`\|`barcode`\|`qr`\|`EAN_13`\|`UPC_A`\|`CODE_128`\|`QR_CODE`), `beep`, `haptics`, `camera_facing` | `user.scanned_code`, `user.scanned_format`, `user.scanned_type`, `user.scan_status`, `user.scan_timestamp` |
+| `tools://haptics` | **Universal Haptics & Vibration Engine (`hardware.haptics@1`)** | `perform`, `vibrate`, `click`, `heavy`, `tick`, `success`, `warning`, `error`, `stop`, `status` | `pattern` (semantic name), `duration_ms` (10-1000ms), `amplitude` (1-255), `timings` (W3C `[wait, vibrate, …]` waveform array) | `user.haptics_status`, `user.haptics_pattern` |
+| `tools://beeper` | **Universal Audio Tone Synthesizer (`hardware.beeper@1`)** | `tone`, `play`, `beep`, `chime`, `stop`, `status` | `frequency_hz`, `duration_ms`, `waveform` (`sine`\|`square`\|`triangle`\|`sawtooth`), `volume` (0-1), `profile` (semantic preset), `sequence` (`freq:ms,…`) | `user.beeper_status`, `user.beeper_frequency` |
+| `tools://camera` | **Hardware Camera Bridge (`vision.capture_photo@1`)** | `capture`, `torch_toggle`, `get_status` | `facing` (`back`\|`front`), `resolution` (`1080p`) | `user.camera_capture_uri` |
+| `tools://image-manipulation` | **Universal Image Manipulation & Background Removal (`vision.remove_background@1`)** | `process`, `remove_background`, `smooth`, `adjust_color`, `crop`, `resize`, `threshold` | `op`, `encoding` (`uri`) | `user.processed_image_uri`, `user.image_processing_status` |
+| `tools://clipboard` | **System Clipboard Controller (`device.clipboard@1`)** | `copy`, `paste`, `clear` | `op` | `user.clipboard_content` |
+| `tools://biometrics` | **OS Biometric Authentication (`auth.biometrics@1`)** | `authenticate` | `prompt` | `user.biometric_authenticated` |
+| `tools://libsignal` | **Signal E2EE Cryptographic Transport (`secure.*@1`)** | `setup_identity`, `init_keys`, `create_session`, `encrypt`, `decrypt`, `status`, `verify_identity`, `reset_session` | `cipher`, `key_derivation`, `ratchet_steps` | `user.signal_status`, `user.signal_session_id`, `user.signal_ciphertext`, `user.signal_plaintext`, `user.signal_fingerprint` |
+| `tools://MobileNetV4-small` | **MobileNetV4 Image Classifier (`vision.identify_product@1`)** | `classify`, `detect`, `predict` | `top_k`, `min_confidence` | `user.ai_prediction_label`, `user.ai_prediction_sku`, `user.ai_confidence` |
+| `tools://u-2-Net.tflite` | **U-2-Net Salient Object Segmentation (`vision.remove_background@1`)** | `segment`, `infer`, `mask` | `tensor_input` (320x320x3), `saliency_cutoff` | `user.u2net_mask_uri`, `user.u2net_confidence` |
+| `tools://push` | **Background Alerts & Push Notifications (`network.push@1`)** | `send_alert`, `notify`, `send` | `channel`, `priority` | `user.push_notification_id`, `user.push_status` |
+| `tools://offline-cache` | **Offline Page & Schema Cache (`storage.offline_cache@1`)** | `cache`, `get_stats`, `clear` | `op` | `user.offline_cache_status`, `user.offline_cached_pages` |
+| `tools://realtime-ws` | **Realtime WebSocket / SSE Engine (`network.realtime@1`)** | `connect`, `disconnect`, `send`, `subscribe` | `channel` | `user.realtime_connection_state`, `user.realtime_channel` |
+
+> **Unified scanner.** The former split tools `tools://scan-barcode` (1D) and `tools://scan-qr` (2D) are replaced by a single `tools://scan` tool that decodes both symbologies by default. `target_format` restricts recognition (`both` by default, or `barcode`/`qr`/an explicit format), and a non-matching code returns `status = "FORMAT_MISMATCH"`. The legacy URIs are still accepted as aliases for backward compatibility.
+>
+> **Unopinionated feedback APIs.** `tools://haptics` and `tools://beeper` carry no vendor or SDK coupling: the caller supplies generic parameters (patterns, frequencies, waveforms, volumes, timing arrays, sequences) and the platform chooses the physical implementation. There is no dedicated "POS tone" API — `PosTonePlayer`/`playPosTone` were removed and the haptic entry point is the platform-neutral `triggerHaptic`.
 
 ---
 
@@ -155,10 +185,10 @@ Tenants can invoke hardware bridges, optical scanning, on-device AI vision model
 The terminal engine implements the zero-trust **Terminal Tool Architecture**:
 
 1. **Globally Versioned Capabilities**:
-   - Capabilities are declared and registered with strict version tags (e.g. `device.haptics@1`, `vision.scan_code@1`, `secure.send@1`).
-   - Aliased identifiers (e.g. `haptics.perform@1`, `hardware.haptics@1`, `tools://haptics`) map to the primary capability handler.
+   - Capabilities are declared and registered with strict version tags (e.g. `hardware.haptics@1`, `hardware.beeper@1`, `vision.scan_code@1`, `secure.send@1`).
+   - Shorthand aliases (e.g. `device.haptics@1`, `haptics`, `beeper`, `scan`, `tools://haptics`) map to the primary capability handler; legacy ids such as `scan-barcode`/`scan-qr` resolve to the unified `scan` tool.
 2. **Action Invocations (`div-action://terminal.tool.invoke`)**:
-   - `div-action://terminal.tool.invoke?tool=device.haptics@1&pattern=heavy_click&result_var=haptic_state`
+   - `div-action://terminal.tool.invoke?tool=hardware.haptics@1&pattern=heavy&result_var=haptics_status`
    - Non-blocking, fire-and-forget execution dispatched through `DivActionRouter`.
 3. **Four-Way Typed Result Resolution (`ToolResult`)**:
    - `ToolResult.Success(data)`: Operation succeeded; bound into `${result_var}` and `${result_var}_<field>`.
@@ -167,9 +197,10 @@ The terminal engine implements the zero-trust **Terminal Tool Architecture**:
    - `ToolResult.Failed(capability, message)`: Unexpected runtime failure; writes `"failed"`.
 4. **Provenance & Access Control**:
    - `Provenance.Agency`: Full access to administrative, internal, and external capabilities.
-   - `Provenance.Publisher`: Restricted strictly to pre-approved tenant tool capabilities (`device.haptics@1`, `vision.scan_code@1`, `secure.send@1`, etc.) via `ProvenanceChecker`.
-5. **Real Platform Haptics**:
-   - Uses Android `Vibrator` / `VibratorManager` with `VibrationEffect.createPredefined` (Android 10+), dual-pulse waveforms (Android 8+), and legacy millisecond one-shots. Gracefully degrades if hardware or permissions are unavailable.
+   - `Provenance.Publisher`: Restricted strictly to the pre-approved tenant capabilities in `ProvenanceChecker` (`hardware.haptics@1`, `hardware.beeper@1`, `vision.scan_code@1`, `vision.capture_photo@1`, `vision.identify_product@1`, `vision.embed_image@1`, `vision.remove_background@1`, `secure.send@1`, `secure.status@1`, `secure.verify_identity@1`, `auth.biometrics@1`, `device.clipboard@1`, `network.push@1`, `storage.offline_cache@1`, `network.realtime@1`).
+5. **Unopinionated Platform Haptics & Tones**:
+   - Haptics uses Android `Vibrator` / `VibratorManager` with `VibrationEffect.createPredefined` (Android 10+), dual-pulse waveforms (Android 8+), and legacy millisecond one-shots; iOS uses `UIFeedbackGenerator` (`UIImpactFeedbackGenerator`/`UINotificationFeedbackGenerator`).
+   - The beeper synthesizes PCM tones (sine/square/triangle/sawtooth) with `AudioToneSynthesizer` on Android and `AVAudioEngine` on iOS. Both degrade gracefully when hardware or permissions are unavailable.
 
 ## Multi-Architecture Packaging & R8 Minification
 
