@@ -22,6 +22,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "DivKit SDUI POS"
+rootProject.name = "ApexClient Terminal"
 
 include(":app")

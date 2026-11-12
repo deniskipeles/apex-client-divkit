@@ -91,6 +91,7 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
     private val driverFactory = WorkspaceDriverFactory(context)
     val workspaceManager = WorkspaceManager(driverFactory)
     val registry = EngineRegistry()
+    private val usageStore = TenantUsageStore(context)
 
     // Constructed lazily so ViewModel creation (and therefore the first frame) stays cheap;
     // these allocate OkHttp clients / WorkManager plumbing that is only needed on demand.
@@ -103,8 +104,19 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
 
     private var activeRouter: EngineRouter? = null
 
-    private val _uiState = MutableStateFlow(SduiEngineUiState())
+    private val _uiState = MutableStateFlow(
+        WorkspaceProvisioner.defaultWorkspaces
+            .sortedByUsage(usageStore.usage())
+            .let { ordered -> SduiEngineUiState(workspaces = ordered, activeWorkspace = ordered.first()) }
+    )
     val uiState: StateFlow<SduiEngineUiState> = _uiState.asStateFlow()
+
+    /** Tenant whose workspace should be re-opened on the next launch, if any. */
+    private var resumeTenantId: String? = usageStore.lastOpenedTenantId()
+        ?.takeIf { id -> _uiState.value.workspaces.any { it.tenantId == id } }
+
+    private val shouldResumeWorkspace: Boolean =
+        resumeTenantId != null && usageStore.wasWorkspaceOpen()
 
     init {
         currentAndroidContext = { context }
@@ -122,7 +134,15 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                     statusBannerMessage = "${WorkspaceProvisioner.defaultWorkspaces.size} tenants initiated & cached in SQLite"
                 )
             }
-            switchWorkspace(WorkspaceProvisioner.defaultWorkspaces.first(), openDedicatedScreen = false)
+            // Resume the previously opened tenant on relaunch; otherwise land on the launcher.
+            val resumeSpec = resumeTenantId?.let { id ->
+                WorkspaceProvisioner.defaultWorkspaces.firstOrNull { it.tenantId == id }
+            }
+            if (resumeSpec != null && shouldResumeWorkspace) {
+                switchWorkspace(resumeSpec, openDedicatedScreen = true, recordVisit = false)
+            } else {
+                switchWorkspace(WorkspaceProvisioner.defaultWorkspaces.first(), openDedicatedScreen = false)
+            }
         }
     }
 
@@ -231,10 +251,11 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
     }
 
     fun openTenantWorkspace(spec: TenantWorkspaceSpec) {
-        switchWorkspace(spec, openDedicatedScreen = true)
+        switchWorkspace(spec, openDedicatedScreen = true, recordVisit = true)
     }
 
     fun returnToLauncher() {
+        usageStore.setLastOpened(null, workspaceOpen = false)
         viewModelScope.launch(Dispatchers.IO) {
             refreshTenantCachedBadges()
         }
@@ -246,7 +267,16 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
         }
     }
 
-    fun switchWorkspace(spec: TenantWorkspaceSpec, openDedicatedScreen: Boolean = true) {
+    fun switchWorkspace(
+        spec: TenantWorkspaceSpec,
+        openDedicatedScreen: Boolean = true,
+        recordVisit: Boolean = false
+    ) {
+        if (recordVisit) {
+            usageStore.recordVisit(spec.tenantId)
+            usageStore.setLastOpened(spec.tenantId, workspaceOpen = true)
+            _uiState.update { it.copy(workspaces = it.workspaces.sortedByUsage(usageStore.usage())) }
+        }
         viewModelScope.launch {
             try {
                 // 1. Verify EngineConfig via PayloadVerifier -> EngineConfig.fromVerifiedPayload
@@ -817,6 +847,7 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
             }
             return
         }
+        usageStore.forget(tenantId)
         val remaining = current.filterNot { it.tenantId == tenantId }
         val nextActive = if (_uiState.value.activeWorkspace.tenantId == tenantId) {
             remaining.first()
@@ -825,7 +856,7 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
         }
         _uiState.update {
             it.copy(
-                workspaces = remaining,
+                workspaces = remaining.sortedByUsage(usageStore.usage()),
                 activeWorkspace = nextActive,
                 isWorkspaceOpen = false,
                 statusBannerMessage = "Disconnected workspace $tenantId"
@@ -895,7 +926,7 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                 tenantToolsMap = updatedTools
             )
         }
-        switchWorkspace(newSpec, openDedicatedScreen = openImmediately)
+        switchWorkspace(newSpec, openDedicatedScreen = openImmediately, recordVisit = openImmediately)
     }
 
     /**
@@ -943,7 +974,7 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                 tenantToolsMap = updatedTools
             )
         }
-        switchWorkspace(newSpec, openDedicatedScreen = true)
+        switchWorkspace(newSpec, openDedicatedScreen = true, recordVisit = true)
     }
 
     fun triggerSyncNow() {

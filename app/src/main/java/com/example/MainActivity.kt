@@ -84,12 +84,12 @@ fun SduiPosEngineApp(viewModel: SduiEngineViewModel) {
     var showConnectWorkspaceSheet by remember { mutableStateOf(false) }
     val colorScheme = MaterialTheme.colorScheme
 
-    // Handle system Back button inside opened tenant workspace or secondary launcher sections
-    if (uiState.isWorkspaceOpen) {
-        BackHandler {
-            viewModel.returnToLauncher()
-        }
-    } else if (launcherSection != LauncherSection.TENANT_GRID) {
+    // System Back handling.
+    // - Inside an opened tenant, the tenant screen owns back for in-tenant popups; once those
+    //   are exhausted we deliberately do NOT intercept, so the system exits the app (the workspace
+    //   stays remembered and resumes on next launch).
+    // - On the launcher, back returns from a secondary section to the Tenants Hub, then exits.
+    if (!uiState.isWorkspaceOpen && launcherSection != LauncherSection.TENANT_GRID) {
         BackHandler {
             launcherSection = LauncherSection.TENANT_GRID
         }

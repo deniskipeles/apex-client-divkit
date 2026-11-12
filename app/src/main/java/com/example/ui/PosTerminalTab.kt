@@ -2,6 +2,7 @@ package com.example.ui
 
 import android.content.Context
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -94,6 +95,19 @@ fun PosTerminalTab(
     val spec = uiState.activeWorkspace
     val permissions = uiState.tenantToolsMap[spec.tenantId] ?: spec.defaultTools
     val activeSchemaTag = uiState.activeSchemaVersion?.let { "v${it.schemaVersion}" } ?: "v1.1"
+
+    // Device back button: consume it to dismiss in-tenant popups first (overlay sheets,
+    // overflow menu, expanded app bar). When nothing is left to pop, we do NOT handle it —
+    // the event falls through to the Activity so it exits the app rather than the tenant.
+    val hasOpenTenantPopup =
+        activeOverlay != ActiveHostOverlay.NONE || showOverflowMenu || isAppBarExpanded
+    BackHandler(enabled = hasOpenTenantPopup) {
+        when {
+            activeOverlay != ActiveHostOverlay.NONE -> activeOverlay = ActiveHostOverlay.NONE
+            showOverflowMenu -> showOverflowMenu = false
+            else -> isAppBarExpanded = false
+        }
+    }
 
     Box(
         modifier = Modifier
