@@ -27,6 +27,10 @@ class ToolRegistry(private val handlers: Map<String, ToolHandler>) {
 
 enum class Provenance { Agency, Publisher }
 
+/**
+ * Provenance access control gate.
+ */
+class ProvenanceChecker {
     private val publisherAllowlist = setOf(
         "device.haptics@1",
         "device.beeper@1",

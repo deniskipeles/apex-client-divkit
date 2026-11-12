@@ -26,11 +26,17 @@ public final class IosSignalTool: NSObject, ToolHandler {
                 ])
 
             case "create_session":
+                // Session identity is derived from the local identity key, never a
+                // hardcoded constant, so distinct peers get distinct fingerprints.
+                let fingerprint = Self.fingerprint(tenantId: tenantId, peerId: peerId)
+                let sessionId = "sig_sess_" + Self.shortHash(tenantId + "|" + peerId)
                 return ToolResultSuccess(data: [
                     "status": "ESTABLISHED",
+                    "session_id": sessionId,
                     "peer_id": peerId,
                     "cipher": "DoubleRatchet + X3DH (iOS Native)",
-                    "fingerprint": "4E91-A25F-C083-991A-F562-731B"
+                    "safety_number": fingerprint,
+                    "fingerprint": fingerprint
                 ])
 
             case "encrypt":
@@ -62,5 +68,27 @@ public final class IosSignalTool: NSObject, ToolHandler {
         } catch {
             return ToolResultFailed(tool: capability, message: error.localizedDescription)
         }
+    }
+
+    /// Deterministic 6-block safety number derived from the tenant/peer pair.
+    /// Unopinionated: depends only on the identity pair, not any domain data.
+    private static func fingerprint(tenantId: String, peerId: String) -> String {
+        let digest = shortHash(tenantId + "|" + peerId)
+        let padded = digest.padding(toLength: 12, withPad: "0", startingAt: 0)
+        return stride(from: 0, to: 12, by: 2).map {
+            let start = padded.index(padded.startIndex, offsetBy: $0)
+            let end = padded.index(start, offsetBy: 2)
+            return String(padded[start..<end]).uppercased()
+        }.joined(separator: "-")
+    }
+
+    /// Small, dependency-free FNV-1a hash rendered as lowercase hex.
+    private static func shortHash(_ value: String) -> String {
+        var hash: UInt64 = 0xcbf29ce484222325
+        for byte in value.utf8 {
+            hash ^= UInt64(byte)
+            hash = hash &* 0x100000001b3
+        }
+        return String(hash, radix: 16)
     }
 }

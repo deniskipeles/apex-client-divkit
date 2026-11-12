@@ -6,6 +6,8 @@ import engine.tools.ToolContext
 import engine.tools.ToolHandler
 import engine.tools.ToolResult
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 
@@ -148,28 +150,6 @@ class SecureVerifyIdentityTool : ToolHandler {
                 "fingerprint" to expected,
                 "verified" to matches,
                 "verification_time" to currentTimeMillis()
-            )
-        )
-    }
-}
-
-class BeeperTool : ToolHandler {
-    override val capability = "device.beeper@1"
-
-    override suspend fun invoke(args: ToolArgs, ctx: ToolContext): ToolResult {
-        val tone = args["tone"] ?: "ring"
-        val durationMs = args.getInt("duration_ms", 180)
-        val frequencyHz = when (tone.lowercase()) {
-            "alert" -> 2400.0
-            "error" -> 600.0
-            else -> args.getDouble("frequency_hz", 1200.0)
-        }
-        return ToolResult.Success(
-            mapOf(
-                "state" to "ok",
-                "tone" to tone,
-                "frequency_hz" to frequencyHz,
-                "duration_ms" to durationMs
             )
         )
     }

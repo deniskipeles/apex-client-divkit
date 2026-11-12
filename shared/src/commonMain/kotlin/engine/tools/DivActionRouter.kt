@@ -4,6 +4,7 @@ import engine.state.DivVariableValue
 import engine.state.EngineStateBridge
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.put
 import java.net.URI
@@ -68,7 +69,9 @@ object ResultBinder {
                     q["candidates_var"]?.let { cVar ->
                         val safeCVar = if (cVar.startsWith("user.")) cVar else "user.$cVar"
                         val jsonArr = buildJsonArray {
-                            c.forEach { item -> put(item.toString()) }
+                            c.forEach { item ->
+                                add(JsonPrimitive(item.toString()))
+                            }
                         }.toString()
                         ctx.variables(safeCVar, jsonArr)
                     }
