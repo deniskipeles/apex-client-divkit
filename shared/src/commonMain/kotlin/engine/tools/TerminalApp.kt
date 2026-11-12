@@ -2,6 +2,10 @@ package engine.tools
 
 import engine.tools.impl.*
 
+/**
+ * Composition Root for the Terminal Tool Engine.
+ * Single point of registration for all versioned capabilities.
+ */
 object TerminalApp {
 
     val registry: ToolRegistry by lazy { buildRegistry() }
@@ -15,7 +19,7 @@ object TerminalApp {
             CapturePhotoTool(),
             EmbedImageTool(),
             RemoveBackgroundTool(),
-            IdentifyProductTool(),
+            ProductClassifierTool(),
             SecureSendTool(),
             SecureStatusTool(),
             SecureVerifyIdentityTool(),
@@ -25,17 +29,21 @@ object TerminalApp {
             OfflineCacheTool(),
             RealtimeWsTool()
         )
+        // Map canonical capabilities + common shorthand aliases
         val handlerMap = mutableMapOf<String, ToolHandler>()
         handlers.forEach { h ->
             handlerMap[h.capability] = h
+            // Register canonical shortcuts
             when (h.capability) {
-                "device.haptics@1" -> {
+                "hardware.haptics@1" -> {
+                    handlerMap["device.haptics@1"] = h
                     handlerMap["haptics.perform@1"] = h
                     handlerMap["hardware.haptics@1"] = h
                     handlerMap["haptics"] = h
                     handlerMap["device.haptics"] = h
                 }
-                "device.beeper@1" -> {
+                "hardware.beeper@1" -> {
+                    handlerMap["device.beeper@1"] = h
                     handlerMap["beeper"] = h
                     handlerMap["hardware.beeper@1"] = h
                     handlerMap["device.beeper"] = h
@@ -73,6 +81,7 @@ object TerminalApp {
                 "auth.biometrics@1" -> {
                     handlerMap["biometrics"] = h
                     handlerMap["auth.biometrics"] = h
+                    handlerMap["supervisor_auth"] = h
                 }
                 "device.clipboard@1" -> {
                     handlerMap["clipboard"] = h
@@ -81,15 +90,18 @@ object TerminalApp {
                 "network.push@1" -> {
                     handlerMap["push"] = h
                     handlerMap["network.push"] = h
+                    handlerMap["alerts"] = h
                 }
                 "storage.offline_cache@1" -> {
                     handlerMap["offline-cache"] = h
                     handlerMap["offline_cache"] = h
+                    handlerMap["storage.offline_cache"] = h
                 }
                 "network.realtime@1" -> {
                     handlerMap["realtime-ws"] = h
                     handlerMap["realtime_ws"] = h
                     handlerMap["network.realtime"] = h
+                    handlerMap["realtime"] = h
                 }
             }
         }

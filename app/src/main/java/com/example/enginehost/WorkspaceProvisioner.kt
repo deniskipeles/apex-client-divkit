@@ -82,12 +82,18 @@ data class SeedOrder(
 
 object WorkspaceProvisioner {
 
+    /**
+     * The single built-in demo tenant. It exists to showcase the DivKit SDUI surface
+     * (live charts, json_list, hardware testers) together with the full unopinionated
+     * native tool suite. Additional tenants are connected at runtime through the
+     * Connect Workspace flow rather than being shipped as static demos.
+     */
     val defaultWorkspaces: List<TenantWorkspaceSpec> = listOf(
         TenantWorkspaceSpec(
             tenantId = "acme_pos",
-            displayName = "Apex POS Terminal Demo",
+            displayName = "Apex POS Terminal",
             terminalCode = "POS-TERM-01",
-            subtitle = "Built-in Terminal Demo",
+            subtitle = "DivKit SDUI Showcase • Full Native Tool Suite",
             accentHex = "#0284C7",
             mode = EngineConfig.Mode.HYBRID,
             capabilities = setOf("scanner", "printer", "nfc", "cash_drawer", "haptics", "beeper"),
@@ -103,8 +109,8 @@ object WorkspaceProvisioner {
                 supervisorBiometricAuth = true,
                 clipboardAccess = true,
                 backgroundAlertsPush = true,
-                offlinePageCaching = false,
-                realtimeEngineWsSse = false
+                offlinePageCaching = true,
+                realtimeEngineWsSse = true
             ),
             defaultProducts = listOf(
                 SeedProduct("Wagyu Smash Burger", "ACM-101", 16.50, 42, "Entrees", "#0284C7"),
@@ -116,80 +122,6 @@ object WorkspaceProvisioner {
                 SeedOrder("Wagyu Smash Burger", "ACM-101", 16.50, 1, "POS-TERM-01", "PAID"),
                 SeedOrder("Truffle Parmesan Fries", "ACM-102", 8.00, 2, "POS-TERM-01", "OPEN"),
                 SeedOrder("Artisan Cold Brew", "ACM-204", 5.50, 1, "POS-TERM-01", "OPEN")
-            )
-        ),
-        TenantWorkspaceSpec(
-            tenantId = "nova_retail",
-            displayName = "Nova Electronics Express",
-            terminalCode = "REG-04-WEST",
-            subtitle = "Public Tunnel: https://apexkit-drive.hf.space",
-            accentHex = "#818CF8",
-            mode = EngineConfig.Mode.ONLINE,
-            capabilities = setOf("scanner", "printer", "nfc"),
-            isBuiltInDemo = false,
-            tunnelUrl = "https://apexkit-drive.hf.space",
-            localLanUrl = "http://192.168.1.44:3000",
-            publicClientId = "pk_live_94fa8120c43b6605370e91b",
-            unreadCount = 0,
-            defaultTools = WorkspaceToolPermissions(), // Tools off (default) for security
-            defaultProducts = listOf(
-                SeedProduct("USB-C GaN 100W Charger", "NVA-881", 49.00, 120, "Power", "#4F46E5"),
-                SeedProduct("ANC Studio Earbuds Pro", "NVA-410", 129.00, 34, "Audio", "#7C3AED"),
-                SeedProduct("MagSafe Alloy Stand", "NVA-209", 35.00, 56, "Accessories", "#2563EB"),
-                SeedProduct("Mechanical Keycap Kit", "NVA-512", 59.00, 19, "Peripherals", "#0891B2")
-            ),
-            defaultOrders = listOf(
-                SeedOrder("USB-C GaN 100W Charger", "NVA-881", 49.00, 1, "REG-04-WEST", "OPEN"),
-                SeedOrder("MagSafe Alloy Stand", "NVA-209", 35.00, 1, "REG-04-WEST", "SYNCED")
-            )
-        ),
-        TenantWorkspaceSpec(
-            tenantId = "zen_pharmacy",
-            displayName = "Zenith Rx Clinic Kiosk",
-            terminalCode = "KIOSK-RX-02",
-            subtitle = "Public Tunnel: http://inspower-kiosk.local",
-            accentHex = "#34D399",
-            mode = EngineConfig.Mode.OFFLINE,
-            capabilities = setOf("scanner"),
-            isBuiltInDemo = false,
-            tunnelUrl = "http://inspower-kiosk.local",
-            localLanUrl = "http://10.0.0.22:8080",
-            publicClientId = "pk_live_38cd1190c43b6605370a10c",
-            unreadCount = 0,
-            defaultTools = WorkspaceToolPermissions(), // Tools off (default)
-            defaultProducts = listOf(
-                SeedProduct("Electrolyte Recovery Pack", "ZEN-011", 14.00, 90, "Wellness", "#059669"),
-                SeedProduct("Digital Thermometer Pro", "ZEN-045", 24.50, 31, "Devices", "#0D9488"),
-                SeedProduct("Vitamin D3 + K2 Drops", "ZEN-078", 19.00, 74, "Supplements", "#0284C7"),
-                SeedProduct("First Aid Travel Kit", "ZEN-092", 29.00, 40, "Emergency", "#4F46E5")
-            ),
-            defaultOrders = listOf(
-                SeedOrder("Electrolyte Recovery Pack", "ZEN-011", 14.00, 1, "KIOSK-RX-02", "QUEUED_OFFLINE")
-            )
-        ),
-        TenantWorkspaceSpec(
-            tenantId = "metro_coffee",
-            displayName = "ApexKit Administration",
-            terminalCode = "BAR-POS-03",
-            subtitle = "Public Tunnel: https://kipeles-apexkit.hf.space",
-            accentHex = "#F59E0B",
-            mode = EngineConfig.Mode.HYBRID,
-            capabilities = setOf("scanner", "printer", "nfc"),
-            isBuiltInDemo = false,
-            tunnelUrl = "https://kipeles-apexkit.hf.space",
-            localLanUrl = "http://192.168.1.88:5173",
-            publicClientId = "pk_live_77ea4450c43b6605370d88f",
-            unreadCount = 0,
-            defaultTools = WorkspaceToolPermissions(), // Tools off (default)
-            defaultProducts = listOf(
-                SeedProduct("Single Origin Cortado", "MTR-110", 5.25, 140, "Espresso", "#D97706"),
-                SeedProduct("Pistachio Croissant", "MTR-205", 6.75, 38, "Pastry", "#059669"),
-                SeedProduct("Kyoto Cold Tower", "MTR-118", 6.50, 62, "Cold Brew", "#0284C7"),
-                SeedProduct("Matcha Whisk Tin", "MTR-309", 28.00, 22, "Retail", "#7C3AED")
-            ),
-            defaultOrders = listOf(
-                SeedOrder("Single Origin Cortado", "MTR-110", 5.25, 2, "BAR-POS-03", "PAID"),
-                SeedOrder("Pistachio Croissant", "MTR-205", 6.75, 1, "BAR-POS-03", "OPEN")
             )
         )
     )
@@ -230,8 +162,9 @@ object WorkspaceProvisioner {
     }
 
     /**
-     * Ensures tenant-specific SQLite tables (`<ws>_orders` and `<ws>_inventory`) exist
-     * inside `workspace_<ws>.db` so `EngineRegistry`'s `PRAGMA table_info` check succeeds.
+     * Registers the tenant's `orders` and `inventory` collections in the ApexKit
+     * schema and seeds them through `EngineRegistry`, so `db.count`/`db.insert`/
+     * `db.query` resolve against the generic `collections`/`records` store.
      */
     fun ensureTenantSchemaAndSeed(
         db: WorkspaceDatabase,
@@ -239,39 +172,25 @@ object WorkspaceProvisioner {
         registry: EngineRegistry
     ) {
         val ws = spec.tenantId
-        val ordersTable = "${ws}_orders"
-        val inventoryTable = "${ws}_inventory"
+        val apexEngine = engine.db.ApexKitDatabaseEngine(db.driver)
 
-        db.driver.executeUpdate(
-            null,
-            """
-            CREATE TABLE IF NOT EXISTS $ordersTable (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                item_name TEXT NOT NULL,
-                sku TEXT NOT NULL,
-                price REAL NOT NULL,
-                qty INTEGER NOT NULL DEFAULT 1,
-                terminal_id TEXT NOT NULL,
-                status TEXT NOT NULL DEFAULT 'OPEN'
+        // Collections are INSERT OR REPLACE'd by import, which would cascade-delete
+        // existing records, so only import when the tenant schema is absent.
+        if (apexEngine.getCollection("orders") == null) {
+            registry.execute(
+                "db.import_schema",
+                db,
+                ws,
+                buildJsonObject {
+                    putJsonObject("schema") {
+                        putJsonArray("collections") {
+                            add(collectionJson(id = 1L, name = "orders", fields = ORDERS_FIELDS))
+                            add(collectionJson(id = 2L, name = "inventory", fields = INVENTORY_FIELDS))
+                        }
+                    }
+                }
             )
-            """.trimIndent(),
-            0
-        )
-
-        db.driver.executeUpdate(
-            null,
-            """
-            CREATE TABLE IF NOT EXISTS $inventoryTable (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                item_name TEXT NOT NULL,
-                sku TEXT UNIQUE NOT NULL,
-                price REAL NOT NULL,
-                stock INTEGER NOT NULL DEFAULT 0,
-                category TEXT NOT NULL
-            )
-            """.trimIndent(),
-            0
-        )
+        }
 
         // Check if inventory is empty; if so, seed via EngineRegistry
         val invCount = (registry.execute(
@@ -957,4 +876,29 @@ object WorkspaceProvisioner {
             }
         }
     }
+
+    private fun collectionJson(id: Long, name: String, fields: List<String>): JsonObject = buildJsonObject {
+        put("id", id)
+        put("name", name)
+        putJsonObject("schema") {
+            putJsonObject("fields") {
+                for (field in fields) {
+                    putJsonObject(field) {
+                        put("type", if (field == "price") "number" else "string")
+                        put("required", false)
+                        put("uid", "${name}_$field")
+                    }
+                }
+            }
+            putJsonObject("policies") {
+                put("read", "public")
+                put("create", "public")
+                put("update", "admin")
+                put("delete", "admin")
+            }
+        }
+    }
+
+    private val ORDERS_FIELDS = listOf("item_name", "sku", "price", "qty", "terminal_id", "status")
+    private val INVENTORY_FIELDS = listOf("item_name", "sku", "price", "stock", "category")
 }

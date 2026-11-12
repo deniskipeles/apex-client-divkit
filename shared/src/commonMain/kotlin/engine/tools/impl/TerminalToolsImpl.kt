@@ -6,6 +6,8 @@ import engine.tools.ToolContext
 import engine.tools.ToolHandler
 import engine.tools.ToolResult
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 
@@ -75,22 +77,27 @@ class RemoveBackgroundTool : ToolHandler {
     }
 }
 
-class IdentifyProductTool : ToolHandler {
+class ProductClassifierTool : ToolHandler {
     override val capability = "vision.identify_product@1"
-    override val requiredPermissions = setOf("android.permission.CAMERA")
 
     override suspend fun invoke(args: ToolArgs, ctx: ToolContext): ToolResult {
-        val imageId = args["image"] ?: args["image_id"] ?: "img_snapshot"
-        return ToolResult.Success(
-            mapOf(
-                "state" to "exact",
-                "image_id" to imageId,
-                "product_id" to "ACM-101",
-                "product_name" to "Wagyu Smash Burger",
-                "source" to "visual",
-                "confidence" to 0.94
-            )
+        val imageId = args["image"] ?: args["image_id"] ?: "img_snapshot_live"
+        val payload = buildJsonObject {
+            put("image_id", imageId)
+            args["top_k"]?.let { put("top_k", it) }
+            args["min_confidence"]?.let { put("min_confidence", it) }
+        }
+
+        val outcome = engine.tools.NativeToolsSuite.execute(
+            url = "tools://MobileNetV4-small/classify",
+            payload = payload,
+            tenantId = ctx.workspaceId
         )
+
+        val resultMap = outcome.resultData.jsonObject.mapValues { (_, v) ->
+            v.jsonPrimitive.contentOrNull ?: v.toString()
+        }
+        return ToolResult.Success(mapOf("state" to "ok", "image_id" to imageId) + resultMap)
     }
 }
 
@@ -143,28 +150,6 @@ class SecureVerifyIdentityTool : ToolHandler {
                 "fingerprint" to expected,
                 "verified" to matches,
                 "verification_time" to currentTimeMillis()
-            )
-        )
-    }
-}
-
-class BeeperTool : ToolHandler {
-    override val capability = "device.beeper@1"
-
-    override suspend fun invoke(args: ToolArgs, ctx: ToolContext): ToolResult {
-        val tone = args["tone"] ?: "ring"
-        val durationMs = args.getInt("duration_ms", 180)
-        val frequencyHz = when (tone.lowercase()) {
-            "alert" -> 2400.0
-            "error" -> 600.0
-            else -> args.getDouble("frequency_hz", 1200.0)
-        }
-        return ToolResult.Success(
-            mapOf(
-                "state" to "ok",
-                "tone" to tone,
-                "frequency_hz" to frequencyHz,
-                "duration_ms" to durationMs
             )
         )
     }

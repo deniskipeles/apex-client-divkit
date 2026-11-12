@@ -2,6 +2,7 @@ package com.example
 
 import com.example.enginehost.SduiOnFlyBuilder
 import com.example.enginehost.WorkspaceProvisioner
+import com.example.enginehost.sortedByUsage
 import engine.config.EngineConfig
 import engine.crypto.CanonicalJson
 import engine.state.DivVariableValue
@@ -17,7 +18,12 @@ import engine.tools.ToolResult
 import kotlinx.serialization.json.*
 import org.junit.Assert.*
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [36])
 class ExampleUnitTest {
     @Test
     fun canonicalJson_sortsKeysAndFormatsNumbers() {
@@ -569,5 +575,50 @@ class ExampleUnitTest {
         )
         assertTrue(outcome.success)
         assertEquals("SUCCESS", outcome.resultData.jsonObject["status"]?.jsonPrimitive?.content)
+    }
+
+    @Test
+    fun tenantUsage_sortsByRecencyThenCountThenOriginalOrder() {
+        val tenants = listOf("alpha", "beta", "gamma", "delta").map { id ->
+            WorkspaceProvisioner.defaultWorkspaces.first().copy(tenantId = id)
+        }
+        val usage = mapOf(
+            // beta used most recently, alpha used most often but longer ago
+            "beta" to com.example.enginehost.TenantUsage(visitCount = 1, lastUsedEpochMs = 500L),
+            "alpha" to com.example.enginehost.TenantUsage(visitCount = 9, lastUsedEpochMs = 100L),
+            "gamma" to com.example.enginehost.TenantUsage(visitCount = 3, lastUsedEpochMs = 300L)
+        )
+
+        val ordered = tenants.sortedByUsage(usage).map { it.tenantId }
+
+        // Most recent first (beta, gamma), then most visited (alpha), then never-used (delta) last.
+        assertEquals(listOf("beta", "gamma", "alpha", "delta"), ordered)
+    }
+
+    @Test
+    fun tenantUsageStore_recordsVisitsAndLastOpened() {
+        val context = androidx.test.core.app.ApplicationProvider.getApplicationContext<android.content.Context>()
+        val store = com.example.enginehost.TenantUsageStore(context)
+
+        store.recordVisit("acme_pos", nowMs = 1_000L)
+        store.recordVisit("acme_pos", nowMs = 2_000L)
+        store.setLastOpened("acme_pos", workspaceOpen = true)
+
+        val usage = store.usage()["acme_pos"]
+        assertNotNull(usage)
+        assertEquals(2, usage!!.visitCount)
+        assertEquals(2_000L, usage.lastUsedEpochMs)
+        assertEquals("acme_pos", store.lastOpenedTenantId())
+        assertTrue(store.wasWorkspaceOpen())
+
+        // Returning to the launcher clears the resume flag but keeps usage history.
+        store.setLastOpened(null, workspaceOpen = false)
+        assertNull(store.lastOpenedTenantId())
+        assertFalse(store.wasWorkspaceOpen())
+        assertEquals(2, store.usage()["acme_pos"]?.visitCount)
+
+        // Disconnecting forgets the tenant entirely.
+        store.forget("acme_pos")
+        assertNull(store.usage()["acme_pos"])
     }
 }

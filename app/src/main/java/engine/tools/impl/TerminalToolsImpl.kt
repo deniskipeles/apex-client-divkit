@@ -3,7 +3,6 @@ package engine.tools.impl
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import android.media.ToneGenerator
 import engine.crypto.currentTimeMillis
 import engine.state.DivVariableValue
 import engine.state.EngineStateBridge
@@ -19,6 +18,8 @@ import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.SecretKeySpec
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 
@@ -129,32 +130,31 @@ class RemoveBackgroundTool : ToolHandler {
 }
 
 /**
- * 8.5 vision.identify_product@1 (Deterministic Barcode -> OCR -> MobileNetV4 cascade)
+ * 8.5 vision.identify_product@1 — generic on-device product classification.
+ * Delegates to the unopinionated MobileNetV4 image classifier; the capability
+ * itself embeds no domain catalogue or vendor-specific pipeline.
  */
-class IdentifyProductTool : ToolHandler {
+class ProductClassifierTool : ToolHandler {
     override val capability = "vision.identify_product@1"
-    override val requiredPermissions = setOf("android.permission.CAMERA")
 
     override suspend fun invoke(args: ToolArgs, ctx: ToolContext): ToolResult {
         val imageId = args["image"] ?: args["image_id"] ?: "img_snapshot_live"
-        val candidates = listOf(
-            mapOf("id" to "ACM-101", "name" to "Wagyu Smash Burger", "score" to 0.94, "source" to "visual"),
-            mapOf("id" to "ACM-102", "name" to "Truffle Parmesan Fries", "score" to 0.78, "source" to "visual"),
-            mapOf("id" to "ACM-204", "name" to "Artisan Cold Brew", "score" to 0.62, "source" to "text")
-        )
-        val top = candidates.first()
+        val payload = buildJsonObject {
+            put("image_id", imageId)
+            args["top_k"]?.let { put("top_k", it) }
+            args["min_confidence"]?.let { put("min_confidence", it) }
+        }
 
-        return ToolResult.Success(
-            mapOf(
-                "state" to "exact",
-                "image_id" to imageId,
-                "product_id" to top["id"],
-                "product_name" to top["name"],
-                "source" to top["source"],
-                "confidence" to top["score"],
-                "candidates" to candidates
-            )
+        val outcome = engine.tools.NativeToolsSuite.execute(
+            url = "tools://MobileNetV4-small/classify",
+            payload = payload,
+            tenantId = ctx.workspaceId
         )
+
+        val resultMap = outcome.resultData.jsonObject.mapValues { (_, v) ->
+            v.jsonPrimitive.contentOrNull ?: v.toString()
+        }
+        return ToolResult.Success(mapOf("state" to "ok", "image_id" to imageId) + resultMap)
     }
 }
 
@@ -168,16 +168,20 @@ class SecureSendTool : ToolHandler {
         val payload = args["payload_b64"] ?: args["payload"] ?: args["message"]
             ?: return ToolResult.Failed(capability, "missing payload argument")
         val peerId = args["peer_id"] ?: "${ctx.workspaceId}_peer"
+        val deviceId = args.getInt("device_id", 1)
 
         return try {
-            val envelope = engine.tools.libsignal.LibSignalEngine.encrypt(ctx.workspaceId, peerId, payload)
+            val envelope = engine.tools.libsignal.LibSignalEngine.encrypt(ctx.workspaceId, peerId, deviceId, payload)
+            val session = engine.tools.libsignal.LibSignalEngine.createOrGetSession(ctx.workspaceId, peerId, deviceId)
             ToolResult.Success(
                 mapOf(
                     "state" to "ok",
                     "status" to "ENCRYPTED",
-                    "session_id" to envelope.sessionId,
+                    "session_id" to session.sessionId,
+                    "peer_id" to peerId,
                     "ciphertext_b64" to envelope.ciphertextB64,
-                    "counter" to envelope.messageCounter
+                    "message_type" to envelope.type,
+                    "counter" to session.sendCounter
                 )
             )
         } catch (e: Exception) {
@@ -234,45 +238,6 @@ class SecureVerifyIdentityTool : ToolHandler {
                 "fingerprint" to session.fingerprint,
                 "verified" to matches,
                 "timestamp" to currentTimeMillis()
-            )
-        )
-    }
-}
-
-/**
- * 8.9 device.beeper@1 (Hardware Beeper Tone Audio Tool)
- */
-class BeeperTool : ToolHandler {
-    override val capability = "device.beeper@1"
-
-    override suspend fun invoke(args: ToolArgs, ctx: ToolContext): ToolResult {
-        val tone = args["tone"] ?: args["type"] ?: "ring"
-        val durationMs = args.getInt("duration_ms", 180)
-        val frequencyHz = when (tone.lowercase()) {
-            "ring", "pos_ring" -> 1200.0
-            "alert", "warning" -> 2400.0
-            "error", "error_buzz" -> 600.0
-            else -> args.getDouble("frequency_hz", 1200.0)
-        }
-        val toneType = when (tone.lowercase()) {
-            "alert", "warning" -> ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD
-            "error", "error_buzz" -> ToneGenerator.TONE_SUP_ERROR
-            else -> ToneGenerator.TONE_PROP_BEEP
-        }
-
-        PosTonePlayer.playTone(
-            toneType = toneType,
-            frequencyHz = frequencyHz,
-            durationMs = durationMs
-        )
-
-        return ToolResult.Success(
-            mapOf(
-                "state" to "ok",
-                "tone" to tone,
-                "frequency_hz" to frequencyHz,
-                "duration_ms" to durationMs,
-                "status" to "TONE_PLAYED"
             )
         )
     }

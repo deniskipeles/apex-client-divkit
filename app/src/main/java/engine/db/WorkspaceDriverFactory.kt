@@ -11,7 +11,12 @@ class WorkspaceDriverFactory(private val context: Context) {
             schema = WorkspaceDatabase.Schema,
             context = context,
             name = "workspace_${workspaceId}.db"
-        )
+        ).apply {
+            // PRAGMAs must run outside SQLDelight's schema-creation transaction.
+            executeUpdate(null, "PRAGMA journal_mode = WAL;", 0)
+            executeUpdate(null, "PRAGMA synchronous = NORMAL;", 0)
+            executeUpdate(null, "PRAGMA foreign_keys = ON;", 0)
+        }
     }
 
     companion object {

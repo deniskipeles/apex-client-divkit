@@ -45,6 +45,19 @@ class HapticsTool : ToolHandler {
 
         if (context == null) {
             // Emulated/Unit Test Headless success
+            if (!timingsRaw.isNullOrBlank()) {
+                val timings = parseTimings(timingsRaw)
+                return ToolResult.Success(
+                    mapOf(
+                        "status" to "SUCCESS",
+                        "mode" to "waveform",
+                        "steps" to timings.size,
+                        "total_duration_ms" to timings.sum(),
+                        "amplitude" to amplitude,
+                        "timestamp" to currentTimeMillis()
+                    )
+                )
+            }
             return ToolResult.Success(
                 mapOf(
                     "status" to "SUCCESS",

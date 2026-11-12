@@ -91,24 +91,38 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
     private val driverFactory = WorkspaceDriverFactory(context)
     val workspaceManager = WorkspaceManager(driverFactory)
     val registry = EngineRegistry()
-    private val httpClient = createHttpClient()
-    val syncEngine = SyncEngine(workspaceManager, httpClient)
-    private val syncScheduler = BackgroundSyncScheduler(PlatformContext.Android(context))
+    private val usageStore = TenantUsageStore(context)
 
-    private val keyPair: SigningKeyPair = Ed25519.generateKeyPair("sdui-kmp-edge-key")
+    // Constructed lazily so ViewModel creation (and therefore the first frame) stays cheap;
+    // these allocate OkHttp clients / WorkManager plumbing that is only needed on demand.
+    private val httpClient by lazy { createHttpClient() }
+    val syncEngine by lazy { SyncEngine(workspaceManager, httpClient) }
+    private val syncScheduler by lazy { BackgroundSyncScheduler(PlatformContext.Android(context)) }
+
+    private val keyPair: SigningKeyPair by lazy { Ed25519.generateKeyPair("sdui-kmp-edge-key") }
     private val verifiers = mutableMapOf<String, PayloadVerifier>()
 
     private var activeRouter: EngineRouter? = null
 
     private val _uiState = MutableStateFlow(
-        SduiEngineUiState(keyPair = keyPair)
+        WorkspaceProvisioner.defaultWorkspaces
+            .sortedByUsage(usageStore.usage())
+            .let { ordered -> SduiEngineUiState(workspaces = ordered, activeWorkspace = ordered.first()) }
     )
     val uiState: StateFlow<SduiEngineUiState> = _uiState.asStateFlow()
+
+    /** Tenant whose workspace should be re-opened on the next launch, if any. */
+    private var resumeTenantId: String? = usageStore.lastOpenedTenantId()
+        ?.takeIf { id -> _uiState.value.workspaces.any { it.tenantId == id } }
+
+    private val shouldResumeWorkspace: Boolean =
+        resumeTenantId != null && usageStore.wasWorkspaceOpen()
 
     init {
         currentAndroidContext = { context }
         // Initiate connected tenants by receiving, verifying, and caching their initial DivKit schemas in SQLite
         viewModelScope.launch(Dispatchers.IO) {
+            _uiState.update { it.copy(keyPair = keyPair) }
             WorkspaceProvisioner.defaultWorkspaces.forEach { spec ->
                 ensureTenantInitiatedWithCachedSchema(spec)
             }
@@ -120,7 +134,15 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                     statusBannerMessage = "${WorkspaceProvisioner.defaultWorkspaces.size} tenants initiated & cached in SQLite"
                 )
             }
-            switchWorkspace(WorkspaceProvisioner.defaultWorkspaces.first(), openDedicatedScreen = false)
+            // Resume the previously opened tenant on relaunch; otherwise land on the launcher.
+            val resumeSpec = resumeTenantId?.let { id ->
+                WorkspaceProvisioner.defaultWorkspaces.firstOrNull { it.tenantId == id }
+            }
+            if (resumeSpec != null && shouldResumeWorkspace) {
+                switchWorkspace(resumeSpec, openDedicatedScreen = true, recordVisit = false)
+            } else {
+                switchWorkspace(WorkspaceProvisioner.defaultWorkspaces.first(), openDedicatedScreen = false)
+            }
         }
     }
 
@@ -229,10 +251,11 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
     }
 
     fun openTenantWorkspace(spec: TenantWorkspaceSpec) {
-        switchWorkspace(spec, openDedicatedScreen = true)
+        switchWorkspace(spec, openDedicatedScreen = true, recordVisit = true)
     }
 
     fun returnToLauncher() {
+        usageStore.setLastOpened(null, workspaceOpen = false)
         viewModelScope.launch(Dispatchers.IO) {
             refreshTenantCachedBadges()
         }
@@ -244,7 +267,16 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
         }
     }
 
-    fun switchWorkspace(spec: TenantWorkspaceSpec, openDedicatedScreen: Boolean = true) {
+    fun switchWorkspace(
+        spec: TenantWorkspaceSpec,
+        openDedicatedScreen: Boolean = true,
+        recordVisit: Boolean = false
+    ) {
+        if (recordVisit) {
+            usageStore.recordVisit(spec.tenantId)
+            usageStore.setLastOpened(spec.tenantId, workspaceOpen = true)
+            _uiState.update { it.copy(workspaces = it.workspaces.sortedByUsage(usageStore.usage())) }
+        }
         viewModelScope.launch {
             try {
                 // 1. Verify EngineConfig via PayloadVerifier -> EngineConfig.fromVerifiedPayload
@@ -316,23 +348,26 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                     ?: WorkspaceProvisioner.buildDefaultDivKitCardJson(spec)
                 val activeVersionLabel = activeSchema?.schemaVersion ?: "1.0"
 
-                // 7. Execute initial queries via EngineRouter so DivKit variables (`user.orders_json`, counts) are populated
-                router.handle(
-                    "local-db://op/db.query",
-                    WorkspaceProvisioner.buildQueryOrdersAction()["payload"]?.jsonObject
-                )
-                router.handle(
-                    "local-db://op/db.count",
-                    WorkspaceProvisioner.buildCountOrdersAction()["payload"]?.jsonObject
-                )
-                router.handle(
-                    "local-db://op/db.query",
-                    WorkspaceProvisioner.buildQueryInventoryAction()["payload"]?.jsonObject
-                )
-                router.handle(
-                    "local-db://op/db.count",
-                    WorkspaceProvisioner.buildCountInventoryAction()["payload"]?.jsonObject
-                )
+                // 7. Execute initial queries via EngineRouter so DivKit variables (`user.orders_json`, counts) are populated.
+                //    These hit SQLite, so keep them off the main thread.
+                withContext(Dispatchers.IO) {
+                    router.handle(
+                        "local-db://op/db.query",
+                        WorkspaceProvisioner.buildQueryOrdersAction()["payload"]?.jsonObject
+                    )
+                    router.handle(
+                        "local-db://op/db.count",
+                        WorkspaceProvisioner.buildCountOrdersAction()["payload"]?.jsonObject
+                    )
+                    router.handle(
+                        "local-db://op/db.query",
+                        WorkspaceProvisioner.buildQueryInventoryAction()["payload"]?.jsonObject
+                    )
+                    router.handle(
+                        "local-db://op/db.count",
+                        WorkspaceProvisioner.buildCountInventoryAction()["payload"]?.jsonObject
+                    )
+                }
 
                 _uiState.update {
                     it.copy(
@@ -441,6 +476,33 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
         }
     }
 
+    /**
+     * Generic, unopinionated dispatcher for any native tool URL (e.g. "tools://beeper/tone").
+     * Callers supply only the tool URL and an optional payload; all tool semantics, default
+     * options, and hardware specifics live in the tool registry, never in the host UI.
+     */
+    fun dispatchTool(toolUrl: String, payloadJson: String? = null) {
+        val router = activeRouter ?: return
+        viewModelScope.launch {
+            val payloadObj = payloadJson?.let {
+                try {
+                    Json.parseToJsonElement(it).jsonObject
+                } catch (_: Exception) {
+                    null
+                }
+            }
+            val outcome = withContext(Dispatchers.IO) {
+                router.handle(toolUrl, payloadObj)
+            }
+            val banner = when (outcome) {
+                is EngineRouter.ActionOutcome.Handled -> "Tool executed: $toolUrl"
+                is EngineRouter.ActionOutcome.Error -> "Tool blocked ($toolUrl): ${outcome.message}"
+                is EngineRouter.ActionOutcome.Unhandled -> "Unhandled tool scheme: $toolUrl"
+            }
+            _uiState.update { it.copy(statusBannerMessage = banner) }
+        }
+    }
+
     private suspend fun handleHardwareCapability(
         spec: TenantWorkspaceSpec,
         capability: String,
@@ -510,10 +572,10 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                     )
                     return false
                 }
-                engine.tools.impl.PosTonePlayer.playTone(frequencyHz = 1200.0, durationMs = 180)
+                engine.tools.NativeToolsSuite.execute("tools://beeper/ring", kotlinx.serialization.json.JsonObject(emptyMap()))
                 EngineStateBridge.pushUpdate(
                     "user.last_hardware_event",
-                    DivVariableValue.Str("BEEPER AUDIO OK: Synthesized POS Ring 1200 Hz")
+                    DivVariableValue.Str("BEEPER OK: Tone emitted via tools://beeper")
                 )
                 true
             }
@@ -785,6 +847,7 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
             }
             return
         }
+        usageStore.forget(tenantId)
         val remaining = current.filterNot { it.tenantId == tenantId }
         val nextActive = if (_uiState.value.activeWorkspace.tenantId == tenantId) {
             remaining.first()
@@ -793,7 +856,7 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
         }
         _uiState.update {
             it.copy(
-                workspaces = remaining,
+                workspaces = remaining.sortedByUsage(usageStore.usage()),
                 activeWorkspace = nextActive,
                 isWorkspaceOpen = false,
                 statusBannerMessage = "Disconnected workspace $tenantId"
@@ -863,7 +926,7 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                 tenantToolsMap = updatedTools
             )
         }
-        switchWorkspace(newSpec, openDedicatedScreen = openImmediately)
+        switchWorkspace(newSpec, openDedicatedScreen = openImmediately, recordVisit = openImmediately)
     }
 
     /**
@@ -911,7 +974,7 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                 tenantToolsMap = updatedTools
             )
         }
-        switchWorkspace(newSpec, openDedicatedScreen = true)
+        switchWorkspace(newSpec, openDedicatedScreen = true, recordVisit = true)
     }
 
     fun triggerSyncNow() {

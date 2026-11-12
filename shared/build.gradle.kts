@@ -14,7 +14,7 @@ kotlin {
     iosSimulatorArm64()
 
     cocoapods {
-        summary = "KMP SDUI POS Engine with DivKit Custom Blocks & Native Charts"
+        summary = "ApexClient Terminal — KMP SDUI POS Engine with DivKit Custom Blocks & Native Charts"
         homepage = "https://example.com/sdui-pos-engine"
         version = "1.1.0"
         ios.deploymentTarget = "15.0"

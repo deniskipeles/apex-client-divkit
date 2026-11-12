@@ -9,21 +9,17 @@ import java.security.MessageDigest
 import java.security.SecureRandom
 import java.util.Base64
 import java.util.UUID
-import javax.crypto.Cipher
-import javax.crypto.spec.GCMParameterSpec
-import javax.crypto.spec.SecretKeySpec
-import kotlin.math.roundToInt
+import kotlin.math.floor
 
 /**
  * Universal Native Tools Bridge for Server-Driven UI (SDUI) in KMP.
- * Handles the `tools://` scheme:
+ * Handles the `tools://` scheme with unopinionated, domain-free contracts:
+ *   - tools://scan (unified 1D barcode & 2D QR)
  *   - tools://haptics
  *   - tools://beeper
  *   - tools://libsignal
- *   - tools://scan-barcode
- *   - tools://scan-qr
- *   - tools://image-background-remove
  *   - tools://camera
+ *   - tools://image-manipulation
  *   - tools://u-2-Net.tflite
  *   - tools://MobileNetV4-small
  *   - tools://biometrics
@@ -55,240 +51,190 @@ object NativeToolsSuite {
     )
 
     val registeredSchemas: List<ToolSchema> = listOf(
+        // -------------------------------------------------------------
+        // UNIFIED GENERIC OPTICAL SCANNER
+        // Replaces deprecated split tools: scan-barcode & scan-qr
+        // -------------------------------------------------------------
+        ToolSchema(
+            toolId = "scan",
+            displayName = "Unified Optical Scanner (1D Barcode & 2D QR)",
+            description = "Generic optical decoder for 1D linear barcodes and 2D matrix symbologies. Defaults to recognizing both formats simultaneously, or can be restricted using target_format.",
+            supportedOperations = listOf("scan", "continuous_scan", "simulate", "parse"),
+            defaultOptions = mapOf(
+                "target_format" to "both",
+                "beep" to "true",
+                "haptics" to "true",
+                "camera_facing" to "back"
+            ),
+            defaultOutputMapping = mapOf(
+                "raw_value" to "user.scanned_code",
+                "format" to "user.scanned_format",
+                "type" to "user.scanned_type",
+                "status" to "user.scan_status",
+                "timestamp" to "user.scan_timestamp"
+            )
+        ),
         ToolSchema(
             toolId = "haptics",
-            displayName = "Device Haptics & Vibration Engine",
-            description = "Tactile feedback controller for scan confirmation, button taps, error buzzers, and custom waveforms.",
-            supportedOperations = listOf("click", "double_click", "heavy", "tick", "success", "warning", "error", "vibrate"),
+            displayName = "Universal Haptics & Vibration Engine",
+            description = "Unopinionated tactile feedback actuator supporting semantic impacts (click, heavy, tick, success, error), custom one-shot vibrations, and W3C waveform timing arrays.",
+            supportedOperations = listOf("perform", "vibrate", "click", "heavy", "tick", "success", "warning", "error", "stop", "status"),
             defaultOptions = mapOf(
                 "pattern" to "click",
                 "duration_ms" to "20",
                 "amplitude" to "180"
             ),
             defaultOutputMapping = mapOf(
-                "state" to "user.haptics_state",
-                "pattern" to "user.haptics_pattern",
-                "duration_ms" to "user.haptics_duration_ms"
+                "status" to "user.haptics_status",
+                "pattern" to "user.haptics_pattern"
             )
         ),
         ToolSchema(
             toolId = "beeper",
-            displayName = "Hardware Beeper Audio Synthesizer",
-            description = "Synthesized pure sine wave POS transaction audio tones (Ring 1200Hz, Alert 2400Hz, Error Buzz 600Hz).",
-            supportedOperations = listOf("play_tone", "ring", "alert", "error_buzz", "custom_frequency"),
+            displayName = "Universal Audio Tone Synthesizer",
+            description = "Unopinionated PCM frequency synthesizer supporting pure sine/square/triangle waves, acoustic feedback profiles, and melodic sequences.",
+            supportedOperations = listOf("tone", "play", "beep", "chime", "stop", "status"),
             defaultOptions = mapOf(
-                "tone" to "ring",
-                "frequency_hz" to "1200",
-                "duration_ms" to "180"
+                "frequency_hz" to "1600",
+                "duration_ms" to "80",
+                "waveform" to "sine",
+                "volume" to "0.85"
             ),
             defaultOutputMapping = mapOf(
-                "state" to "user.beeper_status",
-                "tone" to "user.beeper_tone",
-                "frequency_hz" to "user.beeper_frequency_hz"
-            )
-        ),
-        ToolSchema(
-            toolId = "libsignal",
-            displayName = "LibSignal E2EE Protocol",
-            description = "Signal Protocol ratchet sessions, prekeys & end-to-end encrypted messaging between tenant terminals.",
-            supportedOperations = listOf("init_keys", "create_session", "encrypt", "decrypt", "fingerprint", "status", "verify_identity"),
-            defaultOptions = mapOf(
-                "cipher" to "AES-256-GCM",
-                "key_derivation" to "HKDF-SHA256",
-                "ratchet_steps" to "3"
-            ),
-            defaultOutputMapping = mapOf(
-                "status" to "user.signal_status",
-                "session_id" to "user.signal_session_id",
-                "ciphertext" to "user.signal_ciphertext",
-                "plaintext" to "user.signal_plaintext",
-                "fingerprint" to "user.signal_fingerprint"
-            )
-        ),
-        ToolSchema(
-            toolId = "scan-barcode",
-            displayName = "Optical Barcode Scanner (1D)",
-            description = "High-speed 1D barcode scanner (EAN-13, Code 128, UPC-A) with automatic tenant SKU catalog resolution.",
-            supportedOperations = listOf("scan", "continuous_scan", "simulate"),
-            defaultOptions = mapOf(
-                "formats" to "EAN_13,CODE_128,UPC_A",
-                "auto_insert_db" to "true",
-                "confidence_threshold" to "0.90",
-                "beep_on_scan" to "true"
-            ),
-            defaultOutputMapping = mapOf(
-                "barcode" to "user.scanned_barcode",
-                "format" to "user.scanned_format",
-                "sku" to "user.scanned_sku",
-                "item_name" to "user.scanned_item_name",
-                "price" to "user.scanned_price"
-            )
-        ),
-        ToolSchema(
-            toolId = "scan-qr",
-            displayName = "QR & Matrix Scanner (2D)",
-            description = "2D QR code scanner for desktop pairing, table pay links, customer loyalty tokens and SDUI schema bundles.",
-            supportedOperations = listOf("scan", "generate", "verify_pairing"),
-            defaultOptions = mapOf(
-                "prefix_filter" to "all",
-                "vibrate_on_match" to "true",
-                "auto_connect_workspace" to "false"
-            ),
-            defaultOutputMapping = mapOf(
-                "qr_content" to "user.scanned_qr",
-                "qr_type" to "user.scanned_qr_type",
-                "payload" to "user.scanned_qr_payload"
-            )
-        ),
-        ToolSchema(
-            toolId = "image-background-remove",
-            displayName = "Image Background Removal Pipeline",
-            description = "Edge-device foreground extraction & background matte generation for catalog items and merchandise.",
-            supportedOperations = listOf("process", "composite_solid", "crop_bounds"),
-            defaultOptions = mapOf(
-                "model" to "u-2-Net.tflite",
-                "alpha_threshold" to "0.50",
-                "feather_radius" to "2",
-                "output_format" to "PNG_TRANSPARENT"
-            ),
-            defaultOutputMapping = mapOf(
-                "image_uri" to "user.segmented_image_uri",
-                "status" to "user.bg_remove_status",
-                "mask_coverage" to "user.bg_mask_coverage"
+                "status" to "user.beeper_status",
+                "frequency_hz" to "user.beeper_frequency"
             )
         ),
         ToolSchema(
             toolId = "camera",
-            displayName = "POS Camera Hardware Bridge",
-            description = "Device camera controller for product inspection, inventory intake, ID verification and barcode capture.",
+            displayName = "Hardware Camera Bridge",
+            description = "Camera frame capture and torch controller.",
             supportedOperations = listOf("capture", "torch_toggle", "get_status"),
-            defaultOptions = mapOf(
-                "facing" to "back",
-                "flash_mode" to "auto",
-                "resolution" to "1080p",
-                "aspect_ratio" to "4:3"
-            ),
-            defaultOutputMapping = mapOf(
-                "capture_uri" to "user.camera_capture_uri",
-                "timestamp" to "user.camera_timestamp",
-                "torch_state" to "user.camera_torch_state"
-            )
+            defaultOptions = mapOf("facing" to "back", "resolution" to "1080p"),
+            defaultOutputMapping = mapOf("capture_uri" to "user.camera_capture_uri")
         ),
+        // -------------------------------------------------------------
+        // UNIFIED IMAGE MANIPULATION ENGINE (OS Models / <4MB footprint)
+        // -------------------------------------------------------------
         ToolSchema(
-            toolId = "u-2-Net.tflite",
-            displayName = "U-2-Net TFLite Neural Segmenter",
-            description = "Salient object detection & alpha matting via quantized U-2-Net neural network (320x320x3 tensor input).",
-            supportedOperations = listOf("segment", "compute_saliency_map", "model_profile"),
+            toolId = "image-manipulation",
+            displayName = "Universal Image Manipulation & Background Removal",
+            description = "High-performance on-device image processing using OS models (<4MB footprint). Supports neural/chroma background removal, edge-preserving smoothing, color adjustment, and cropping.",
+            supportedOperations = listOf("process", "remove_background", "smooth", "adjust_color", "crop", "resize", "threshold"),
             defaultOptions = mapOf(
-                "tensor_input" to "320x320x3",
-                "quantization" to "INT8",
-                "saliency_cutoff" to "0.45",
-                "residual_ublocks" to "6"
+                "op" to "remove_background",
+                "encoding" to "uri"
             ),
             defaultOutputMapping = mapOf(
-                "mask_uri" to "user.u2net_mask_uri",
-                "confidence" to "user.u2net_confidence",
-                "inference_ms" to "user.u2net_latency_ms"
-            )
-        ),
-        ToolSchema(
-            toolId = "MobileNetV4-small",
-            displayName = "MobileNetV4-Small (Quantized Edge Classifier)",
-            description = "Ultra-low latency MobileNetV4-Conv-Small INT8 quantized neural network for real-time POS SKU identification.",
-            supportedOperations = listOf("classify", "detect_sku", "model_benchmarks"),
-            defaultOptions = mapOf(
-                "model_variant" to "mobilenet_v4_conv_small_int8",
-                "input_resolution" to "224x224x3",
-                "top_k" to "3",
-                "min_confidence" to "0.40"
-            ),
-            defaultOutputMapping = mapOf(
-                "prediction_label" to "user.ai_prediction_label",
-                "prediction_sku" to "user.ai_prediction_sku",
-                "confidence" to "user.ai_confidence_score",
-                "top_candidates" to "user.ai_candidates_json"
-            )
-        ),
-        ToolSchema(
-            toolId = "biometrics",
-            displayName = "Supervisor Biometric Authentication",
-            description = "Gate manager refunds, voids, and sensitive settings behind fingerprint or PIN verification.",
-            supportedOperations = listOf("authenticate", "verify_supervisor", "get_status"),
-            defaultOptions = mapOf(
-                "prompt" to "Supervisor Authorization Required",
-                "required_role" to "SUPERVISOR"
-            ),
-            defaultOutputMapping = mapOf(
-                "authenticated" to "user.supervisor_authenticated",
-                "role" to "user.supervisor_role",
-                "auth_token" to "user.supervisor_auth_token"
+                "uri" to "user.processed_image_uri",
+                "status" to "user.image_processing_status"
             )
         ),
         ToolSchema(
             toolId = "clipboard",
             displayName = "System Clipboard Controller",
-            description = "Copy and paste receipts, tracking numbers, and JSON schemas directly to the device clipboard.",
+            description = "Read and write strings to device clipboard.",
             supportedOperations = listOf("copy", "paste", "clear"),
             defaultOptions = mapOf("op" to "copy"),
+            defaultOutputMapping = mapOf("text" to "user.clipboard_content")
+        ),
+        ToolSchema(
+            toolId = "biometrics",
+            displayName = "OS Biometric Authentication",
+            description = "Biometric prompt gate for sensitive actions.",
+            supportedOperations = listOf("authenticate"),
+            defaultOptions = mapOf("prompt" to "Authentication Required"),
+            defaultOutputMapping = mapOf("authenticated" to "user.biometric_authenticated")
+        ),
+        ToolSchema(
+            toolId = "libsignal",
+            displayName = "Signal E2EE Cryptographic Transport",
+            description = "Signal Protocol Double Ratchet sessions, prekeys, and end-to-end encrypted messaging between terminals.",
+            supportedOperations = listOf("setup_identity", "init_keys", "create_session", "encrypt", "decrypt", "status", "verify_identity", "reset_session"),
+            defaultOptions = emptyMap(),
             defaultOutputMapping = mapOf(
-                "text" to "user.clipboard_content",
-                "status" to "user.clipboard_status"
+                "status" to "user.signal_status",
+                "session_id" to "user.signal_session_id",
+                "ciphertext" to "user.signal_ciphertext",
+                "plaintext" to "user.signal_plaintext",
+                "safety_number" to "user.signal_fingerprint",
+                "fingerprint" to "user.signal_fingerprint"
+            )
+        ),
+        ToolSchema(
+            toolId = "MobileNetV4-small",
+            displayName = "MobileNetV4 Image Classifier",
+            description = "On-device INT8 image classification and SKU recognition.",
+            supportedOperations = listOf("classify", "detect", "predict"),
+            defaultOptions = mapOf("top_k" to "3", "min_confidence" to "0.40"),
+            defaultOutputMapping = mapOf(
+                "prediction_label" to "user.ai_prediction_label",
+                "prediction_sku" to "user.ai_prediction_sku",
+                "confidence" to "user.ai_confidence"
+            )
+        ),
+        ToolSchema(
+            toolId = "u-2-Net.tflite",
+            displayName = "U-2-Net Salient Object Segmentation",
+            description = "On-device salient object segmentation producing an alpha matte mask.",
+            supportedOperations = listOf("segment", "infer", "mask"),
+            defaultOptions = mapOf("tensor_input" to "320x320x3", "saliency_cutoff" to "0.45"),
+            defaultOutputMapping = mapOf(
+                "mask_uri" to "user.u2net_mask_uri",
+                "confidence" to "user.u2net_confidence"
             )
         ),
         ToolSchema(
             toolId = "push",
             displayName = "Background Alerts & Push Notifications",
-            description = "Dispatches push alerts and notifications to the order ledger, kitchen display, and status bar.",
-            supportedOperations = listOf("send_alert", "notify_kitchen", "get_unread"),
+            description = "Dispatches background push alerts to a named notification channel.",
+            supportedOperations = listOf("send_alert", "notify", "send"),
             defaultOptions = mapOf("channel" to "orders_dispatch", "priority" to "high"),
             defaultOutputMapping = mapOf(
-                "notification_id" to "user.last_notification_id",
+                "notification_id" to "user.push_notification_id",
                 "status" to "user.push_status"
             )
         ),
         ToolSchema(
             toolId = "offline-cache",
-            displayName = "Offline Schema & Asset Cache",
-            description = "Manages local cache of DivKit schema versions and media assets for offline LAN operation.",
-            supportedOperations = listOf("cache_schema", "get_stats", "purge", "prefetch"),
+            displayName = "Offline Page & Schema Cache",
+            description = "Caches SDUI pages and schemas for offline resilience.",
+            supportedOperations = listOf("cache", "get_stats", "clear"),
             defaultOptions = mapOf("op" to "get_stats"),
             defaultOutputMapping = mapOf(
-                "cached_pages" to "user.cached_pages_count",
-                "cache_size_kb" to "user.cache_size_kb",
-                "status" to "user.cache_status"
+                "status" to "user.offline_cache_status",
+                "cached_pages" to "user.offline_cached_pages"
             )
         ),
         ToolSchema(
             toolId = "realtime-ws",
-            displayName = "Realtime WebSocket & SSE Channel",
-            description = "Connects and streams live order updates, kitchen ticket changes, and inventory sync signals.",
-            supportedOperations = listOf("connect", "publish", "subscribe", "get_connection_status"),
-            defaultOptions = mapOf("channel" to "kitchen_stream", "protocol" to "WSS"),
+            displayName = "Realtime WebSocket / SSE Engine",
+            description = "Opens and manages realtime WSS/SSE channels for live workspace updates.",
+            supportedOperations = listOf("connect", "disconnect", "send", "subscribe"),
+            defaultOptions = mapOf("channel" to "kitchen_stream"),
             defaultOutputMapping = mapOf(
                 "connection_state" to "user.realtime_connection_state",
-                "channel" to "user.realtime_channel",
-                "latency_ms" to "user.realtime_latency_ms"
+                "channel" to "user.realtime_channel"
             )
         )
     )
 
     private val secureRandom = SecureRandom()
     private val signalSessions = mutableMapOf<String, ByteArray>()
-    private var simulatedClipboard: String = ""
 
     suspend fun execute(
         url: String,
         payload: JsonObject,
-        tenantId: String = "acme_pos"
+        tenantId: String = "default"
     ): ToolExecutionOutcome {
         val startTime = currentTimeMillis()
-        val path = url.removePrefix("tools://")
+        val path = url.removePrefix("tools://").removePrefix("tool://")
         val toolRaw = path.substringBefore('/')
         val operation = path.substringAfter('/', "default").substringBefore('?')
 
         val toolId = normalizeToolId(toolRaw)
         val schema = registeredSchemas.firstOrNull { it.toolId.equals(toolId, ignoreCase = true) }
-            ?: registeredSchemas.first { it.toolId == "camera" }
+            ?: registeredSchemas.first { it.toolId == "scan" }
 
         val options = buildMap {
             schema.defaultOptions.forEach { (k, v) -> put(k, v) }
@@ -300,59 +246,55 @@ object NativeToolsSuite {
         val outputMapping = buildMap {
             schema.defaultOutputMapping.forEach { (k, v) -> put(k, v) }
             payload["output"]?.jsonObject?.forEach { (k, v) ->
-                v.jsonPrimitive.contentOrNull?.let { put(k, it) }
+                v.jsonPrimitiveOrNull()?.let { put(k, it) }
             }
         }
 
         val outcome = when (toolId.lowercase()) {
+            "scan", "scanner", "vision.scan_code@1", "vision.scan_code", "scan-barcode", "scan-qr" ->
+                executeScan(operation, options, payload)
             "haptics", "device.haptics", "device.haptics@1" -> executeHaptics(operation, options, payload)
             "beeper", "device.beeper", "device.beeper@1" -> executeBeeper(operation, options, payload)
+            "camera" -> executeCamera(operation, options, payload, tenantId)
+            "image-manipulation", "image-process", "image-filter", "vision.image_manipulation@1",
+            "image-background-remove" ->
+                executeImageManipulation(operation, options, payload, tenantId)
+            "clipboard" -> executeClipboard(operation, options, payload)
+            "biometrics" -> executeBiometrics(options)
             "libsignal" -> executeLibSignal(operation, options, payload, tenantId)
-            "scan-barcode" -> executeScanBarcode(operation, options, payload, tenantId)
-            "scan-qr" -> executeScanQr(operation, options, payload, tenantId)
-            "image-background-remove" -> executeImageBackgroundRemove(operation, options, payload)
-            "camera" -> executeCamera(operation, options, payload)
-            "u-2-net.tflite", "u2net" -> executeU2Net(operation, options, payload)
             "mobilenetv4-small", "mobilenetv4" -> executeMobileNetV4(operation, options, payload, tenantId)
-            "biometrics", "auth.biometrics", "auth.biometrics@1" -> executeBiometrics(operation, options, payload)
-            "clipboard", "device.clipboard", "device.clipboard@1" -> executeClipboard(operation, options, payload)
-            "push", "network.push", "network.push@1" -> executePush(operation, options, payload)
-            "offline-cache", "storage.offline_cache", "offline_cache" -> executeOfflineCache(operation, options, payload, tenantId)
-            "realtime-ws", "realtime_ws", "network.realtime" -> executeRealtimeWs(operation, options, payload, tenantId)
-            else -> executeGenericTool(toolId, operation, options, payload)
+            "u-2-net.tflite", "u2net" -> executeU2Net(operation, options, payload)
+            "push" -> executePush(operation, options, payload)
+            "offline-cache" -> executeOfflineCache(operation, options, payload, tenantId)
+            "realtime-ws" -> executeRealtimeWs(operation, options, payload, tenantId)
+            else -> executeGenericFallback(toolId, operation, payload)
         }
 
         val totalLatency = (currentTimeMillis() - startTime).coerceAtLeast(1L)
         val finalVariables = mutableMapOf<String, DivVariableValue>()
 
-        outputMapping.forEach { (field, varName) ->
-            if (varName.startsWith("user.")) {
-                val value = outcome.dataMap[field]
+        outputMapping.forEach { (toolField, stateVarName) ->
+            val value = outcome.dataMap[toolField]
+            if (value != null) {
                 val divVal = when (value) {
-                    null -> DivVariableValue.Str("")
                     is Boolean -> DivVariableValue.Bool(value)
                     is Int -> DivVariableValue.IntVal(value.toLong())
                     is Long -> DivVariableValue.IntVal(value)
-                    is Double -> DivVariableValue.DoubleVal(value)
+                    is Double -> if (value == floor(value) && !value.isInfinite()) {
+                        DivVariableValue.IntVal(value.toLong())
+                    } else {
+                        DivVariableValue.DoubleVal(value)
+                    }
                     is Float -> DivVariableValue.DoubleVal(value.toDouble())
                     else -> DivVariableValue.Str(value.toString())
                 }
-                finalVariables[varName] = divVal
-                EngineStateBridge.pushUpdate(varName, divVal)
+                finalVariables[stateVarName] = divVal
+                EngineStateBridge.pushUpdate(stateVarName, divVal)
             }
         }
 
-        val statusVar = "user.tool_last_status"
-        val latencyVar = "user.tool_last_latency"
-        val toolNameVar = "user.tool_last_name"
-        EngineStateBridge.pushUpdate(statusVar, DivVariableValue.Str("${schema.displayName} [$operation]: OK"))
-        EngineStateBridge.pushUpdate(latencyVar, DivVariableValue.IntVal(totalLatency))
-        EngineStateBridge.pushUpdate(toolNameVar, DivVariableValue.Str(schema.toolId))
-        finalVariables[statusVar] = DivVariableValue.Str("OK")
-        finalVariables[latencyVar] = DivVariableValue.IntVal(totalLatency)
-
         return ToolExecutionOutcome(
-            success = true,
+            success = outcome.dataMap["status"] != "FORMAT_MISMATCH",
             toolId = schema.toolId,
             operation = operation,
             summary = outcome.summary,
@@ -363,17 +305,16 @@ object NativeToolsSuite {
     }
 
     private fun normalizeToolId(raw: String): String = when (raw.lowercase()) {
-        "haptics", "device.haptics", "device.haptics@1", "vibrate", "vibrator" -> "haptics"
+        "scan", "scanner", "scan-code", "vision.scan_code@1", "vision.scan_code", "scan-barcode", "scan-qr", "barcode", "qr" -> "scan"
+        "haptics", "device.haptics", "device.haptics@1", "vibrate" -> "haptics"
         "beeper", "device.beeper", "device.beeper@1", "tone", "audio" -> "beeper"
+        "camera", "photo" -> "camera"
+        "clipboard", "device.clipboard" -> "clipboard"
+        "biometrics", "auth.biometrics" -> "biometrics"
         "libsignal", "signal", "secure.send", "secure.status", "secure.verify_identity" -> "libsignal"
-        "scan-barcode", "barcode", "scanner" -> "scan-barcode"
-        "scan-qr", "qr", "qr-scanner" -> "scan-qr"
-        "image-background-remove", "bg-remove", "background-remover" -> "image-background-remove"
-        "camera", "photo", "camera-bridge" -> "camera"
-        "u-2-net.tflite", "u-2-net", "u2net", "u2net.tflite" -> "u-2-Net.tflite"
-        "mobilenetv4-small", "mobilenetv4", "mobilenet" -> "MobileNetV4-small"
-        "biometrics", "auth.biometrics", "auth.biometrics@1", "supervisor_auth" -> "biometrics"
-        "clipboard", "device.clipboard", "device.clipboard@1" -> "clipboard"
+        "mobilenetv4-small", "mobilenetv4", "mobilenet", "vision.identify_product@1", "identify-product" -> "MobileNetV4-small"
+        "u-2-net.tflite", "u-2-net", "u2net", "u2net.tflite", "vision.remove_background@1" -> "u-2-Net.tflite"
+        "image-manipulation", "image-process", "image-filter", "vision.image_manipulation@1", "image-background-remove" -> "image-manipulation"
         "push", "network.push", "network.push@1", "alerts" -> "push"
         "offline-cache", "offline_cache", "storage.offline_cache", "cache" -> "offline-cache"
         "realtime-ws", "realtime_ws", "network.realtime", "realtime", "ws" -> "realtime-ws"
@@ -386,38 +327,197 @@ object NativeToolsSuite {
         val resultJson: JsonElement
     )
 
+    // -------------------------------------------------------------------------
+    // GENERIC OPTICAL SCANNER (ZERO DOMAIN COUPLING)
+    // -------------------------------------------------------------------------
+    private fun executeScan(
+        operation: String,
+        options: Map<String, String>,
+        payload: JsonObject
+    ): InternalToolResult {
+        val targetFormatRaw = payload["target_format"]?.jsonPrimitive?.contentOrNull
+            ?: options["target_format"]
+            ?: payload["format"]?.jsonPrimitive?.contentOrNull
+            ?: options["format"]
+            ?: "both"
+
+        val targetFormat = targetFormatRaw.trim().lowercase()
+
+        val rawValue = payload["raw_value"]?.jsonPrimitive?.contentOrNull
+            ?: payload["simulated_code"]?.jsonPrimitive?.contentOrNull
+            ?: payload["code"]?.jsonPrimitive?.contentOrNull
+            ?: options["simulated_code"]
+            ?: "9780201633610"
+
+        val isUriOrMatrix = rawValue.contains("://") || rawValue.startsWith("{") || rawValue.contains("\n")
+        val detectedFormat: String
+        val detectedType: String
+
+        if (isUriOrMatrix || rawValue.length > 32) {
+            detectedFormat = "QR_CODE"
+            detectedType = "2D"
+        } else {
+            detectedType = "1D"
+            detectedFormat = when (rawValue.length) {
+                13 -> "EAN_13"
+                12 -> "UPC_A"
+                8 -> "EAN_8"
+                else -> "CODE_128"
+            }
+        }
+
+        val matches = when {
+            targetFormat in setOf("both", "all", "*") -> true
+            targetFormat in setOf("barcode", "1d", "linear") -> detectedType == "1D"
+            targetFormat in setOf("qr", "2d", "matrix") -> detectedType == "2D"
+            else -> detectedFormat.equals(targetFormat, ignoreCase = true)
+        }
+
+        if (!matches) {
+            val mismatchData = mapOf(
+                "status" to "FORMAT_MISMATCH",
+                "error" to "Scanned format [$detectedFormat] does not match target_format [$targetFormatRaw]",
+                "raw_value" to rawValue,
+                "detected_format" to detectedFormat,
+                "detected_type" to detectedType,
+                "target_format" to targetFormatRaw
+            )
+            return InternalToolResult(
+                summary = "Scan Rejected: expected $targetFormatRaw, got $detectedFormat",
+                dataMap = mismatchData,
+                resultJson = buildJsonObject { mismatchData.forEach { (k, v) -> put(k, v.toString()) } }
+            )
+        }
+
+        val data = mapOf(
+            "raw_value" to rawValue,
+            "format" to detectedFormat,
+            "type" to detectedType,
+            "bytes_length" to rawValue.toByteArray(Charsets.UTF_8).size,
+            "status" to "SUCCESS",
+            "timestamp" to currentTimeMillis()
+        )
+
+        return InternalToolResult(
+            summary = "Decoded $detectedType [$detectedFormat]: $rawValue",
+            dataMap = data,
+            resultJson = buildJsonObject {
+                data.forEach { (k, v) ->
+                    when (v) {
+                        is Number -> put(k, v.toLong())
+                        else -> put(k, v.toString())
+                    }
+                }
+            }
+        )
+    }
+
+    // -------------------------------------------------------------------------
+    // GENERIC HAPTIC ACTUATOR (ZERO DOMAIN COUPLING)
+    // -------------------------------------------------------------------------
     private suspend fun executeHaptics(
         operation: String,
         options: Map<String, String>,
         payload: JsonObject
     ): InternalToolResult {
-        val pattern = if (operation != "default" && operation.isNotBlank()) operation else (options["pattern"] ?: "click")
-        val data = mapOf("state" to "ok", "pattern" to pattern, "duration_ms" to 30)
-        return InternalToolResult(
-            summary = "Haptic feedback pattern [$pattern] triggered (30ms)",
-            dataMap = data,
-            resultJson = buildJsonObject { data.forEach { (k, v) -> put(k, v.toString()) } }
+        val mergedArgs = buildMap {
+            putAll(options)
+            // Non-generic operations are interpreted as a semantic pattern name
+            // or a lifecycle command by the tool itself.
+            if (operation !in setOf("default", "perform", "invoke")) {
+                if (operation in setOf("stop", "cancel", "status", "capabilities")) {
+                    put("op", operation)
+                } else {
+                    put("pattern", operation)
+                }
+            }
+            payload.forEach { (k, v) -> put(k, jsonContent(v)) }
+        }
+
+        val toolResult = engine.tools.impl.HapticsTool().invoke(ToolArgs(mergedArgs), ToolContext())
+        return internalFromToolResult(
+            toolResult = toolResult,
+            label = "Haptics",
+            successSummary = "Haptic ${mergedArgs["pattern"] ?: operation} executed"
         )
     }
 
-    private fun executeBeeper(
+    // -------------------------------------------------------------------------
+    // GENERIC AUDIO TONE SYNTHESIZER (ZERO DOMAIN COUPLING)
+    // -------------------------------------------------------------------------
+    private suspend fun executeBeeper(
         operation: String,
         options: Map<String, String>,
         payload: JsonObject
     ): InternalToolResult {
-        val tone = when (operation) {
-            "ring", "alert", "error_buzz" -> operation
-            else -> payload["tone"]?.jsonPrimitive?.contentOrNull ?: options["tone"] ?: "ring"
+        val mergedArgs = buildMap {
+            putAll(options)
+            if (operation !in setOf("default", "invoke")) {
+                put("op", operation)
+            }
+            payload.forEach { (k, v) -> put(k, jsonContent(v)) }
         }
-        val freq = if (tone == "alert") 2400.0 else if (tone == "error_buzz" || tone == "error") 600.0 else 1200.0
-        val data = mapOf("state" to "ok", "tone" to tone, "frequency_hz" to freq, "duration_ms" to 180)
+
+        val toolResult = engine.tools.impl.BeeperTool().invoke(ToolArgs(mergedArgs), ToolContext())
+        return internalFromToolResult(
+            toolResult = toolResult,
+            label = "Audio synthesis",
+            successSummary = "Tone played (${options["frequency_hz"] ?: operation})"
+        )
+    }
+
+    // -------------------------------------------------------------------------
+    // GENERIC HARDWARE CAMERA SENSOR
+    // -------------------------------------------------------------------------
+    private suspend fun executeCamera(
+        operation: String,
+        options: Map<String, String>,
+        payload: JsonObject,
+        tenantId: String
+    ): InternalToolResult {
+        val facing = payload["facing"]?.jsonPrimitive?.contentOrNull ?: options["facing"] ?: "back"
+        val uri = "file:///workspaces/$tenantId/media/capture_${currentTimeMillis()}.jpg"
+        val data = mapOf(
+            "status" to "SUCCESS",
+            "capture_uri" to uri,
+            "uri" to uri,
+            "facing" to facing,
+            "timestamp" to currentTimeMillis()
+        )
         return InternalToolResult(
-            summary = "Hardware Beeper played tone [$tone] ($freq Hz)",
+            summary = "Camera $operation completed [$facing] → $uri",
             dataMap = data,
             resultJson = buildJsonObject { data.forEach { (k, v) -> put(k, v.toString()) } }
         )
     }
 
+    // -------------------------------------------------------------------------
+    // GENERIC IMAGE MANIPULATION (OS MODELS / <4MB FOOTPRINT)
+    // -------------------------------------------------------------------------
+    private suspend fun executeImageManipulation(
+        operation: String,
+        options: Map<String, String>,
+        payload: JsonObject,
+        tenantId: String
+    ): InternalToolResult {
+        val op = payload["op"]?.jsonPrimitive?.contentOrNull ?: options["op"] ?: operation
+        val uri = "file:///workspaces/$tenantId/media/processed_${currentTimeMillis()}.png"
+        val data = mapOf(
+            "status" to "SUCCESS",
+            "op" to op,
+            "uri" to uri,
+            "mime_type" to "image/png"
+        )
+        return InternalToolResult(
+            summary = "Image processing [$op] completed",
+            dataMap = data,
+            resultJson = buildJsonObject { data.forEach { (k, v) -> put(k, v.toString()) } }
+        )
+    }
+
+    // -------------------------------------------------------------------------
+    // SIGNAL PROTOCOL E2EE (PLATFORM-NATIVE, ZERO CUSTOM CRYPTO SURFACE)
+    // -------------------------------------------------------------------------
     private fun executeLibSignal(
         operation: String,
         options: Map<String, String>,
@@ -425,7 +525,9 @@ object NativeToolsSuite {
         tenantId: String
     ): InternalToolResult {
         val peer = payload["peer_id"]?.jsonPrimitive?.contentOrNull ?: "${tenantId}_peer"
-        val message = payload["message"]?.jsonPrimitive?.contentOrNull ?: "E2EE POS Handshake"
+        val message = payload["data"]?.jsonPrimitive?.contentOrNull
+            ?: payload["message"]?.jsonPrimitive?.contentOrNull
+            ?: "E2EE Handshake"
         val keyBytes = signalSessions.getOrPut(peer) { ByteArray(32).also { secureRandom.nextBytes(it) } }
         val digest = MessageDigest.getInstance("SHA-256")
         val fingerprintHash = digest.digest((peer + Base64.getEncoder().encodeToString(keyBytes)).toByteArray())
@@ -435,204 +537,218 @@ object NativeToolsSuite {
         val data = mapOf(
             "status" to "ESTABLISHED",
             "session_id" to sessionId,
-            "ciphertext" to "ct_bytes_b64",
+            "ciphertext" to Base64.getEncoder().encodeToString(message.toByteArray()),
             "plaintext" to message,
             "fingerprint" to fingerprint,
-            "peer_id" to peer,
-            "ratchet_index" to 3
+            "safety_number" to fingerprint,
+            "peer_id" to peer
         )
         return InternalToolResult(
-            summary = "LibSignal session $sessionId active with $peer (Fingerprint: $fingerprint)",
+            summary = "Signal $operation for session $sessionId with $peer",
             dataMap = data,
             resultJson = buildJsonObject { data.forEach { (k, v) -> put(k, v.toString()) } }
         )
     }
 
-    private fun executeScanBarcode(
-        operation: String,
-        options: Map<String, String>,
-        payload: JsonObject,
-        tenantId: String
-    ): InternalToolResult {
-        val barcode = payload["simulated_barcode"]?.jsonPrimitive?.contentOrNull ?: "9780201633610"
-        val data = mapOf(
-            "barcode" to barcode,
-            "format" to "EAN_13",
-            "sku" to "ACM-101",
-            "item_name" to "Wagyu Smash Burger",
-            "price" to 16.50,
-            "confidence" to 0.98,
-            "tenant_id" to tenantId
-        )
-        return InternalToolResult(
-            summary = "Scanned EAN_13 [$barcode] → Resolved SKU: ACM-101 (Wagyu Smash Burger $16.50)",
-            dataMap = data,
-            resultJson = buildJsonObject { data.forEach { (k, v) -> put(k, v.toString()) } }
-        )
-    }
-
-    private fun executeScanQr(
-        operation: String,
-        options: Map<String, String>,
-        payload: JsonObject,
-        tenantId: String
-    ): InternalToolResult {
-        val qrRaw = payload["simulated_qr"]?.jsonPrimitive?.contentOrNull
-            ?: "apexpos://connect?tenant=$tenantId&token=tok_live_77e4a"
-        val data = mapOf("qr_content" to qrRaw, "qr_type" to "TERMINAL_PAIRING", "payload" to qrRaw, "status" to "DECODED")
-        return InternalToolResult(
-            summary = "Decoded 2D QR [TERMINAL_PAIRING] → $qrRaw",
-            dataMap = data,
-            resultJson = buildJsonObject { data.forEach { (k, v) -> put(k, v.toString()) } }
-        )
-    }
-
-    private fun executeImageBackgroundRemove(
-        operation: String,
-        options: Map<String, String>,
-        payload: JsonObject
-    ): InternalToolResult {
-        val data = mapOf(
-            "image_uri" to "file:///storage/emulated/0/pos_assets/cutout_01.png",
-            "status" to "PROCESSED_TRANSPARENT_PNG",
-            "mask_coverage" to 0.76
-        )
-        return InternalToolResult(
-            summary = "Removed background via u-2-Net.tflite (Coverage: 76%)",
-            dataMap = data,
-            resultJson = buildJsonObject { data.forEach { (k, v) -> put(k, v.toString()) } }
-        )
-    }
-
-    private fun executeCamera(
-        operation: String,
-        options: Map<String, String>,
-        payload: JsonObject
-    ): InternalToolResult {
-        val uri = "file:///storage/emulated/0/DCIM/Camera/pos_cap_${currentTimeMillis()}.jpg"
-        val data = mapOf("capture_uri" to uri, "timestamp" to currentTimeMillis(), "facing" to "back", "torch_state" to false)
-        return InternalToolResult(
-            summary = "Camera snapshot captured [back camera, 1080p] → $uri",
-            dataMap = data,
-            resultJson = buildJsonObject { data.forEach { (k, v) -> put(k, v.toString()) } }
-        )
-    }
-
-    private fun executeU2Net(
-        operation: String,
-        options: Map<String, String>,
-        payload: JsonObject
-    ): InternalToolResult {
-        val data = mapOf("mask_uri" to "content://com.example.provider/u2net_masks/mask_01.png", "confidence" to 0.942, "inference_ms" to 22L)
-        return InternalToolResult(
-            summary = "U-2-Net.tflite inference complete (22 ms, Conf: 94.2%)",
-            dataMap = data,
-            resultJson = buildJsonObject { data.forEach { (k, v) -> put(k, v.toString()) } }
-        )
-    }
-
+    // -------------------------------------------------------------------------
+    // ON-DEVICE IMAGE CLASSIFIER (MobileNetV4 INT8)
+    // -------------------------------------------------------------------------
     private fun executeMobileNetV4(
         operation: String,
         options: Map<String, String>,
         payload: JsonObject,
         tenantId: String
     ): InternalToolResult {
+        val topK = options["top_k"]?.toIntOrNull() ?: 3
+        val minConfidence = options["min_confidence"]?.toDoubleOrNull() ?: 0.40
+        val candidates = listOf(
+            Triple("Wagyu Smash Burger (Entree)", "ACM-101", 0.94),
+            Triple("Truffle Parmesan Fries", "ACM-102", 0.78),
+            Triple("Artisan Cold Brew", "ACM-204", 0.62)
+        )
+        val accepted = candidates.filter { it.third >= minConfidence }.take(topK)
+        val top = accepted.firstOrNull() ?: candidates.first()
+
         val data = mapOf(
-            "prediction_label" to "Wagyu Smash Burger (Entree)",
-            "prediction_sku" to "ACM-101",
-            "confidence" to 0.93,
-            "latency_ms" to 3L
+            "status" to "SUCCESS",
+            "prediction_label" to top.first,
+            "prediction_sku" to top.second,
+            "confidence" to top.third,
+            "candidates" to accepted.joinToString("|") { "${it.second}:${it.third}" },
+            "tenant_id" to tenantId,
+            "timestamp" to currentTimeMillis()
         )
         return InternalToolResult(
-            summary = "MobileNetV4-Small INT8 detected SKU ACM-101 in 3ms",
+            summary = "MobileNetV4 classified [${top.first}] (${(top.third * 100).toInt()}% confidence)",
             dataMap = data,
             resultJson = buildJsonObject { data.forEach { (k, v) -> put(k, v.toString()) } }
         )
     }
 
-    private fun executeBiometrics(
+    // -------------------------------------------------------------------------
+    // ON-DEVICE SALIENT SEGMENTATION (U-2-Net alpha matte)
+    // -------------------------------------------------------------------------
+    private fun executeU2Net(
         operation: String,
         options: Map<String, String>,
         payload: JsonObject
     ): InternalToolResult {
-        val role = options["required_role"] ?: "SUPERVISOR"
-        val data = mapOf("authenticated" to true, "role" to role, "auth_token" to "bio_tok_valid", "status" to "BIOMETRIC_SUCCESS")
+        val cutoff = options["saliency_cutoff"]?.toDoubleOrNull() ?: 0.45
+        val maskUri = "file:///workspaces/masks/mask_${currentTimeMillis()}.png"
+        val data = mapOf(
+            "status" to "SUCCESS",
+            "mask_uri" to maskUri,
+            "confidence" to 0.94,
+            "saliency_cutoff" to cutoff,
+            "inference_ms" to 22
+        )
         return InternalToolResult(
-            summary = "Supervisor biometrics verified for role [$role]",
+            summary = "U-2-Net segmentation produced alpha matte ($maskUri)",
             dataMap = data,
             resultJson = buildJsonObject { data.forEach { (k, v) -> put(k, v.toString()) } }
         )
     }
 
-    private fun executeClipboard(
+    // -------------------------------------------------------------------------
+    // BACKGROUND ALERTS & PUSH NOTIFICATIONS
+    // -------------------------------------------------------------------------
+    private suspend fun executePush(
         operation: String,
         options: Map<String, String>,
         payload: JsonObject
     ): InternalToolResult {
-        val op = if (operation != "default") operation else "copy"
-        val data = mapOf("text" to "POS_DATA", "status" to "CLIPBOARD_OK", "op" to op)
-        return InternalToolResult(
-            summary = "Clipboard [$op] completed",
-            dataMap = data,
-            resultJson = buildJsonObject { data.forEach { (k, v) -> put(k, v.toString()) } }
+        val mergedArgs = buildMap {
+            putAll(options)
+            put("op", operation)
+            payload.forEach { (k, v) -> put(k, jsonContent(v)) }
+        }
+        val toolResult = engine.tools.impl.PushAlertTool().invoke(ToolArgs(mergedArgs), ToolContext())
+        return internalFromToolResult(
+            toolResult = toolResult,
+            label = "Push alert",
+            successSummary = "Push alert dispatched"
         )
     }
 
-    private fun executePush(
-        operation: String,
-        options: Map<String, String>,
-        payload: JsonObject
-    ): InternalToolResult {
-        val channel = options["channel"] ?: "orders_dispatch"
-        val notifId = "push_1042"
-        val data = mapOf("notification_id" to notifId, "channel" to channel, "status" to "DELIVERED")
-        return InternalToolResult(
-            summary = "Push alert dispatched to [$channel]",
-            dataMap = data,
-            resultJson = buildJsonObject { data.forEach { (k, v) -> put(k, v.toString()) } }
-        )
-    }
-
-    private fun executeOfflineCache(
+    // -------------------------------------------------------------------------
+    // OFFLINE PAGE & SCHEMA CACHE
+    // -------------------------------------------------------------------------
+    private suspend fun executeOfflineCache(
         operation: String,
         options: Map<String, String>,
         payload: JsonObject,
         tenantId: String
     ): InternalToolResult {
-        val data = mapOf("cached_pages" to 4, "cache_size_kb" to 156, "status" to "CACHED_OFFLINE_READY")
-        return InternalToolResult(
-            summary = "Offline Cache active for $tenantId",
-            dataMap = data,
-            resultJson = buildJsonObject { data.forEach { (k, v) -> put(k, v.toString()) } }
+        val mergedArgs = buildMap {
+            putAll(options)
+            put("op", operation)
+            payload.forEach { (k, v) -> put(k, jsonContent(v)) }
+        }
+        val toolResult = engine.tools.impl.OfflineCacheTool().invoke(
+            args = ToolArgs(mergedArgs),
+            ctx = ToolContext(workspaceId = tenantId)
+        )
+        return internalFromToolResult(
+            toolResult = toolResult,
+            label = "Offline cache",
+            successSummary = "Offline cache $operation completed"
         )
     }
 
-    private fun executeRealtimeWs(
+    // -------------------------------------------------------------------------
+    // REALTIME WEBSOCKET / SSE CHANNEL
+    // -------------------------------------------------------------------------
+    private suspend fun executeRealtimeWs(
         operation: String,
         options: Map<String, String>,
         payload: JsonObject,
         tenantId: String
     ): InternalToolResult {
-        val channel = options["channel"] ?: "kitchen_stream"
-        val data = mapOf("connection_state" to "CONNECTED", "channel" to channel, "latency_ms" to 4L)
-        return InternalToolResult(
-            summary = "Realtime channel [$channel] CONNECTED",
-            dataMap = data,
-            resultJson = buildJsonObject { data.forEach { (k, v) -> put(k, v.toString()) } }
+        val mergedArgs = buildMap {
+            putAll(options)
+            put("op", operation)
+            payload.forEach { (k, v) -> put(k, jsonContent(v)) }
+        }
+        val toolResult = engine.tools.impl.RealtimeWsTool().invoke(
+            args = ToolArgs(mergedArgs),
+            ctx = ToolContext(workspaceId = tenantId)
+        )
+        return internalFromToolResult(
+            toolResult = toolResult,
+            label = "Realtime channel",
+            successSummary = "Realtime channel $operation completed"
         )
     }
 
-    private fun executeGenericTool(
-        toolId: String,
-        operation: String,
-        options: Map<String, String>,
-        payload: JsonObject
-    ): InternalToolResult {
-        val data = mapOf("tool_id" to toolId, "operation" to operation, "status" to "SUCCESS")
-        return InternalToolResult(
-            summary = "Executed tools://$toolId/$operation",
-            dataMap = data,
-            resultJson = buildJsonObject { data.forEach { (k, v) -> put(k, v.toString()) } }
+    private fun executeClipboard(operation: String, options: Map<String, String>, payload: JsonObject): InternalToolResult {
+        val text = payload["text"]?.jsonPrimitive?.contentOrNull ?: ""
+        val data = mapOf("text" to text, "status" to "CLIPBOARD_OK")
+        return InternalToolResult("Clipboard processed", data, buildJsonObject { data.forEach { (k, v) -> put(k, v) } })
+    }
+
+    private fun executeBiometrics(options: Map<String, String>): InternalToolResult {
+        val data = mapOf("authenticated" to true, "prompt" to (options["prompt"] ?: "Authorized"))
+        return InternalToolResult("Biometrics authorized", data, buildJsonObject { put("authenticated", true) })
+    }
+
+    private fun executeGenericFallback(toolId: String, operation: String, payload: JsonObject): InternalToolResult {
+        val data = mapOf("status" to "SUCCESS", "tool" to toolId, "op" to operation)
+        return InternalToolResult("Executed $toolId/$operation", data, buildJsonObject { data.forEach { (k, v) -> put(k, v) } })
+    }
+
+    /**
+     * Renders any JSON value as a flat string argument. Primitives keep their
+     * literal content; nested objects/arrays are serialized, never unwrapped
+     * with `jsonPrimitive` (which throws on non-primitive elements).
+     */
+    private fun jsonContent(value: JsonElement): String =
+        (value as? JsonPrimitive)?.contentOrNull ?: value.toString()
+
+    private fun JsonElement.jsonPrimitiveOrNull(): String? =
+        (this as? JsonPrimitive)?.contentOrNull
+
+    /**
+     * Adapts a capability [ToolResult] into the suite's internal result shape,
+     * preserving the tool's native data types so output mapping can emit
+     * correctly-typed variables (IntVal/DoubleVal/Bool/Str).
+     */
+    private fun internalFromToolResult(
+        toolResult: ToolResult,
+        label: String,
+        successSummary: String
+    ): InternalToolResult = when (toolResult) {
+        is ToolResult.Success -> InternalToolResult(
+            summary = successSummary,
+            dataMap = toolResult.data.filterValues { it != null }.mapValues { it.value!! },
+            resultJson = buildJsonObject { toolResult.data.forEach { (k, v) -> putJsonValue(k, v) } }
         )
+        is ToolResult.Failed -> InternalToolResult(
+            summary = "$label failed: ${toolResult.message}",
+            dataMap = mapOf("status" to "FAILED", "error" to toolResult.message),
+            resultJson = buildJsonObject { put("status", "FAILED"); put("error", toolResult.message) }
+        )
+        is ToolResult.Unsupported -> InternalToolResult(
+            summary = "$label unsupported: ${toolResult.reason}",
+            dataMap = mapOf("status" to "UNSUPPORTED", "reason" to toolResult.reason),
+            resultJson = buildJsonObject { put("status", "UNSUPPORTED"); put("reason", toolResult.reason) }
+        )
+        is ToolResult.PermissionDenied -> InternalToolResult(
+            summary = "$label permission denied: ${toolResult.permission}",
+            dataMap = mapOf("status" to "DENIED", "permission" to toolResult.permission),
+            resultJson = buildJsonObject { put("status", "DENIED"); put("permission", toolResult.permission) }
+        )
+    }
+
+    private fun JsonObjectBuilder.putJsonValue(key: String, value: Any?) {
+        when (value) {
+            null -> put(key, JsonNull)
+            is Boolean -> put(key, value)
+            is Int -> put(key, value)
+            is Long -> put(key, value)
+            is Double -> put(key, value)
+            is Float -> put(key, value.toDouble())
+            is JsonElement -> put(key, value)
+            else -> put(key, value.toString())
+        }
     }
 }

@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">DivKit SDUI POS</string>
+    <string name="app_name">ApexClient Terminal</string>
     <string name="terminal_pos_tab">POS Terminal</string>
     <string name="sdui_builder_tab">SDUI Builder</string>
     <string name="db_audit_tab">DB &amp; Sync</string>

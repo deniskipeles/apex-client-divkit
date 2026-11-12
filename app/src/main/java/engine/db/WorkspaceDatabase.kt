@@ -41,15 +41,13 @@ class WorkspaceDatabase(val driver: SqlDriver) {
 
     val queries = GenericDatabaseQueries(driver)
 
+    /** Alias used by the sync engine and UI telemetry. */
+    val workspaceQueries: GenericDatabaseQueries get() = queries
+
     object Schema : SqlSchema {
         override val version: Long = 3L
 
         override fun create(driver: SqlDriver) {
-            // Apply high-performance SQLite PRAGMAs
-            driver.executeUpdate(null, "PRAGMA journal_mode = WAL;", 0)
-            driver.executeUpdate(null, "PRAGMA synchronous = NORMAL;", 0)
-            driver.executeUpdate(null, "PRAGMA foreign_keys = ON;", 0)
-
             // 1. Collections Store
             driver.executeUpdate(
                 null,
@@ -359,6 +357,37 @@ class GenericDatabaseQueries(private val driver: SqlDriver) {
             1
         ) {
             bindLong(0, versionId)
+        }
+    }
+
+    fun deletePendingSync(clientUuid: String) {
+        driver.executeUpdate(
+            null,
+            "DELETE FROM pending_sync WHERE client_uuid = ?",
+            1
+        ) {
+            bindString(0, clientUuid)
+        }
+    }
+
+    fun incrementPendingAttempts(clientUuid: String) {
+        driver.executeUpdate(
+            null,
+            "UPDATE pending_sync SET attempts = attempts + 1 WHERE client_uuid = ?",
+            1
+        ) {
+            bindString(0, clientUuid)
+        }
+    }
+
+    fun markPendingDead(reason: String, clientUuid: String) {
+        driver.executeUpdate(
+            null,
+            "UPDATE pending_sync SET attempts = attempts + 1, last_error = ? WHERE client_uuid = ?",
+            2
+        ) {
+            bindString(0, reason)
+            bindString(1, clientUuid)
         }
     }
 }

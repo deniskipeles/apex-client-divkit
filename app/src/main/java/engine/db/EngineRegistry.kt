@@ -2,6 +2,7 @@ package engine.db
 
 import engine.crypto.currentTimeMillis
 import engine.db.auth.Claims
+import engine.db.query.*
 import kotlinx.serialization.json.*
 import java.util.UUID
 
@@ -110,7 +111,7 @@ class EngineRegistry(
                     val apexQuery = ApexQuery(
                         from = colName,
                         select = selectArray,
-                        r#where = whereClause,
+                        where = whereClause,
                         sort = sort,
                         limit = limit,
                         offset = offset

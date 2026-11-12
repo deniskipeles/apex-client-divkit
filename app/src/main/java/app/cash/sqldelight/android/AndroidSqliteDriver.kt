@@ -76,8 +76,12 @@ private class DirectDriver(
             executeUpdate(identifier, sql, parameters, binders)
             return EmptySqlCursor
         }
-        val stringArgs = stmt.args.map { it?.toString() }.toTypedArray()
-        val cursor = db.rawQuery(sql, if (parameters == 0) null else stringArgs)
+        // rawQuery() only accepts String[] selection args, which would bind every
+        // parameter as TEXT and break numeric comparisons (json_extract returns an
+        // INTEGER, which never compares equal to a TEXT arg). Inline typed literals
+        // instead so numbers stay numbers.
+        val inlined = inlineArgs(sql, stmt.args)
+        val cursor = db.rawQuery(inlined, null)
         return AndroidCursor(cursor)
     }
 
@@ -130,6 +134,58 @@ private class DirectDriver(
     override fun close() {
         db.close()
     }
+}
+
+/**
+ * Substitutes `?` placeholders with typed SQL literals so numeric parameters remain
+ * numeric. Values are escaped; this driver is only used with locally-built SQL whose
+ * parameters are engine-controlled, never raw user input.
+ */
+private fun inlineArgs(sql: String, args: Array<Any?>): String {
+    if (args.isEmpty()) return sql
+    val sb = StringBuilder(sql.length + args.size * 8)
+    var argIndex = 0
+    var i = 0
+    var inString = false
+    while (i < sql.length) {
+        val c = sql[i]
+        if (inString) {
+            sb.append(c)
+            if (c == '\'') {
+                if (i + 1 < sql.length && sql[i + 1] == '\'') {
+                    sb.append('\'')
+                    i++
+                } else {
+                    inString = false
+                }
+            }
+        } else {
+            when (c) {
+                '\'' -> {
+                    inString = true
+                    sb.append(c)
+                }
+                '?' -> {
+                    sb.append(sqlLiteral(args.getOrNull(argIndex)))
+                    argIndex++
+                }
+                else -> sb.append(c)
+            }
+        }
+        i++
+    }
+    return sb.toString()
+}
+
+private fun sqlLiteral(value: Any?): String = when (value) {
+    null -> "NULL"
+    is Long -> value.toString()
+    is Int -> value.toString()
+    is Double -> value.toString()
+    is Float -> value.toString()
+    is Boolean -> if (value) "1" else "0"
+    is ByteArray -> "X'" + value.joinToString("") { "%02x".format(it) } + "'"
+    else -> "'" + value.toString().replace("'", "''") + "'"
 }
 
 private class RecordingStatement(size: Int) : SqlPreparedStatement {

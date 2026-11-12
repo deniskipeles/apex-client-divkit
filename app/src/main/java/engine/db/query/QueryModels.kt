@@ -9,7 +9,7 @@ data class ApexQuery(
     val from: String, // Target Collection Name (e.g., "students", "books", "courses")
     val system: Boolean = false,
     val select: List<SelectField> = emptyList(),
-    @SerialName("where") val r#where: JsonElement? = null,
+    @SerialName("where") val where: JsonElement? = null,
     val group_by: List<String> = emptyList(),
     val sort: String? = null,
     val limit: Long? = 100,

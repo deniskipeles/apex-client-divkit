@@ -7,4 +7,8 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- Cold-start window background (matches the app's light theme). Overridden in
+         values-night for dark mode. -->
+    <color name="splash_background">#F1F5F9</color>
 </resources>

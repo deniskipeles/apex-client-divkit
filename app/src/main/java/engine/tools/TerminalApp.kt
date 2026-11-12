@@ -19,7 +19,7 @@ object TerminalApp {
             CapturePhotoTool(),
             EmbedImageTool(),
             RemoveBackgroundTool(),
-            IdentifyProductTool(),
+            ProductClassifierTool(),
             SecureSendTool(),
             SecureStatusTool(),
             SecureVerifyIdentityTool(),
@@ -35,13 +35,15 @@ object TerminalApp {
             handlerMap[h.capability] = h
             // Register canonical shortcuts
             when (h.capability) {
-                "device.haptics@1" -> {
+                "hardware.haptics@1" -> {
+                    handlerMap["device.haptics@1"] = h
                     handlerMap["haptics.perform@1"] = h
                     handlerMap["hardware.haptics@1"] = h
                     handlerMap["haptics"] = h
                     handlerMap["device.haptics"] = h
                 }
-                "device.beeper@1" -> {
+                "hardware.beeper@1" -> {
+                    handlerMap["device.beeper@1"] = h
                     handlerMap["beeper"] = h
                     handlerMap["hardware.beeper@1"] = h
                     handlerMap["device.beeper"] = h
