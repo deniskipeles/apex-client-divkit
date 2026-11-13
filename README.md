@@ -136,7 +136,10 @@ Tenants can declare interactive charts directly inside their signed DivKit JSON 
 
 ## Native Tools & AI Vision Suite (`tools://*`)
 
-Tenants can invoke hardware bridges, optical scanning, on-device AI vision models, and cryptographic protocols directly through standard DivKit actions using the `tools://` scheme:
+Tenants can invoke hardware bridges, optical scanning, on-device AI vision models, and cryptographic protocols directly through standard DivKit actions using the `tools://` scheme.
+
+> Per-tool reference documentation (architecture, parameters, output schema, and DivKit
+> examples) lives in [`docs/tools/`](docs/tools/README.md).
 
 ```json
 {
