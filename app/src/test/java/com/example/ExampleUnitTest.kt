@@ -281,7 +281,9 @@ class ExampleUnitTest {
             "device.clipboard@1",
             "network.push@1",
             "storage.offline_cache@1",
-            "network.realtime@1"
+            "network.realtime@1",
+            "network.transfer@1",
+            "device.printer@1"
         )
         for (cap in expected) {
             assertTrue("Manifest must include $cap", manifest.has(cap))
@@ -620,5 +622,182 @@ class ExampleUnitTest {
         // Disconnecting forgets the tenant entirely.
         store.forget("acme_pos")
         assertNull(store.usage()["acme_pos"])
+    }
+
+    // ------------------------------------------------------------------
+    // tools://net (Ktor) + tools://print (Bluetooth printer/POS)
+    // ------------------------------------------------------------------
+
+    @Test
+    fun netTool_isRegisteredAndExposesGenericCapability() {
+        val manifest = TerminalApp.registry.manifest()
+        assertTrue(manifest.has("network.transfer@1"))
+        assertTrue(manifest.has("net"))
+        val handler = TerminalApp.registry.resolve("network.transfer@1")
+        assertNotNull(handler)
+        assertEquals("network.transfer@1", handler!!.capability)
+        assertTrue(handler.requiredPermissions.contains("android.permission.INTERNET"))
+    }
+
+    @Test
+    fun printTool_isRegisteredAndAdvertisesBluetoothPermissions() {
+        val manifest = TerminalApp.registry.manifest()
+        assertTrue(manifest.has("device.printer@1"))
+        assertTrue(manifest.has("print"))
+        val handler = TerminalApp.registry.resolve("device.printer@1")
+        assertNotNull(handler)
+        assertEquals("device.printer@1", handler!!.capability)
+        assertTrue(handler.requiredPermissions.isNotEmpty())
+    }
+
+    @Test
+    fun netTool_schemaIsRegisteredWithAllOperations() {
+        val schema = engine.tools.NativeToolsSuite.registeredSchemas.first { it.toolId == "net" }
+        assertTrue(schema.supportedOperations.containsAll(
+            listOf("request", "get", "post", "download", "upload", "serve", "stop", "status", "share", "list", "unshare")
+        ))
+    }
+
+    @Test
+    fun printTool_schemaIsRegisteredWithAllOperations() {
+        val schema = engine.tools.NativeToolsSuite.registeredSchemas.first { it.toolId == "print" }
+        assertTrue(schema.supportedOperations.containsAll(
+            listOf("scan", "pair", "connect", "disconnect", "print", "status")
+        ))
+    }
+
+    @Test
+    fun netTool_statusReportsIdleHub() = kotlinx.coroutines.runBlocking {
+        val result = engine.tools.impl.NetTool().invoke(
+            args = ToolArgs(mapOf("op" to "status")),
+            ctx = ToolContext()
+        )
+        assertTrue(result is ToolResult.Success)
+        val data = (result as ToolResult.Success).data
+        assertEquals("IDLE", data["status"])
+        assertEquals(false, data["running"])
+    }
+
+    @Test
+    fun netTool_shareThenListTracksSharedItems() = kotlinx.coroutines.runBlocking {
+        val tool = engine.tools.impl.NetTool()
+        val shared = tool.invoke(
+            args = ToolArgs(mapOf("op" to "share", "name" to "menu.json", "content" to "{}")),
+            ctx = ToolContext()
+        )
+        assertTrue(shared is ToolResult.Success)
+        val sharedId = (shared as ToolResult.Success).data["id"] as String
+
+        val listed = tool.invoke(args = ToolArgs(mapOf("op" to "list")), ctx = ToolContext())
+        val data = (listed as ToolResult.Success).data
+        assertEquals(1, data["count"])
+
+        val removed = tool.invoke(args = ToolArgs(mapOf("op" to "unshare", "id" to sharedId)), ctx = ToolContext())
+        assertEquals("REMOVED", (removed as ToolResult.Success).data["status"])
+        val empty = tool.invoke(args = ToolArgs(mapOf("op" to "list")), ctx = ToolContext())
+        assertEquals(0, (empty as ToolResult.Success).data["count"])
+    }
+
+    @Test
+    fun netTool_servesLanHubAndStopsCleanly() = kotlinx.coroutines.runBlocking {
+        val tool = engine.tools.impl.NetTool()
+        val serve = tool.invoke(args = ToolArgs(mapOf("op" to "serve", "port" to "0")), ctx = ToolContext())
+        assertTrue(serve is ToolResult.Success)
+        val serveData = (serve as ToolResult.Success).data
+        assertEquals("SERVING", serveData["status"])
+        assertTrue((serveData["port"] as Int) > 0)
+
+        val status = tool.invoke(args = ToolArgs(mapOf("op" to "status")), ctx = ToolContext())
+        assertEquals(true, (status as ToolResult.Success).data["running"])
+
+        val stop = tool.invoke(args = ToolArgs(mapOf("op" to "stop")), ctx = ToolContext())
+        assertEquals("STOPPED", (stop as ToolResult.Success).data["status"])
+    }
+
+    @Test
+    fun printTool_scanDeniedWithoutBluetoothPermission() = kotlinx.coroutines.runBlocking {
+        val context = androidx.test.core.app.ApplicationProvider
+            .getApplicationContext<android.app.Application>()
+        org.robolectric.Shadows.shadowOf(context).denyPermissions(
+            android.Manifest.permission.BLUETOOTH_CONNECT,
+            android.Manifest.permission.BLUETOOTH_SCAN
+        )
+        val result = engine.tools.impl.PrintTool().invoke(
+            args = ToolArgs(mapOf("op" to "scan")),
+            ctx = ToolContext()
+        )
+        assertTrue(result is ToolResult.PermissionDenied)
+    }
+
+    @Test
+    fun printTool_scanListsBondedPrintersWhenPermissionGranted() = kotlinx.coroutines.runBlocking {
+        val context = androidx.test.core.app.ApplicationProvider
+            .getApplicationContext<android.app.Application>()
+        org.robolectric.Shadows.shadowOf(context).grantPermissions(
+            android.Manifest.permission.BLUETOOTH_CONNECT,
+            android.Manifest.permission.BLUETOOTH_SCAN
+        )
+        val adapter = (context.getSystemService(android.content.Context.BLUETOOTH_SERVICE)
+            as android.bluetooth.BluetoothManager).adapter
+        org.robolectric.Shadows.shadowOf(adapter).setEnabled(true)
+
+        val result = engine.tools.impl.PrintTool().invoke(
+            args = ToolArgs(mapOf("op" to "scan")),
+            ctx = ToolContext()
+        )
+        assertTrue(result is ToolResult.Success)
+        val data = (result as ToolResult.Success).data
+        assertEquals("SUCCESS", data["status"])
+        assertEquals(0, data["count"])
+    }
+
+    @Test
+    fun printTool_encodesEscPosReceiptPayload() = kotlinx.coroutines.runBlocking {
+        val result = engine.tools.impl.PrintTool().invoke(
+            args = ToolArgs(
+                mapOf(
+                    "op" to "print",
+                    "text" to "ACME POS\nOrder #1042\nTotal 24.50",
+                    "align" to "center",
+                    "cut" to "true"
+                )
+            ),
+            ctx = ToolContext()
+        )
+        assertTrue(result is ToolResult.Success)
+        val data = (result as ToolResult.Success).data
+        assertEquals("SUCCESS", data["status"])
+        // ESC @ (init) + ESC a 1 (center) + text + ESC d (cut) all present.
+        assertTrue((data["bytes"] as Int) > 0)
+        val hex = data["preview_hex"] as String
+        assertTrue(hex.startsWith("1B 40 1B 61 01"))
+    }
+
+    @Test
+    fun netTool_dispatchesThroughSuiteWithHttpStatusMapping() = kotlinx.coroutines.runBlocking {
+        val outcome = engine.tools.NativeToolsSuite.execute(
+            url = "tools://net/status",
+            payload = buildJsonObject { }
+        )
+        assertEquals("net", outcome.toolId)
+        val status = (outcome.outputVariables["user.net_status"] as DivVariableValue.Str).value
+        assertEquals("IDLE", status)
+    }
+
+    @Test
+    fun printTool_dispatchesThroughSuiteWithDeviceCountMapping() = kotlinx.coroutines.runBlocking {
+        val context = androidx.test.core.app.ApplicationProvider
+            .getApplicationContext<android.app.Application>()
+        org.robolectric.Shadows.shadowOf(context).grantPermissions(
+            android.Manifest.permission.BLUETOOTH_CONNECT,
+            android.Manifest.permission.BLUETOOTH_SCAN
+        )
+        val outcome = engine.tools.NativeToolsSuite.execute(
+            url = "tools://print/scan",
+            payload = buildJsonObject { }
+        )
+        assertEquals("print", outcome.toolId)
+        val count = outcome.outputVariables["user.print_device_count"] as DivVariableValue.IntVal
+        assertEquals(0L, count.value)
     }
 }

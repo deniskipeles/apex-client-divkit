@@ -27,7 +27,9 @@ object TerminalApp {
             ClipboardTool(),
             PushAlertTool(),
             OfflineCacheTool(),
-            RealtimeWsTool()
+            RealtimeWsTool(),
+            NetTool(),
+            PrintTool()
         )
         // Map canonical capabilities + common shorthand aliases
         val handlerMap = mutableMapOf<String, ToolHandler>()
@@ -102,6 +104,16 @@ object TerminalApp {
                     handlerMap["realtime_ws"] = h
                     handlerMap["network.realtime"] = h
                     handlerMap["realtime"] = h
+                }
+                "network.transfer@1" -> {
+                    handlerMap["net"] = h
+                    handlerMap["network.transfer"] = h
+                    handlerMap["tools.net"] = h
+                }
+                "device.printer@1" -> {
+                    handlerMap["print"] = h
+                    handlerMap["printer"] = h
+                    handlerMap["device.printer"] = h
                 }
             }
         }

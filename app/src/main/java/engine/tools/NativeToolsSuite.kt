@@ -223,6 +223,36 @@ object NativeToolsSuite {
                 "connection_state" to "user.realtime_connection_state",
                 "channel" to "user.realtime_channel"
             )
+        ),
+        ToolSchema(
+            toolId = "net",
+            displayName = "Network Transfer (Ktor) & LAN Hub",
+            description = "Generic Ktor-powered networking: HTTP requests, downloads/uploads, and an embedded LAN transfer hub for peer-to-peer / Xender-style sharing.",
+            supportedOperations = listOf(
+                "request", "get", "post", "download", "upload",
+                "serve", "stop", "status", "share", "list", "unshare"
+            ),
+            defaultOptions = mapOf("timeout_ms" to "30000"),
+            defaultOutputMapping = mapOf(
+                "status" to "user.net_status",
+                "http_status" to "user.net_http_status",
+                "bytes" to "user.net_bytes",
+                "port" to "user.net_hub_port"
+            )
+        ),
+        ToolSchema(
+            toolId = "print",
+            displayName = "Bluetooth Printer / POS Bridge",
+            description = "Scans for bonded and discoverable Bluetooth thermal printers and POS devices, connects over RFCOMM SPP, and prints ESC/POS receipts.",
+            supportedOperations = listOf(
+                "scan", "pair", "connect", "disconnect", "print", "status"
+            ),
+            defaultOptions = mapOf("align" to "left", "feed_lines" to "3", "width" to "32"),
+            defaultOutputMapping = mapOf(
+                "status" to "user.print_status",
+                "count" to "user.print_device_count",
+                "bytes" to "user.print_bytes"
+            )
         )
     )
 
@@ -272,6 +302,8 @@ object NativeToolsSuite {
             "push" -> executePush(operation, options, payload)
             "offline-cache" -> executeOfflineCache(operation, options, payload, tenantId)
             "realtime-ws" -> executeRealtimeWs(operation, options, payload, tenantId)
+            "net" -> executeNet(operation, options, payload, tenantId)
+            "print" -> executePrint(operation, options, payload, tenantId)
             else -> executeGenericFallback(toolId, operation, payload)
         }
 
@@ -324,6 +356,8 @@ object NativeToolsSuite {
         "push", "network.push", "network.push@1", "alerts" -> "push"
         "offline-cache", "offline_cache", "storage.offline_cache", "cache" -> "offline-cache"
         "realtime-ws", "realtime_ws", "network.realtime", "realtime", "ws" -> "realtime-ws"
+        "net", "network.transfer", "network.transfer@1", "network", "http", "transfer" -> "net"
+        "print", "printer", "device.printer", "device.printer@1", "bluetooth.print", "pos.print" -> "print"
         else -> raw
     }
 
@@ -332,6 +366,11 @@ object NativeToolsSuite {
         val dataMap: Map<String, Any>,
         val resultJson: JsonElement
     )
+
+    // Stateful handlers (LAN hub sockets / Bluetooth connections) are shared across
+    // invocations so that serve→share→list and connect→print→disconnect stay coherent.
+    private val netTool = engine.tools.impl.NetTool()
+    private val printTool = engine.tools.impl.PrintTool()
 
     // -------------------------------------------------------------------------
     // GENERIC OPTICAL SCANNER (ZERO DOMAIN COUPLING)
@@ -772,6 +811,56 @@ object NativeToolsSuite {
             toolResult = toolResult,
             label = "Realtime channel",
             successSummary = "Realtime channel $operation completed"
+        )
+    }
+
+    // -------------------------------------------------------------------------
+    // NETWORK TRANSFER (Ktor HTTP + LAN HUB)
+    // -------------------------------------------------------------------------
+    private suspend fun executeNet(
+        operation: String,
+        options: Map<String, String>,
+        payload: JsonObject,
+        tenantId: String
+    ): InternalToolResult {
+        val mergedArgs = buildMap {
+            putAll(options)
+            put("op", operation)
+            payload.forEach { (k, v) -> put(k, jsonContent(v)) }
+        }
+        val toolResult = netTool.invoke(
+            args = ToolArgs(mergedArgs),
+            ctx = ToolContext(workspaceId = tenantId)
+        )
+        return internalFromToolResult(
+            toolResult = toolResult,
+            label = "Network transfer",
+            successSummary = "Network $operation completed"
+        )
+    }
+
+    // -------------------------------------------------------------------------
+    // BLUETOOTH PRINTER / POS BRIDGE
+    // -------------------------------------------------------------------------
+    private suspend fun executePrint(
+        operation: String,
+        options: Map<String, String>,
+        payload: JsonObject,
+        tenantId: String
+    ): InternalToolResult {
+        val mergedArgs = buildMap {
+            putAll(options)
+            put("op", operation)
+            payload.forEach { (k, v) -> put(k, jsonContent(v)) }
+        }
+        val toolResult = printTool.invoke(
+            args = ToolArgs(mergedArgs),
+            ctx = ToolContext(workspaceId = tenantId)
+        )
+        return internalFromToolResult(
+            toolResult = toolResult,
+            label = "Bluetooth printer",
+            successSummary = "Printer $operation completed"
         )
     }
 

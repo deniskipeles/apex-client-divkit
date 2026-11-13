@@ -160,6 +160,13 @@ dependencies {
   implementation(libs.mediapipe.tasks.text)
   implementation(libs.tensorflow.lite)
   implementation(libs.tensorflow.lite.support.api)
+
+  // Ktor powers tools://net (HTTP client + embedded LAN transfer hub server).
+  implementation(libs.ktor.client.core)
+  implementation(libs.ktor.client.cio)
+  implementation(libs.ktor.server.core)
+  implementation(libs.ktor.server.cio)
+  testImplementation(libs.ktor.client.mock)
 }
 
 configurations.all {

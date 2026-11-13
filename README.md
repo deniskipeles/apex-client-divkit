@@ -99,6 +99,8 @@ app/
     engine/tools/TerminalApp.kt             # Android capability registry (mirrors shared TerminalApp)
     engine/tools/impl/HapticsTool.kt        # hardware.haptics@1 — Vibrator/VibratorManager
     engine/tools/impl/BeeperTool.kt         # hardware.beeper@1 — AudioToneSynthesizer PCM tones
+    engine/tools/impl/NetTool.kt            # network.transfer@1 — Ktor HTTP client + LAN transfer hub
+    engine/tools/impl/PrintTool.kt          # device.printer@1 — Bluetooth printer scan/connect/ESC-POS print
     engine/tools/audio/AudioToneSynthesizer.kt  # Shared PCM tone/waveform/sequence generator
     engine/tools/image/ImageManipulationEngine.kt # On-device image ops (<4MB OS-model footprint)
     com/yandex/divkit/multiplatform/
@@ -174,10 +176,16 @@ Every tool is deliberately **unopinionated**: it exposes a generic capability co
 | `tools://push` | **Background Alerts & Push Notifications (`network.push@1`)** | `send_alert`, `notify`, `send` | `channel`, `priority` | `user.push_notification_id`, `user.push_status` |
 | `tools://offline-cache` | **Offline Page & Schema Cache (`storage.offline_cache@1`)** | `cache`, `get_stats`, `clear` | `op` | `user.offline_cache_status`, `user.offline_cached_pages` |
 | `tools://realtime-ws` | **Realtime WebSocket / SSE Engine (`network.realtime@1`)** | `connect`, `disconnect`, `send`, `subscribe` | `channel` | `user.realtime_connection_state`, `user.realtime_channel` |
+| `tools://net` | **Network Transfer (Ktor) & LAN Hub (`network.transfer@1`)** | `request`, `get`, `post`, `download`, `upload`, `serve`, `stop`, `status`, `share`, `list`, `unshare` | `url`, `method`, `header_*`, `content_type`, `content_base64`\|`body`, `file_path`, `timeout_ms`, `port`, `host`, `label`, `name` | `user.net_status`, `user.net_http_status`, `user.net_bytes`, `user.net_hub_port` |
+| `tools://print` | **Bluetooth Printer / POS Bridge (`device.printer@1`)** | `scan`, `pair`, `connect`, `disconnect`, `print`, `status` | `address`, `all`, `discover`, `text`\|`lines`\|`receipt`, `align`, `bold`, `width`, `feed_lines`, `cut` | `user.print_status`, `user.print_device_count`, `user.print_bytes` |
 
 > **Unified scanner.** The former split tools `tools://scan-barcode` (1D) and `tools://scan-qr` (2D) are replaced by a single `tools://scan` tool that decodes both symbologies by default. `target_format` restricts recognition (`both` by default, or `barcode`/`qr`/an explicit format), and a non-matching code returns `status = "FORMAT_MISMATCH"`. The legacy URIs are still accepted as aliases for backward compatibility.
 >
 > **Unopinionated feedback APIs.** `tools://haptics` and `tools://beeper` carry no vendor or SDK coupling: the caller supplies generic parameters (patterns, frequencies, waveforms, volumes, timing arrays, sequences) and the platform chooses the physical implementation. There is no dedicated "POS tone" API — `PosTonePlayer`/`playPosTone` were removed and the haptic entry point is the platform-neutral `triggerHaptic`.
+>
+> **Generic networking (`tools://net`).** Built on Ktor (CIO engine), it covers both client calls (`request`/`get`/`post`/`download`/`upload`) and an embedded LAN transfer hub (`serve`/`stop`/`status`/`share`/`list`/`unshare`). `serve` starts a Ktor CIO server that hosts a discovery page at `/` and downloadable items at `/file/{id}`, so the same tool powers hubs and Xender-style device-to-device sharing.
+>
+> **Bluetooth printing (`tools://print`).** Scans bonded and discoverable Bluetooth thermal printers / POS peers (name heuristics: `printer`, `thermal`, `pos`, `rpt`, `goojprt`, `xprinter`, …), bonds (`pair`), opens an RFCOMM SPP socket (`connect`), and writes ESC/POS receipt bytes (`print` with `align`, `bold`, `width`, `feed_lines`, `cut`). On Android 12+ it requires `BLUETOOTH_CONNECT`/`BLUETOOTH_SCAN`; on older releases it falls back to `BLUETOOTH`/`BLUETOOTH_ADMIN`.
 
 ---
 
@@ -198,7 +206,7 @@ The terminal engine implements the zero-trust **Terminal Tool Architecture**:
    - `ToolResult.Failed(capability, message)`: Unexpected runtime failure; writes `"failed"`.
 4. **Provenance & Access Control**:
    - `Provenance.Agency`: Full access to administrative, internal, and external capabilities.
-   - `Provenance.Publisher`: Restricted strictly to the pre-approved tenant capabilities in `ProvenanceChecker` (`hardware.haptics@1`, `hardware.beeper@1`, `vision.scan_code@1`, `vision.capture_photo@1`, `vision.identify_product@1`, `vision.embed_image@1`, `vision.remove_background@1`, `secure.send@1`, `secure.status@1`, `secure.verify_identity@1`, `auth.biometrics@1`, `device.clipboard@1`, `network.push@1`, `storage.offline_cache@1`, `network.realtime@1`).
+   - `Provenance.Publisher`: Restricted strictly to the pre-approved tenant capabilities in `ProvenanceChecker` (`hardware.haptics@1`, `hardware.beeper@1`, `vision.scan_code@1`, `vision.capture_photo@1`, `vision.identify_product@1`, `vision.embed_image@1`, `vision.remove_background@1`, `secure.send@1`, `secure.status@1`, `secure.verify_identity@1`, `auth.biometrics@1`, `device.clipboard@1`, `network.push@1`, `storage.offline_cache@1`, `network.realtime@1`, `network.transfer@1`, `device.printer@1`).
 5. **Unopinionated Platform Haptics & Tones**:
    - Haptics uses Android `Vibrator` / `VibratorManager` with `VibrationEffect.createPredefined` (Android 10+), dual-pulse waveforms (Android 8+), and legacy millisecond one-shots; iOS uses `UIFeedbackGenerator` (`UIImpactFeedbackGenerator`/`UINotificationFeedbackGenerator`).
    - The beeper synthesizes PCM tones (sine/square/triangle/sawtooth) with `AudioToneSynthesizer` on Android and `AVAudioEngine` on iOS. Both degrade gracefully when hardware or permissions are unavailable.
