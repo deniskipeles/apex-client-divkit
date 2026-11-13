@@ -49,9 +49,12 @@ Invoked via:
 - `tools://vectorize/text`
 - `tools://vectorize/image`
 - `tools://vectorize/image_text`
-- `tools://vectorize/ocr`
 - `tools://vectorize/similarity`
 - `div-action://terminal.tool.invoke?tool=vectorize`
+
+> Standalone text extraction (OCR without embedding) moved to the optical scanner:
+> use [`tools://scan/ocr`](scan.md). `tools://vectorize/image_text` still chains
+> OCR and embedding in one call.
 
 ### Options (`payload.options`)
 
@@ -67,7 +70,6 @@ Invoked via:
 | `text` | `text` | Raw string to embed. |
 | `image` | `uri` | Bitmap reference: `data:image/...`, `content://`, `file://`, absolute path, or bare base64. |
 | `image_text` | `uri` | Bitmap reference; OCR text is extracted and embedded. |
-| `ocr` | `uri` | Bitmap reference; returns recognized text only (no vector). |
 | `similarity` | `a`, `b` | Two packed (base64 float32) vectors to compare. |
 
 ---
@@ -81,9 +83,6 @@ Invoked via:
 | `source_type` | `string` | `"text"`, `"image"`, or `"image_text"`. |
 | `ocr_text` | `string` | Recognized text (`image_text`). |
 | `ocr_confidence` | `double` | Mean OCR confidence (`image_text`). |
-| `text` | `string` | Recognized text (`ocr`). |
-| `confidence` | `double` | Mean OCR confidence (`ocr`). |
-| `block_count` | `integer` | OCR text block count (`ocr`). |
 | `score` | `double` | Cosine similarity in `[-1, 1]` (`similarity`). |
 | `method` | `string` | `"cosine"` (`similarity`). |
 | `model` | `string` | Model used for the chosen path. |

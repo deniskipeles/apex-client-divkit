@@ -50,3 +50,6 @@ New terminal capabilities must be wired through **all** of these:
 
 - Ktor 3.3.1 powers `tools://net`. Use the **CIO** engine (pure Kotlin); the OkHttp engine
   would pull OkHttp 5.x and conflict with the project's OkHttp 4.10.0 in `engine/sync/SyncEngine.kt`.
+- ZXing `com.google.zxing:core:3.5.3` powers `tools://code-generate`. It is pure JVM with no
+  Play Services dependency, so `CodeGeneratorEngine` renders bitmaps and encodes symbols in
+  plain JVM unit tests (`Bitmap`/`Color` are Robolectric shadows there).

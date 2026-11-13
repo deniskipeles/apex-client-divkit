@@ -13,7 +13,7 @@ dispatch contract and the provenance gate.
 
 | Document | Primary `tools://` URI | Versioned capability | Summary |
 | :--- | :--- | :--- | :--- |
-| [scan.md](scan.md) | `tools://scan` | `vision.scan_code@1` | Unified 1D barcode & 2D QR optical decoder. |
+| [scan.md](scan.md) | `tools://scan` | `vision.scan_code@1` | Unified 1D barcode & 2D QR optical decoder + OCR text mode. |
 | [haptics.md](haptics.md) | `tools://haptics` | `hardware.haptics@1` | Semantic and waveform tactile feedback. |
 | [beeper.md](beeper.md) | `tools://beeper` | `hardware.beeper@1` | PCM tone synthesis, profiles, and sequences. |
 | [camera.md](camera.md) | `tools://camera` | `hardware.camera@1` (`vision.capture_photo@1` alias) | Camera frame capture and torch control. |
@@ -30,6 +30,7 @@ dispatch contract and the provenance gate.
 | [realtime-ws.md](realtime-ws.md) | `tools://realtime-ws` | `network.realtime@1` | Realtime WSS/SSE channel engine. |
 | [net.md](net.md) | `tools://net` | `network.transfer@1` | Ktor HTTP client + embedded LAN transfer hub. |
 | [print.md](print.md) | `tools://print` | `device.printer@1` | Bluetooth printer discovery & ESC/POS printing. |
+| [code-generate.md](code-generate.md) | `tools://code-generate` | `vision.generate_code@1` | Barcode & QR / matrix code generation (ZXing). |
 
 > `vision.remove_background@1` is reachable through two entry points: the higher-level
 > [`image-manipulation.md`](image-manipulation.md) pipeline and the dedicated

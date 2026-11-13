@@ -49,6 +49,7 @@ mediapipeTasksText   = "0.10.14"
 tflite               = "2.16.1"
 tfliteSupport        = "0.4.4"
 ktor                 = "3.3.1"
+zxing                = "3.5.3"
 
 
 [libraries]
@@ -116,6 +117,7 @@ ktor-client-cio          = { group = "io.ktor", name = "ktor-client-cio", versio
 ktor-server-core         = { group = "io.ktor", name = "ktor-server-core", version.ref = "ktor" }
 ktor-server-cio          = { group = "io.ktor", name = "ktor-server-cio", version.ref = "ktor" }
 ktor-client-mock         = { group = "io.ktor", name = "ktor-client-mock", version.ref = "ktor" }
+zxing-core               = { group = "com.google.zxing", name = "core", version.ref = "zxing" }
 
 
 [plugins]

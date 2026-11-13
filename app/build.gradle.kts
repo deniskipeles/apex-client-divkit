@@ -167,6 +167,9 @@ dependencies {
   implementation(libs.ktor.server.core)
   implementation(libs.ktor.server.cio)
   testImplementation(libs.ktor.client.mock)
+
+  // ZXing renders the tools://code-generate bar/QR code matrices and images.
+  implementation(libs.zxing.core)
 }
 
 configurations.all {

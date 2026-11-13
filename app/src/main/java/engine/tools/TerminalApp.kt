@@ -29,7 +29,8 @@ object TerminalApp {
             OfflineCacheTool(),
             RealtimeWsTool(),
             NetTool(),
-            PrintTool()
+            PrintTool(),
+            CodeGenerateTool()
         )
         // Map canonical capabilities + common shorthand aliases
         val handlerMap = mutableMapOf<String, ToolHandler>()
@@ -114,6 +115,14 @@ object TerminalApp {
                     handlerMap["print"] = h
                     handlerMap["printer"] = h
                     handlerMap["device.printer"] = h
+                }
+                "vision.generate_code@1" -> {
+                    handlerMap["code-generate"] = h
+                    handlerMap["code_gen"] = h
+                    handlerMap["generate-code"] = h
+                    handlerMap["barcode-generate"] = h
+                    handlerMap["qr-generate"] = h
+                    handlerMap["vision.generate_code"] = h
                 }
             }
         }

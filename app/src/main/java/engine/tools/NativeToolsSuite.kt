@@ -51,7 +51,7 @@ object NativeToolsSuite {
             toolId = "scan",
             displayName = "Unified Optical Scanner (1D Barcode & 2D QR)",
             description = "Generic optical decoder for 1D linear barcodes and 2D matrix symbologies. Defaults to recognizing both formats simultaneously, or can be restricted using target_format.",
-            supportedOperations = listOf("scan", "continuous_scan", "simulate", "parse"),
+            supportedOperations = listOf("scan", "continuous_scan", "simulate", "parse", "ocr"),
             defaultOptions = mapOf(
                 "target_format" to "both", // "both", "barcode", "qr", or specific format ("EAN_13", "UPC_A", "CODE_128", "QR_CODE")
                 "beep" to "true",
@@ -63,7 +63,10 @@ object NativeToolsSuite {
                 "format" to "user.scanned_format",
                 "type" to "user.scanned_type",
                 "status" to "user.scan_status",
-                "timestamp" to "user.scan_timestamp"
+                "timestamp" to "user.scan_timestamp",
+                "text" to "user.ocr_text",
+                "confidence" to "user.ocr_confidence",
+                "block_count" to "user.ocr_block_count"
             )
         ),
         // Other generic system tools (haptics, beeper, libsignal, camera, biometrics, clipboard, etc.)
@@ -125,9 +128,9 @@ object NativeToolsSuite {
         ),
         ToolSchema(
             toolId = "vectorize",
-            displayName = "Text & Image Vector Embedding (+ OCR)",
-            description = "Vectorizes text, images, or image-derived OCR text into L2-normalized embedding vectors. Uses quantized on-device models (ML Kit OCR + MobileNetV4 / USE-Lite).",
-            supportedOperations = listOf("text", "image", "image_text", "ocr", "similarity"),
+            displayName = "Text & Image Vector Embedding",
+            description = "Vectorizes text, images, or image-derived OCR text into L2-normalized embedding vectors. Uses quantized on-device models (ML Kit OCR + MobileNetV4 / USE-Lite). Standalone text extraction lives in tools://scan/ocr.",
+            supportedOperations = listOf("text", "image", "image_text", "similarity"),
             defaultOptions = mapOf("normalize" to "true", "include_ocr_text" to "true"),
             defaultOutputMapping = mapOf(
                 "vector_b64" to "user.vector_b64",
@@ -253,6 +256,29 @@ object NativeToolsSuite {
                 "count" to "user.print_device_count",
                 "bytes" to "user.print_bytes"
             )
+        ),
+        ToolSchema(
+            toolId = "code-generate",
+            displayName = "Barcode & QR Code Generator",
+            description = "Encodes arbitrary content into a 1D barcode or 2D matrix symbology (QR, DataMatrix, Aztec, PDF417) and renders it to an image plus an inspectable module matrix.",
+            supportedOperations = listOf("generate", "qr", "barcode", "render"),
+            defaultOptions = mapOf(
+                "format" to "qr",
+                "width" to "512",
+                "height" to "512",
+                "margin" to "4",
+                "ec_level" to "M",
+                "encoding" to "uri"
+            ),
+            defaultOutputMapping = mapOf(
+                "status" to "user.code_status",
+                "uri" to "user.code_image_uri",
+                "content" to "user.code_content",
+                "format" to "user.code_format",
+                "kind" to "user.code_kind",
+                "code_id" to "user.code_id",
+                "matrix" to "user.code_matrix"
+            )
         )
     )
 
@@ -270,6 +296,11 @@ object NativeToolsSuite {
         val schema = registeredSchemas.firstOrNull { it.toolId.equals(toolId, ignoreCase = true) }
             ?: registeredSchemas.first { it.toolId == "scan" }
 
+        // `tools://ocr/...` is an alias for the scanner's OCR mode regardless of the
+        // trailing segment, so normalize the reported/executed operation here.
+        val ocrAlias = toolRaw.trim().lowercase() in setOf("ocr", "read-text", "text-recognition")
+        val effectiveOperation = if (ocrAlias) "ocr" else operation
+
         val options = buildMap {
             schema.defaultOptions.forEach { (k, v) -> put(k, v) }
             payload["options"]?.jsonObject?.forEach { (k, v) ->
@@ -286,7 +317,7 @@ object NativeToolsSuite {
 
         val outcome = when (toolId.lowercase()) {
             "scan", "scanner", "vision.scan_code@1", "vision.scan_code", "scan-barcode", "scan-qr" ->
-                executeScan(operation, options, payload)
+                executeScan(effectiveOperation, options, payload)
             "haptics", "device.haptics", "device.haptics@1" -> executeHaptics(operation, options, payload)
             "beeper", "device.beeper", "device.beeper@1" -> executeBeeper(operation, options, payload)
             "camera" -> executeCamera(operation, options, payload, tenantId)
@@ -304,6 +335,7 @@ object NativeToolsSuite {
             "realtime-ws" -> executeRealtimeWs(operation, options, payload, tenantId)
             "net" -> executeNet(operation, options, payload, tenantId)
             "print" -> executePrint(operation, options, payload, tenantId)
+            "code-generate" -> executeCodeGenerate(operation, options, payload, tenantId)
             else -> executeGenericFallback(toolId, operation, payload)
         }
 
@@ -334,7 +366,7 @@ object NativeToolsSuite {
         return ToolExecutionOutcome(
             success = outcome.dataMap["status"] != "FORMAT_MISMATCH",
             toolId = schema.toolId,
-            operation = operation,
+            operation = effectiveOperation,
             summary = outcome.summary,
             latencyMs = totalLatency,
             resultData = outcome.resultJson,
@@ -343,11 +375,11 @@ object NativeToolsSuite {
     }
 
     private fun normalizeToolId(raw: String): String = when (raw.lowercase()) {
-        "scan", "scanner", "scan-code", "vision.scan_code@1", "vision.scan_code", "scan-barcode", "scan-qr", "barcode", "qr" -> "scan"
+        "scan", "scanner", "scan-code", "vision.scan_code@1", "vision.scan_code", "scan-barcode", "scan-qr", "barcode", "qr", "ocr", "read-text", "text-recognition" -> "scan"
         "haptics", "device.haptics", "device.haptics@1", "vibrate" -> "haptics"
         "beeper", "device.beeper", "device.beeper@1", "tone", "audio" -> "beeper"
         "camera", "photo" -> "camera"
-        "vectorize", "vector", "embed", "embed-text", "embed-image", "ocr" -> "vectorize"
+        "vectorize", "vector", "embed", "embed-text", "embed-image" -> "vectorize"
         "clipboard", "device.clipboard" -> "clipboard"
         "biometrics", "auth.biometrics" -> "biometrics"
         "libsignal", "signal", "secure.send", "secure.status", "secure.verify_identity" -> "libsignal"
@@ -358,6 +390,8 @@ object NativeToolsSuite {
         "realtime-ws", "realtime_ws", "network.realtime", "realtime", "ws" -> "realtime-ws"
         "net", "network.transfer", "network.transfer@1", "network", "http", "transfer" -> "net"
         "print", "printer", "device.printer", "device.printer@1", "bluetooth.print", "pos.print" -> "print"
+        "code-generate", "code_gen", "codegen", "generate-code", "generate_code", "barcode-generate",
+        "qr-generate", "vision.generate_code@1", "vision.generate_code" -> "code-generate"
         else -> raw
     }
 
@@ -380,6 +414,12 @@ object NativeToolsSuite {
         options: Map<String, String>,
         payload: JsonObject
     ): InternalToolResult {
+        // Optical character recognition (OCR) is an image-reading mode of the same
+        // optical scanner: it extracts human-readable text instead of symbology.
+        if (operation.trim().lowercase() in setOf("ocr", "text", "read_text")) {
+            return executeScanOcr(options, payload)
+        }
+
         // 1. target_format defaults to "both" (or "all")
         val targetFormatRaw = payload["target_format"]?.jsonPrimitive?.contentOrNull
             ?: options["target_format"]
@@ -461,6 +501,71 @@ object NativeToolsSuite {
                 data.forEach { (k, v) ->
                     when (v) {
                         is Number -> put(k, v.toLong())
+                        else -> put(k, v.toString())
+                    }
+                }
+            }
+        )
+    }
+
+    // -------------------------------------------------------------------------
+    // OPTICAL CHARACTER RECOGNITION (TEXT READING MODE)
+    // -------------------------------------------------------------------------
+    private fun executeScanOcr(options: Map<String, String>, payload: JsonObject): InternalToolResult {
+        val ctx = engine.db.currentAndroidContext?.invoke()
+            ?: return InternalToolResult(
+                summary = "OCR unavailable: no Android context",
+                dataMap = mapOf("status" to "UNSUPPORTED", "reason" to "no_android_context"),
+                resultJson = buildJsonObject {
+                    put("status", "UNSUPPORTED"); put("reason", "no_android_context")
+                }
+            )
+
+        val uri = payload["uri"]?.jsonPrimitive?.contentOrNull
+            ?: payload["image"]?.jsonPrimitive?.contentOrNull
+            ?: payload["base64"]?.jsonPrimitive?.contentOrNull
+            ?: options["uri"]
+
+        val bmp = try {
+            decodeBitmap(ctx, uri)
+        } catch (e: Exception) {
+            return InternalToolResult(
+                summary = "OCR failed: ${e.message}",
+                dataMap = mapOf("status" to "FAILED", "error" to (e.message ?: "decode error")),
+                resultJson = buildJsonObject {
+                    put("status", "FAILED"); put("error", e.message ?: "decode error")
+                }
+            )
+        }
+
+        val ocr = OcrExtractor.extract(bmp)
+        val blocks = buildJsonArray {
+            ocr.blocks.forEach { b ->
+                add(buildJsonObject {
+                    put("text", b.text)
+                    put("bbox", b.bbox.joinToString(","))
+                })
+            }
+        }
+        val data = mapOf(
+            "text" to ocr.text,
+            "confidence" to ocr.meanConfidence,
+            "block_count" to ocr.blocks.size,
+            "blocks" to blocks,
+            "status" to "SUCCESS",
+            "model" to "ML Kit Text Recognition v2 (Latin)",
+            "timestamp" to currentTimeMillis()
+        )
+        return InternalToolResult(
+            summary = "OCR extracted ${ocr.text.length} chars across ${ocr.blocks.size} block(s)",
+            dataMap = data,
+            resultJson = buildJsonObject {
+                data.forEach { (k, v) ->
+                    when (v) {
+                        is Float -> put(k, v.toDouble())
+                        is Double -> put(k, v)
+                        is Int -> put(k, v.toLong())
+                        is JsonElement -> put(k, v)
                         else -> put(k, v.toString())
                     }
                 }
@@ -560,13 +665,6 @@ object NativeToolsSuite {
         val t0 = currentTimeMillis()
         val data: Map<String, Any>
         when (op) {
-            "ocr" -> {
-                val bmp = decodeBitmap(ctx, payload["uri"]?.jsonPrimitive?.contentOrNull)
-                val r = OcrExtractor.extract(bmp)
-                data = mapOf("text" to r.text, "confidence" to r.meanConfidence,
-                             "block_count" to r.blocks.size, "status" to "SUCCESS",
-                             "model" to "ML Kit Text Recognition v2 (Latin)")
-            }
             "text" -> {
                 val text = payload["text"]?.jsonPrimitive?.contentOrNull ?: ""
                 val v = TextVectorizer.embed(ctx, text)
@@ -861,6 +959,31 @@ object NativeToolsSuite {
             toolResult = toolResult,
             label = "Bluetooth printer",
             successSummary = "Printer $operation completed"
+        )
+    }
+
+    // -------------------------------------------------------------------------
+    // BARCODE / QR CODE GENERATOR (ZXing)
+    // -------------------------------------------------------------------------
+    private suspend fun executeCodeGenerate(
+        operation: String,
+        options: Map<String, String>,
+        payload: JsonObject,
+        tenantId: String
+    ): InternalToolResult {
+        val mergedArgs = buildMap {
+            putAll(options)
+            put("op", operation)
+            payload.forEach { (k, v) -> put(k, jsonContent(v)) }
+        }
+        val toolResult = engine.tools.impl.CodeGenerateTool().invoke(
+            args = ToolArgs(mergedArgs),
+            ctx = ToolContext(workspaceId = tenantId)
+        )
+        return internalFromToolResult(
+            toolResult = toolResult,
+            label = "Code generator",
+            successSummary = "Code $operation generated"
         )
     }
 

@@ -283,7 +283,8 @@ class ExampleUnitTest {
             "storage.offline_cache@1",
             "network.realtime@1",
             "network.transfer@1",
-            "device.printer@1"
+            "device.printer@1",
+            "vision.generate_code@1"
         )
         for (cap in expected) {
             assertTrue("Manifest must include $cap", manifest.has(cap))
@@ -799,5 +800,121 @@ class ExampleUnitTest {
         assertEquals("print", outcome.toolId)
         val count = outcome.outputVariables["user.print_device_count"] as DivVariableValue.IntVal
         assertEquals(0L, count.value)
+    }
+
+    // ------------------------------------------------------------------
+    // tools://scan OCR mode
+    // ------------------------------------------------------------------
+
+    @Test
+    fun scanTool_exposesOcrOperationAndDefaults() {
+        val schema = engine.tools.NativeToolsSuite.registeredSchemas.first { it.toolId == "scan" }
+        assertTrue(schema.supportedOperations.contains("ocr"))
+        assertEquals("user.ocr_text", schema.defaultOutputMapping["text"])
+        assertEquals("user.ocr_confidence", schema.defaultOutputMapping["confidence"])
+    }
+
+    @Test
+    fun scanTool_routesOcrAliasToScanCapability() = kotlinx.coroutines.runBlocking {
+        val payload = buildJsonObject { put("uri", "not-a-real-image") }
+        val outcome = engine.tools.NativeToolsSuite.execute(url = "tools://ocr/read", payload = payload)
+        assertEquals("scan", outcome.toolId)
+        assertEquals("ocr", outcome.operation)
+    }
+
+    @Test
+    fun scanTool_ocrWithoutContextDegradesGracefully() = kotlinx.coroutines.runBlocking {
+        val previous = engine.db.currentAndroidContext
+        engine.db.currentAndroidContext = null
+        try {
+            val outcome = engine.tools.NativeToolsSuite.execute(
+                url = "tools://scan/ocr",
+                payload = buildJsonObject { put("uri", "content://missing/image") }
+            )
+            assertEquals("scan", outcome.toolId)
+            assertEquals("UNSUPPORTED", outcome.resultData.jsonObject["status"]?.jsonPrimitive?.contentOrNull)
+        } finally {
+            engine.db.currentAndroidContext = previous
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // tools://code-generate (ZXing)
+    // ------------------------------------------------------------------
+
+    @Test
+    fun codeGenerateTool_isRegisteredAndAdvertisesCapability() {
+        val manifest = TerminalApp.registry.manifest()
+        assertTrue(manifest.has("vision.generate_code@1"))
+        assertTrue(manifest.has("code-generate"))
+        val handler = TerminalApp.registry.resolve("vision.generate_code@1")
+        assertNotNull(handler)
+        assertEquals("vision.generate_code@1", handler!!.capability)
+    }
+
+    @Test
+    fun codeGenerateTool_generatesQrMatrixAndImage() = kotlinx.coroutines.runBlocking {
+        val outcome = engine.tools.NativeToolsSuite.execute(
+            url = "tools://code-generate/generate",
+            payload = buildJsonObject {
+                put("content", "https://pos.example/order/42")
+                put("format", "qr")
+                put("width", "256")
+                put("height", "256")
+            }
+        )
+        assertEquals("code-generate", outcome.toolId)
+        assertEquals("SUCCESS", outcome.resultData.jsonObject["status"]?.jsonPrimitive?.contentOrNull)
+        assertEquals("QR_CODE", outcome.resultData.jsonObject["format"]?.jsonPrimitive?.contentOrNull)
+        assertEquals("2D", outcome.resultData.jsonObject["kind"]?.jsonPrimitive?.contentOrNull)
+
+        val matrix = (outcome.outputVariables["user.code_matrix"] as DivVariableValue.Str).value
+        val rows = matrix.split("\n")
+        assertTrue("QR matrix should be square", rows.all { it.length == rows.size })
+        assertTrue("QR matrix should contain dark modules", matrix.contains("1"))
+        assertEquals("QR_CODE", (outcome.outputVariables["user.code_format"] as DivVariableValue.Str).value)
+    }
+
+    @Test
+    fun codeGenerateTool_rendersOneDimensionalBarcode() = kotlinx.coroutines.runBlocking {
+        val outcome = engine.tools.NativeToolsSuite.execute(
+            url = "tools://code-generate/barcode",
+            payload = buildJsonObject {
+                put("content", "1234567890128")
+                put("format", "EAN_13")
+                put("width", "400")
+                put("height", "160")
+            }
+        )
+        assertEquals("code-generate", outcome.toolId)
+        assertEquals("EAN_13", outcome.resultData.jsonObject["format"]?.jsonPrimitive?.contentOrNull)
+        assertEquals("1D", outcome.resultData.jsonObject["kind"]?.jsonPrimitive?.contentOrNull)
+        val uri = (outcome.outputVariables["user.code_image_uri"] as DivVariableValue.Str).value
+        assertTrue(uri.startsWith("file://"))
+    }
+
+    @Test
+    fun codeGenerateTool_rejectsMissingContent() = kotlinx.coroutines.runBlocking {
+        val result = engine.tools.impl.CodeGenerateTool().invoke(
+            args = ToolArgs(emptyMap()),
+            ctx = ToolContext()
+        )
+        assertTrue(result is ToolResult.Failed)
+    }
+
+    @Test
+    fun codeGenerateEngine_resolvesSymbologyAliases() {
+        assertEquals(
+            com.google.zxing.BarcodeFormat.QR_CODE,
+            engine.tools.code.CodeGeneratorEngine.resolveFormat("qr")
+        )
+        assertEquals(
+            com.google.zxing.BarcodeFormat.CODE_128,
+            engine.tools.code.CodeGeneratorEngine.resolveFormat("code-128")
+        )
+        assertEquals(
+            com.google.zxing.BarcodeFormat.DATA_MATRIX,
+            engine.tools.code.CodeGeneratorEngine.resolveFormat("datamatrix")
+        )
     }
 }
