@@ -270,6 +270,195 @@ fi
 
 success "Using Gradle runner: ${GRADLE_CMD}"
 
+# ==============================================================================
+# 4b. ML Asset Bootstrap — TFLite / safetensors models for tools://vectorize
+# ==============================================================================
+# Downloads:
+#   • Universal Sentence Encoder Lite (MediaPipe, float32, ~5.5 MB)
+#   • MobileNetV4 Conv Small INT8 TFLite (~3.8 MB, from Qualcomm w8a8 zip)
+#   • OR model2vec potion-base-2M (model.safetensors + config.json + tokenizer.json, ~2 MB)
+#
+# Controls:
+#   FORCE_ML_ASSETS=true   re-download even if files exist
+#   SKIP_ML_ASSETS=true    skip entirely (e.g. offline CI with pre-baked assets)
+#   TEXT_EMBEDDER=use-lite (default) | model2vec
+# ==============================================================================
+
+ASSETS_DIR="${SCRIPT_DIR}/app/src/main/assets"
+FORCE_ML_ASSETS="${FORCE_ML_ASSETS:-false}"
+SKIP_ML_ASSETS="${SKIP_ML_ASSETS:-false}"
+TEXT_EMBEDDER="${TEXT_EMBEDDER:-use-lite}"   # use-lite | model2vec
+
+if [[ "${SKIP_ML_ASSETS}" == "true" ]]; then
+    info "SKIP_ML_ASSETS=true — skipping ML asset bootstrap."
+else
+    info "Bootstrapping ML assets into: ${ASSETS_DIR}"
+    mkdir -p "${ASSETS_DIR}"
+
+    # ---- helper functions ----------------------------------------------------
+
+    # file_size <path> → bytes (0 if missing)
+    file_size() {
+        if [[ ! -f "$1" ]]; then echo 0; return; fi
+        stat -c%s "$1" 2>/dev/null || stat -f%z "$1" 2>/dev/null || echo 0
+    }
+
+    # need_download <path> <min_bytes>
+    need_download() {
+        local path="$1" min="$2"
+        [[ "${FORCE_ML_ASSETS}" == "true" ]] && return 0
+        [[ ! -f "${path}" ]] && return 0
+        local sz; sz=$(file_size "${path}")
+        [[ "${sz}" -lt "${min}" ]] && return 0
+        return 1
+    }
+
+    # is_tflite <path> — sanity check: TFL3 magic at offset 4
+    is_tflite() {
+        local p="$1"
+        [[ ! -f "${p}" ]] && return 1
+        # Read bytes 4-7; TFLite flatbuffer identifier is "TFL3"
+        local magic
+        magic=$(dd if="${p}" bs=1 skip=4 count=4 2>/dev/null | od -An -c | tr -d ' \n')
+        [[ "${magic}" == "TFL3" ]]
+    }
+
+    # fetch <url> <dest> <label> [extra curl args…]
+    fetch() {
+        local url="$1" dest="$2" label="$3"; shift 3
+        info "  ↓ ${label}"
+        if ! curl -fL --retry 3 --retry-delay 2 --connect-timeout 15 \
+                  -A "ApexClient-Build/1.0" \
+                  "$@" -o "${dest}.part" "${url}"; then
+            rm -f "${dest}.part"
+            error "  ✗ Download failed: ${label} (${url})"
+            return 1
+        fi
+        mv -f "${dest}.part" "${dest}"
+        success "  ✓ ${label} ($(numfmt --to=iec-i --suffix=B "$(file_size "${dest}")" 2>/dev/null || echo "? bytes"))"
+        return 0
+    }
+
+    ASSET_FAILURES=0
+
+    # ---- 1. MobileNetV4 Conv Small INT8 TFLite (≈ 3.8 MB) -------------------
+    MV4_TFLITE="${ASSETS_DIR}/mobilenetv4_small_int8.tflite"
+    MV4_MIN=$((3 * 1024 * 1024))   # 3 MB floor
+    MV4_ZIP_URL="https://qaihub-public-assets.s3.us-west-2.amazonaws.com/qai-hub-models/models/mobilenet_v4/releases/v0.64.0/mobilenet_v4-tflite-w8a8.zip"
+
+    if need_download "${MV4_TFLITE}" "${MV4_MIN}" || ! is_tflite "${MV4_TFLITE}"; then
+        if ! command -v unzip >/dev/null 2>&1; then
+            warn "  unzip not found — trying python3 zipfile fallback."
+        fi
+
+        TMP_ZIP="$(mktemp "${TMPDIR:-/tmp}/mv4-XXXXXX.zip")"
+        if fetch "${MV4_ZIP_URL}" "${TMP_ZIP}" "MobileNetV4 w8a8 zip"; then
+            TMP_EXTRACT="$(mktemp -d "${TMPDIR:-/tmp}/mv4-XXXXXX")"
+            if command -v unzip >/dev/null 2>&1; then
+                unzip -q -o "${TMP_ZIP}" -d "${TMP_EXTRACT}"
+            elif command -v python3 >/dev/null 2>&1; then
+                python3 -c "import zipfile,sys; zipfile.ZipFile(sys.argv[1]).extractall(sys.argv[2])" \
+                    "${TMP_ZIP}" "${TMP_EXTRACT}"
+            else
+                error "  ✗ Cannot extract zip: neither unzip nor python3 available."
+                ASSET_FAILURES=$((ASSET_FAILURES + 1))
+            fi
+
+            # Locate the .tflite inside the extracted tree
+            FOUND_TFLITE="$(find "${TMP_EXTRACT}" -type f -name '*.tflite' | head -n 1 || true)"
+            if [[ -n "${FOUND_TFLITE}" && -f "${FOUND_TFLITE}" ]]; then
+                cp -f "${FOUND_TFLITE}" "${MV4_TFLITE}"
+                if is_tflite "${MV4_TFLITE}"; then
+                    success "  ✓ MobileNetV4 TFLite installed ($(numfmt --to=iec-i --suffix=B "$(file_size "${MV4_TFLITE}")"))"
+                else
+                    error "  ✗ Extracted file failed TFLite magic-byte check."
+                    rm -f "${MV4_TFLITE}"
+                    ASSET_FAILURES=$((ASSET_FAILURES + 1))
+                fi
+            else
+                error "  ✗ No .tflite found inside MobileNetV4 zip."
+                ASSET_FAILURES=$((ASSET_FAILURES + 1))
+            fi
+            rm -rf "${TMP_EXTRACT}"
+        else
+            ASSET_FAILURES=$((ASSET_FAILURES + 1))
+        fi
+        rm -f "${TMP_ZIP}"
+    else
+        success "  ✓ MobileNetV4 TFLite already present ($(numfmt --to=iec-i --suffix=B "$(file_size "${MV4_TFLITE}")"))"
+    fi
+
+    # ---- 2. Text embedder (choose USE-Lite or model2vec) --------------------
+
+    case "${TEXT_EMBEDDER}" in
+        use-lite)
+            USE_LITE="${ASSETS_DIR}/universal_sentence_encoder_lite.tflite"
+            USE_LITE_MIN=$((5 * 1024 * 1024))   # 5 MB floor (actual ~5.5 MB)
+            USE_LITE_URL="https://storage.googleapis.com/mediapipe-models/text_embedder/universal_sentence_encoder/float32/latest/universal_sentence_encoder.tflite"
+
+            if need_download "${USE_LITE}" "${USE_LITE_MIN}" || ! is_tflite "${USE_LITE}"; then
+                if fetch "${USE_LITE_URL}" "${USE_LITE}" "Universal Sentence Encoder Lite (MediaPipe)"; then
+                    if ! is_tflite "${USE_LITE}"; then
+                        error "  ✗ USE-Lite download failed TFLite magic-byte check."
+                        rm -f "${USE_LITE}"
+                        ASSET_FAILURES=$((ASSET_FAILURES + 1))
+                    fi
+                else
+                    ASSET_FAILURES=$((ASSET_FAILURES + 1))
+                fi
+            else
+                success "  ✓ USE-Lite already present ($(numfmt --to=iec-i --suffix=B "$(file_size "${USE_LITE}")"))"
+            fi
+            ;;
+
+        model2vec)
+            M2V_DIR="${ASSETS_DIR}/potion-base-2M"
+            mkdir -p "${M2V_DIR}"
+            M2V_BASE="https://huggingface.co/minishlab/potion-base-2M/resolve/main"
+            M2V_FILES=("model.safetensors" "config.json" "tokenizer.json")
+            M2V_MIN_EACH=1024   # each file must be ≥ 1 KB (rejects HTML error pages)
+
+            M2V_OK=true
+            for f in "${M2V_FILES[@]}"; do
+                dest="${M2V_DIR}/${f}"
+                if need_download "${dest}" "${M2V_MIN_EACH}"; then
+                    if ! fetch "${M2V_BASE}/${f}" "${dest}" "model2vec / ${f}"; then
+                        M2V_OK=false
+                        ASSET_FAILURES=$((ASSET_FAILURES + 1))
+                    fi
+                else
+                    success "  ✓ model2vec / ${f} already present"
+                fi
+            done
+
+            if [[ "${M2V_OK}" == "true" ]]; then
+                success "  ✓ model2vec potion-base-2M installed ($(numfmt --to=iec-i --suffix=B "$(du -sb "${M2V_DIR}" 2>/dev/null | awk '{print $1}')" 2>/dev/null || echo "~2 MB"))"
+            fi
+            ;;
+
+        *)
+            warn "  Unknown TEXT_EMBEDDER='${TEXT_EMBEDDER}' — defaulting to use-lite."
+            # Re-run this block with use-lite
+            TEXT_EMBEDDER=use-lite
+            # (fall through is not possible in case; recurse once)
+            USE_LITE="${ASSETS_DIR}/universal_sentence_encoder_lite.tflite"
+            if need_download "${USE_LITE}" $((5 * 1024 * 1024)); then
+                fetch "https://storage.googleapis.com/mediapipe-models/text_embedder/universal_sentence_encoder/float32/latest/universal_sentence_encoder.tflite" \
+                      "${USE_LITE}" "Universal Sentence Encoder Lite" || ASSET_FAILURES=$((ASSET_FAILURES + 1))
+            fi
+            ;;
+    esac
+
+    # ---- 3. Summary ---------------------------------------------------------
+    if [[ "${ASSET_FAILURES}" -gt 0 ]]; then
+        warn "  ${ASSET_FAILURES} ML asset download(s) failed. The APK will still build;"
+        warn "  tools://vectorize will return UNSUPPORTED for the missing modality at runtime."
+        warn "  Re-run with FORCE_ML_ASSETS=true once network is available."
+    else
+        success "  All ML assets ready in ${ASSETS_DIR}"
+    fi
+fi
+
 # ------------------------------------------------------------------------------
 # 5. Build Execution
 # ------------------------------------------------------------------------------

@@ -155,4 +155,8 @@ dependencies {
   debugImplementation(libs.androidx.compose.ui.tooling)
   // "ksp"(libs.androidx.room.compiler)
   // "ksp"(libs.moshi.kotlin.codegen)
+
+  implementation(libs.mlkit.text.recognition)
+  implementation(libs.mediapipe.tasks.text)
+  implementation(libs.tflite.support)
 }

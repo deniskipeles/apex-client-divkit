@@ -131,6 +131,20 @@ object NativeToolsSuite {
             )
         ),
         ToolSchema(
+            toolId = "vectorize",
+            displayName = "Text & Image Vector Embedding (+ OCR)",
+            description = "Vectorizes text, images, or image-derived OCR text into L2-normalized embedding vectors. Uses OS-provided models on iOS (Vision + NaturalLanguage, 0 MB) and quantized on-device models on Android (ML Kit OCR + MobileNetV4 / USE-Lite).",
+            supportedOperations = listOf("text", "image", "image_text", "ocr", "similarity"),
+            defaultOptions = mapOf("normalize" to "true", "include_ocr_text" to "true"),
+            defaultOutputMapping = mapOf(
+                "vector_b64" to "user.vector_b64",
+                "dim" to "user.vector_dim",
+                "source_type" to "user.vector_source",
+                "ocr_text" to "user.ocr_text",
+                "score" to "user.vector_similarity"
+            )
+        ),
+        ToolSchema(
             toolId = "clipboard",
             displayName = "System Clipboard Controller",
             description = "Read and write strings to device clipboard.",

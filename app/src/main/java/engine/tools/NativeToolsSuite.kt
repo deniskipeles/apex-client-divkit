@@ -234,6 +234,7 @@ object NativeToolsSuite {
             "haptics", "device.haptics", "device.haptics@1" -> executeHaptics(operation, options, payload)
             "beeper", "device.beeper", "device.beeper@1" -> executeBeeper(operation, options, payload)
             "camera" -> executeCamera(operation, options, payload, tenantId)
+            "vectorize" -> executeVectorize(operation, options, payload, tenantId)
             "image-manipulation", "image-process", "image-filter", "vision.image_manipulation@1",
             "image-background-remove" ->
                 executeImageManipulation(operation, options, payload, tenantId)
@@ -288,6 +289,7 @@ object NativeToolsSuite {
         "haptics", "device.haptics", "device.haptics@1", "vibrate" -> "haptics"
         "beeper", "device.beeper", "device.beeper@1", "tone", "audio" -> "beeper"
         "camera", "photo" -> "camera"
+        "vectorize", "vector", "embed", "embed-text", "embed-image", "ocr" -> "vectorize"
         "clipboard", "device.clipboard" -> "clipboard"
         "biometrics", "auth.biometrics" -> "biometrics"
         "libsignal", "signal", "secure.send", "secure.status", "secure.verify_identity" -> "libsignal"
@@ -482,6 +484,61 @@ object NativeToolsSuite {
             toolResult = toolResult,
             label = "Camera",
             successSummary = "Camera $operation completed successfully"
+        )
+    }
+
+    private suspend fun executeVectorize(
+        operation: String, options: Map<String, String>, payload: JsonObject, tenantId: String
+    ): InternalToolResult {
+        val op = operation.lowercase().ifBlank { "text" }
+        val ctx = engine.db.currentAndroidContext?.invoke() ?: error("No Android context")
+        val t0 = currentTimeMillis()
+        val data: Map<String, Any>
+        when (op) {
+            "ocr" -> {
+                val bmp = decodeBitmap(ctx, payload["uri"]?.jsonPrimitive?.contentOrNull)
+                val r = OcrExtractor.extract(bmp)
+                data = mapOf("text" to r.text, "confidence" to r.meanConfidence,
+                             "block_count" to r.blocks.size, "status" to "SUCCESS",
+                             "model" to "ML Kit Text Recognition v2 (Latin)")
+            }
+            "text" -> {
+                val text = payload["text"]?.jsonPrimitive?.contentOrNull ?: ""
+                val v = TextVectorizer.embed(ctx, text)
+                data = mapOf("vector_b64" to packFloats(v), "dim" to v.size,
+                             "source_type" to "text", "status" to "SUCCESS",
+                             "model" to "MediaPipe USE-Lite")
+            }
+            "image" -> {
+                val bmp = decodeBitmap(ctx, payload["uri"]?.jsonPrimitive?.contentOrNull)
+                val v = ImageVectorizer.embed(ctx, bmp)
+                data = mapOf("vector_b64" to packFloats(v), "dim" to v.size,
+                             "source_type" to "image", "status" to "SUCCESS",
+                             "model" to "MobileNetV4-small INT8")
+            }
+            "image_text" -> {
+                val bmp = decodeBitmap(ctx, payload["uri"]?.jsonPrimitive?.contentOrNull)
+                val ocr = OcrExtractor.extract(bmp)
+                val v = TextVectorizer.embed(ctx, ocr.text)
+                data = mapOf("vector_b64" to packFloats(v), "dim" to v.size,
+                             "source_type" to "image_text", "status" to "SUCCESS",
+                             "ocr_text" to ocr.text, "ocr_confidence" to ocr.meanConfidence,
+                             "model" to "ML Kit + USE-Lite")
+            }
+            "similarity" -> {
+                val a = unpackFloats(payload["a"]?.jsonPrimitive?.contentOrNull ?: "")
+                val b = unpackFloats(payload["b"]?.jsonPrimitive?.contentOrNull ?: "")
+                data = mapOf("score" to VectorMath.cosine(a, b), "method" to "cosine")
+            }
+            else -> error("Unknown vectorize op: $op")
+        }
+        val elapsed = (currentTimeMillis() - t0).coerceAtLeast(1L)
+        return InternalToolResult(
+            summary = "vectorize/$op completed in ${elapsed}ms",
+            dataMap = data,
+            resultJson = buildJsonObject { data.forEach { (k,v) -> when(v) {
+                is Boolean -> put(k,v); is Number -> put(k,v.toDouble())
+                else -> put(k, v.toString()) } } }
         )
     }
 
