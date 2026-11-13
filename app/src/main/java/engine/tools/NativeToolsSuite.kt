@@ -1,11 +1,23 @@
 package engine.tools
 
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.net.Uri
+import android.util.Base64
 import engine.crypto.currentTimeMillis
 import engine.state.DivVariableValue
 import engine.state.EngineStateBridge
 import engine.tools.audio.AudioToneSynthesizer
+import engine.tools.vector.ImageVectorizer
+import engine.tools.vector.OcrExtractor
+import engine.tools.vector.TextVectorizer
+import engine.tools.vector.VectorMath
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
+import java.io.File
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import kotlin.math.floor
 
 object NativeToolsSuite {
@@ -109,6 +121,20 @@ object NativeToolsSuite {
             defaultOutputMapping = mapOf(
                 "uri" to "user.processed_image_uri",
                 "status" to "user.image_processing_status"
+            )
+        ),
+        ToolSchema(
+            toolId = "vectorize",
+            displayName = "Text & Image Vector Embedding (+ OCR)",
+            description = "Vectorizes text, images, or image-derived OCR text into L2-normalized embedding vectors. Uses quantized on-device models (ML Kit OCR + MobileNetV4 / USE-Lite).",
+            supportedOperations = listOf("text", "image", "image_text", "ocr", "similarity"),
+            defaultOptions = mapOf("normalize" to "true", "include_ocr_text" to "true"),
+            defaultOutputMapping = mapOf(
+                "vector_b64" to "user.vector_b64",
+                "dim" to "user.vector_dim",
+                "source_type" to "user.vector_source",
+                "ocr_text" to "user.ocr_text",
+                "score" to "user.vector_similarity"
             )
         ),
         ToolSchema(
@@ -536,10 +562,37 @@ object NativeToolsSuite {
         return InternalToolResult(
             summary = "vectorize/$op completed in ${elapsed}ms",
             dataMap = data,
-            resultJson = buildJsonObject { data.forEach { (k,v) -> when(v) {
-                is Boolean -> put(k,v); is Number -> put(k,v.toDouble())
-                else -> put(k, v.toString()) } } }
+            resultJson = buildJsonObject { data.forEach { (k, v) -> putJsonValue(k, v) } }
         )
+    }
+
+    /** Decodes a `data:`/`file://`/`content://`/bare-base64 image reference into a bitmap. */
+    private fun decodeBitmap(ctx: Context, uri: String?): Bitmap {
+        val raw = uri?.trim().orEmpty()
+        require(raw.isNotEmpty()) { "vectorize requires a bitmap uri" }
+        val bytes: ByteArray = when {
+            raw.startsWith("data:image") -> Base64.decode(raw.substringAfter("base64,"), Base64.DEFAULT)
+            raw.startsWith("content://") ->
+                ctx.contentResolver.openInputStream(Uri.parse(raw))?.use { it.readBytes() }
+                    ?: error("Unable to open $raw")
+            raw.startsWith("file://") -> File(raw.removePrefix("file://")).readBytes()
+            raw.startsWith("/") -> File(raw).readBytes()
+            else -> Base64.decode(raw, Base64.DEFAULT)
+        }
+        return BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+            ?: error("Unable to decode bitmap from uri")
+    }
+
+    private fun packFloats(v: FloatArray): String {
+        val buf = ByteBuffer.allocate(v.size * Float.SIZE_BYTES).order(ByteOrder.LITTLE_ENDIAN)
+        v.forEach { buf.putFloat(it) }
+        return Base64.encodeToString(buf.array(), Base64.NO_WRAP)
+    }
+
+    private fun unpackFloats(s: String): FloatArray {
+        val bytes = Base64.decode(s, Base64.DEFAULT)
+        val buf = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN)
+        return FloatArray(bytes.size / Float.SIZE_BYTES) { buf.getFloat() }
     }
 
     private suspend fun executeImageManipulation(

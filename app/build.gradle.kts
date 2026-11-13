@@ -158,5 +158,14 @@ dependencies {
 
   implementation(libs.mlkit.text.recognition)
   implementation(libs.mediapipe.tasks.text)
-  implementation(libs.tflite.support)
+  implementation(libs.tensorflow.lite)
+  implementation(libs.tensorflow.lite.support.api)
+}
+
+configurations.all {
+  // libsignal 2.8.1 ships protoc-3.10 generated classes that are binary-incompatible
+  // with protobuf-javalite >= 3.12 (MessageSchema layout changed). MediaPipe pulls in a
+  // newer protobuf, so pin to the version libsignal requires; MediaPipe's proto layer
+  // still works at this version.
+  resolutionStrategy.force(libs.protobuf.javalite)
 }
