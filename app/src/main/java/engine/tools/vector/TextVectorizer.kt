@@ -18,8 +18,7 @@ object TextVectorizer {
         ).also { embedder = it }
         val r = e.embed(text)
         val emb = r.embeddingResult().embeddings().first().floatEmbedding()
-        val v = FloatArray(emb.size()) { emb.get(it) }
-        r.close()
+        val v = FloatArray(emb.size) { emb[it] }
         return VectorMath.l2(v)
     }
 }

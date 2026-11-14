@@ -10,6 +10,7 @@ import engine.state.EngineStateBridge
 import engine.ui.DivChartParser
 import engine.ui.DivChartType
 import engine.tools.DivActionUrl
+import engine.tools.NativeToolsSuite
 import engine.tools.Provenance
 import engine.tools.TerminalApp
 import engine.tools.ToolArgs
@@ -281,7 +282,10 @@ class ExampleUnitTest {
             "device.clipboard@1",
             "network.push@1",
             "storage.offline_cache@1",
-            "network.realtime@1"
+            "network.realtime@1",
+            "network.transfer@1",
+            "device.printer@1",
+            "vision.generate_code@1"
         )
         for (cap in expected) {
             assertTrue("Manifest must include $cap", manifest.has(cap))
@@ -620,5 +624,400 @@ class ExampleUnitTest {
         // Disconnecting forgets the tenant entirely.
         store.forget("acme_pos")
         assertNull(store.usage()["acme_pos"])
+    }
+
+    // ------------------------------------------------------------------
+    // tools://net (Ktor) + tools://print (Bluetooth printer/POS)
+    // ------------------------------------------------------------------
+
+    @Test
+    fun netTool_isRegisteredAndExposesGenericCapability() {
+        val manifest = TerminalApp.registry.manifest()
+        assertTrue(manifest.has("network.transfer@1"))
+        assertTrue(manifest.has("net"))
+        val handler = TerminalApp.registry.resolve("network.transfer@1")
+        assertNotNull(handler)
+        assertEquals("network.transfer@1", handler!!.capability)
+        assertTrue(handler.requiredPermissions.contains("android.permission.INTERNET"))
+    }
+
+    @Test
+    fun printTool_isRegisteredAndAdvertisesBluetoothPermissions() {
+        val manifest = TerminalApp.registry.manifest()
+        assertTrue(manifest.has("device.printer@1"))
+        assertTrue(manifest.has("print"))
+        val handler = TerminalApp.registry.resolve("device.printer@1")
+        assertNotNull(handler)
+        assertEquals("device.printer@1", handler!!.capability)
+        assertTrue(handler.requiredPermissions.isNotEmpty())
+    }
+
+    @Test
+    fun netTool_schemaIsRegisteredWithAllOperations() {
+        val schema = engine.tools.NativeToolsSuite.registeredSchemas.first { it.toolId == "net" }
+        assertTrue(schema.supportedOperations.containsAll(
+            listOf("request", "get", "post", "download", "upload", "serve", "stop", "status", "share", "list", "unshare")
+        ))
+    }
+
+    @Test
+    fun printTool_schemaIsRegisteredWithAllOperations() {
+        val schema = engine.tools.NativeToolsSuite.registeredSchemas.first { it.toolId == "print" }
+        assertTrue(schema.supportedOperations.containsAll(
+            listOf("scan", "pair", "connect", "disconnect", "print", "status")
+        ))
+    }
+
+    @Test
+    fun netTool_statusReportsIdleHub() = kotlinx.coroutines.runBlocking {
+        val result = engine.tools.impl.NetTool().invoke(
+            args = ToolArgs(mapOf("op" to "status")),
+            ctx = ToolContext()
+        )
+        assertTrue(result is ToolResult.Success)
+        val data = (result as ToolResult.Success).data
+        assertEquals("IDLE", data["status"])
+        assertEquals(false, data["running"])
+    }
+
+    @Test
+    fun netTool_shareThenListTracksSharedItems() = kotlinx.coroutines.runBlocking {
+        val tool = engine.tools.impl.NetTool()
+        val shared = tool.invoke(
+            args = ToolArgs(mapOf("op" to "share", "name" to "menu.json", "content" to "{}")),
+            ctx = ToolContext()
+        )
+        assertTrue(shared is ToolResult.Success)
+        val sharedId = (shared as ToolResult.Success).data["id"] as String
+
+        val listed = tool.invoke(args = ToolArgs(mapOf("op" to "list")), ctx = ToolContext())
+        val data = (listed as ToolResult.Success).data
+        assertEquals(1, data["count"])
+
+        val removed = tool.invoke(args = ToolArgs(mapOf("op" to "unshare", "id" to sharedId)), ctx = ToolContext())
+        assertEquals("REMOVED", (removed as ToolResult.Success).data["status"])
+        val empty = tool.invoke(args = ToolArgs(mapOf("op" to "list")), ctx = ToolContext())
+        assertEquals(0, (empty as ToolResult.Success).data["count"])
+    }
+
+    @Test
+    fun netTool_servesLanHubAndStopsCleanly() = kotlinx.coroutines.runBlocking {
+        val tool = engine.tools.impl.NetTool()
+        val serve = tool.invoke(args = ToolArgs(mapOf("op" to "serve", "port" to "0")), ctx = ToolContext())
+        assertTrue(serve is ToolResult.Success)
+        val serveData = (serve as ToolResult.Success).data
+        assertEquals("SERVING", serveData["status"])
+        assertTrue((serveData["port"] as Int) > 0)
+
+        val status = tool.invoke(args = ToolArgs(mapOf("op" to "status")), ctx = ToolContext())
+        assertEquals(true, (status as ToolResult.Success).data["running"])
+
+        val stop = tool.invoke(args = ToolArgs(mapOf("op" to "stop")), ctx = ToolContext())
+        assertEquals("STOPPED", (stop as ToolResult.Success).data["status"])
+    }
+
+    @Test
+    fun printTool_scanDeniedWithoutBluetoothPermission() = kotlinx.coroutines.runBlocking {
+        val context = androidx.test.core.app.ApplicationProvider
+            .getApplicationContext<android.app.Application>()
+        org.robolectric.Shadows.shadowOf(context).denyPermissions(
+            android.Manifest.permission.BLUETOOTH_CONNECT,
+            android.Manifest.permission.BLUETOOTH_SCAN
+        )
+        val result = engine.tools.impl.PrintTool().invoke(
+            args = ToolArgs(mapOf("op" to "scan")),
+            ctx = ToolContext()
+        )
+        assertTrue(result is ToolResult.PermissionDenied)
+    }
+
+    @Test
+    fun printTool_scanListsBondedPrintersWhenPermissionGranted() = kotlinx.coroutines.runBlocking {
+        val context = androidx.test.core.app.ApplicationProvider
+            .getApplicationContext<android.app.Application>()
+        org.robolectric.Shadows.shadowOf(context).grantPermissions(
+            android.Manifest.permission.BLUETOOTH_CONNECT,
+            android.Manifest.permission.BLUETOOTH_SCAN
+        )
+        val adapter = (context.getSystemService(android.content.Context.BLUETOOTH_SERVICE)
+            as android.bluetooth.BluetoothManager).adapter
+        org.robolectric.Shadows.shadowOf(adapter).setEnabled(true)
+
+        val result = engine.tools.impl.PrintTool().invoke(
+            args = ToolArgs(mapOf("op" to "scan")),
+            ctx = ToolContext()
+        )
+        assertTrue(result is ToolResult.Success)
+        val data = (result as ToolResult.Success).data
+        assertEquals("SUCCESS", data["status"])
+        assertEquals(0, data["count"])
+    }
+
+    @Test
+    fun printTool_encodesEscPosReceiptPayload() = kotlinx.coroutines.runBlocking {
+        val result = engine.tools.impl.PrintTool().invoke(
+            args = ToolArgs(
+                mapOf(
+                    "op" to "print",
+                    "text" to "ACME POS\nOrder #1042\nTotal 24.50",
+                    "align" to "center",
+                    "cut" to "true"
+                )
+            ),
+            ctx = ToolContext()
+        )
+        assertTrue(result is ToolResult.Success)
+        val data = (result as ToolResult.Success).data
+        assertEquals("SUCCESS", data["status"])
+        // ESC @ (init) + ESC a 1 (center) + text + ESC d (cut) all present.
+        assertTrue((data["bytes"] as Int) > 0)
+        val hex = data["preview_hex"] as String
+        assertTrue(hex.startsWith("1B 40 1B 61 01"))
+    }
+
+    @Test
+    fun netTool_dispatchesThroughSuiteWithHttpStatusMapping() = kotlinx.coroutines.runBlocking {
+        val outcome = engine.tools.NativeToolsSuite.execute(
+            url = "tools://net/status",
+            payload = buildJsonObject { }
+        )
+        assertEquals("net", outcome.toolId)
+        val status = (outcome.outputVariables["user.net_status"] as DivVariableValue.Str).value
+        assertEquals("IDLE", status)
+    }
+
+    @Test
+    fun printTool_dispatchesThroughSuiteWithDeviceCountMapping() = kotlinx.coroutines.runBlocking {
+        val context = androidx.test.core.app.ApplicationProvider
+            .getApplicationContext<android.app.Application>()
+        org.robolectric.Shadows.shadowOf(context).grantPermissions(
+            android.Manifest.permission.BLUETOOTH_CONNECT,
+            android.Manifest.permission.BLUETOOTH_SCAN
+        )
+        val outcome = engine.tools.NativeToolsSuite.execute(
+            url = "tools://print/scan",
+            payload = buildJsonObject { }
+        )
+        assertEquals("print", outcome.toolId)
+        val count = outcome.outputVariables["user.print_device_count"] as DivVariableValue.IntVal
+        assertEquals(0L, count.value)
+    }
+
+    // ------------------------------------------------------------------
+    // tools://scan OCR mode
+    // ------------------------------------------------------------------
+
+    @Test
+    fun scanTool_exposesOcrOperationAndDefaults() {
+        val schema = engine.tools.NativeToolsSuite.registeredSchemas.first { it.toolId == "scan" }
+        assertTrue(schema.supportedOperations.contains("ocr"))
+        assertEquals("user.ocr_text", schema.defaultOutputMapping["text"])
+        assertEquals("user.ocr_confidence", schema.defaultOutputMapping["confidence"])
+    }
+
+    @Test
+    fun scanTool_routesOcrAliasToScanCapability() = kotlinx.coroutines.runBlocking {
+        val payload = buildJsonObject { put("uri", "not-a-real-image") }
+        val outcome = engine.tools.NativeToolsSuite.execute(url = "tools://ocr/read", payload = payload)
+        assertEquals("scan", outcome.toolId)
+        assertEquals("ocr", outcome.operation)
+    }
+
+    @Test
+    fun scanTool_ocrWithoutContextDegradesGracefully() = kotlinx.coroutines.runBlocking {
+        val previous = engine.db.currentAndroidContext
+        engine.db.currentAndroidContext = null
+        try {
+            val outcome = engine.tools.NativeToolsSuite.execute(
+                url = "tools://scan/ocr",
+                payload = buildJsonObject { put("uri", "content://missing/image") }
+            )
+            assertEquals("scan", outcome.toolId)
+            assertEquals("UNSUPPORTED", outcome.resultData.jsonObject["status"]?.jsonPrimitive?.contentOrNull)
+        } finally {
+            engine.db.currentAndroidContext = previous
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // tools://code-generate (ZXing)
+    // ------------------------------------------------------------------
+
+    @Test
+    fun codeGenerateTool_isRegisteredAndAdvertisesCapability() {
+        val manifest = TerminalApp.registry.manifest()
+        assertTrue(manifest.has("vision.generate_code@1"))
+        assertTrue(manifest.has("code-generate"))
+        val handler = TerminalApp.registry.resolve("vision.generate_code@1")
+        assertNotNull(handler)
+        assertEquals("vision.generate_code@1", handler!!.capability)
+    }
+
+    @Test
+    fun codeGenerateTool_generatesQrMatrixAndImage() = kotlinx.coroutines.runBlocking {
+        val outcome = engine.tools.NativeToolsSuite.execute(
+            url = "tools://code-generate/generate",
+            payload = buildJsonObject {
+                put("content", "https://pos.example/order/42")
+                put("format", "qr")
+                put("width", "256")
+                put("height", "256")
+            }
+        )
+        assertEquals("code-generate", outcome.toolId)
+        assertEquals("SUCCESS", outcome.resultData.jsonObject["status"]?.jsonPrimitive?.contentOrNull)
+        assertEquals("QR_CODE", outcome.resultData.jsonObject["format"]?.jsonPrimitive?.contentOrNull)
+        assertEquals("2D", outcome.resultData.jsonObject["kind"]?.jsonPrimitive?.contentOrNull)
+
+        val matrix = (outcome.outputVariables["user.code_matrix"] as DivVariableValue.Str).value
+        val rows = matrix.split("\n")
+        assertTrue("QR matrix should be square", rows.all { it.length == rows.size })
+        assertTrue("QR matrix should contain dark modules", matrix.contains("1"))
+        assertEquals("QR_CODE", (outcome.outputVariables["user.code_format"] as DivVariableValue.Str).value)
+    }
+
+    @Test
+    fun codeGenerateTool_rendersOneDimensionalBarcode() = kotlinx.coroutines.runBlocking {
+        val outcome = engine.tools.NativeToolsSuite.execute(
+            url = "tools://code-generate/barcode",
+            payload = buildJsonObject {
+                put("content", "1234567890128")
+                put("format", "EAN_13")
+                put("width", "400")
+                put("height", "160")
+            }
+        )
+        assertEquals("code-generate", outcome.toolId)
+        assertEquals("EAN_13", outcome.resultData.jsonObject["format"]?.jsonPrimitive?.contentOrNull)
+        assertEquals("1D", outcome.resultData.jsonObject["kind"]?.jsonPrimitive?.contentOrNull)
+        val uri = (outcome.outputVariables["user.code_image_uri"] as DivVariableValue.Str).value
+        assertTrue(uri.startsWith("file://"))
+    }
+
+    @Test
+    fun codeGenerateTool_rejectsMissingContent() = kotlinx.coroutines.runBlocking {
+        val result = engine.tools.impl.CodeGenerateTool().invoke(
+            args = ToolArgs(emptyMap()),
+            ctx = ToolContext()
+        )
+        assertTrue(result is ToolResult.Failed)
+    }
+
+    @Test
+    fun codeGenerateEngine_resolvesSymbologyAliases() {
+        assertEquals(
+            com.google.zxing.BarcodeFormat.QR_CODE,
+            engine.tools.code.CodeGeneratorEngine.resolveFormat("qr")
+        )
+        assertEquals(
+            com.google.zxing.BarcodeFormat.CODE_128,
+            engine.tools.code.CodeGeneratorEngine.resolveFormat("code-128")
+        )
+        assertEquals(
+            com.google.zxing.BarcodeFormat.DATA_MATRIX,
+            engine.tools.code.CodeGeneratorEngine.resolveFormat("datamatrix")
+        )
+    }
+
+    // ------------------------------------------------------------------
+    // Built-in demo workspace showcase (DivKit card)
+    // ------------------------------------------------------------------
+
+    @Test
+    fun demoCard_showcasesScannerOcrAndCodeGeneratorBlocks() {
+        val spec = WorkspaceProvisioner.defaultWorkspaces.first()
+        val json = WorkspaceProvisioner.buildDefaultDivKitCardJson(spec)
+
+        // OCR is reached through the unified scanner's image-reading mode
+        assertTrue(json.contains("tools://scan/ocr"))
+        // The barcode/QR generator block is present
+        assertTrue(json.contains("tools://code-generate/generate"))
+        assertTrue(json.contains("tools://code-generate/barcode"))
+        // Legacy split scanner URIs must not appear
+        assertFalse(json.contains("tools://scan-barcode"))
+        assertFalse(json.contains("tools://scan-qr"))
+    }
+
+    @Test
+    fun demoCard_surfacesEveryRegisteredNativeTool() {
+        val spec = WorkspaceProvisioner.defaultWorkspaces.first()
+        val json = WorkspaceProvisioner.buildDefaultDivKitCardJson(spec)
+
+        // The showcase must exercise the full tool inventory, so every registered
+        // tool schema has to appear as a tools:// trigger in the built-in card.
+        val missing = NativeToolsSuite.registeredSchemas
+            .map { it.toolId }
+            .filterNot { json.contains("tools://${it}/") }
+
+        assertTrue("Demo card does not showcase these tools: $missing", missing.isEmpty())
+    }
+
+    @Test
+    fun demoCard_declaresEveryReferencedUserVariable() {
+        val spec = WorkspaceProvisioner.defaultWorkspaces.first()
+        val json = WorkspaceProvisioner.buildDefaultDivKitCardJson(spec)
+
+        val referenced = Regex("""@\{(user\.[a-zA-Z0-9_.]+)\}""")
+            .findAll(json).map { it.groupValues[1] }.toSet()
+        // Known = declared variables plus variables written by action output mappings
+        // (e.g. db.count pushes user.order_count at runtime).
+        val known = Regex(""""(user\.[a-zA-Z0-9_.]+)"""")
+            .findAll(json).map { it.groupValues[1] }.toSet()
+
+        val missing = referenced - known
+        assertTrue("Demo card references undeclared variables: $missing", missing.isEmpty())
+    }
+
+    @Test
+    fun demoCodeGenerateBlock_triggersGeneratorAndMapsOutputs() = kotlinx.coroutines.runBlocking {
+        val spec = WorkspaceProvisioner.defaultWorkspaces.first()
+        val block = SduiOnFlyBuilder.buildCodeGenerateToolBlock(spec)
+        val button = block["items"]!!.jsonArray[4].jsonObject["items"]!!.jsonArray[0]
+            .jsonObject["items"]!!.jsonArray[0].jsonObject
+
+        val action = button["action"]!!.jsonObject
+        val url = action["url"]!!.jsonPrimitive.content
+        val payload = action["payload"]!!.jsonObject
+
+        assertEquals("tools://code-generate/generate", url)
+
+        val outcome = engine.tools.NativeToolsSuite.execute(url = url, payload = payload)
+        assertEquals("SUCCESS", outcome.resultData.jsonObject["status"]?.jsonPrimitive?.contentOrNull)
+        assertTrue(outcome.outputVariables.containsKey("user.code_image_uri"))
+        assertTrue(outcome.outputVariables.containsKey("user.code_format"))
+        assertEquals("QR_CODE", (outcome.outputVariables["user.code_format"] as DivVariableValue.Str).value)
+    }
+
+    @Test
+    fun demoScannerBlock_ocrActionRoutesToScanCapability() = kotlinx.coroutines.runBlocking {
+        val spec = WorkspaceProvisioner.defaultWorkspaces.first()
+        val block = SduiOnFlyBuilder.buildScannerToolBlock(spec)
+
+        // The final item is the OCR trigger
+        val ocrButton = block["items"]!!.jsonArray.last().jsonObject
+        val action = ocrButton["action"]!!.jsonObject
+        assertEquals("tools://scan/ocr", action["url"]!!.jsonPrimitive.content)
+
+        val outcome = engine.tools.NativeToolsSuite.execute(
+            url = "tools://scan/ocr",
+            payload = action["payload"]!!.jsonObject
+        )
+        assertEquals("scan", outcome.toolId)
+        assertEquals("ocr", outcome.operation)
+    }
+
+    @Test
+    fun demoCard_scanVariablesAreHydratedByEngineStateBridge() {
+        val spec = WorkspaceProvisioner.defaultWorkspaces.first()
+        val json = WorkspaceProvisioner.buildDefaultDivKitCardJson(spec)
+        // The scanner/OCR/generator variables the card binds must be seeded, not blank
+        listOf(
+            "user.scanned_code", "user.scanned_format", "user.scanned_type", "user.scan_status",
+            "user.ocr_text", "user.ocr_confidence", "user.ocr_block_count",
+            "user.code_image_uri", "user.code_format", "user.code_kind", "user.code_content",
+            "user.code_id", "user.code_status"
+        ).forEach { name ->
+            assertTrue("Demo card must declare $name", json.contains("\"$name\""))
+        }
     }
 }

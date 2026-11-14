@@ -43,9 +43,13 @@ googleid = "1.1.1"
 kotlinxSerializationJson = "1.8.0"
 workRuntimeKtx = "2.10.0"
 libsignal = "2.8.1"
+protobufJavalite = "3.10.0"
 mlkitTextRecognition = "16.0.1"
 mediapipeTasksText   = "0.10.14"
+tflite               = "2.16.1"
 tfliteSupport        = "0.4.4"
+ktor                 = "3.3.1"
+zxing                = "3.5.3"
 
 
 [libraries]
@@ -105,7 +109,15 @@ googleid = { group = "com.google.android.libraries.identity.googleid", name = "g
 libsignal = { group = "org.whispersystems", name = "signal-protocol-android", version.ref = "libsignal" }
 mlkit-text-recognition   = { group = "com.google.mlkit", name = "text-recognition", version.ref = "mlkitTextRecognition" }
 mediapipe-tasks-text     = { group = "com.google.mediapipe", name = "tasks-text", version.ref = "mediapipeTasksText" }
-tflite-support           = { group = "org.tensorflow", name = "tensorflow-lite-support", version.ref = "tfliteSupport" }
+tensorflow-lite          = { group = "org.tensorflow", name = "tensorflow-lite", version.ref = "tflite" }
+tensorflow-lite-support-api = { group = "org.tensorflow", name = "tensorflow-lite-support-api", version.ref = "tfliteSupport" }
+protobuf-javalite        = { group = "com.google.protobuf", name = "protobuf-javalite", version.ref = "protobufJavalite" }
+ktor-client-core         = { group = "io.ktor", name = "ktor-client-core", version.ref = "ktor" }
+ktor-client-cio          = { group = "io.ktor", name = "ktor-client-cio", version.ref = "ktor" }
+ktor-server-core         = { group = "io.ktor", name = "ktor-server-core", version.ref = "ktor" }
+ktor-server-cio          = { group = "io.ktor", name = "ktor-server-cio", version.ref = "ktor" }
+ktor-client-mock         = { group = "io.ktor", name = "ktor-client-mock", version.ref = "ktor" }
+zxing-core               = { group = "com.google.zxing", name = "core", version.ref = "zxing" }
 
 
 [plugins]

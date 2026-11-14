@@ -325,7 +325,7 @@ fun SduiBuilderTab(
                 HorizontalDivider(color = colorScheme.outline.copy(alpha = 0.5f))
 
                 Text(
-                    "NATIVE TOOLS & ON-DEVICE AI BLOCKS (tools://{libsignal, scan, camera, u-2-Net, MobileNetV4})",
+                    "NATIVE TOOLS & ON-DEVICE AI BLOCKS (tools://{libsignal, scan+OCR, code-generate, camera, u-2-Net, MobileNetV4})",
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
                     color = colorScheme.primary
@@ -373,7 +373,7 @@ fun SduiBuilderTab(
                     FilledTonalButton(
                         onClick = {
                             val block = SduiOnFlyBuilder.buildScannerToolBlock(spec)
-                            viewModel.injectOnFlyComponent(block, "tools://scan-barcode Optical Suite", prepend = true)
+                            viewModel.injectOnFlyComponent(block, "tools://scan Optical Suite (Barcode/QR/OCR)", prepend = true)
                             onSwitchToTerminalPreview()
                         },
                         modifier = Modifier
@@ -382,7 +382,7 @@ fun SduiBuilderTab(
                             .testTag("inject_scanner_suite_button"),
                         contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp)
                     ) {
-                        Text("+ Optical Barcode/QR", fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                        Text("+ Optical Scan/OCR", fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
                     }
 
                     FilledTonalButton(
@@ -407,6 +407,21 @@ fun SduiBuilderTab(
                 ) {
                     FilledTonalButton(
                         onClick = {
+                            val block = SduiOnFlyBuilder.buildCodeGenerateToolBlock(spec)
+                            viewModel.injectOnFlyComponent(block, "tools://code-generate Barcode/QR Generator", prepend = true)
+                            onSwitchToTerminalPreview()
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .defaultMinSize(minHeight = 48.dp)
+                            .testTag("inject_code_generate_button"),
+                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp)
+                    ) {
+                        Text("+ Barcode/QR Gen", fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                    }
+
+                    FilledTonalButton(
+                        onClick = {
                             val block = SduiOnFlyBuilder.buildHapticsToolBlock(spec)
                             viewModel.injectOnFlyComponent(block, "device.haptics@1 Tactile Suite", prepend = true)
                             onSwitchToTerminalPreview()
@@ -419,7 +434,12 @@ fun SduiBuilderTab(
                     ) {
                         Text("+ Haptics (device.haptics)", fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
                     }
+                }
 
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     FilledTonalButton(
                         onClick = {
                             val block = SduiOnFlyBuilder.buildBeeperToolBlock(spec)

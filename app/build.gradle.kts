@@ -21,6 +21,14 @@ android {
     versionName = "1.0"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+    // `splits.abi.include` only constrains the per-ABI split APKs; the universal APK
+    // still packages every ABI found in dependencies. curve25519-android (pulled in by
+    // signal-protocol-android) ships dead armeabi/mips/x86 libraries, so filter the ABIs
+    // here to keep them out of all outputs, universal included.
+    ndk {
+      abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64")
+    }
   }
 
   // Do not remove or modify these signingConfigs. They are necessary for building, installing,
@@ -158,5 +166,24 @@ dependencies {
 
   implementation(libs.mlkit.text.recognition)
   implementation(libs.mediapipe.tasks.text)
-  implementation(libs.tflite.support)
+  implementation(libs.tensorflow.lite)
+  implementation(libs.tensorflow.lite.support.api)
+
+  // Ktor powers tools://net (HTTP client + embedded LAN transfer hub server).
+  implementation(libs.ktor.client.core)
+  implementation(libs.ktor.client.cio)
+  implementation(libs.ktor.server.core)
+  implementation(libs.ktor.server.cio)
+  testImplementation(libs.ktor.client.mock)
+
+  // ZXing renders the tools://code-generate bar/QR code matrices and images.
+  implementation(libs.zxing.core)
+}
+
+configurations.all {
+  // libsignal 2.8.1 ships protoc-3.10 generated classes that are binary-incompatible
+  // with protobuf-javalite >= 3.12 (MessageSchema layout changed). MediaPipe pulls in a
+  // newer protobuf, so pin to the version libsignal requires; MediaPipe's proto layer
+  // still works at this version.
+  resolutionStrategy.force(libs.protobuf.javalite)
 }

@@ -261,7 +261,7 @@ object SduiOnFlyBuilder {
     }
 
     /**
-     * Optical 1D Barcode & 2D QR Scanner Block
+     * Optical 1D Barcode, 2D QR & OCR Block (tools://scan).
      */
     fun buildScannerToolBlock(spec: TenantWorkspaceSpec): JsonObject = buildJsonObject {
         put("type", "container")
@@ -281,16 +281,23 @@ object SduiOnFlyBuilder {
         putJsonArray("items") {
             addJsonObject {
                 put("type", "text")
-                put("text", "📷 BARCODE & QR OPTICAL SUITE (tools://scan-barcode & tools://scan-qr)")
+                put("text", "📷 UNIFIED OPTICAL SCANNER + OCR (tools://scan)")
                 put("font_size", 11)
                 put("font_weight", "bold")
                 put("text_color", "#6EE7B7")
             }
             addJsonObject {
                 put("type", "text")
-                put("text", "Scanned: @{user.scanned_barcode} (@{user.scanned_format}) → @{user.scanned_item_name} ($@{user.scanned_price})")
+                put("text", "Decoded: @{user.scanned_code} (@{user.scanned_format} • @{user.scanned_type}) → @{user.scan_status}")
                 put("font_size", 12)
                 put("text_color", "#D1FAE5")
+                put("font_family", "monospace")
+            }
+            addJsonObject {
+                put("type", "text")
+                put("text", "OCR: @{user.ocr_text} (conf @{user.ocr_confidence})")
+                put("font_size", 12)
+                put("text_color", "#A7F3D0")
                 put("font_family", "monospace")
             }
             addJsonObject {
@@ -304,20 +311,19 @@ object SduiOnFlyBuilder {
                         putJsonArray("items") {
                             add(
                                 buildNativeToolTriggerBlock(
-                                    toolId = "scan-barcode",
+                                    toolId = "scan",
                                     operation = "scan",
                                     label = "Scan 1D Barcode",
-                                    subtitle = "tools://scan-barcode/scan (EAN-13 / UPC)",
+                                    subtitle = "tools://scan/scan (EAN-13 / UPC)",
                                     icon = "scanner",
                                     backgroundColor = "#059669",
                                     textColor = "#FFFFFF",
-                                    options = mapOf("formats" to "EAN_13,UPC_A", "auto_insert_db" to "true"),
+                                    options = mapOf("target_format" to "barcode"),
                                     outputMapping = mapOf(
-                                        "barcode" to "user.scanned_barcode",
+                                        "raw_value" to "user.scanned_code",
                                         "format" to "user.scanned_format",
-                                        "sku" to "user.scanned_sku",
-                                        "item_name" to "user.scanned_item_name",
-                                        "price" to "user.scanned_price"
+                                        "type" to "user.scanned_type",
+                                        "status" to "user.scan_status"
                                     )
                                 )
                             )
@@ -329,17 +335,773 @@ object SduiOnFlyBuilder {
                         putJsonArray("items") {
                             add(
                                 buildNativeToolTriggerBlock(
-                                    toolId = "scan-qr",
+                                    toolId = "scan",
                                     operation = "scan",
                                     label = "Scan 2D QR Code",
-                                    subtitle = "tools://scan-qr/scan (DeepLink/Pay)",
+                                    subtitle = "tools://scan/scan (DeepLink / Pay)",
                                     icon = "qr_code",
                                     backgroundColor = "#0D9488",
                                     textColor = "#FFFFFF",
-                                    options = mapOf("prefix_filter" to "all"),
+                                    options = mapOf("target_format" to "qr"),
                                     outputMapping = mapOf(
-                                        "qr_content" to "user.scanned_qr",
-                                        "qr_type" to "user.scanned_qr_type"
+                                        "raw_value" to "user.scanned_code",
+                                        "format" to "user.scanned_format",
+                                        "type" to "user.scanned_type",
+                                        "status" to "user.scan_status"
+                                    )
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+            add(
+                buildNativeToolTriggerBlock(
+                    toolId = "scan",
+                    operation = "ocr",
+                    label = "Read Text from Image (OCR)",
+                    subtitle = "tools://scan/ocr • ML Kit Text Recognition v2 (Latin)",
+                    icon = "search",
+                    backgroundColor = "#047857",
+                    textColor = "#FFFFFF",
+                    options = mapOf("uri" to "content://com.example.provider/camera/last_capture.png"),
+                    outputMapping = mapOf(
+                        "text" to "user.ocr_text",
+                        "confidence" to "user.ocr_confidence",
+                        "block_count" to "user.ocr_block_count"
+                    )
+                )
+            )
+        }
+    }
+
+    /**
+     * Barcode & QR Code Generator Block (vision.generate_code@1 / tools://code-generate).
+     */
+    fun buildCodeGenerateToolBlock(spec: TenantWorkspaceSpec): JsonObject = buildJsonObject {
+        put("type", "container")
+        put("orientation", "vertical")
+        put("background_color", "#2A1F0B")
+        put("corner_radius", 12)
+        putJsonObject("paddings") {
+            put("left", 12); put("right", 12); put("top", 10); put("bottom", 10)
+        }
+        putJsonObject("border") {
+            put("corner_radius", 12)
+            putJsonObject("stroke") {
+                put("color", "#F59E0B")
+                put("width", 1)
+            }
+        }
+        putJsonArray("items") {
+            addJsonObject {
+                put("type", "text")
+                put("text", "🔳 BARCODE & QR CODE GENERATOR (tools://code-generate)")
+                put("font_size", 11)
+                put("font_weight", "bold")
+                put("text_color", "#FCD34D")
+            }
+            addJsonObject {
+                put("type", "text")
+                put("text", "Generated: @{user.code_format} (@{user.code_kind}) • @{user.code_id}")
+                put("font_size", 12)
+                put("text_color", "#FEF3C7")
+                put("font_family", "monospace")
+            }
+            addJsonObject {
+                put("type", "text")
+                put("text", "Content: @{user.code_content}")
+                put("font_size", 11)
+                put("text_color", "#FDE68A")
+                put("font_family", "monospace")
+            }
+            addJsonObject {
+                put("type", "text")
+                put("text", "PNG: @{user.code_image_uri}")
+                put("font_size", 11)
+                put("text_color", "#FDE68A")
+                put("font_family", "monospace")
+            }
+            addJsonObject {
+                put("type", "container")
+                put("orientation", "horizontal")
+                put("item_spacing", 8)
+                putJsonArray("items") {
+                    addJsonObject {
+                        put("type", "container")
+                        put("weight", 1f)
+                        putJsonArray("items") {
+                            add(
+                                buildNativeToolTriggerBlock(
+                                    toolId = "code-generate",
+                                    operation = "generate",
+                                    label = "Generate Order QR",
+                                    subtitle = "tools://code-generate/generate (QR_CODE)",
+                                    icon = "qr_code",
+                                    backgroundColor = "#D97706",
+                                    textColor = "#FFFFFF",
+                                    options = mapOf(
+                                        "content" to "apexpos://order/pickup?terminal=${spec.terminalCode}",
+                                        "format" to "qr",
+                                        "width" to "512",
+                                        "ec_level" to "M",
+                                        "encoding" to "uri"
+                                    ),
+                                    outputMapping = mapOf(
+                                        "uri" to "user.code_image_uri",
+                                        "format" to "user.code_format",
+                                        "kind" to "user.code_kind",
+                                        "content" to "user.code_content",
+                                        "code_id" to "user.code_id"
+                                    )
+                                )
+                            )
+                        }
+                    }
+                    addJsonObject {
+                        put("type", "container")
+                        put("weight", 1f)
+                        putJsonArray("items") {
+                            add(
+                                buildNativeToolTriggerBlock(
+                                    toolId = "code-generate",
+                                    operation = "barcode",
+                                    label = "Generate SKU Barcode",
+                                    subtitle = "tools://code-generate/barcode (EAN_13)",
+                                    icon = "barcode",
+                                    backgroundColor = "#B45309",
+                                    textColor = "#FFFFFF",
+                                    options = mapOf(
+                                        "content" to "9780201633610",
+                                        "format" to "EAN_13",
+                                        "width" to "400",
+                                        "height" to "160"
+                                    ),
+                                    outputMapping = mapOf(
+                                        "uri" to "user.code_image_uri",
+                                        "format" to "user.code_format",
+                                        "kind" to "user.code_kind",
+                                        "content" to "user.code_content",
+                                        "code_id" to "user.code_id"
+                                    )
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Hardware Camera Capture & Torch Block (tools://camera).
+     */
+    fun buildCameraToolBlock(spec: TenantWorkspaceSpec): JsonObject = buildJsonObject {
+        put("type", "container")
+        put("orientation", "vertical")
+        put("background_color", "#0C2B3A")
+        put("corner_radius", 12)
+        putJsonObject("paddings") {
+            put("left", 12); put("right", 12); put("top", 10); put("bottom", 10)
+        }
+        putJsonObject("border") {
+            put("corner_radius", 12)
+            putJsonObject("stroke") {
+                put("color", "#22D3EE")
+                put("width", 1)
+            }
+        }
+        putJsonArray("items") {
+            addJsonObject {
+                put("type", "text")
+                put("text", "📸 HARDWARE CAMERA CAPTURE & TORCH (tools://camera)")
+                put("font_size", 11)
+                put("font_weight", "bold")
+                put("text_color", "#67E8F9")
+            }
+            addJsonObject {
+                put("type", "text")
+                put("text", "Capture: @{user.camera_capture_uri} • Torch: @{user.camera_torch_state}")
+                put("font_size", 12)
+                put("text_color", "#CFFAFE")
+                put("font_family", "monospace")
+            }
+            addJsonObject {
+                put("type", "container")
+                put("orientation", "horizontal")
+                put("item_spacing", 8)
+                putJsonArray("items") {
+                    addJsonObject {
+                        put("type", "container")
+                        put("weight", 1f)
+                        putJsonArray("items") {
+                            add(
+                                buildNativeToolTriggerBlock(
+                                    toolId = "camera",
+                                    operation = "capture",
+                                    label = "Capture Frame",
+                                    subtitle = "tools://camera/capture • 1080p back camera",
+                                    icon = "camera",
+                                    backgroundColor = "#0891B2",
+                                    textColor = "#FFFFFF",
+                                    options = mapOf("facing" to "back", "resolution" to "1080p"),
+                                    outputMapping = mapOf("capture_uri" to "user.camera_capture_uri")
+                                )
+                            )
+                        }
+                    }
+                    addJsonObject {
+                        put("type", "container")
+                        put("weight", 1f)
+                        putJsonArray("items") {
+                            add(
+                                buildNativeToolTriggerBlock(
+                                    toolId = "camera",
+                                    operation = "torch_toggle",
+                                    label = "Toggle Torch",
+                                    subtitle = "tools://camera/torch_toggle",
+                                    icon = "search",
+                                    backgroundColor = "#0E7490",
+                                    textColor = "#FFFFFF",
+                                    options = mapOf("state" to "on"),
+                                    outputMapping = mapOf("torch_state" to "user.camera_torch_state")
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Universal Image Manipulation & Background Removal Block (tools://image-manipulation).
+     */
+    fun buildImageManipulationToolBlock(spec: TenantWorkspaceSpec): JsonObject = buildJsonObject {
+        put("type", "container")
+        put("orientation", "vertical")
+        put("background_color", "#1E1B2E")
+        put("corner_radius", 12)
+        putJsonObject("paddings") {
+            put("left", 12); put("right", 12); put("top", 10); put("bottom", 10)
+        }
+        putJsonObject("border") {
+            put("corner_radius", 12)
+            putJsonObject("stroke") {
+                put("color", "#A78BFA")
+                put("width", 1)
+            }
+        }
+        putJsonArray("items") {
+            addJsonObject {
+                put("type", "text")
+                put("text", "🎛️ IMAGE MANIPULATION & BG REMOVAL (tools://image-manipulation)")
+                put("font_size", 11)
+                put("font_weight", "bold")
+                put("text_color", "#C4B5FD")
+            }
+            addJsonObject {
+                put("type", "text")
+                put("text", "Output: @{user.processed_image_uri} • Status: @{user.image_processing_status}")
+                put("font_size", 12)
+                put("text_color", "#EDE9FE")
+                put("font_family", "monospace")
+            }
+            addJsonObject {
+                put("type", "container")
+                put("orientation", "horizontal")
+                put("item_spacing", 8)
+                putJsonArray("items") {
+                    addJsonObject {
+                        put("type", "container")
+                        put("weight", 1f)
+                        putJsonArray("items") {
+                            add(
+                                buildNativeToolTriggerBlock(
+                                    toolId = "image-manipulation",
+                                    operation = "remove_background",
+                                    label = "Remove Background",
+                                    subtitle = "tools://image-manipulation/remove_background",
+                                    icon = "crop",
+                                    backgroundColor = "#7C3AED",
+                                    textColor = "#FFFFFF",
+                                    options = mapOf("op" to "remove_background", "encoding" to "uri"),
+                                    outputMapping = mapOf(
+                                        "uri" to "user.processed_image_uri",
+                                        "status" to "user.image_processing_status"
+                                    )
+                                )
+                            )
+                        }
+                    }
+                    addJsonObject {
+                        put("type", "container")
+                        put("weight", 1f)
+                        putJsonArray("items") {
+                            add(
+                                buildNativeToolTriggerBlock(
+                                    toolId = "image-manipulation",
+                                    operation = "smooth",
+                                    label = "Edge-Preserving Smooth",
+                                    subtitle = "tools://image-manipulation/smooth",
+                                    icon = "refresh",
+                                    backgroundColor = "#6D28D9",
+                                    textColor = "#FFFFFF",
+                                    options = mapOf("op" to "smooth", "strength" to "0.6"),
+                                    outputMapping = mapOf(
+                                        "uri" to "user.processed_image_uri",
+                                        "status" to "user.image_processing_status"
+                                    )
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Text & Image Vector Embedding Block (tools://vectorize).
+     */
+    fun buildVectorizeToolBlock(spec: TenantWorkspaceSpec): JsonObject = buildJsonObject {
+        put("type", "container")
+        put("orientation", "vertical")
+        put("background_color", "#111827")
+        put("corner_radius", 12)
+        putJsonObject("paddings") {
+            put("left", 12); put("right", 12); put("top", 10); put("bottom", 10)
+        }
+        putJsonObject("border") {
+            put("corner_radius", 12)
+            putJsonObject("stroke") {
+                put("color", "#38BDF8")
+                put("width", 1)
+            }
+        }
+        putJsonArray("items") {
+            addJsonObject {
+                put("type", "text")
+                put("text", "🔢 TEXT & IMAGE VECTOR EMBEDDINGS (tools://vectorize)")
+                put("font_size", 11)
+                put("font_weight", "bold")
+                put("text_color", "#7DD3FC")
+            }
+            addJsonObject {
+                put("type", "text")
+                put("text", "Source: @{user.vector_source} • Dim: @{user.vector_dim} • Similarity: @{user.vector_similarity}")
+                put("font_size", 12)
+                put("text_color", "#E0F2FE")
+                put("font_family", "monospace")
+            }
+            addJsonObject {
+                put("type", "text")
+                put("text", "Vector: @{user.vector_b64}")
+                put("font_size", 10)
+                put("text_color", "#BAE6FD")
+                put("font_family", "monospace")
+                put("max_lines", 2)
+            }
+            addJsonObject {
+                put("type", "container")
+                put("orientation", "horizontal")
+                put("item_spacing", 8)
+                putJsonArray("items") {
+                    addJsonObject {
+                        put("type", "container")
+                        put("weight", 1f)
+                        putJsonArray("items") {
+                            add(
+                                buildNativeToolTriggerBlock(
+                                    toolId = "vectorize",
+                                    operation = "text",
+                                    label = "Embed Item Name",
+                                    subtitle = "tools://vectorize/text • USE-Lite 512-d",
+                                    icon = "search",
+                                    backgroundColor = "#0284C7",
+                                    textColor = "#FFFFFF",
+                                    options = mapOf("normalize" to "true"),
+                                    outputMapping = mapOf(
+                                        "vector_b64" to "user.vector_b64",
+                                        "dim" to "user.vector_dim",
+                                        "source_type" to "user.vector_source"
+                                    )
+                                )
+                            )
+                        }
+                    }
+                    addJsonObject {
+                        put("type", "container")
+                        put("weight", 1f)
+                        putJsonArray("items") {
+                            add(
+                                buildNativeToolTriggerBlock(
+                                    toolId = "vectorize",
+                                    operation = "image_text",
+                                    label = "Embed Image + OCR",
+                                    subtitle = "tools://vectorize/image_text • ML Kit + USE-Lite",
+                                    icon = "ocr",
+                                    backgroundColor = "#0369A1",
+                                    textColor = "#FFFFFF",
+                                    options = mapOf("normalize" to "true", "include_ocr_text" to "true"),
+                                    outputMapping = mapOf(
+                                        "vector_b64" to "user.vector_b64",
+                                        "dim" to "user.vector_dim",
+                                        "source_type" to "user.vector_source",
+                                        "ocr_text" to "user.ocr_text"
+                                    )
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Offline Page & Schema Cache Block (tools://offline-cache).
+     */
+    fun buildOfflineCacheToolBlock(spec: TenantWorkspaceSpec): JsonObject = buildJsonObject {
+        put("type", "container")
+        put("orientation", "vertical")
+        put("background_color", "#1C1917")
+        put("corner_radius", 12)
+        putJsonObject("paddings") {
+            put("left", 12); put("right", 12); put("top", 10); put("bottom", 10)
+        }
+        putJsonObject("border") {
+            put("corner_radius", 12)
+            putJsonObject("stroke") {
+                put("color", "#A8A29E")
+                put("width", 1)
+            }
+        }
+        putJsonArray("items") {
+            addJsonObject {
+                put("type", "text")
+                put("text", "💾 OFFLINE PAGE & SCHEMA CACHE (tools://offline-cache)")
+                put("font_size", 11)
+                put("font_weight", "bold")
+                put("text_color", "#D6D3D1")
+            }
+            addJsonObject {
+                put("type", "text")
+                put("text", "Status: @{user.offline_cache_status} • Cached Pages: @{user.offline_cached_pages}")
+                put("font_size", 12)
+                put("text_color", "#FAFAF9")
+                put("font_family", "monospace")
+            }
+            addJsonObject {
+                put("type", "container")
+                put("orientation", "horizontal")
+                put("item_spacing", 8)
+                putJsonArray("items") {
+                    addJsonObject {
+                        put("type", "container")
+                        put("weight", 1f)
+                        putJsonArray("items") {
+                            add(
+                                buildNativeToolTriggerBlock(
+                                    toolId = "offline-cache",
+                                    operation = "cache",
+                                    label = "Cache Card",
+                                    subtitle = "tools://offline-cache/cache",
+                                    icon = "cloud",
+                                    backgroundColor = "#57534E",
+                                    textColor = "#FFFFFF",
+                                    options = mapOf("op" to "cache"),
+                                    outputMapping = mapOf(
+                                        "status" to "user.offline_cache_status",
+                                        "cached_pages" to "user.offline_cached_pages"
+                                    )
+                                )
+                            )
+                        }
+                    }
+                    addJsonObject {
+                        put("type", "container")
+                        put("weight", 1f)
+                        putJsonArray("items") {
+                            add(
+                                buildNativeToolTriggerBlock(
+                                    toolId = "offline-cache",
+                                    operation = "get_stats",
+                                    label = "Cache Stats",
+                                    subtitle = "tools://offline-cache/get_stats",
+                                    icon = "inventory",
+                                    backgroundColor = "#44403C",
+                                    textColor = "#FFFFFF",
+                                    options = mapOf("op" to "get_stats"),
+                                    outputMapping = mapOf(
+                                        "status" to "user.offline_cache_status",
+                                        "cached_pages" to "user.offline_cached_pages"
+                                    )
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Realtime WebSocket / SSE Channel Block (tools://realtime-ws).
+     */
+    fun buildRealtimeWsToolBlock(spec: TenantWorkspaceSpec): JsonObject = buildJsonObject {
+        put("type", "container")
+        put("orientation", "vertical")
+        put("background_color", "#0B1F2A")
+        put("corner_radius", 12)
+        putJsonObject("paddings") {
+            put("left", 12); put("right", 12); put("top", 10); put("bottom", 10)
+        }
+        putJsonObject("border") {
+            put("corner_radius", 12)
+            putJsonObject("stroke") {
+                put("color", "#2DD4BF")
+                put("width", 1)
+            }
+        }
+        putJsonArray("items") {
+            addJsonObject {
+                put("type", "text")
+                put("text", "📡 REALTIME WEBSOCKET / SSE CHANNEL (tools://realtime-ws)")
+                put("font_size", 11)
+                put("font_weight", "bold")
+                put("text_color", "#5EEAD4")
+            }
+            addJsonObject {
+                put("type", "text")
+                put("text", "State: @{user.realtime_connection_state} • Channel: @{user.realtime_channel}")
+                put("font_size", 12)
+                put("text_color", "#CCFBF1")
+                put("font_family", "monospace")
+            }
+            addJsonObject {
+                put("type", "container")
+                put("orientation", "horizontal")
+                put("item_spacing", 8)
+                putJsonArray("items") {
+                    addJsonObject {
+                        put("type", "container")
+                        put("weight", 1f)
+                        putJsonArray("items") {
+                            add(
+                                buildNativeToolTriggerBlock(
+                                    toolId = "realtime-ws",
+                                    operation = "connect",
+                                    label = "Connect Stream",
+                                    subtitle = "tools://realtime-ws/connect • wss:// kitchen_stream",
+                                    icon = "sync",
+                                    backgroundColor = "#0F766E",
+                                    textColor = "#FFFFFF",
+                                    options = mapOf("channel" to "kitchen_stream"),
+                                    outputMapping = mapOf(
+                                        "connection_state" to "user.realtime_connection_state",
+                                        "channel" to "user.realtime_channel"
+                                    )
+                                )
+                            )
+                        }
+                    }
+                    addJsonObject {
+                        put("type", "container")
+                        put("weight", 1f)
+                        putJsonArray("items") {
+                            add(
+                                buildNativeToolTriggerBlock(
+                                    toolId = "realtime-ws",
+                                    operation = "disconnect",
+                                    label = "Disconnect",
+                                    subtitle = "tools://realtime-ws/disconnect",
+                                    icon = "delete",
+                                    backgroundColor = "#115E59",
+                                    textColor = "#FFFFFF",
+                                    options = mapOf("channel" to "kitchen_stream"),
+                                    outputMapping = mapOf(
+                                        "connection_state" to "user.realtime_connection_state",
+                                        "channel" to "user.realtime_channel"
+                                    )
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Network Transfer (Ktor) & LAN Hub Block (tools://net).
+     */
+    fun buildNetToolBlock(spec: TenantWorkspaceSpec): JsonObject = buildJsonObject {
+        put("type", "container")
+        put("orientation", "vertical")
+        put("background_color", "#111C2E")
+        put("corner_radius", 12)
+        putJsonObject("paddings") {
+            put("left", 12); put("right", 12); put("top", 10); put("bottom", 10)
+        }
+        putJsonObject("border") {
+            put("corner_radius", 12)
+            putJsonObject("stroke") {
+                put("color", "#60A5FA")
+                put("width", 1)
+            }
+        }
+        putJsonArray("items") {
+            addJsonObject {
+                put("type", "text")
+                put("text", "🌐 NETWORK TRANSFER (Ktor) & LAN HUB (tools://net)")
+                put("font_size", 11)
+                put("font_weight", "bold")
+                put("text_color", "#93C5FD")
+            }
+            addJsonObject {
+                put("type", "text")
+                put("text", "Status: @{user.net_status} • HTTP: @{user.net_http_status} • Bytes: @{user.net_bytes} • Hub: @{user.net_hub_port}")
+                put("font_size", 12)
+                put("text_color", "#DBEAFE")
+                put("font_family", "monospace")
+            }
+            addJsonObject {
+                put("type", "container")
+                put("orientation", "horizontal")
+                put("item_spacing", 8)
+                putJsonArray("items") {
+                    addJsonObject {
+                        put("type", "container")
+                        put("weight", 1f)
+                        putJsonArray("items") {
+                            add(
+                                buildNativeToolTriggerBlock(
+                                    toolId = "net",
+                                    operation = "get",
+                                    label = "HTTP GET",
+                                    subtitle = "tools://net/get • Ktor CIO",
+                                    icon = "sync",
+                                    backgroundColor = "#1D4ED8",
+                                    textColor = "#FFFFFF",
+                                    options = mapOf("url" to "https://api.apexpos.local/v1/health", "timeout_ms" to "30000"),
+                                    outputMapping = mapOf(
+                                        "status" to "user.net_status",
+                                        "http_status" to "user.net_http_status",
+                                        "bytes" to "user.net_bytes"
+                                    )
+                                )
+                            )
+                        }
+                    }
+                    addJsonObject {
+                        put("type", "container")
+                        put("weight", 1f)
+                        putJsonArray("items") {
+                            add(
+                                buildNativeToolTriggerBlock(
+                                    toolId = "net",
+                                    operation = "share",
+                                    label = "Start LAN Hub",
+                                    subtitle = "tools://net/share • peer-to-peer",
+                                    icon = "cloud",
+                                    backgroundColor = "#1E40AF",
+                                    textColor = "#FFFFFF",
+                                    options = mapOf("port" to "8899"),
+                                    outputMapping = mapOf(
+                                        "status" to "user.net_status",
+                                        "port" to "user.net_hub_port"
+                                    )
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Bluetooth Printer / POS Bridge Block (tools://print).
+     */
+    fun buildPrintToolBlock(spec: TenantWorkspaceSpec): JsonObject = buildJsonObject {
+        put("type", "container")
+        put("orientation", "vertical")
+        put("background_color", "#2A1A2E")
+        put("corner_radius", 12)
+        putJsonObject("paddings") {
+            put("left", 12); put("right", 12); put("top", 10); put("bottom", 10)
+        }
+        putJsonObject("border") {
+            put("corner_radius", 12)
+            putJsonObject("stroke") {
+                put("color", "#E879F9")
+                put("width", 1)
+            }
+        }
+        putJsonArray("items") {
+            addJsonObject {
+                put("type", "text")
+                put("text", "🖨️ BLUETOOTH THERMAL PRINTER BRIDGE (tools://print)")
+                put("font_size", 11)
+                put("font_weight", "bold")
+                put("text_color", "#F0ABFC")
+            }
+            addJsonObject {
+                put("type", "text")
+                put("text", "Status: @{user.print_status} • Devices: @{user.print_device_count} • Bytes: @{user.print_bytes}")
+                put("font_size", 12)
+                put("text_color", "#FAE8FF")
+                put("font_family", "monospace")
+            }
+            addJsonObject {
+                put("type", "container")
+                put("orientation", "horizontal")
+                put("item_spacing", 8)
+                putJsonArray("items") {
+                    addJsonObject {
+                        put("type", "container")
+                        put("weight", 1f)
+                        putJsonArray("items") {
+                            add(
+                                buildNativeToolTriggerBlock(
+                                    toolId = "print",
+                                    operation = "scan",
+                                    label = "Scan Printers",
+                                    subtitle = "tools://print/scan • RFCOMM SPP",
+                                    icon = "printer",
+                                    backgroundColor = "#A21CAF",
+                                    textColor = "#FFFFFF",
+                                    options = mapOf("op" to "scan"),
+                                    outputMapping = mapOf(
+                                        "status" to "user.print_status",
+                                        "count" to "user.print_device_count"
+                                    )
+                                )
+                            )
+                        }
+                    }
+                    addJsonObject {
+                        put("type", "container")
+                        put("weight", 1f)
+                        putJsonArray("items") {
+                            add(
+                                buildNativeToolTriggerBlock(
+                                    toolId = "print",
+                                    operation = "print",
+                                    label = "Print ESC/POS Receipt",
+                                    subtitle = "tools://print/print • 58mm thermal",
+                                    icon = "receipt",
+                                    backgroundColor = "#86198F",
+                                    textColor = "#FFFFFF",
+                                    options = mapOf(
+                                        "text" to "APEX POS • ${spec.displayName}\nOrder #1042  TOTAL $24.50",
+                                        "align" to "left",
+                                        "feed_lines" to "3"
+                                    ),
+                                    outputMapping = mapOf(
+                                        "status" to "user.print_status",
+                                        "bytes" to "user.print_bytes"
                                     )
                                 )
                             )

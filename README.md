@@ -99,6 +99,10 @@ app/
     engine/tools/TerminalApp.kt             # Android capability registry (mirrors shared TerminalApp)
     engine/tools/impl/HapticsTool.kt        # hardware.haptics@1 — Vibrator/VibratorManager
     engine/tools/impl/BeeperTool.kt         # hardware.beeper@1 — AudioToneSynthesizer PCM tones
+    engine/tools/impl/NetTool.kt            # network.transfer@1 — Ktor HTTP client + LAN transfer hub
+    engine/tools/impl/PrintTool.kt          # device.printer@1 — Bluetooth printer scan/connect/ESC-POS print
+    engine/tools/impl/CodeGenerateTool.kt   # vision.generate_code@1 — barcode/QR generation (ZXing)
+    engine/tools/code/CodeGeneratorEngine.kt # On-device ZXing symbol encoder + PNG renderer
     engine/tools/audio/AudioToneSynthesizer.kt  # Shared PCM tone/waveform/sequence generator
     engine/tools/image/ImageManipulationEngine.kt # On-device image ops (<4MB OS-model footprint)
     com/yandex/divkit/multiplatform/
@@ -132,9 +136,50 @@ Tenants can declare interactive charts directly inside their signed DivKit JSON 
 
 ---
 
+## Local Database Bridge (`local-db://op/<name>`)
+
+The **data plane** that every DivKit document uses for its own persistence. DivKit actions
+target `local-db://op/<operation>`; `EngineRouter` executes the whitelisted operation through
+`EngineRegistry` and publishes the result into reactive `user.*` variables (or a `json_list`
+JSON string). It is a URL scheme rather than a `tools://` capability, but it shares the same
+router and output-mapping contract.
+
+| Operation | Alias | Result | Purpose |
+| :--- | :--- | :--- | :--- |
+| `db.import_schema` | `schema.import` | `SchemaImported` | Import a tenant schema JSON (collections + fields). |
+| `db.list_collections` | `schema.collections` | `Rows` | List collections (`{ id, name, index }`). |
+| `db.insert` | `records.create` | `RowId` | Insert a record; `enqueue_sync: true` adds it to the `pending_sync` outbox. |
+| `db.query` | `records.query` | `Rows` | ApexQuery AST query (`select`, `where`, `sort`, `limit`, `offset`). |
+| `db.query_one` | `records.get` | `Row` | First matching record. |
+| `db.count` | `records.count` | `Count` | Count records matching a filter. |
+| `db.delete` | `records.delete` | `Count` | Delete one record by numeric `id`. |
+
+```json
+{
+  "url": "local-db://op/db.query",
+  "payload": {
+    "from": "orders",
+    "where": [{ "field": "status", "op": "=", "value": "OPEN" }],
+    "limit": 25,
+    "json_list_var": "user.orders_json"
+  }
+}
+```
+
+Output keys map columns to `user.*` variables (`output`), `json_list_var` publishes the whole
+result set as JSON, and errors land in `user.engine_error`. Payloads are capped at 128 KB,
+each operation runs under a 5 s timeout, and every call is recorded in `op_log`.
+
+> Full reference: [`docs/tools/local-db.md`](docs/tools/local-db.md).
+
+---
+
 ## Native Tools & AI Vision Suite (`tools://*`)
 
-Tenants can invoke hardware bridges, optical scanning, on-device AI vision models, and cryptographic protocols directly through standard DivKit actions using the `tools://` scheme:
+Tenants can invoke hardware bridges, optical scanning, on-device AI vision models, and cryptographic protocols directly through standard DivKit actions using the `tools://` scheme.
+
+> Per-tool reference documentation (architecture, parameters, output schema, and DivKit
+> examples) lives in [`docs/tools/`](docs/tools/README.md).
 
 ```json
 {
@@ -161,7 +206,7 @@ Every tool is deliberately **unopinionated**: it exposes a generic capability co
 
 | Tool URI | Display Name | Operations | Customizable Options | Default Output Mappings |
 |---|---|---|---|---|
-| `tools://scan` | **Unified Optical Scanner (`vision.scan_code@1`)** | `scan`, `continuous_scan`, `simulate`, `parse` | `target_format` (`both`\|`barcode`\|`qr`\|`EAN_13`\|`UPC_A`\|`CODE_128`\|`QR_CODE`), `beep`, `haptics`, `camera_facing` | `user.scanned_code`, `user.scanned_format`, `user.scanned_type`, `user.scan_status`, `user.scan_timestamp` |
+| `tools://scan` | **Unified Optical Scanner (`vision.scan_code@1`)** | `scan`, `continuous_scan`, `simulate`, `parse`, `ocr` | `target_format` (`both`\|`barcode`\|`qr`\|`EAN_13`\|`UPC_A`\|`CODE_128`\|`QR_CODE`), `beep`, `haptics`, `camera_facing`, `uri` (OCR) | `user.scanned_code`, `user.scanned_format`, `user.scanned_type`, `user.scan_status`, `user.scan_timestamp`, `user.ocr_text`, `user.ocr_confidence`, `user.ocr_block_count` |
 | `tools://haptics` | **Universal Haptics & Vibration Engine (`hardware.haptics@1`)** | `perform`, `vibrate`, `click`, `heavy`, `tick`, `success`, `warning`, `error`, `stop`, `status` | `pattern` (semantic name), `duration_ms` (10-1000ms), `amplitude` (1-255), `timings` (W3C `[wait, vibrate, …]` waveform array) | `user.haptics_status`, `user.haptics_pattern` |
 | `tools://beeper` | **Universal Audio Tone Synthesizer (`hardware.beeper@1`)** | `tone`, `play`, `beep`, `chime`, `stop`, `status` | `frequency_hz`, `duration_ms`, `waveform` (`sine`\|`square`\|`triangle`\|`sawtooth`), `volume` (0-1), `profile` (semantic preset), `sequence` (`freq:ms,…`) | `user.beeper_status`, `user.beeper_frequency` |
 | `tools://camera` | **Hardware Camera Bridge (`vision.capture_photo@1`)** | `capture`, `torch_toggle`, `get_status` | `facing` (`back`\|`front`), `resolution` (`1080p`) | `user.camera_capture_uri` |
@@ -174,10 +219,21 @@ Every tool is deliberately **unopinionated**: it exposes a generic capability co
 | `tools://push` | **Background Alerts & Push Notifications (`network.push@1`)** | `send_alert`, `notify`, `send` | `channel`, `priority` | `user.push_notification_id`, `user.push_status` |
 | `tools://offline-cache` | **Offline Page & Schema Cache (`storage.offline_cache@1`)** | `cache`, `get_stats`, `clear` | `op` | `user.offline_cache_status`, `user.offline_cached_pages` |
 | `tools://realtime-ws` | **Realtime WebSocket / SSE Engine (`network.realtime@1`)** | `connect`, `disconnect`, `send`, `subscribe` | `channel` | `user.realtime_connection_state`, `user.realtime_channel` |
+| `tools://net` | **Network Transfer (Ktor) & LAN Hub (`network.transfer@1`)** | `request`, `get`, `post`, `download`, `upload`, `serve`, `stop`, `status`, `share`, `list`, `unshare` | `url`, `method`, `header_*`, `content_type`, `content_base64`\|`body`, `file_path`, `timeout_ms`, `port`, `host`, `label`, `name` | `user.net_status`, `user.net_http_status`, `user.net_bytes`, `user.net_hub_port` |
+| `tools://print` | **Bluetooth Printer / POS Bridge (`device.printer@1`)** | `scan`, `pair`, `connect`, `disconnect`, `print`, `status` | `address`, `all`, `discover`, `text`\|`lines`\|`receipt`, `align`, `bold`, `width`, `feed_lines`, `cut` | `user.print_status`, `user.print_device_count`, `user.print_bytes` |
+| `tools://code-generate` | **Barcode & QR Code Generator (`vision.generate_code@1`)** | `generate`, `qr`, `barcode`, `render` | `content`, `format` (`qr`\|`datamatrix`\|`aztec`\|`pdf417`\|`EAN_13`\|`UPC_A`\|`CODE_128`\|…), `width`, `height`, `margin`, `ec_level`, `fg_color`, `bg_color`, `encoding` (`uri`\|`base64`\|`both`) | `user.code_status`, `user.code_image_uri`, `user.code_content`, `user.code_format`, `user.code_kind`, `user.code_id`, `user.code_matrix` |
 
 > **Unified scanner.** The former split tools `tools://scan-barcode` (1D) and `tools://scan-qr` (2D) are replaced by a single `tools://scan` tool that decodes both symbologies by default. `target_format` restricts recognition (`both` by default, or `barcode`/`qr`/an explicit format), and a non-matching code returns `status = "FORMAT_MISMATCH"`. The legacy URIs are still accepted as aliases for backward compatibility.
 >
+> **OCR lives in the scanner.** Text recognition is the scanner's image-reading mode: call `tools://scan/ocr` (or the `tools://ocr/read` alias) with a `uri` to extract text, confidence, and per-block boxes. The standalone `tools://vectorize/ocr` operation was removed; `tools://vectorize/image_text` still chains OCR and embedding in one call.
+>
+> **Code generation (`tools://code-generate`).** The encode-side counterpart to the scanner. It renders any content into a 1D barcode or 2D matrix symbol (QR, DataMatrix, Aztec, PDF417, EAN, UPC, Code 128/39/93, ITF, Codabar) via ZXing `MultiFormatWriter`, writes a PNG into the tenant media sandbox, and returns the module matrix for pure-DivKit rendering. ZXing is a pure-JVM library with no Play Services dependency.
+>
 > **Unopinionated feedback APIs.** `tools://haptics` and `tools://beeper` carry no vendor or SDK coupling: the caller supplies generic parameters (patterns, frequencies, waveforms, volumes, timing arrays, sequences) and the platform chooses the physical implementation. There is no dedicated "POS tone" API — `PosTonePlayer`/`playPosTone` were removed and the haptic entry point is the platform-neutral `triggerHaptic`.
+>
+> **Generic networking (`tools://net`).** Built on Ktor (CIO engine), it covers both client calls (`request`/`get`/`post`/`download`/`upload`) and an embedded LAN transfer hub (`serve`/`stop`/`status`/`share`/`list`/`unshare`). `serve` starts a Ktor CIO server that hosts a discovery page at `/` and downloadable items at `/file/{id}`, so the same tool powers hubs and Xender-style device-to-device sharing.
+>
+> **Bluetooth printing (`tools://print`).** Scans bonded and discoverable Bluetooth thermal printers / POS peers (name heuristics: `printer`, `thermal`, `pos`, `rpt`, `goojprt`, `xprinter`, …), bonds (`pair`), opens an RFCOMM SPP socket (`connect`), and writes ESC/POS receipt bytes (`print` with `align`, `bold`, `width`, `feed_lines`, `cut`). On Android 12+ it requires `BLUETOOTH_CONNECT`/`BLUETOOTH_SCAN`; on older releases it falls back to `BLUETOOTH`/`BLUETOOTH_ADMIN`.
 
 ---
 
@@ -198,7 +254,7 @@ The terminal engine implements the zero-trust **Terminal Tool Architecture**:
    - `ToolResult.Failed(capability, message)`: Unexpected runtime failure; writes `"failed"`.
 4. **Provenance & Access Control**:
    - `Provenance.Agency`: Full access to administrative, internal, and external capabilities.
-   - `Provenance.Publisher`: Restricted strictly to the pre-approved tenant capabilities in `ProvenanceChecker` (`hardware.haptics@1`, `hardware.beeper@1`, `vision.scan_code@1`, `vision.capture_photo@1`, `vision.identify_product@1`, `vision.embed_image@1`, `vision.remove_background@1`, `secure.send@1`, `secure.status@1`, `secure.verify_identity@1`, `auth.biometrics@1`, `device.clipboard@1`, `network.push@1`, `storage.offline_cache@1`, `network.realtime@1`).
+   - `Provenance.Publisher`: Restricted strictly to the pre-approved tenant capabilities in `ProvenanceChecker` (`hardware.haptics@1`, `hardware.beeper@1`, `vision.scan_code@1`, `vision.capture_photo@1`, `vision.identify_product@1`, `vision.embed_image@1`, `vision.remove_background@1`, `secure.send@1`, `secure.status@1`, `secure.verify_identity@1`, `auth.biometrics@1`, `device.clipboard@1`, `network.push@1`, `storage.offline_cache@1`, `network.realtime@1`, `network.transfer@1`, `device.printer@1`, `vision.generate_code@1`).
 5. **Unopinionated Platform Haptics & Tones**:
    - Haptics uses Android `Vibrator` / `VibratorManager` with `VibrationEffect.createPredefined` (Android 10+), dual-pulse waveforms (Android 8+), and legacy millisecond one-shots; iOS uses `UIFeedbackGenerator` (`UIImpactFeedbackGenerator`/`UINotificationFeedbackGenerator`).
    - The beeper synthesizes PCM tones (sine/square/triangle/sawtooth) with `AudioToneSynthesizer` on Android and `AVAudioEngine` on iOS. Both degrade gracefully when hardware or permissions are unavailable.
