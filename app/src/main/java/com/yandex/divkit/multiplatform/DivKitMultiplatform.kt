@@ -723,7 +723,7 @@ private fun parseHexColor(hexStr: String): Color {
 
 private fun resolveIcon(name: String) = when (name.lowercase()) {
     "add", "plus", "cart_add" -> Icons.Default.AddShoppingCart
-    "scan", "barcode", "scanner" -> Icons.Default.QrCodeScanner
+    "scan", "barcode", "scanner", "qr_code", "qr" -> Icons.Default.QrCodeScanner
     "print", "printer", "receipt" -> Icons.Default.Print
     "nfc", "tap", "card" -> Icons.Default.Contactless
     "delete", "trash", "clear" -> Icons.Default.DeleteOutline
@@ -731,5 +731,13 @@ private fun resolveIcon(name: String) = when (name.lowercase()) {
     "check", "checkout", "pay" -> Icons.Default.CheckCircle
     "inventory", "box" -> Icons.Default.Inventory2
     "refresh" -> Icons.Default.Refresh
+    "search", "ocr", "text", "read_text" -> Icons.Default.Search
+    "camera", "photo", "image" -> Icons.Default.PhotoCamera
+    "lock", "shield", "e2ee" -> Icons.Default.Lock
+    "vibration", "haptics" -> Icons.Default.Vibration
+    "volume", "beeper", "audio" -> Icons.Default.VolumeUp
+    "fingerprint", "biometrics" -> Icons.Default.Fingerprint
+    "paste", "clipboard" -> Icons.Default.ContentPaste
+    "notification", "push", "bell" -> Icons.Default.Notifications
     else -> Icons.Default.FlashOn
 }

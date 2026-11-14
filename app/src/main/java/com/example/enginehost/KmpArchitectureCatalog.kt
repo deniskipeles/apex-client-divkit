@@ -153,12 +153,12 @@ final class EngineChartBlockFactory: DivCustomBlockFactory {
         KmpFileEntry(
             path = "shared/src/commonMain/kotlin/engine/tools/NativeToolsSuite.kt",
             moduleLayer = "commonMain (Universal Tools Bridge)",
-            summary = "Generalized native tools bridge handling tools://{libsignal, scan-barcode, scan-qr, image-background-remove, camera, u-2-Net.tflite, MobileNetV4-small}.",
+            summary = "Generalized native tools bridge handling tools://{libsignal, scan (1D/2D + OCR), code-generate, camera, u-2-Net.tflite, MobileNetV4-small}.",
             snippet = """
 object NativeToolsSuite {
     suspend fun execute(url: String, payload: JsonObject, tenantId: String): ToolExecutionOutcome {
-        // Dispatches to libsignal, TFLite MobileNetV4, U-2-Net, Barcode/QR, or Camera
-        // Emits typed output mappings into user.* DivKit reactive variables
+        // Dispatches to libsignal, TFLite MobileNetV4, U-2-Net, scan (barcode/QR/OCR),
+        // code-generate (ZXing), or Camera; emits typed output into user.* variables
     }
 }
             """.trimIndent()

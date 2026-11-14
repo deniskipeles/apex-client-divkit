@@ -32,9 +32,27 @@ New terminal capabilities must be wired through **all** of these:
    Stateful tools (open sockets/connections) should be shared instances, not per-call.
 5. `app/src/main/AndroidManifest.xml` — declare any new runtime permissions.
 6. `README.md` — add a row to the `tools://*` table.
+7. `docs/tools/<name>.md` — add a per-tool reference doc and a row in `docs/tools/README.md`.
 
 `NativeToolsSuite.execute(...)` returns output mapped into `user.*` DivKit variables via
 `defaultOutputMapping`; types are preserved (IntVal/DoubleVal/Bool/Str).
+
+## Demo workspace showcase
+
+The single built-in demo tenant (`WorkspaceProvisioner.defaultWorkspaces`) is the live
+showcase of the SDUI surface. When a tool gains a user-facing operation, surface it there too:
+
+- `SduiOnFlyBuilder.build<Name>ToolBlock(spec)` — a DivKit container with live `user.*` readouts
+  and `buildNativeToolTriggerBlock(...)` trigger buttons.
+- `WorkspaceProvisioner.buildDefaultDivKitCardJson(spec)` — declare every `user.*` variable the
+  block reads, and `add(...)` the block into the card's item list.
+- `SduiEngineViewModel` — seed the same variables in the `EngineStateBridge.pushBatch(...)`
+  reset so the card renders populated before the first tool call.
+- `SduiBuilderTab` — expose an inject button for the block in the on-the-fly builder.
+- `DivKitMultiplatform.resolveIcon(name)` — map any new `icon` names to a Material icon.
+
+`local-db://op/<name>` is the SQLite data plane (insert/query/count/delete), dispatched by
+`EngineRouter` and documented in `docs/tools/local-db.md`.
 
 ## Testing conventions
 

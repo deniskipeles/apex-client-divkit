@@ -261,7 +261,7 @@ object SduiOnFlyBuilder {
     }
 
     /**
-     * Optical 1D Barcode & 2D QR Scanner Block
+     * Optical 1D Barcode, 2D QR & OCR Block (tools://scan).
      */
     fun buildScannerToolBlock(spec: TenantWorkspaceSpec): JsonObject = buildJsonObject {
         put("type", "container")
@@ -281,16 +281,23 @@ object SduiOnFlyBuilder {
         putJsonArray("items") {
             addJsonObject {
                 put("type", "text")
-                put("text", "📷 BARCODE & QR OPTICAL SUITE (tools://scan-barcode & tools://scan-qr)")
+                put("text", "📷 UNIFIED OPTICAL SCANNER + OCR (tools://scan)")
                 put("font_size", 11)
                 put("font_weight", "bold")
                 put("text_color", "#6EE7B7")
             }
             addJsonObject {
                 put("type", "text")
-                put("text", "Scanned: @{user.scanned_barcode} (@{user.scanned_format}) → @{user.scanned_item_name} ($@{user.scanned_price})")
+                put("text", "Decoded: @{user.scanned_code} (@{user.scanned_format} • @{user.scanned_type}) → @{user.scan_status}")
                 put("font_size", 12)
                 put("text_color", "#D1FAE5")
+                put("font_family", "monospace")
+            }
+            addJsonObject {
+                put("type", "text")
+                put("text", "OCR: @{user.ocr_text} (conf @{user.ocr_confidence})")
+                put("font_size", 12)
+                put("text_color", "#A7F3D0")
                 put("font_family", "monospace")
             }
             addJsonObject {
@@ -304,20 +311,19 @@ object SduiOnFlyBuilder {
                         putJsonArray("items") {
                             add(
                                 buildNativeToolTriggerBlock(
-                                    toolId = "scan-barcode",
+                                    toolId = "scan",
                                     operation = "scan",
                                     label = "Scan 1D Barcode",
-                                    subtitle = "tools://scan-barcode/scan (EAN-13 / UPC)",
+                                    subtitle = "tools://scan/scan (EAN-13 / UPC)",
                                     icon = "scanner",
                                     backgroundColor = "#059669",
                                     textColor = "#FFFFFF",
-                                    options = mapOf("formats" to "EAN_13,UPC_A", "auto_insert_db" to "true"),
+                                    options = mapOf("target_format" to "barcode"),
                                     outputMapping = mapOf(
-                                        "barcode" to "user.scanned_barcode",
+                                        "raw_value" to "user.scanned_code",
                                         "format" to "user.scanned_format",
-                                        "sku" to "user.scanned_sku",
-                                        "item_name" to "user.scanned_item_name",
-                                        "price" to "user.scanned_price"
+                                        "type" to "user.scanned_type",
+                                        "status" to "user.scan_status"
                                     )
                                 )
                             )
@@ -329,17 +335,154 @@ object SduiOnFlyBuilder {
                         putJsonArray("items") {
                             add(
                                 buildNativeToolTriggerBlock(
-                                    toolId = "scan-qr",
+                                    toolId = "scan",
                                     operation = "scan",
                                     label = "Scan 2D QR Code",
-                                    subtitle = "tools://scan-qr/scan (DeepLink/Pay)",
+                                    subtitle = "tools://scan/scan (DeepLink / Pay)",
                                     icon = "qr_code",
                                     backgroundColor = "#0D9488",
                                     textColor = "#FFFFFF",
-                                    options = mapOf("prefix_filter" to "all"),
+                                    options = mapOf("target_format" to "qr"),
                                     outputMapping = mapOf(
-                                        "qr_content" to "user.scanned_qr",
-                                        "qr_type" to "user.scanned_qr_type"
+                                        "raw_value" to "user.scanned_code",
+                                        "format" to "user.scanned_format",
+                                        "type" to "user.scanned_type",
+                                        "status" to "user.scan_status"
+                                    )
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+            add(
+                buildNativeToolTriggerBlock(
+                    toolId = "scan",
+                    operation = "ocr",
+                    label = "Read Text from Image (OCR)",
+                    subtitle = "tools://scan/ocr • ML Kit Text Recognition v2 (Latin)",
+                    icon = "search",
+                    backgroundColor = "#047857",
+                    textColor = "#FFFFFF",
+                    options = mapOf("uri" to "content://com.example.provider/camera/last_capture.png"),
+                    outputMapping = mapOf(
+                        "text" to "user.ocr_text",
+                        "confidence" to "user.ocr_confidence",
+                        "block_count" to "user.ocr_block_count"
+                    )
+                )
+            )
+        }
+    }
+
+    /**
+     * Barcode & QR Code Generator Block (vision.generate_code@1 / tools://code-generate).
+     */
+    fun buildCodeGenerateToolBlock(spec: TenantWorkspaceSpec): JsonObject = buildJsonObject {
+        put("type", "container")
+        put("orientation", "vertical")
+        put("background_color", "#2A1F0B")
+        put("corner_radius", 12)
+        putJsonObject("paddings") {
+            put("left", 12); put("right", 12); put("top", 10); put("bottom", 10)
+        }
+        putJsonObject("border") {
+            put("corner_radius", 12)
+            putJsonObject("stroke") {
+                put("color", "#F59E0B")
+                put("width", 1)
+            }
+        }
+        putJsonArray("items") {
+            addJsonObject {
+                put("type", "text")
+                put("text", "🔳 BARCODE & QR CODE GENERATOR (tools://code-generate)")
+                put("font_size", 11)
+                put("font_weight", "bold")
+                put("text_color", "#FCD34D")
+            }
+            addJsonObject {
+                put("type", "text")
+                put("text", "Generated: @{user.code_format} (@{user.code_kind}) • @{user.code_id}")
+                put("font_size", 12)
+                put("text_color", "#FEF3C7")
+                put("font_family", "monospace")
+            }
+            addJsonObject {
+                put("type", "text")
+                put("text", "Content: @{user.code_content}")
+                put("font_size", 11)
+                put("text_color", "#FDE68A")
+                put("font_family", "monospace")
+            }
+            addJsonObject {
+                put("type", "text")
+                put("text", "PNG: @{user.code_image_uri}")
+                put("font_size", 11)
+                put("text_color", "#FDE68A")
+                put("font_family", "monospace")
+            }
+            addJsonObject {
+                put("type", "container")
+                put("orientation", "horizontal")
+                put("item_spacing", 8)
+                putJsonArray("items") {
+                    addJsonObject {
+                        put("type", "container")
+                        put("weight", 1f)
+                        putJsonArray("items") {
+                            add(
+                                buildNativeToolTriggerBlock(
+                                    toolId = "code-generate",
+                                    operation = "generate",
+                                    label = "Generate Order QR",
+                                    subtitle = "tools://code-generate/generate (QR_CODE)",
+                                    icon = "qr_code",
+                                    backgroundColor = "#D97706",
+                                    textColor = "#FFFFFF",
+                                    options = mapOf(
+                                        "content" to "apexpos://order/pickup?terminal=${spec.terminalCode}",
+                                        "format" to "qr",
+                                        "width" to "512",
+                                        "ec_level" to "M",
+                                        "encoding" to "uri"
+                                    ),
+                                    outputMapping = mapOf(
+                                        "uri" to "user.code_image_uri",
+                                        "format" to "user.code_format",
+                                        "kind" to "user.code_kind",
+                                        "content" to "user.code_content",
+                                        "code_id" to "user.code_id"
+                                    )
+                                )
+                            )
+                        }
+                    }
+                    addJsonObject {
+                        put("type", "container")
+                        put("weight", 1f)
+                        putJsonArray("items") {
+                            add(
+                                buildNativeToolTriggerBlock(
+                                    toolId = "code-generate",
+                                    operation = "barcode",
+                                    label = "Generate SKU Barcode",
+                                    subtitle = "tools://code-generate/barcode (EAN_13)",
+                                    icon = "barcode",
+                                    backgroundColor = "#B45309",
+                                    textColor = "#FFFFFF",
+                                    options = mapOf(
+                                        "content" to "9780201633610",
+                                        "format" to "EAN_13",
+                                        "width" to "400",
+                                        "height" to "160"
+                                    ),
+                                    outputMapping = mapOf(
+                                        "uri" to "user.code_image_uri",
+                                        "format" to "user.code_format",
+                                        "kind" to "user.code_kind",
+                                        "content" to "user.code_content",
+                                        "code_id" to "user.code_id"
                                     )
                                 )
                             )

@@ -917,4 +917,92 @@ class ExampleUnitTest {
             engine.tools.code.CodeGeneratorEngine.resolveFormat("datamatrix")
         )
     }
+
+    // ------------------------------------------------------------------
+    // Built-in demo workspace showcase (DivKit card)
+    // ------------------------------------------------------------------
+
+    @Test
+    fun demoCard_showcasesScannerOcrAndCodeGeneratorBlocks() {
+        val spec = WorkspaceProvisioner.defaultWorkspaces.first()
+        val json = WorkspaceProvisioner.buildDefaultDivKitCardJson(spec)
+
+        // OCR is reached through the unified scanner's image-reading mode
+        assertTrue(json.contains("tools://scan/ocr"))
+        // The barcode/QR generator block is present
+        assertTrue(json.contains("tools://code-generate/generate"))
+        assertTrue(json.contains("tools://code-generate/barcode"))
+        // Legacy split scanner URIs must not appear
+        assertFalse(json.contains("tools://scan-barcode"))
+        assertFalse(json.contains("tools://scan-qr"))
+    }
+
+    @Test
+    fun demoCard_declaresEveryReferencedUserVariable() {
+        val spec = WorkspaceProvisioner.defaultWorkspaces.first()
+        val json = WorkspaceProvisioner.buildDefaultDivKitCardJson(spec)
+
+        val referenced = Regex("""@\{(user\.[a-zA-Z0-9_.]+)\}""")
+            .findAll(json).map { it.groupValues[1] }.toSet()
+        // Known = declared variables plus variables written by action output mappings
+        // (e.g. db.count pushes user.order_count at runtime).
+        val known = Regex(""""(user\.[a-zA-Z0-9_.]+)"""")
+            .findAll(json).map { it.groupValues[1] }.toSet()
+
+        val missing = referenced - known
+        assertTrue("Demo card references undeclared variables: $missing", missing.isEmpty())
+    }
+
+    @Test
+    fun demoCodeGenerateBlock_triggersGeneratorAndMapsOutputs() = kotlinx.coroutines.runBlocking {
+        val spec = WorkspaceProvisioner.defaultWorkspaces.first()
+        val block = SduiOnFlyBuilder.buildCodeGenerateToolBlock(spec)
+        val button = block["items"]!!.jsonArray[4].jsonObject["items"]!!.jsonArray[0]
+            .jsonObject["items"]!!.jsonArray[0].jsonObject
+
+        val action = button["action"]!!.jsonObject
+        val url = action["url"]!!.jsonPrimitive.content
+        val payload = action["payload"]!!.jsonObject
+
+        assertEquals("tools://code-generate/generate", url)
+
+        val outcome = engine.tools.NativeToolsSuite.execute(url = url, payload = payload)
+        assertEquals("SUCCESS", outcome.resultData.jsonObject["status"]?.jsonPrimitive?.contentOrNull)
+        assertTrue(outcome.outputVariables.containsKey("user.code_image_uri"))
+        assertTrue(outcome.outputVariables.containsKey("user.code_format"))
+        assertEquals("QR_CODE", (outcome.outputVariables["user.code_format"] as DivVariableValue.Str).value)
+    }
+
+    @Test
+    fun demoScannerBlock_ocrActionRoutesToScanCapability() = kotlinx.coroutines.runBlocking {
+        val spec = WorkspaceProvisioner.defaultWorkspaces.first()
+        val block = SduiOnFlyBuilder.buildScannerToolBlock(spec)
+
+        // The final item is the OCR trigger
+        val ocrButton = block["items"]!!.jsonArray.last().jsonObject
+        val action = ocrButton["action"]!!.jsonObject
+        assertEquals("tools://scan/ocr", action["url"]!!.jsonPrimitive.content)
+
+        val outcome = engine.tools.NativeToolsSuite.execute(
+            url = "tools://scan/ocr",
+            payload = action["payload"]!!.jsonObject
+        )
+        assertEquals("scan", outcome.toolId)
+        assertEquals("ocr", outcome.operation)
+    }
+
+    @Test
+    fun demoCard_scanVariablesAreHydratedByEngineStateBridge() {
+        val spec = WorkspaceProvisioner.defaultWorkspaces.first()
+        val json = WorkspaceProvisioner.buildDefaultDivKitCardJson(spec)
+        // The scanner/OCR/generator variables the card binds must be seeded, not blank
+        listOf(
+            "user.scanned_code", "user.scanned_format", "user.scanned_type", "user.scan_status",
+            "user.ocr_text", "user.ocr_confidence", "user.ocr_block_count",
+            "user.code_image_uri", "user.code_format", "user.code_kind", "user.code_content",
+            "user.code_id", "user.code_status"
+        ).forEach { name ->
+            assertTrue("Demo card must declare $name", json.contains("\"$name\""))
+        }
+    }
 }

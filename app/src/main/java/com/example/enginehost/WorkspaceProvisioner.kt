@@ -291,7 +291,22 @@ object WorkspaceProvisioner {
                         put("value", "None")
                     }
                     addJsonObject {
-                        put("name", "user.scanned_barcode")
+                        put("name", "user.order_count")
+                        put("type", "integer")
+                        put("value", spec.defaultOrders.size)
+                    }
+                    addJsonObject {
+                        put("name", "user.inventory_count")
+                        put("type", "integer")
+                        put("value", spec.defaultProducts.size)
+                    }
+                    addJsonObject {
+                        put("name", "user.last_order_id")
+                        put("type", "integer")
+                        put("value", spec.defaultOrders.size)
+                    }
+                    addJsonObject {
+                        put("name", "user.scanned_code")
                         put("type", "string")
                         put("value", "9780201633610")
                     }
@@ -301,24 +316,64 @@ object WorkspaceProvisioner {
                         put("value", "EAN_13")
                     }
                     addJsonObject {
-                        put("name", "user.scanned_item_name")
+                        put("name", "user.scanned_type")
                         put("type", "string")
-                        put("value", "Wagyu Smash Burger")
+                        put("value", "1D")
                     }
                     addJsonObject {
-                        put("name", "user.scanned_price")
+                        put("name", "user.scan_status")
                         put("type", "string")
-                        put("value", "16.50")
+                        put("value", "SUCCESS")
                     }
                     addJsonObject {
-                        put("name", "user.scanned_qr")
+                        put("name", "user.ocr_text")
                         put("type", "string")
-                        put("value", "apexpos://connect?tenant=${spec.tenantId}&lan=192.168.1.10")
+                        put("value", "TABLE 12 • 2 GUESTS • ORDER #4821")
                     }
                     addJsonObject {
-                        put("name", "user.scanned_qr_type")
+                        put("name", "user.ocr_confidence")
                         put("type", "string")
-                        put("value", "TERMINAL_PAIRING")
+                        put("value", "0.94")
+                    }
+                    addJsonObject {
+                        put("name", "user.ocr_block_count")
+                        put("type", "integer")
+                        put("value", 3)
+                    }
+                    addJsonObject {
+                        put("name", "user.code_image_uri")
+                        put("type", "string")
+                        put("value", "file:///data/user/0/com.example/files/workspaces/acme_pos/media/code_9f3c1a2b7d10.png")
+                    }
+                    addJsonObject {
+                        put("name", "user.code_format")
+                        put("type", "string")
+                        put("value", "QR_CODE")
+                    }
+                    addJsonObject {
+                        put("name", "user.code_kind")
+                        put("type", "string")
+                        put("value", "2D")
+                    }
+                    addJsonObject {
+                        put("name", "user.code_content")
+                        put("type", "string")
+                        put("value", "apexpos://order/pickup?terminal=POS-TERM-01")
+                    }
+                    addJsonObject {
+                        put("name", "user.code_id")
+                        put("type", "string")
+                        put("value", "code_9f3c1a2b7d10")
+                    }
+                    addJsonObject {
+                        put("name", "user.code_status")
+                        put("type", "string")
+                        put("value", "SUCCESS")
+                    }
+                    addJsonObject {
+                        put("name", "user.code_matrix")
+                        put("type", "string")
+                        put("value", "111111100101011111111\n100000101101001000001\n101110101001101011101")
                     }
                     addJsonObject {
                         put("name", "user.ai_prediction_label")
@@ -691,6 +746,7 @@ object WorkspaceProvisioner {
 
                                 // 5. Native Tools Suite Bridge (tools://*)
                                 add(SduiOnFlyBuilder.buildScannerToolBlock(spec))
+                                add(SduiOnFlyBuilder.buildCodeGenerateToolBlock(spec))
                                 add(SduiOnFlyBuilder.buildMobileNetV4ClassifyToolBlock(spec))
                                 add(SduiOnFlyBuilder.buildU2NetToolBlock(spec))
                                 add(SduiOnFlyBuilder.buildLibSignalToolBlock(spec))

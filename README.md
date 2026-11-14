@@ -136,6 +136,44 @@ Tenants can declare interactive charts directly inside their signed DivKit JSON 
 
 ---
 
+## Local Database Bridge (`local-db://op/<name>`)
+
+The **data plane** that every DivKit document uses for its own persistence. DivKit actions
+target `local-db://op/<operation>`; `EngineRouter` executes the whitelisted operation through
+`EngineRegistry` and publishes the result into reactive `user.*` variables (or a `json_list`
+JSON string). It is a URL scheme rather than a `tools://` capability, but it shares the same
+router and output-mapping contract.
+
+| Operation | Alias | Result | Purpose |
+| :--- | :--- | :--- | :--- |
+| `db.import_schema` | `schema.import` | `SchemaImported` | Import a tenant schema JSON (collections + fields). |
+| `db.list_collections` | `schema.collections` | `Rows` | List collections (`{ id, name, index }`). |
+| `db.insert` | `records.create` | `RowId` | Insert a record; `enqueue_sync: true` adds it to the `pending_sync` outbox. |
+| `db.query` | `records.query` | `Rows` | ApexQuery AST query (`select`, `where`, `sort`, `limit`, `offset`). |
+| `db.query_one` | `records.get` | `Row` | First matching record. |
+| `db.count` | `records.count` | `Count` | Count records matching a filter. |
+| `db.delete` | `records.delete` | `Count` | Delete one record by numeric `id`. |
+
+```json
+{
+  "url": "local-db://op/db.query",
+  "payload": {
+    "from": "orders",
+    "where": [{ "field": "status", "op": "=", "value": "OPEN" }],
+    "limit": 25,
+    "json_list_var": "user.orders_json"
+  }
+}
+```
+
+Output keys map columns to `user.*` variables (`output`), `json_list_var` publishes the whole
+result set as JSON, and errors land in `user.engine_error`. Payloads are capped at 128 KB,
+each operation runs under a 5 s timeout, and every call is recorded in `op_log`.
+
+> Full reference: [`docs/tools/local-db.md`](docs/tools/local-db.md).
+
+---
+
 ## Native Tools & AI Vision Suite (`tools://*`)
 
 Tenants can invoke hardware bridges, optical scanning, on-device AI vision models, and cryptographic protocols directly through standard DivKit actions using the `tools://` scheme.
