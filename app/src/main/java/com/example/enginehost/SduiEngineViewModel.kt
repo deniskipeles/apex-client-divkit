@@ -17,6 +17,10 @@ import engine.db.PendingSyncEntry
 import engine.db.WorkspaceDriverFactory
 import engine.db.WorkspaceManager
 import engine.db.currentAndroidContext
+import engine.fs.FsEntry
+import engine.fs.WorkspaceFileManager
+import engine.fs.WorkspaceFileSystem
+import engine.fs.WorkspaceFolder
 import engine.router.EngineRouter
 import engine.state.DivVariableValue
 import engine.state.EngineStateBridge
@@ -32,6 +36,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.*
+import java.io.File
 import java.util.UUID
 
 enum class EngineThemeMode(val label: String) {
@@ -82,7 +87,21 @@ data class SduiEngineUiState(
     val schemaTables: List<SchemaTableInfo> = emptyList(),
     val securityEvents: List<SecurityEventLog> = emptyList(),
     val activeDbFiles: List<String> = emptyList(),
+    val workspaceFolders: List<WorkspaceFolder> = emptyList(),
+    val fileBrowserFolder: WorkspaceFolder? = null,
+    val fileBrowserPath: String = "",
+    val fileEntries: List<FsEntry> = emptyList(),
+    val filePreview: FilePreview? = null,
     val statusBannerMessage: String? = null
+)
+
+/** Inline text preview of a browsed file. [truncated] marks content cut at the read cap. */
+data class FilePreview(
+    val name: String,
+    val path: String,
+    val content: String,
+    val truncated: Boolean,
+    val sizeLabel: String
 )
 
 class SduiEngineViewModel(appContext: Context) : ViewModel() {
@@ -92,6 +111,7 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
     val workspaceManager = WorkspaceManager(driverFactory)
     val registry = EngineRegistry()
     private val usageStore = TenantUsageStore(context)
+    val fileManager = WorkspaceFileManager(context)
 
     // Constructed lazily so ViewModel creation (and therefore the first frame) stays cheap;
     // these allocate OkHttp clients / WorkManager plumbing that is only needed on demand.
@@ -1083,6 +1103,167 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
             }
             SchemaTableInfo(tbl, cols)
         }
+    }
+
+    // ---- Workspace file manager ----
+
+    /** Refreshes the workspace folder list shown on the Files tab landing view. */
+    fun refreshWorkspaceFolders() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val state = _uiState.value
+            val folders = fileManager.listWorkspaceFolders(
+                knownWorkspaceIds = state.workspaces.map { it.tenantId },
+                displayNames = state.workspaces.associate { it.tenantId to it.displayName }
+            )
+            _uiState.update { it.copy(workspaceFolders = folders) }
+        }
+    }
+
+    /** Opens [folder] in the browser, resetting any active preview. */
+    fun openWorkspaceFolder(folder: WorkspaceFolder) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val dir = File(folder.dirPath)
+            val entries = fileManager.entriesForFolder(folder)
+            _uiState.update {
+                it.copy(
+                    fileBrowserFolder = folder,
+                    fileBrowserPath = dir.absolutePath,
+                    fileEntries = entries,
+                    filePreview = null
+                )
+            }
+        }
+    }
+
+    /** Navigates into [entry] (a directory) or, for a file, loads a text preview. */
+    fun openFileEntry(entry: FsEntry) {
+        if (entry.isDirectory) {
+            navigateToDirectory(File(entry.path))
+            return
+        }
+        if (!entry.isTextPreviewable) {
+            _uiState.update {
+                it.copy(
+                    statusBannerMessage = "${entry.name} is not a text file — preview unavailable"
+                )
+            }
+            return
+        }
+        viewModelScope.launch(Dispatchers.IO) {
+            val file = File(entry.path)
+            val content = WorkspaceFileSystem.readTextPreview(
+                file, WorkspaceFileSystem.MAX_PREVIEW_BYTES
+            )
+            _uiState.update {
+                it.copy(
+                    filePreview = content?.let { text ->
+                        FilePreview(
+                            name = entry.name,
+                            path = entry.path,
+                            content = text,
+                            truncated = file.length() > WorkspaceFileSystem.MAX_PREVIEW_BYTES,
+                            sizeLabel = WorkspaceFileSystem.humanSize(entry.sizeBytes)
+                        )
+                    },
+                    statusBannerMessage = if (content == null) {
+                        "${entry.name} looks binary — preview unavailable"
+                    } else null
+                )
+            }
+        }
+    }
+
+    fun closeFilePreview() {
+        _uiState.update { it.copy(filePreview = null) }
+    }
+
+    /** Leaves the browser and returns to the workspace folder list. */
+    fun closeWorkspaceFolder() {
+        _uiState.update {
+            it.copy(
+                fileBrowserFolder = null,
+                fileBrowserPath = "",
+                fileEntries = emptyList(),
+                filePreview = null
+            )
+        }
+    }
+
+    /** Navigates to [dir] within the current workspace folder. */
+    fun navigateToDirectory(dir: File) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val folder = _uiState.value.fileBrowserFolder
+            _uiState.update {
+                it.copy(
+                    fileBrowserPath = dir.absolutePath,
+                    fileEntries = folder?.let { f -> fileManager.listForBrowse(f, dir) }
+                        ?: WorkspaceFileSystem.listEntries(dir),
+                    filePreview = null
+                )
+            }
+        }
+    }
+
+    /** Navigates to the current browser's parent, bounded by the workspace root. */
+    fun navigateUp() {
+        val state = _uiState.value
+        val current = state.fileBrowserPath.takeIf { it.isNotBlank() } ?: return
+        val root = state.fileBrowserFolder?.dirPath ?: return
+        if (current == root) return
+        val parent = File(current).parentFile ?: return
+        if (!parent.absolutePath.startsWith(root)) return
+        navigateToDirectory(parent)
+    }
+
+    fun createFolder(name: String) = mutateBrowser("Folder \"$name\" created") { dir ->
+        WorkspaceFileSystem.createDirectory(dir, name)
+    }
+
+    fun createFile(name: String) = mutateBrowser("File \"$name\" created") { dir ->
+        WorkspaceFileSystem.createTextFile(dir, name, "")
+    }
+
+    fun renameFileEntry(entry: FsEntry, newName: String) =
+        mutateBrowser("Renamed to \"$newName\"") {
+            WorkspaceFileSystem.rename(File(entry.path), newName)
+        }
+
+    fun deleteFileEntry(entry: FsEntry) {
+        if (entry.isReadOnly) {
+            _uiState.update { it.copy(statusBannerMessage = "${entry.name} is read-only and cannot be deleted") }
+            return
+        }
+        viewModelScope.launch(Dispatchers.IO) {
+            val removed = WorkspaceFileSystem.delete(File(entry.path))
+            refreshBrowserAfterMutation(
+                if (removed) "Deleted \"${entry.name}\"" else "Could not delete \"${entry.name}\""
+            )
+        }
+    }
+
+    private fun mutateBrowser(
+        successMessage: String,
+        operation: (File) -> File?
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val dir = _uiState.value.fileBrowserPath.takeIf { it.isNotBlank() }?.let(::File)
+            val result = dir?.let(operation)
+            refreshBrowserAfterMutation(
+                if (result != null) successMessage else "Operation failed — check the name and try again"
+            )
+        }
+    }
+
+    private suspend fun refreshBrowserAfterMutation(message: String) {
+        val state = _uiState.value
+        val folder = state.fileBrowserFolder
+        val dir = state.fileBrowserPath.takeIf { it.isNotBlank() }?.let(::File)
+        val entries = if (folder != null && dir != null) {
+            fileManager.listForBrowse(folder, dir)
+        } else {
+            emptyList()
+        }
+        _uiState.update { it.copy(fileEntries = entries, statusBannerMessage = message) }
     }
 
     // ---- Interactive Security & Guard Verification Suite ----

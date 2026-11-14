@@ -28,7 +28,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.enginehost.EngineThemeMode
 import com.example.enginehost.SduiEngineViewModel
 import com.example.ui.AppSettingsBottomSheet
-import com.example.ui.DatabaseAndSyncTab
+import com.example.ui.FileManagerTab
 import com.example.ui.PosTerminalTab
 import com.example.ui.SecurityAndKmpTab
 import com.example.ui.TenantLauncherScreen
@@ -46,7 +46,7 @@ class MainActivity : ComponentActivity() {
 
 private enum class LauncherSection {
     TENANT_GRID,
-    DB_INSPECTOR,
+    FILES,
     SECURITY_KMP
 }
 
@@ -203,14 +203,14 @@ fun SduiPosEngineApp(viewModel: SduiEngineViewModel) {
                         modifier = Modifier.testTag("nav_tenants_hub")
                     )
                     NavigationBarItem(
-                        selected = launcherSection == LauncherSection.DB_INSPECTOR,
+                        selected = launcherSection == LauncherSection.FILES,
                         onClick = {
-                            viewModel.refreshDatabaseTelemetry()
-                            launcherSection = LauncherSection.DB_INSPECTOR
+                            viewModel.refreshWorkspaceFolders()
+                            launcherSection = LauncherSection.FILES
                         },
-                        icon = { Icon(Icons.Default.Storage, contentDescription = "DB & Sync") },
-                        label = { Text("DB & Sync", fontSize = 11.sp) },
-                        modifier = Modifier.testTag("nav_db_sync")
+                        icon = { Icon(Icons.Default.Folder, contentDescription = "Files") },
+                        label = { Text("Files", fontSize = 11.sp) },
+                        modifier = Modifier.testTag("nav_files")
                     )
                     NavigationBarItem(
                         selected = launcherSection == LauncherSection.SECURITY_KMP,
@@ -242,7 +242,7 @@ fun SduiPosEngineApp(viewModel: SduiEngineViewModel) {
                         showConnectWorkspaceSheet = showConnectWorkspaceSheet,
                         onShowConnectWorkspaceSheetChange = { showConnectWorkspaceSheet = it }
                     )
-                    LauncherSection.DB_INSPECTOR -> DatabaseAndSyncTab(
+                    LauncherSection.FILES -> FileManagerTab(
                         uiState = uiState,
                         viewModel = viewModel
                     )

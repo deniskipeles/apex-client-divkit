@@ -39,7 +39,7 @@ A Kotlin Multiplatform (KMP) Server-Driven UI (SDUI) application engine that use
 3. **Full-Screen Self-Contained Tenant Workspace & Standout Pill**:
    - Clicking any tenant card opens a **dedicated full-screen workspace** for that tenant with all screen space available to its dynamically rendered DivKit UI (`EngineScreen` -> `DivView`), plus interactive **Public Client ID (`pk_live_...`) & cURL Webhook Dispatch**, **Active Route Path & URL Queries (Preserved on Refresh)**, and **Hardware Audio & Haptics Tester**.
    - **Standout Pill (Top-Center)**: A high-contrast, zero-shadow pill (`workspace_standout_pill`) sits at the top-center of the workspace, visible across both Light and Dark themes without shadowing any workspace content.
-   - **Persistent AppBar on Pill Click**: Clicking the standout pill opens the top AppBar overlay (`< Hub` back button, QR Scanner, Refresh `↻`, Notification Bell, and `⋮` menu with `Refresh Page`, `Workspace Settings`, `Clear Offline Cache`, `Schema Cache & Rollback`, `On-the-Fly SDUI Builder`, `Workspace SQLite & Sync`, `Security & KMP Inspector`, and `Return to Hub`), which **remains open unless the active workspace screen is clicked or the exit button is clicked**.
+   - **Persistent AppBar on Pill Click**: Clicking the standout pill opens the top AppBar overlay (`< Hub` back button, QR Scanner, Refresh `↻`, Notification Bell, and `⋮` menu with `Refresh Page`, `Workspace Settings`, `Clear Offline Cache`, `Schema Cache & Rollback`, `On-the-Fly SDUI Builder`, `Workspace Files`, `Security & KMP Inspector`, and `Return to Hub`), which **remains open unless the active workspace screen is clicked or the exit button is clicked**.
 
 ---
 
@@ -95,6 +95,8 @@ iosApp/
 app/
   src/main/java/
     engine/...                              # Android runtime compilation of the KMP engine
+    engine/fs/WorkspaceFileSystem.kt        # Pure-JVM file ops: safe names, listing, sizes, text preview
+    engine/fs/WorkspaceFileManager.kt       # Workspace folder discovery + read-only tenant DB entry
     engine/tools/NativeToolsSuite.kt        # Android tool schemas & unified `tools://` dispatch
     engine/tools/TerminalApp.kt             # Android capability registry (mirrors shared TerminalApp)
     engine/tools/impl/HapticsTool.kt        # hardware.haptics@1 — Vibrator/VibratorManager
@@ -117,7 +119,7 @@ app/
       ui/EngineModalsAndSheets.kt           # App Settings, Connect Workspace & Workspace Settings sheets
       ui/PosTerminalTab.kt                  # Dedicated tenant workspace, standout pill, AppBar & rollback sheet
       ui/SduiBuilderTab.kt                  # Interactive DivKit component & chart builder, JSON editor & rollback
-      ui/DatabaseAndSyncTab.kt              # SQLite PRAGMA, op_log & pending_sync inspector
+      ui/FileManagerTab.kt                  # Workspace file manager: folder browser, preview & file ops
       ui/SecurityAndKmpTab.kt               # Zero-trust threat simulator & KMP/Swift code browser
 ```
 

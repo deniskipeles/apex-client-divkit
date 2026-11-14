@@ -16,6 +16,22 @@ Repository-specific knowledge for the Apex Client DivKit SDUI POS app.
 ./gradlew :app:assembleDebug               # produces APKs (universal + per-ABI)
 ```
 
+### Environment
+
+`JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64`, `ANDROID_HOME=/home/openhands/Android/Sdk`.
+The sandbox can be reset between sessions, wiping the JDK and Android SDK. To restore:
+
+```bash
+sudo apt-get install -y openjdk-21-jdk-headless unzip curl
+# cmdline-tools 11076708 → /home/openhands/Android/Sdk/cmdline-tools/latest
+sdkmanager --licenses
+sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+```
+
+`assembleRelease` needs `STORE_PASSWORD`/`KEY_PASSWORD` (see `build-apks.sh`; the default
+keystore `my-upload-key.jks` uses `storepass123`). R8 itself runs fine without them —
+only `packageRelease` fails when the passwords are unset.
+
 ## Tool capability architecture (`tools://*`)
 
 New terminal capabilities must be wired through **all** of these:

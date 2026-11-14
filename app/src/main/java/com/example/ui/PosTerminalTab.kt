@@ -55,7 +55,7 @@ private enum class ActiveHostOverlay {
     WORKSPACE_SETTINGS,
     SCHEMA_ROLLBACK,
     SDUI_BUILDER,
-    DB_AND_SYNC,
+    FILES,
     SECURITY_KMP
 }
 
@@ -872,12 +872,12 @@ fun PosTerminalTab(
                                         }
                                     )
                                     DropdownMenuItem(
-                                        text = { Text("Workspace SQLite & Sync") },
-                                        leadingIcon = { Icon(Icons.Default.Storage, contentDescription = null) },
+                                        text = { Text("Workspace Files") },
+                                        leadingIcon = { Icon(Icons.Default.Folder, contentDescription = null) },
                                         onClick = {
                                             showOverflowMenu = false
-                                            viewModel.refreshDatabaseTelemetry()
-                                            activeOverlay = ActiveHostOverlay.DB_AND_SYNC
+                                            viewModel.refreshWorkspaceFolders()
+                                            activeOverlay = ActiveHostOverlay.FILES
                                         }
                                     )
                                     DropdownMenuItem(
@@ -946,8 +946,8 @@ fun PosTerminalTab(
                                 "Cached DivKit Schemas & Version Rollback (${spec.tenantId})"
                             ActiveHostOverlay.SDUI_BUILDER ->
                                 "Receive / Build New DivKit SDUI Schema"
-                            ActiveHostOverlay.DB_AND_SYNC ->
-                                "Workspace SQLite & Sync (${spec.tenantId})"
+                            ActiveHostOverlay.FILES ->
+                                "Workspace Files (${spec.tenantId})"
                             ActiveHostOverlay.SECURITY_KMP ->
                                 "Zero-Trust Security & KMP Architecture"
                             else -> ""
@@ -978,9 +978,10 @@ fun PosTerminalTab(
                         viewModel = viewModel,
                         onSwitchToTerminalPreview = { activeOverlay = ActiveHostOverlay.NONE }
                     )
-                    ActiveHostOverlay.DB_AND_SYNC -> DatabaseAndSyncTab(
+                    ActiveHostOverlay.FILES -> FileManagerTab(
                         uiState = uiState,
-                        viewModel = viewModel
+                        viewModel = viewModel,
+                        initialFolderId = spec.tenantId
                     )
                     ActiveHostOverlay.SECURITY_KMP -> SecurityAndKmpTab(
                         uiState = uiState,
