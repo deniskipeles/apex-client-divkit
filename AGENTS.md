@@ -71,3 +71,21 @@ showcase of the SDUI surface. When a tool gains a user-facing operation, surface
 - ZXing `com.google.zxing:core:3.5.3` powers `tools://code-generate`. It is pure JVM with no
   Play Services dependency, so `CodeGeneratorEngine` renders bitmaps and encodes symbols in
   plain JVM unit tests (`Bitmap`/`Color` are Robolectric shadows there).
+
+## APK packaging (ABI splits)
+
+- `splits.abi.include(...)` in `app/build.gradle.kts` only constrains the **per-ABI split
+  APKs**. It does not filter the **universal** APK, which packages every ABI found in
+  dependencies. `curve25519-android` (transitive via `signal-protocol-android`) ships dead
+  `armeabi`/`mips`/`x86` libraries, so `ndk.abiFilters` is also set to keep them out of all
+  outputs. Do not remove it or the universal APK balloons (~+26 MB).
+- Release builds run R8 with `isMinifyEnabled`. Ktor's debugger detector references JVM-only
+  `java.lang.management` types, so `proguard-rules.pro` carries matching `-dontwarn` rules;
+  without them `:app:minifyReleaseWithR8` fails with "Missing class" errors.
+
+## Demo showcase contract
+
+- `WorkspaceProvisioner.buildDefaultDivKitCardJson` is the built-in showcase and must exercise
+  the **full** tool inventory. `ExampleUnitTest.demoCard_surfacesEveryRegisteredNativeTool`
+  asserts every `NativeToolsSuite.registeredSchemas` toolId appears as a `tools://<id>/` trigger.
+  Adding a tool to the registry without a demo block fails that test.
