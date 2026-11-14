@@ -21,6 +21,14 @@ android {
     versionName = "1.0"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+    // `splits.abi.include` only constrains the per-ABI split APKs; the universal APK
+    // still packages every ABI found in dependencies. curve25519-android (pulled in by
+    // signal-protocol-android) ships dead armeabi/mips/x86 libraries, so filter the ABIs
+    // here to keep them out of all outputs, universal included.
+    ndk {
+      abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64")
+    }
   }
 
   // Do not remove or modify these signingConfigs. They are necessary for building, installing,

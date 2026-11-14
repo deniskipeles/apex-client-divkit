@@ -47,3 +47,9 @@
 -dontwarn org.conscrypt.**
 -dontwarn org.openjsse.**
 -dontwarn okhttp3.internal.platform.**
+
+# 7. Ktor's debugger detector references JVM-only java.lang.management types that do not
+# exist on Android (surfaced by tools://net's Ktor CIO client/server).
+-dontwarn java.lang.management.ManagementFactory
+-dontwarn java.lang.management.RuntimeMXBean
+-dontwarn io.ktor.util.debug.**

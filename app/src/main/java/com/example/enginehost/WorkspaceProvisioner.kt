@@ -425,6 +425,131 @@ object WorkspaceProvisioner {
                         put("type", "string")
                         put("value", "click")
                     }
+                    addJsonObject {
+                        put("name", "user.beeper_status")
+                        put("type", "string")
+                        put("value", "idle")
+                    }
+                    addJsonObject {
+                        put("name", "user.beeper_tone")
+                        put("type", "string")
+                        put("value", "success")
+                    }
+                    addJsonObject {
+                        put("name", "user.clipboard_content")
+                        put("type", "string")
+                        put("value", "POS-TERM-01 • Order #1042")
+                    }
+                    addJsonObject {
+                        put("name", "user.last_push_alert")
+                        put("type", "string")
+                        put("value", "Awaiting push")
+                    }
+                    addJsonObject {
+                        put("name", "user.supervisor_authenticated")
+                        put("type", "string")
+                        put("value", "false")
+                    }
+                    addJsonObject {
+                        put("name", "user.supervisor_role")
+                        put("type", "string")
+                        put("value", "cashier")
+                    }
+                    addJsonObject {
+                        put("name", "user.camera_capture_uri")
+                        put("type", "string")
+                        put("value", "content://com.example.provider/camera/last_frame.jpg")
+                    }
+                    addJsonObject {
+                        put("name", "user.camera_torch_state")
+                        put("type", "string")
+                        put("value", "off")
+                    }
+                    addJsonObject {
+                        put("name", "user.processed_image_uri")
+                        put("type", "string")
+                        put("value", "content://com.example.provider/processed/matte_01.png")
+                    }
+                    addJsonObject {
+                        put("name", "user.image_processing_status")
+                        put("type", "string")
+                        put("value", "idle")
+                    }
+                    addJsonObject {
+                        put("name", "user.vector_source")
+                        put("type", "string")
+                        put("value", "text")
+                    }
+                    addJsonObject {
+                        put("name", "user.vector_dim")
+                        put("type", "string")
+                        put("value", "512")
+                    }
+                    addJsonObject {
+                        put("name", "user.vector_similarity")
+                        put("type", "string")
+                        put("value", "0.87")
+                    }
+                    addJsonObject {
+                        put("name", "user.vector_b64")
+                        put("type", "string")
+                        put("value", "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=")
+                    }
+                    addJsonObject {
+                        put("name", "user.offline_cache_status")
+                        put("type", "string")
+                        put("value", "idle")
+                    }
+                    addJsonObject {
+                        put("name", "user.offline_cached_pages")
+                        put("type", "string")
+                        put("value", "0")
+                    }
+                    addJsonObject {
+                        put("name", "user.realtime_connection_state")
+                        put("type", "string")
+                        put("value", "disconnected")
+                    }
+                    addJsonObject {
+                        put("name", "user.realtime_channel")
+                        put("type", "string")
+                        put("value", "kitchen_stream")
+                    }
+                    addJsonObject {
+                        put("name", "user.net_status")
+                        put("type", "string")
+                        put("value", "idle")
+                    }
+                    addJsonObject {
+                        put("name", "user.net_http_status")
+                        put("type", "string")
+                        put("value", "0")
+                    }
+                    addJsonObject {
+                        put("name", "user.net_bytes")
+                        put("type", "string")
+                        put("value", "0")
+                    }
+                    addJsonObject {
+                        put("name", "user.net_hub_port")
+                        put("type", "string")
+                        put("value", "0")
+                    }
+                    addJsonObject {
+                        put("name", "user.print_status")
+                        put("type", "string")
+                        put("value", "idle")
+                    }
+                    addJsonObject {
+                        put("name", "user.print_device_count")
+                        put("type", "string")
+                        put("value", "0")
+                    }
+                    addJsonObject {
+                        put("name", "user.print_bytes")
+                        put("type", "string")
+                        put("value", "0")
+                    }
                 }
                 putJsonArray("states") {
                     addJsonObject {
@@ -749,7 +874,22 @@ object WorkspaceProvisioner {
                                 add(SduiOnFlyBuilder.buildCodeGenerateToolBlock(spec))
                                 add(SduiOnFlyBuilder.buildMobileNetV4ClassifyToolBlock(spec))
                                 add(SduiOnFlyBuilder.buildU2NetToolBlock(spec))
+                                add(SduiOnFlyBuilder.buildImageManipulationToolBlock(spec))
+                                add(SduiOnFlyBuilder.buildCameraToolBlock(spec))
+                                add(SduiOnFlyBuilder.buildVectorizeToolBlock(spec))
                                 add(SduiOnFlyBuilder.buildLibSignalToolBlock(spec))
+                                add(SduiOnFlyBuilder.buildBiometricsToolBlock(spec))
+                                add(SduiOnFlyBuilder.buildHapticsToolBlock(spec))
+                                add(SduiOnFlyBuilder.buildBeeperToolBlock(spec))
+                                add(SduiOnFlyBuilder.buildClipboardAndPushToolBlock(spec))
+                                add(SduiOnFlyBuilder.buildOfflineCacheToolBlock(spec))
+                                add(SduiOnFlyBuilder.buildRealtimeWsToolBlock(spec))
+                                add(SduiOnFlyBuilder.buildNetToolBlock(spec))
+                                add(SduiOnFlyBuilder.buildPrintToolBlock(spec))
+
+                                // 5b. On-the-fly inventory json_list + hourly trend chart
+                                add(SduiOnFlyBuilder.buildInventoryJsonListBlock(spec))
+                                add(SduiOnFlyBuilder.buildHourlyTrendChartBlock(spec, chartType = "area"))
 
                                 // 6. Custom DivKit Chart Block (`"custom_type": "sdui_chart"`) bound to `user.orders_json`
                                 add(

@@ -10,6 +10,7 @@ import engine.state.EngineStateBridge
 import engine.ui.DivChartParser
 import engine.ui.DivChartType
 import engine.tools.DivActionUrl
+import engine.tools.NativeToolsSuite
 import engine.tools.Provenance
 import engine.tools.TerminalApp
 import engine.tools.ToolArgs
@@ -935,6 +936,20 @@ class ExampleUnitTest {
         // Legacy split scanner URIs must not appear
         assertFalse(json.contains("tools://scan-barcode"))
         assertFalse(json.contains("tools://scan-qr"))
+    }
+
+    @Test
+    fun demoCard_surfacesEveryRegisteredNativeTool() {
+        val spec = WorkspaceProvisioner.defaultWorkspaces.first()
+        val json = WorkspaceProvisioner.buildDefaultDivKitCardJson(spec)
+
+        // The showcase must exercise the full tool inventory, so every registered
+        // tool schema has to appear as a tools:// trigger in the built-in card.
+        val missing = NativeToolsSuite.registeredSchemas
+            .map { it.toolId }
+            .filterNot { json.contains("tools://${it}/") }
+
+        assertTrue("Demo card does not showcase these tools: $missing", missing.isEmpty())
     }
 
     @Test
