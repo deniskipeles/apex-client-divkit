@@ -4,6 +4,7 @@ import engine.config.EngineConfig
 import engine.db.EngineRegistry
 import engine.db.OpResult
 import engine.db.WorkspaceManager
+import engine.icons.NativeIconCatalog
 import engine.state.DivVariableValue
 import engine.state.EngineStateBridge
 import kotlinx.coroutines.withTimeout
@@ -16,6 +17,7 @@ import kotlinx.serialization.json.*
  * Schemes:
  *  - `local-db://op/<name>` → engine registry (database operations)
  *  - `hardware://<capability>` → host-provided capability handlers
+ *  - `icons://native/<name>` → bundled native POS icon catalog (resolves to a `user.*` variable)
  *  - `workspace://clear_all` → nuclear workspace reset
  *  - `https://` → left to DivKit's built-in network action
  */
@@ -46,6 +48,7 @@ class EngineRouter(
         url.startsWith("local-db://op/") -> handleLocalDb(url, payload ?: JsonObject(emptyMap()))
         url.startsWith("hardware://") -> handleHardware(url, payload)
         url.startsWith("tools://") -> handleTools(url, payload ?: JsonObject(emptyMap()))
+        url.startsWith("icons://") -> handleIcons(url, payload)
         url == "workspace://clear_all" -> handleClearAll()
         else -> ActionOutcome.Unhandled
     }
@@ -119,6 +122,34 @@ class EngineRouter(
         // Host app registers capability handlers externally; returning Unhandled
         // lets the platform layer dispatch to them.
         return ActionOutcome.Unhandled
+    }
+
+    /**
+     * Resolves an `icons://native/<name>` reference and publishes the canonical icon name
+     * into a `user.*` variable so DivKit can bind it (e.g. to an `icon` property or a text
+     * label). Unknown icons report an error rather than failing silently.
+     */
+    private fun handleIcons(url: String, payload: JsonObject?): ActionOutcome {
+        val key = NativeIconCatalog.normalize(url)
+        val icon = key?.let { NativeIconCatalog.find(it) }
+        val body = payload ?: JsonObject(emptyMap())
+        if (icon == null) {
+            val message = "Unknown native icon: $url"
+            emitError(message, body)
+            return ActionOutcome.Error(message)
+        }
+        // Default target mirrors other schemes: `output` map, else the icon's own variable.
+        val target = body["output"]?.jsonObject?.get("icon")?.jsonPrimitive?.contentOrNull
+            ?: body["var"]?.jsonPrimitive?.contentOrNull
+            ?: body["result_var"]?.jsonPrimitive?.contentOrNull
+            ?: "user.icon_name"
+        if (VAR_NAME_REGEX.matches(target)) {
+            EngineStateBridge.pushUpdate(target, DivVariableValue.Str(icon.name))
+        }
+        EngineStateBridge.pushUpdate("user.icon_name", DivVariableValue.Str(icon.name))
+        EngineStateBridge.pushUpdate("user.icon_material", DivVariableValue.Str(icon.material))
+        EngineStateBridge.pushUpdate("user.icon_category", DivVariableValue.Str(icon.category.label))
+        return ActionOutcome.Handled
     }
 
     private suspend fun handleClearAll(): ActionOutcome {

@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -28,6 +29,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import engine.icons.NativeIconCatalog
+import engine.icons.NativeIconVectors
 import engine.state.DivVariableValue
 import engine.state.EngineStateBridge
 import kotlinx.coroutines.launch
@@ -464,6 +467,43 @@ private fun RenderDivNode(
             )
         }
 
+        "image" -> {
+            // Native icon node: `image_url` (or `icon`) accepts icons://native/<name>,
+            // a catalog name, or an alias. Non-icon URLs are ignored (no network loader).
+            val iconRef = node["image_url"]?.jsonPrimitive?.contentOrNull
+                ?: node["icon"]?.jsonPrimitive?.contentOrNull
+                ?: node["custom_props"]?.jsonObject?.get("icon")?.jsonPrimitive?.contentOrNull
+            val resolved = iconRef?.let { evalExpr(it, variables, rowContext) }
+            val sizeDp = node["width"]?.jsonObject?.get("value")?.jsonPrimitive?.intOrNull
+                ?: node["height"]?.jsonObject?.get("value")?.jsonPrimitive?.intOrNull
+                ?: node["size"]?.jsonPrimitive?.intOrNull
+                ?: 24
+            val tintHex = node["tint"]?.jsonPrimitive?.contentOrNull
+                ?: node["text_color"]?.jsonPrimitive?.contentOrNull
+            val tint = tintHex?.let { adaptTextColorForTheme(evalExpr(it, variables, rowContext), isDark) }
+                ?: MaterialTheme.colorScheme.onSurface
+            val alignStr = node["alignment_horizontal"]?.jsonPrimitive?.contentOrNull ?: "center"
+            val horizontal = when (alignStr) {
+                "left", "start" -> Alignment.CenterStart
+                "right", "end" -> Alignment.CenterEnd
+                else -> Alignment.Center
+            }
+            Box(
+                modifier = Modifier.fillMaxWidth().then(boxModifier),
+                contentAlignment = horizontal
+            ) {
+                Icon(
+                    imageVector = resolveIcon(resolved.orEmpty()),
+                    contentDescription = node["content_description"]?.jsonPrimitive?.contentOrNull
+                        ?: resolved,
+                    tint = tint,
+                    modifier = Modifier
+                        .size(sizeDp.dp)
+                        .testTag("div_icon_${resolved?.replace(Regex("[^a-z0-9]+"), "_") ?: "unknown"}")
+                )
+            }
+        }
+
         "json_list", "sdui_chart", "chart", "bar_chart", "line_chart", "area_chart", "donut_chart", "pie_chart", "custom" -> {
             val customType = node["custom_type"]?.jsonPrimitive?.contentOrNull ?: type
             if (engine.ui.DivChartParser.isChartCustomType(customType) || engine.ui.DivChartParser.isChartCustomType(type)) {
@@ -721,23 +761,17 @@ private fun parseHexColor(hexStr: String): Color {
     }
 }
 
-private fun resolveIcon(name: String) = when (name.lowercase()) {
-    "add", "plus", "cart_add" -> Icons.Default.AddShoppingCart
-    "scan", "barcode", "scanner", "qr_code", "qr" -> Icons.Default.QrCodeScanner
-    "print", "printer", "receipt" -> Icons.Default.Print
-    "nfc", "tap", "card" -> Icons.Default.Contactless
-    "delete", "trash", "clear" -> Icons.Default.DeleteOutline
-    "sync", "cloud" -> Icons.Default.Sync
-    "check", "checkout", "pay" -> Icons.Default.CheckCircle
-    "inventory", "box" -> Icons.Default.Inventory2
-    "refresh" -> Icons.Default.Refresh
-    "search", "ocr", "text", "read_text" -> Icons.Default.Search
-    "camera", "photo", "image" -> Icons.Default.PhotoCamera
-    "lock", "shield", "e2ee" -> Icons.Default.Lock
-    "vibration", "haptics" -> Icons.Default.Vibration
-    "volume", "beeper", "audio" -> Icons.Default.VolumeUp
-    "fingerprint", "biometrics" -> Icons.Default.Fingerprint
-    "paste", "clipboard" -> Icons.Default.ContentPaste
-    "notification", "push", "bell" -> Icons.Default.Notifications
-    else -> Icons.Default.FlashOn
+/**
+ * Resolves a DivKit `icon` name to a vector.
+ *
+ * Resolution goes through the bundled native POS catalog ([NativeIconCatalog]), which
+ * understands `icons://native/<name>`, `icons://<name>`, canonical names, aliases, and
+ * Material identifiers. Unknown names fall back to [Icons.Default.FlashOn] so a card
+ * always renders something.
+ */
+private fun resolveIcon(name: String): ImageVector {
+    NativeIconCatalog.find(name)
+        ?.let { NativeIconVectors.resolve(it.material) }
+        ?.let { return it }
+    return Icons.Default.FlashOn
 }

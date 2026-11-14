@@ -32,13 +32,14 @@ dispatch contract and the provenance gate.
 | [print.md](print.md) | `tools://print` | `device.printer@1` | Bluetooth printer discovery & ESC/POS printing. |
 | [code-generate.md](code-generate.md) | `tools://code-generate` | `vision.generate_code@1` | Barcode & QR / matrix code generation (ZXing). |
 | [local-db.md](local-db.md) | `local-db://op/<name>` | `db.*` / `records.*` | Tenant SQLite bridge — insert/query/count/delete via DivKit actions. |
+| [icons.md](icons.md) | `icons://native/<name>` | — | Bundled native POS icon catalog (285 icons) + Compose vector resolver. |
 
 > `vision.remove_background@1` is reachable through two entry points: the higher-level
 > [`image-manipulation.md`](image-manipulation.md) pipeline and the dedicated
 > [`u-2-net.md`](u-2-net.md) segmentation model.
 >
-> `local-db://` is a **URL scheme** (data plane), not a `tools://` capability, but it shares
-> the same router and `user.*` output-mapping contract.
+> `local-db://` and `icons://` are **URL schemes** (data plane), not `tools://` capabilities,
+> but they share the same router and `user.*` output-mapping contract.
 
 ## Adding a new tool
 

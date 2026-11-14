@@ -367,7 +367,10 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                         "user.signal_fingerprint" to DivVariableValue.Str("4E-91-A2-5F-C0-83"),
                         "user.signal_status" to DivVariableValue.Str("ESTABLISHED"),
                         "user.tool_last_status" to DivVariableValue.Str("Ready"),
-                        "user.tool_last_latency" to DivVariableValue.IntVal(3L)
+                        "user.tool_last_latency" to DivVariableValue.IntVal(3L),
+                        "user.icon_name" to DivVariableValue.Str("cart"),
+                        "user.icon_material" to DivVariableValue.Str("ShoppingCart"),
+                        "user.icon_category" to DivVariableValue.Str("Commerce")
                     )
                 )
 

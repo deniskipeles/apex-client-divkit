@@ -550,6 +550,21 @@ object WorkspaceProvisioner {
                         put("type", "string")
                         put("value", "0")
                     }
+                    addJsonObject {
+                        put("name", "user.icon_name")
+                        put("type", "string")
+                        put("value", "cart")
+                    }
+                    addJsonObject {
+                        put("name", "user.icon_material")
+                        put("type", "string")
+                        put("value", "ShoppingCart")
+                    }
+                    addJsonObject {
+                        put("name", "user.icon_category")
+                        put("type", "string")
+                        put("value", "Commerce")
+                    }
                 }
                 putJsonArray("states") {
                     addJsonObject {
@@ -886,6 +901,9 @@ object WorkspaceProvisioner {
                                 add(SduiOnFlyBuilder.buildRealtimeWsToolBlock(spec))
                                 add(SduiOnFlyBuilder.buildNetToolBlock(spec))
                                 add(SduiOnFlyBuilder.buildPrintToolBlock(spec))
+
+                                // 5a. Native icon scheme (icons://native/<name>)
+                                add(SduiOnFlyBuilder.buildNativeIconSchemeBlock(spec))
 
                                 // 5b. On-the-fly inventory json_list + hourly trend chart
                                 add(SduiOnFlyBuilder.buildInventoryJsonListBlock(spec))

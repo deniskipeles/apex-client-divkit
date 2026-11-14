@@ -489,6 +489,21 @@ fun SduiBuilderTab(
                     ) {
                         Text("+ Clipboard & Push Alerts", fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
                     }
+
+                    FilledTonalButton(
+                        onClick = {
+                            val block = SduiOnFlyBuilder.buildNativeIconSchemeBlock(spec)
+                            viewModel.injectOnFlyComponent(block, "icons://native/<name>", prepend = true)
+                            onSwitchToTerminalPreview()
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .defaultMinSize(minHeight = 48.dp)
+                            .testTag("inject_native_icon_scheme_button"),
+                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp)
+                    ) {
+                        Text("+ Native Icon Scheme", fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                    }
                 }
             }
         }

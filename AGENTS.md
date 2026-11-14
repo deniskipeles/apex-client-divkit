@@ -53,6 +53,35 @@ New terminal capabilities must be wired through **all** of these:
 `NativeToolsSuite.execute(...)` returns output mapped into `user.*` DivKit variables via
 `defaultOutputMapping`; types are preserved (IntVal/DoubleVal/Bool/Str).
 
+## Icon scheme (`icons://native/<name>`)
+
+Icons are **not** `tools://` capabilities — they are a resolver over a bundled catalog, wired
+through two files:
+
+1. `engine/icons/NativeIconCatalog.kt` — pure-Kotlin catalog (`NativeIcon(name, material,
+   category, aliases)`), plus `normalize`/`find`/`findByMaterial`/`uriFor`. No Compose import,
+   so it is unit-testable on plain JVM.
+2. `engine/icons/NativeIconVectors.kt` — `resolve(material): ImageVector?`, the only file that
+   imports `androidx.compose.material.icons.*`.
+
+Consumer points: `DivKitMultiplatform.resolveIcon(name)` (used by `button.icon`, the `icon`
+node, and the `image` node) and `EngineRouter.handleIcons()` (the `icons://` action branch,
+which publishes `user.icon_name` / `user.icon_material` / `user.icon_category`).
+
+Invariants enforced by `NativeIconCatalogTest` + `ExampleRobolectricTest`:
+
+- Every canonical name and alias is unique across the catalog and resolves to one icon.
+- Every `material` id is unique and is not shadowed by another icon's key (keys and material
+  ids are both matched case-insensitively).
+- Every catalog entry maps to a Compose vector, so a missing `NativeIconVectors` branch fails
+  the build.
+
+Adding an icon = append one catalog entry + one `NativeIconVectors` branch. Keep the catalog
+asset-free (vectors only) so the APK stays well under the 4 MB budget. The catalog is
+**285 icons** (285 unique materials, 670 keys); R8 inlines the vector table, so the whole
+scheme adds roughly **64 KB** to the release APK (measured by building with and without
+`NativeIconVectors`).
+
 ## Demo workspace showcase
 
 The single built-in demo tenant (`WorkspaceProvisioner.defaultWorkspaces`) is the live
@@ -65,10 +94,13 @@ showcase of the SDUI surface. When a tool gains a user-facing operation, surface
 - `SduiEngineViewModel` — seed the same variables in the `EngineStateBridge.pushBatch(...)`
   reset so the card renders populated before the first tool call.
 - `SduiBuilderTab` — expose an inject button for the block in the on-the-fly builder.
-- `DivKitMultiplatform.resolveIcon(name)` — map any new `icon` names to a Material icon.
+- `DivKitMultiplatform.resolveIcon(name)` — map any new `icon` names to a Material icon; the
+  demo also showcases the `icons://native/<name>` scheme via `buildNativeIconSchemeBlock`.
 
 `local-db://op/<name>` is the SQLite data plane (insert/query/count/delete), dispatched by
 `EngineRouter` and documented in `docs/tools/local-db.md`.
+
+`icons://native/<name>` is the icon resolver scheme, documented in `docs/tools/icons.md`.
 
 ## Testing conventions
 

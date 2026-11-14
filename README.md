@@ -97,6 +97,8 @@ app/
     engine/...                              # Android runtime compilation of the KMP engine
     engine/fs/WorkspaceFileSystem.kt        # Pure-JVM file ops: safe names, listing, sizes, text preview
     engine/fs/WorkspaceFileManager.kt       # Workspace folder discovery + read-only tenant DB entry
+    engine/icons/NativeIconCatalog.kt       # 285-icon POS catalog + icons:// reference resolver (no Compose)
+    engine/icons/NativeIconVectors.kt       # Material identifier -> Compose ImageVector mapping
     engine/tools/NativeToolsSuite.kt        # Android tool schemas & unified `tools://` dispatch
     engine/tools/TerminalApp.kt             # Android capability registry (mirrors shared TerminalApp)
     engine/tools/impl/HapticsTool.kt        # hardware.haptics@1 — Vibrator/VibratorManager
@@ -173,6 +175,27 @@ result set as JSON, and errors land in `user.engine_error`. Payloads are capped 
 each operation runs under a 5 s timeout, and every call is recorded in `op_log`.
 
 > Full reference: [`docs/tools/local-db.md`](docs/tools/local-db.md).
+
+---
+
+## Native Icon Scheme (`icons://native/<name>`)
+
+A curated catalog of **285 POS-native icons** — cart, bell, receipt, payment, inventory,
+printer, scan, warehouse, and more — resolved to bundled Compose `ImageVector`s. Icons
+render instantly and offline, with no image assets and no network fetch. `EngineRouter`
+also accepts the scheme as an action, publishing the resolved name into `user.*`.
+
+| Reference | Where | Example |
+| :--- | :--- | :--- |
+| `icons://native/cart` | `image` node, `button.icon`, action `url` | `{ "type": "image", "image_url": "icons://native/cart", "size": 24 }` |
+| `cart`, `Cart`, `shopping_cart`, `ShoppingCart` | `button.icon` / action `url` | `{ "type": "button", "icon": "shopping_cart", ... }` |
+
+Action output: `user.icon_name`, `user.icon_material`, `user.icon_category`. Unknown names
+return an error instead of failing silently. The full 285-icon table (with aliases and
+categories) lives in [`docs/tools/icons.md`](docs/tools/icons.md).
+
+> **Size budget.** The scheme adds no drawable assets — every icon is a code-generated
+> vector — so the catalog adds roughly 64 KB to the R8-shrunk release APK (limit: 4 MB).
 
 ---
 

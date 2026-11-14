@@ -953,6 +953,19 @@ class ExampleUnitTest {
     }
 
     @Test
+    fun demoCard_surfacesNativeIconScheme() {
+        val spec = WorkspaceProvisioner.defaultWorkspaces.first()
+        val json = WorkspaceProvisioner.buildDefaultDivKitCardJson(spec)
+
+        // The showcase must exercise the icons:// scheme in both node and action positions.
+        assertTrue("Demo card does not reference icons://native/", json.contains("icons://native/"))
+        listOf("cart", "bell", "receipt", "payment", "inventory", "printer", "scan", "warehouse")
+            .forEach { name ->
+                assertTrue("Demo card missing icons://native/$name", json.contains("icons://native/$name"))
+            }
+    }
+
+    @Test
     fun demoCard_declaresEveryReferencedUserVariable() {
         val spec = WorkspaceProvisioner.defaultWorkspaces.first()
         val json = WorkspaceProvisioner.buildDefaultDivKitCardJson(spec)

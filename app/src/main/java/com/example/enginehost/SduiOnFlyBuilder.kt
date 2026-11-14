@@ -1499,6 +1499,102 @@ object SduiOnFlyBuilder {
         }
     }
 
+    /**
+     * Native Icon Scheme showcase: renders a sample of `icons://native/<name>` icons and
+     * dispatches the scheme to resolve a chosen icon into `user.icon_name`.
+     */
+    fun buildNativeIconSchemeBlock(spec: TenantWorkspaceSpec): JsonObject = buildJsonObject {
+        put("type", "container")
+        put("orientation", "vertical")
+        put("background_color", "#1E1B4B")
+        put("corner_radius", 12)
+        putJsonObject("paddings") {
+            put("left", 12); put("right", 12); put("top", 10); put("bottom", 10)
+        }
+        putJsonObject("border") {
+            put("corner_radius", 12)
+            putJsonObject("stroke") {
+                put("color", "#818CF8")
+                put("width", 1)
+            }
+        }
+        putJsonArray("items") {
+            addJsonObject {
+                put("type", "text")
+                put("text", "🎨 NATIVE ICON SCHEME (icons://native/<name> • ${engine.icons.NativeIconCatalog.size} icons)")
+                put("font_size", 11)
+                put("font_weight", "bold")
+                put("text_color", "#A5B4FC")
+            }
+            addJsonObject {
+                put("type", "text")
+                put("text", "Resolved: @{user.icon_name} • Material: @{user.icon_material} • Category: @{user.icon_category}")
+                put("font_size", 12)
+                put("text_color", "#E0E7FF")
+                put("font_family", "monospace")
+            }
+            // Icon gallery rendered through the `image` node type (icons:// references).
+            addJsonObject {
+                put("type", "container")
+                put("orientation", "horizontal")
+                put("item_spacing", 10)
+                putJsonArray("items") {
+                    listOf(
+                        "icons://native/cart",
+                        "icons://native/bell",
+                        "icons://native/receipt",
+                        "icons://native/payment",
+                        "icons://native/inventory",
+                        "icons://native/printer",
+                        "icons://native/scan",
+                        "icons://native/warehouse"
+                    ).forEach { ref ->
+                        addJsonObject {
+                            put("type", "image")
+                            put("image_url", ref)
+                            put("size", 26)
+                            put("tint", "#C7D2FE")
+                        }
+                    }
+                }
+            }
+            // Buttons that dispatch the scheme and publish the resolved icon name.
+            addJsonObject {
+                put("type", "container")
+                put("orientation", "horizontal")
+                put("item_spacing", 8)
+                putJsonArray("items") {
+                    listOf(
+                        Triple("Cart", "icons://native/cart", "#4338CA"),
+                        Triple("Bell", "icons://native/bell", "#7C3AED"),
+                        Triple("Receipt", "icons://native/receipt", "#2563EB"),
+                        Triple("Discount", "icons://native/discount", "#DB2777")
+                    ).forEach { (label, url, color) ->
+                        addJsonObject {
+                            put("type", "container")
+                            put("weight", 1f)
+                            putJsonArray("items") {
+                                addJsonObject {
+                                    put("type", "button")
+                                    put("id", "icon_${url.substringAfterLast('/')}")
+                                    put("text", label)
+                                    put("icon", url)
+                                    put("background_color", color)
+                                    put("text_color", "#F8FAFC")
+                                    put("corner_radius", 8)
+                                    putJsonObject("action") {
+                                        put("log_id", "icon_pick_${url.substringAfterLast('/')}")
+                                        put("url", url)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     fun buildInventoryJsonListBlock(spec: TenantWorkspaceSpec): JsonObject = buildJsonObject {
         put("type", "container")
         put("orientation", "vertical")
