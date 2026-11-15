@@ -2,9 +2,10 @@ name: Build & Test Web + Desktop
 
 on:
   push:
-    branches: ['**']
-  pull_request:
-  workflow_dispatch:
+    branches:
+      - main
+    tags:
+      - 'v*'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
