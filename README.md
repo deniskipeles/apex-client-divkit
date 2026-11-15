@@ -98,9 +98,23 @@ apps/ios/
   Package.swift                             # Contract-only SPM package (independent compile + tests)
   Tests/ContractTests/                      # Swift contract tests against shared fixtures
 
-apps/web/
+apps/web/                                   # Nitro-backed cloud dashboard (read-only console)
+  server/api/                               # h3 routes: /api/schema/[tenantId], /api/schema/publish, /api/sync
+  server/middleware/                        # Signed-envelope verification (APEX_EDGE_PUBLIC_KEY)
+  src/                                      # Vite + React SPA (fetch-driven, no hardware bridge)
   src/contract/                             # TypeScript mirrors: canonicalJson, payloadVerifier, engineStateBridge, registry, syncEngine
-  tests/contract/                           # Jest contract tests against the shared fixtures
+  tests/contract/                           # Vitest: contract fixtures, server libs, shared pos-ui
+
+apps/desktop/                               # Tauri v2 point-of-sale terminal (Rust tool bridge)
+  src/                                      # Vite + React frontend, TauriToolBridge + OutboxSync
+  src-tauri/src/commands.rs                 # `tool_invoke` command entrypoint
+  src-tauri/src/tools/                      # capability dispatch (route + per-family modules)
+  src-tauri/capabilities/default.json       # deny-by-default permission grants
+
+packages/pos-ui/                            # Shared DivKit render layer consumed by both apps
+  src/DivKitView.tsx                        # @divkitframework/react wrapper + tools:// dispatch
+  src/customBlocks/                         # sdui_chart / sdui_signature / sdui_numpad blocks
+  src/ToolBridge.ts, ToolResult.ts          # bridge contract both apps implement
 
 packages/contract/                          # Shared contract (no executable code shared across platforms)
   tools.json                                # Capability ids + aliases (source of truth)

@@ -143,6 +143,51 @@ Adding a notification source = feed items through `NotificationCenter.add` into
 `NotificationType` whose `icon` names an existing catalog icon. Reference:
 `docs/tools/notifications-tray.md`.
 
+## Web dashboard (`apps/web`) & Desktop POS (`apps/desktop`)
+
+Two independent pnpm-workspace apps consume the same `packages/pos-ui` and `packages/contract`
+modules. Neither renders the other's UI. `apps/android` and `apps/ios` are untouched.
+
+- `packages/pos-ui` — shared DivKit render layer: `DivKitView` (wraps `@divkitframework/react`),
+  `dispatchTool` (resolves capability ids/aliases from `packages/contract/tools.json`), the
+  `ToolBridge`/`ToolResult` interface both apps implement, `EngineStateBridge`, and the
+  `sdui_chart` / `sdui_signature` / `sdui_numpad` custom blocks. Exports the `DivJson` type so
+  apps never import `@divkitframework/divkit` directly (pnpm isolation would break resolution).
+- `apps/web` — Nitro (h3) cloud dashboard. `server/api/**` holds `/api/schema/[tenantId]`,
+  `/api/schema/publish`, `/api/sync`; `src/` is the Vite+React SPA. `ToolBridge` is a no-op
+  (the dashboard is read-only). Nitro serves the SPA via `publicAssets: [{ dir: '../dist' }]`
+  — the path is relative to `srcDir` (`server/`), so the `../` is required.
+- `apps/desktop` — Tauri v2 POS. Frontend `src/` uses `TauriToolBridge` (`invoke('tool_invoke')`).
+  Rust engine in `src-tauri/`: `commands::tool_invoke` → `tools::dispatch` → one module per
+  capability family. `tools::route` maps every canonical id **and alias** to a handler; the
+  `every_contract_capability_routes` test fails the build if a contract capability is unrouted.
+  Tauri v2 is deny-by-default: a capability's plugin must be listed in
+  `capabilities/default.json` or the call is blocked before it reaches Rust.
+
+Commands (root `package.json`):
+
+```bash
+pnpm install                 # pnpm workspace (apps/web, apps/desktop, packages/pos-ui)
+pnpm test:web                # vitest: contract fixtures, server libs, shared pos-ui
+pnpm build:web               # vite build + nitro build
+pnpm test:desktop            # cargo test (capability-routing guard)
+pnpm check:desktop           # cargo check
+```
+
+### Dependency / plugin notes (web + desktop)
+
+- The `packages/divkit-subset/schema.json` schema declares `$schema: draft/2020-12`, so Ajv
+  must be the `ajv/dist/2020.js` entrypoint; the default Ajv (draft-07) cannot compile it.
+- Tauri plugins are deny-by-default. `tauri-plugin-haptics` and `tauri-plugin-camera` ship
+  **no** `permissions/default.toml`, so capabilities must list each `allow-*` id explicitly
+  (e.g. `haptics:allow-vibrate`). `clipboard-manager` grants nothing by default.
+- `tauri-plugin-barcode-scanner` and `tauri-plugin-camera` are `#![cfg(mobile)]`; the desktop
+  build declares them under `[target.'cfg(mobile)'.dependencies]` only.
+- `tauri-plugin-camera` v2 does **not** exist on crates.io — the only published crate is a
+  third-party `0.1.x` that is Android-only. Do not attempt a v2 bump.
+- Nitro/Nitro-pack outputs (`.output`, `.nitro`), `apps/desktop/dist`, and
+  `apps/desktop/src-tauri/{target,gen}` are gitignored.
+
 ## Testing conventions
 
 - Tests live in `apps/android/src/test/java/com/example/ExampleUnitTest.kt` (plain JVM) and

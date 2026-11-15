@@ -1,0 +1,13 @@
+{
+  "name": "apex-client-divkit",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "typecheck": "pnpm -r --filter './packages/*' --filter './apps/web' --filter './apps/desktop' run typecheck",
+    "test:web": "pnpm -C apps/web exec vitest run",
+    "build:web": "pnpm -C apps/web run build",
+    "build:desktop:web": "pnpm -C apps/desktop run build:web",
+    "test:desktop": "cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml --lib",
+    "check:desktop": "cargo check --manifest-path apps/desktop/src-tauri/Cargo.toml"
+  }
+}
