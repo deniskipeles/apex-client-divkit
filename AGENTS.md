@@ -102,6 +102,44 @@ showcase of the SDUI surface. When a tool gains a user-facing operation, surface
 
 `icons://native/<name>` is the icon resolver scheme, documented in `docs/tools/icons.md`.
 
+## Workspace notifications tray
+
+A native Compose surface (not a `tools://` capability) that groups notifications by workspace
+with per-notification actions. Wired through four files:
+
+1. `engine/notifications/NotificationCenter.kt` — pure-Kotlin model (`WorkspaceNotification`,
+   `NotificationGroup`, `NotificationType`) plus the reducer (`group`, `markRead`,
+   `markAllRead`, `markWorkspaceRead`, `mute`/`muteWorkspace`/`unmuteWorkspace`, `dismiss`,
+   `toggleExpanded`, `add`, `relativeTime`). **No Android/Compose imports**, so it is
+   unit-testable on plain JVM.
+2. `engine/notifications/NotificationSeed.kt` — Android-free demo seed (`demo(now)`,
+   `incoming(workspaceId, now, sequence)`), keyed by the demo tenant ids.
+3. `com/example/ui/NotificationTray.kt` — Compose UI. `NotificationTrayOverlay` builds a
+   `NotificationTrayActions` bundle and renders `NotificationTrayPanel`, a **dumb,
+   state-driven** composable driven entirely by injected callbacks (so tests render it without
+   a ViewModel). Group glyphs use `engine.icons.nativeIconVector(reference)`.
+4. `com/example/enginehost/SduiEngineViewModel.kt` — state (`notifications`,
+   `expandedNotificationGroups`, `notificationShowRead`, ...) + actions. All mutations funnel
+   through `mutateNotifications { ... }`, so unread counts, group ordering and the top-bar
+   badge update in one recomposition. `SduiEngineUiState.unreadFor(tenantId, fallback)` feeds
+   the launcher cards' unread badges from the live tray count.
+
+Invariants enforced by `NotificationCenterTest` + `NotificationTrayUiTest`:
+
+- Grouping is newest-group-first / newest-item-first; `unreadCount` counts only unread; a group
+  is `isMuted` only when every item is muted.
+- Reducers are copy-on-write (input list never mutated); `add` drops items whose workspace is
+  muted; `relativeTime` clamps future timestamps to `"now"`.
+- Every seeded workspace icon and every `NotificationType.icon` resolves through
+  `NativeIconCatalog` — a typo'd icon name fails the build.
+- The tray panel renders grouped headers, expansion revealing rows with the right-aligned
+  workspace glyph (`notification_row_glyph_<id>`) and View/Mark read/Mute actions.
+
+Adding a notification source = feed items through `NotificationCenter.add` into
+`setNotifications`, or add a seed in `NotificationSeed`. New notification kinds add a
+`NotificationType` whose `icon` names an existing catalog icon. Reference:
+`docs/tools/notifications-tray.md`.
+
 ## Testing conventions
 
 - Tests live in `app/src/test/java/com/example/ExampleUnitTest.kt` (plain JVM) and

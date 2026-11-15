@@ -29,6 +29,7 @@ import com.example.enginehost.EngineThemeMode
 import com.example.enginehost.SduiEngineViewModel
 import com.example.ui.AppSettingsBottomSheet
 import com.example.ui.FileManagerTab
+import com.example.ui.NotificationTrayOverlay
 import com.example.ui.PosTerminalTab
 import com.example.ui.SecurityAndKmpTab
 import com.example.ui.TenantLauncherScreen
@@ -82,6 +83,7 @@ fun SduiPosEngineApp(viewModel: SduiEngineViewModel) {
     var launcherSection by remember { mutableStateOf(LauncherSection.TENANT_GRID) }
     var showAppSettingsSheet by remember { mutableStateOf(false) }
     var showConnectWorkspaceSheet by remember { mutableStateOf(false) }
+    var showNotifications by remember { mutableStateOf(false) }
     val colorScheme = MaterialTheme.colorScheme
 
     // System Back handling.
@@ -145,6 +147,30 @@ fun SduiPosEngineApp(viewModel: SduiEngineViewModel) {
                         }
                     },
                     actions = {
+                        // 0. Workspace Notifications Tray (grouped, expandable, with per-notification actions)
+                        BadgedBox(
+                            badge = {
+                                if (uiState.totalUnreadNotifications > 0) {
+                                    Badge(
+                                        modifier = Modifier.testTag("notification_unread_badge")
+                                    ) {
+                                        Text(uiState.totalUnreadNotifications.toString())
+                                    }
+                                }
+                            }
+                        ) {
+                            IconButton(
+                                onClick = { showNotifications = true },
+                                modifier = Modifier.testTag("top_bar_notifications_button")
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Notifications,
+                                    contentDescription = "Workspace notifications",
+                                    tint = colorScheme.onSurface
+                                )
+                            }
+                        }
+
                         // 1. Grid / List View Toggle (Defaults to 2-column Grid View)
                         IconButton(
                             onClick = { viewModel.toggleLauncherLayoutMode() },
@@ -261,6 +287,15 @@ fun SduiPosEngineApp(viewModel: SduiEngineViewModel) {
             uiState = uiState,
             viewModel = viewModel,
             onDismiss = { showAppSettingsSheet = false }
+        )
+    }
+
+    // Workspace Notifications Tray overlay (grouped, expandable, right-aligned workspace glyphs).
+    if (showNotifications) {
+        NotificationTrayOverlay(
+            uiState = uiState,
+            viewModel = viewModel,
+            onDismiss = { showNotifications = false }
         )
     }
 }

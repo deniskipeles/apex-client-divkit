@@ -148,6 +148,7 @@ fun TenantLauncherScreen(
                                 spec = spec,
                                 permissions = perms,
                                 cachedBadge = cachedBadge,
+                                unreadCount = uiState.unreadFor(spec.tenantId, spec.unreadCount),
                                 onClick = { viewModel.openTenantWorkspace(spec) },
                                 onOpenWorkspaceSettings = { settingsTargetTenant = spec },
                                 onDisconnectWorkspace = { viewModel.disconnectWorkspace(spec.tenantId) }
@@ -157,6 +158,7 @@ fun TenantLauncherScreen(
                                 spec = spec,
                                 permissions = perms,
                                 cachedBadge = cachedBadge,
+                                unreadCount = uiState.unreadFor(spec.tenantId, spec.unreadCount),
                                 onClick = { viewModel.openTenantWorkspace(spec) },
                                 onOpenWorkspaceSettings = { settingsTargetTenant = spec },
                                 onDisconnectWorkspace = { viewModel.disconnectWorkspace(spec.tenantId) }
@@ -262,6 +264,7 @@ private fun ConnectedTenantGridCard(
     spec: TenantWorkspaceSpec,
     permissions: WorkspaceToolPermissions,
     cachedBadge: String,
+    unreadCount: Int,
     onClick: () -> Unit,
     onOpenWorkspaceSettings: () -> Unit,
     onDisconnectWorkspace: () -> Unit
@@ -370,7 +373,7 @@ private fun ConnectedTenantGridCard(
             }
 
             // Unread badge (top-end). Long-press opens the tenant menu instead of a 3-dot button.
-            if (spec.unreadCount > 0) {
+            if (unreadCount > 0) {
                 Surface(
                     color = Color(0xFFEF4444),
                     shape = RoundedCornerShape(50),
@@ -379,7 +382,7 @@ private fun ConnectedTenantGridCard(
                         .padding(10.dp)
                 ) {
                     Text(
-                        text = spec.unreadCount.toString(),
+                        text = unreadCount.toString(),
                         color = Color.White,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
@@ -416,6 +419,7 @@ private fun ConnectedTenantListCard(
     spec: TenantWorkspaceSpec,
     permissions: WorkspaceToolPermissions,
     cachedBadge: String,
+    unreadCount: Int,
     onClick: () -> Unit,
     onOpenWorkspaceSettings: () -> Unit,
     onDisconnectWorkspace: () -> Unit
@@ -484,13 +488,13 @@ private fun ConnectedTenantListCard(
                 ToolsStatusPill(activeTools = activeTools)
             }
 
-            if (spec.unreadCount > 0) {
+            if (unreadCount > 0) {
                 Surface(
                     color = Color(0xFFEF4444),
                     shape = RoundedCornerShape(50)
                 ) {
                     Text(
-                        text = spec.unreadCount.toString(),
+                        text = unreadCount.toString(),
                         color = Color.White,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,

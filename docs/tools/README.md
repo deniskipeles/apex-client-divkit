@@ -41,6 +41,12 @@ dispatch contract and the provenance gate.
 > `local-db://` and `icons://` are **URL schemes** (data plane), not `tools://` capabilities,
 > but they share the same router and `user.*` output-mapping contract.
 
+## Native surfaces
+
+| Document | Surface | Summary |
+| :--- | :--- | :--- |
+| [notifications-tray.md](notifications-tray.md) | Top-bar bell + launcher badges | Grouped workspace notifications tray with per-notification View/Mark read/Mute actions and live unread counts. |
+
 ## Adding a new tool
 
 When a new capability is added, wire it through every layer described in

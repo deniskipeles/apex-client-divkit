@@ -21,6 +21,9 @@ import engine.fs.FsEntry
 import engine.fs.WorkspaceFileManager
 import engine.fs.WorkspaceFileSystem
 import engine.fs.WorkspaceFolder
+import engine.notifications.NotificationCenter
+import engine.notifications.NotificationSeed
+import engine.notifications.WorkspaceNotification
 import engine.router.EngineRouter
 import engine.state.DivVariableValue
 import engine.state.EngineStateBridge
@@ -92,8 +95,28 @@ data class SduiEngineUiState(
     val fileBrowserPath: String = "",
     val fileEntries: List<FsEntry> = emptyList(),
     val filePreview: FilePreview? = null,
+    val notifications: List<WorkspaceNotification> = emptyList(),
+    val notificationsLoading: Boolean = false,
+    val notificationSettingsOpen: Boolean = false,
+    val notificationShowRead: Boolean = true,
+    val notificationGroupByWorkspace: Boolean = true,
+    val expandedNotificationGroups: Set<String> = emptySet(),
     val statusBannerMessage: String? = null
-)
+) {
+    /** Live unread count per workspace, sourced from the notification tray. */
+    val notificationUnreadByWorkspace: Map<String, Int>
+        get() = notifications
+            .filter { it.isUnread }
+            .groupBy { it.workspaceId }
+            .mapValues { (_, items) -> items.size }
+
+    /** Total unread notifications across every workspace. */
+    val totalUnreadNotifications: Int get() = notifications.count { it.isUnread }
+
+    /** Unread count for a workspace, falling back to the seeded spec value when the tray is empty. */
+    fun unreadFor(tenantId: String, fallback: Int): Int =
+        notificationUnreadByWorkspace[tenantId] ?: fallback
+}
 
 /** Inline text preview of a browsed file. [truncated] marks content cut at the read cap. */
 data class FilePreview(
@@ -140,6 +163,11 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
 
     init {
         currentAndroidContext = { context }
+        // Seed the workspace notifications tray so grouping, unread counts and actions render
+        // populated on first frame.
+        _uiState.update {
+            it.copy(notifications = NotificationSeed.demo(engine.crypto.currentTimeMillis()))
+        }
         // Initiate connected tenants by receiving, verifying, and caching their initial DivKit schemas in SQLite
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.update { it.copy(keyPair = keyPair) }
@@ -285,6 +313,141 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                 statusBannerMessage = "Select a connected tenant to launch its cached SDUI workspace"
             )
         }
+    }
+
+    // ------------------------------------------------------------------
+    // Workspace notifications tray
+    // ------------------------------------------------------------------
+
+    private var notificationSequence: Int = 0
+
+    private fun mutateNotifications(
+        message: String? = null,
+        transform: (List<WorkspaceNotification>) -> List<WorkspaceNotification>
+    ) {
+        _uiState.update { state ->
+            val updated = transform(state.notifications)
+            state.copy(
+                notifications = updated,
+                statusBannerMessage = message ?: state.statusBannerMessage
+            )
+        }
+    }
+
+    /** Marks one notification read and refreshes its workspace unread count immediately. */
+    fun markNotificationRead(id: String) =
+        mutateNotifications { NotificationCenter.markRead(it, id) }
+
+    /** Marks every visible notification read (tray header "Mark all read"). */
+    fun markAllNotificationsRead() =
+        mutateNotifications("All workspace notifications marked read") { NotificationCenter.markAllRead(it) }
+
+    /** Marks one workspace's notifications read (group header action). */
+    fun markWorkspaceNotificationsRead(workspaceId: String, workspaceName: String) =
+        mutateNotifications("$workspaceName notifications marked read") {
+            NotificationCenter.markWorkspaceRead(it, workspaceId)
+        }
+
+    /**
+     * Mutes the notification's workspace and clears its unread dot. Future notifications for a
+     * muted workspace are dropped by [NotificationCenter.add] until it is unmuted.
+     */
+    fun muteNotification(id: String) =
+        mutateNotifications("Workspace muted \u2014 future notifications suppressed") {
+            NotificationCenter.mute(it, id)
+        }
+
+    /** Mutes a whole workspace group from the group overflow menu. */
+    fun muteNotificationWorkspace(workspaceId: String, workspaceName: String) =
+        mutateNotifications("$workspaceName muted") {
+            NotificationCenter.muteWorkspace(it, workspaceId)
+        }
+
+    /** Un-mutes a workspace group so it resumes surfacing notifications. */
+    fun unmuteNotificationWorkspace(workspaceId: String, workspaceName: String) =
+        mutateNotifications("$workspaceName unmuted") {
+            NotificationCenter.unmuteWorkspace(it, workspaceId)
+        }
+
+    /** Removes a single notification from the tray. */
+    fun dismissNotification(id: String) =
+        mutateNotifications { NotificationCenter.dismiss(it, id) }
+
+    /** Clears every notification for one workspace group. */
+    fun dismissNotificationWorkspace(workspaceId: String, workspaceName: String) =
+        mutateNotifications("$workspaceName notifications cleared") {
+            NotificationCenter.dismissWorkspace(it, workspaceId)
+        }
+
+    /** Expands/collapses a single notification row. */
+    fun toggleNotificationExpanded(id: String) =
+        mutateNotifications { NotificationCenter.toggleExpanded(it, id) }
+
+    /**
+     * Opens a notification's target: marks it read, then focuses the owning workspace (and the
+     * related route for workspace-scoped targets) so the deep link resolves.
+     */
+    fun openNotificationTarget(notification: WorkspaceNotification) {
+        mutateNotifications { NotificationCenter.markRead(it, notification.id) }
+        val spec = _uiState.value.workspaces.firstOrNull { it.tenantId == notification.workspaceId }
+        val target = notification.target
+        if (spec != null) {
+            if (target != null && target.type != "workspace") {
+                switchActiveRoute("/${target.type}/${target.id}", "(none)")
+            }
+            openTenantWorkspace(spec)
+        } else {
+            _uiState.update {
+                it.copy(statusBannerMessage = "Opened: ${notification.title}")
+            }
+        }
+    }
+
+    /** Simulates an incoming notification to prove real-time group/count updates. */
+    fun simulateIncomingNotification(workspaceId: String = NotificationSeed.primaryWorkspaceId) {
+        notificationSequence += 1
+        val incoming = NotificationSeed.incoming(
+            workspaceId = workspaceId,
+            nowMillis = engine.crypto.currentTimeMillis(),
+            sequence = notificationSequence
+        )
+        val muted = _uiState.value.notifications
+            .filter { it.isMuted }
+            .map { it.workspaceId }
+            .toSet()
+        mutateNotifications("New notification in ${incoming.workspaceName}") {
+            NotificationCenter.add(it, incoming, mutedWorkspaces = muted)
+        }
+    }
+
+    fun setNotificationSettingsOpen(open: Boolean) {
+        _uiState.update { it.copy(notificationSettingsOpen = open) }
+    }
+
+    fun setNotificationShowRead(show: Boolean) {
+        _uiState.update { it.copy(notificationShowRead = show) }
+    }
+
+    fun setNotificationGroupByWorkspace(group: Boolean) {
+        _uiState.update { it.copy(notificationGroupByWorkspace = group) }
+    }
+
+    /** Expands/collapses a workspace group in the tray. Expansion persists while the tray is open. */
+    fun toggleNotificationGroup(workspaceId: String) {
+        _uiState.update { state ->
+            val next = state.expandedNotificationGroups.toMutableSet()
+            if (!next.add(workspaceId)) next.remove(workspaceId)
+            state.copy(expandedNotificationGroups = next)
+        }
+    }
+
+    /** Replaces the tray contents, e.g. when re-fetching from a backend. */
+    fun setNotifications(notifications: List<WorkspaceNotification>, loading: Boolean = false) {
+        _uiState.update { it.copy(notifications = notifications, notificationsLoading = loading) }
+    }
+
+    fun setNotificationsLoading(loading: Boolean) {
+        _uiState.update { it.copy(notificationsLoading = loading) }
     }
 
     fun switchWorkspace(

@@ -302,3 +302,14 @@ internal object NativeIconVectors {
         else -> null
     }
 }
+
+/**
+ * Resolves a catalog reference (canonical name, alias, `icons://native/<name>` URI, or Material
+ * identifier) to a Compose [ImageVector], or null when the reference is unknown.
+ *
+ * The only public Compose-facing entry point into the bundled icon set, so UI outside
+ * `engine.icons` (e.g. the notifications tray) can render workspace/type glyphs without
+ * importing the Material icon catalog directly.
+ */
+fun nativeIconVector(reference: String): ImageVector? =
+    NativeIconCatalog.find(reference)?.let { NativeIconVectors.resolve(it.material) }

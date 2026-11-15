@@ -199,6 +199,30 @@ categories) lives in [`docs/tools/icons.md`](docs/tools/icons.md).
 
 ---
 
+## Workspace Notifications Tray
+
+The launcher's cross-workspace notification surface. Notifications are **grouped by workspace**
+(Reddit-style collapsible groups); each row pins its **workspace glyph to the far right**
+(Google-style) and offers **View / Mark read / Mute** plus dismiss. A **bell + unread badge** in
+the top app bar opens the tray, and every tenant card's badge reads from the **live tray count**,
+so marking a notification read updates the launcher immediately.
+
+| Piece | Location |
+| :--- | :--- |
+| Model + pure reducers (Android-free) | `engine/notifications/NotificationCenter.kt` |
+| Demo seed | `engine/notifications/NotificationSeed.kt` |
+| Compose tray UI | `com/example/ui/NotificationTray.kt` |
+| State + actions | `com/example/enginehost/SduiEngineViewModel.kt` |
+
+The model is deliberately **free of Android and Compose types** (like the icon catalog), so
+grouping, unread counts, mute/unmute, dismiss and relative-time formatting are covered by plain
+JVM unit tests; the tray composable is driven entirely through an injected callback bundle and
+covered by Robolectric Compose tests.
+
+> Full reference: [`docs/tools/notifications-tray.md`](docs/tools/notifications-tray.md).
+
+---
+
 ## Native Tools & AI Vision Suite (`tools://*`)
 
 Tenants can invoke hardware bridges, optical scanning, on-device AI vision models, and cryptographic protocols directly through standard DivKit actions using the `tools://` scheme.
