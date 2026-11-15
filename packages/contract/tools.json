@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "note": "Canonical capability ids are the ToolHandler.capability values registered in TerminalApp.buildRegistry(). Aliases are the additional keys resolve() accepts.",
+  "capabilities": [
+    { "id": "hardware.haptics@1",        "aliases": ["device.haptics@1", "haptics.perform@1", "haptics", "device.haptics"] },
+    { "id": "hardware.beeper@1",         "aliases": ["device.beeper@1", "beeper", "device.beeper", "tone"] },
+    { "id": "vision.scan_code@1",        "aliases": ["scan-code", "scan_barcode", "scan-qr"] },
+    { "id": "vision.capture_photo@1",    "aliases": ["camera", "capture_photo"] },
+    { "id": "vision.embed_image@1",      "aliases": [] },
+    { "id": "vision.remove_background@1","aliases": ["image-background-remove", "u-2-Net.tflite"] },
+    { "id": "vision.identify_product@1", "aliases": ["MobileNetV4-small", "identify_product"] },
+    { "id": "secure.send@1",             "aliases": ["libsignal", "secure_send"] },
+    { "id": "secure.status@1",           "aliases": ["secure_status", "signal_status"] },
+    { "id": "secure.verify_identity@1",  "aliases": ["secure_verify", "verify_identity"] },
+    { "id": "crypto.signal@1",           "aliases": ["signal", "crypto.signal"] },
+    { "id": "vectorize",                 "aliases": ["vector", "embed", "embed-text", "embed-image"] },
+    { "id": "auth.biometrics@1",         "aliases": ["biometrics", "auth.biometrics", "supervisor_auth"] },
+    { "id": "device.clipboard@1",        "aliases": ["clipboard", "device.clipboard"] },
+    { "id": "network.push@1",            "aliases": ["push", "network.push", "alerts"] },
+    { "id": "storage.offline_cache@1",   "aliases": ["offline-cache", "offline_cache", "storage.offline_cache"] },
+    { "id": "network.realtime@1",        "aliases": ["realtime-ws", "realtime_ws", "network.realtime", "realtime"] },
+    { "id": "network.transfer@1",        "aliases": ["net", "network.transfer", "tools.net"] },
+    { "id": "device.printer@1",          "aliases": ["print", "printer", "device.printer"] },
+    { "id": "vision.generate_code@1",    "aliases": ["code-generate", "code_gen", "generate-code", "barcode-generate", "qr-generate", "vision.generate_code"] }
+  ]
+}

@@ -1,8 +1,8 @@
 # Local Database Bridge (`local-db://op/<name>`)
 
 The **Local Database Bridge** is the SDUI write/read path to each tenant's isolated SQLite
-workspace. DivKit actions target `local-db://op/<operation>` and the [`EngineRouter`](../../app/src/main/java/engine/router/EngineRouter.kt)
-executes the operation through the [`EngineRegistry`](../../app/src/main/java/engine/db/EngineRegistry.kt),
+workspace. DivKit actions target `local-db://op/<operation>` and the [`EngineRouter`](../../apps/android/src/main/java/engine/router/EngineRouter.kt)
+executes the operation through the [`EngineRegistry`](../../apps/android/src/main/java/engine/db/EngineRegistry.kt),
 then publishes the result into reactive `user.*` DivKit variables through `EngineStateBridge`.
 
 This is a **URL scheme**, not a `tools://` tool: it is the first-class data plane that the
@@ -150,6 +150,6 @@ Errors are written to `user.engine_error`, and to `payload.error_variable` when 
 - The router also handles `hardware://<capability>` (capability-gated host actions),
   `tools://<toolId>/<operation>` (native tools), and `workspace://clear_all` (workspace reset).
 - Tenant schemas and seed data are provisioned in
-  [`WorkspaceProvisioner`](../../app/src/main/java/com/example/enginehost/WorkspaceProvisioner.kt).
+  [`WorkspaceProvisioner`](../../apps/android/src/main/java/com/example/enginehost/WorkspaceProvisioner.kt).
 - The `local-db://` examples above are exercised live by the built-in demo tenant's catalog
   grid and order ledger.

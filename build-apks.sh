@@ -284,7 +284,7 @@ success "Using Gradle runner: ${GRADLE_CMD}"
 #   TEXT_EMBEDDER=use-lite (default) | model2vec
 # ==============================================================================
 
-ASSETS_DIR="${SCRIPT_DIR}/app/src/main/assets"
+ASSETS_DIR="${SCRIPT_DIR}/apps/android/src/main/assets"
 FORCE_ML_ASSETS="${FORCE_ML_ASSETS:-false}"
 SKIP_ML_ASSETS="${SKIP_ML_ASSETS:-false}"
 TEXT_EMBEDDER="${TEXT_EMBEDDER:-use-lite}"   # use-lite | model2vec
@@ -496,10 +496,10 @@ mkdir -p "${OUTPUT_DIR}"
 
 SEARCH_DIRS=()
 if [[ "${BUILD_MODE}" == "debug" || "${BUILD_MODE}" == "all" ]]; then
-    SEARCH_DIRS+=("${SCRIPT_DIR}/app/build/outputs/apk/debug")
+    SEARCH_DIRS+=("${SCRIPT_DIR}/apps/android/build/outputs/apk/debug")
 fi
 if [[ "${BUILD_MODE}" == "release" || "${BUILD_MODE}" == "all" ]]; then
-    SEARCH_DIRS+=("${SCRIPT_DIR}/app/build/outputs/apk/release")
+    SEARCH_DIRS+=("${SCRIPT_DIR}/apps/android/build/outputs/apk/release")
 fi
 
 COLLECTED_APKS=()

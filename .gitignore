@@ -17,3 +17,13 @@
 local.properties
 .env
 debug.keystore
+
+# --- apps/ layout (post-restructure) ---
+apps/android/build
+apps/android/local.properties
+apps/android/.gradle
+apps/ios/Pods
+apps/ios/build
+apps/ios/.build
+apps/web/node_modules
+apps/web/dist

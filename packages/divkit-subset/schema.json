@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://apex-client-divkit/contract/divkit-subset/v1/schema.json",
+  "title": "DivKit Subset (v1)",
+  "description": "The restricted DivKit document surface the terminal renders. Component types outside this list are rejected before render. Types are the values emitted by SduiOnFlyBuilder.",
+  "$ref": "#/$defs/component",
+  "$defs": {
+    "component": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "enum": ["container", "text", "button", "grid", "input", "custom", "image"] },
+        "id": { "type": "string" },
+        "items": { "type": "array", "items": { "$ref": "#/$defs/component" } },
+        "text": { "type": "string" },
+        "actions": { "type": "array", "items": { "$ref": "#/$defs/action" } },
+        "width": { "$ref": "#/$defs/size" },
+        "height": { "$ref": "#/$defs/size" },
+        "margins": { "$ref": "#/$defs/spacing" },
+        "paddings": { "$ref": "#/$defs/spacing" }
+      },
+      "additionalProperties": true
+    },
+    "action": {
+      "type": "object",
+      "properties": {
+        "url": { "type": "string" },
+        "log_id": { "type": "string" },
+        "payload": {}
+      },
+      "additionalProperties": true
+    },
+    "size": {
+      "oneOf": [
+        { "type": "integer" },
+        { "type": "string", "enum": ["match_parent", "wrap_content"] }
+      ]
+    },
+    "spacing": {
+      "type": "object",
+      "properties": {
+        "top": { "type": "integer" },
+        "bottom": { "type": "integer" },
+        "left": { "type": "integer" },
+        "right": { "type": "integer" },
+        "start": { "type": "integer" },
+        "end": { "type": "integer" }
+      },
+      "additionalProperties": true
+    }
+  }
+}

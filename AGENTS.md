@@ -4,8 +4,11 @@ Repository-specific knowledge for the Apex Client DivKit SDUI POS app.
 
 ## Build & test
 
-- Only `:app` is registered in `settings.gradle.kts`. `:shared` exists on disk but is
-  **not** built — all work targets `app/`.
+- Only `:app` is registered in `settings.gradle.kts`; its `projectDir` points at
+  `apps/android`. All Android work targets that directory.
+- The former KMP `shared/` module has been **removed**. Cross-platform contract identity is
+  now enforced by shared fixtures + mirrored implementations under `packages/contract/`
+  (Android tests, iOS `Sources/Contract`, Web `src/contract`), not by shared Kotlin.
 - Toolchain: Gradle 9.3.1, AGP 9.1.1, Kotlin 2.2.10, compileSdk/targetSdk 36, minSdk 24, Java 11.
 - `./gradlew` runs are slow (30s–2min). Prefer running them in the background and
   polling a log file; foreground commands are capped below the idle timeout.
@@ -46,7 +49,7 @@ New terminal capabilities must be wired through **all** of these:
    supportedOperations, defaultOptions, defaultOutputMapping), add a dispatch branch in
    `execute(...)`, add aliases in the tool-id normalizer, and add an `execute<Name>(...)` helper.
    Stateful tools (open sockets/connections) should be shared instances, not per-call.
-5. `app/src/main/AndroidManifest.xml` — declare any new runtime permissions.
+5. `apps/android/src/main/AndroidManifest.xml` — declare any new runtime permissions.
 6. `README.md` — add a row to the `tools://*` table.
 7. `docs/tools/<name>.md` — add a per-tool reference doc and a row in `docs/tools/README.md`.
 
@@ -142,7 +145,7 @@ Adding a notification source = feed items through `NotificationCenter.add` into
 
 ## Testing conventions
 
-- Tests live in `app/src/test/java/com/example/ExampleUnitTest.kt` (plain JVM) and
+- Tests live in `apps/android/src/test/java/com/example/ExampleUnitTest.kt` (plain JVM) and
   `ExampleRobolectricTest.kt` (Robolectric, for Android APIs).
 - Robolectric provides an `Application` context; `engine.db.currentAndroidContext` is set by
   `ApexPosApplication`. Use `androidx.test.core.app.ApplicationProvider` and

@@ -87,7 +87,7 @@ that notification's workspace, and `add(...)` drops incoming items whose workspa
 
 ## UI structure
 
-`app/src/main/java/com/example/ui/NotificationTray.kt`:
+`apps/android/src/main/java/com/example/ui/NotificationTray.kt`:
 
 - `NotificationTrayOverlay(uiState, viewModel, onDismiss)` — the scrim + anchored panel. It
   builds a `NotificationTrayActions` callback bundle and renders `NotificationTrayPanel`.

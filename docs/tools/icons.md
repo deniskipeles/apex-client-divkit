@@ -552,10 +552,10 @@ names that resolve to the same icon.
 ## 6. Extending the set
 
 1. Add a `NativeIcon(name, material, category, aliases)` entry to
-   [`NativeIconCatalog.kt`](../../app/src/main/java/engine/icons/NativeIconCatalog.kt).
+   [`NativeIconCatalog.kt`](../../apps/android/src/main/java/engine/icons/NativeIconCatalog.kt).
    `material` must be a real `androidx.compose.material.icons.filled.*` identifier.
 2. Add the matching `"<material>" -> Icons.Default.<material>` branch to
-   [`NativeIconVectors.kt`](../../app/src/main/java/engine/icons/NativeIconVectors.kt).
+   [`NativeIconVectors.kt`](../../apps/android/src/main/java/engine/icons/NativeIconVectors.kt).
 3. Run `./gradlew :app:testDebugUnitTest`. `NativeIconCatalogTest` checks that every key is
    unique and resolvable, and the Robolectric suite asserts every catalog icon maps to a
    Compose vector — so a missing branch fails the build.
