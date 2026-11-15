@@ -854,8 +854,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # Version comes from `packageManager` in the root package.json; do not also set
+      # `with: version:` or pnpm fails with ERR_PNPM_BAD_PM_VERSION.
       - uses: pnpm/action-setup@v4
-        with: { version: 9 }
       - uses: actions/setup-node@v4
         with: { node-version: 24, cache: pnpm }
       - run: pnpm install --frozen-lockfile
