@@ -20,7 +20,9 @@ public struct ToolContext: Sendable {
     }
 }
 
-public enum ToolResult: Sendable {
+// `AnyHashable` is not `Sendable`, but the engine only ever stores value types
+// (Bool/Int/Int64/Double/String) in the success payload, so the unchecked conformance is sound.
+public enum ToolResult: @unchecked Sendable {
     case success([String: AnyHashable])
     case unsupported(tool: String, reason: String)
     case permissionDenied(tool: String, permission: String)
