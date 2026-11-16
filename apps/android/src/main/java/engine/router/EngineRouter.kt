@@ -26,7 +26,8 @@ class EngineRouter(
     private val workspaceManager: WorkspaceManager,
     private val registry: EngineRegistry,
     private val activeWorkspace: () -> String = { config.tenantId },
-    private val hardwareDispatcher: (suspend (capability: String, url: String, payload: JsonObject?) -> Boolean)? = null
+    private val hardwareDispatcher: (suspend (capability: String, url: String, payload: JsonObject?) -> Boolean)? = null,
+    private val navigationDispatcher: ((url: String) -> Boolean)? = null
 ) {
     companion object {
         private val VAR_NAME_REGEX = Regex("^user\\.[a-zA-Z][a-zA-Z0-9_.]{0,62}$")
@@ -49,8 +50,19 @@ class EngineRouter(
         url.startsWith("hardware://") -> handleHardware(url, payload)
         url.startsWith("tools://") -> handleTools(url, payload ?: JsonObject(emptyMap()))
         url.startsWith("icons://") -> handleIcons(url, payload)
+        url.startsWith("nav://") || url.startsWith("sheet://") -> handleNavigation(url)
         url == "workspace://clear_all" -> handleClearAll()
         else -> ActionOutcome.Unhandled
+    }
+
+    /**
+     * Delegates `nav://` / `sheet://` to the host navigation layer. The dispatcher returns
+     * `true` when the URL was owned by the navigation layer — including the silent no-op case
+     * where a card id does not resolve — and `false` to fall through.
+     */
+    private fun handleNavigation(url: String): ActionOutcome {
+        val dispatcher = navigationDispatcher ?: return ActionOutcome.Unhandled
+        return if (dispatcher.invoke(url)) ActionOutcome.Handled else ActionOutcome.Unhandled
     }
 
     private suspend fun handleDivAction(url: String, payload: JsonObject?): ActionOutcome {

@@ -17,9 +17,50 @@
         "width": { "$ref": "#/$defs/size" },
         "height": { "$ref": "#/$defs/size" },
         "margins": { "$ref": "#/$defs/spacing" },
-        "paddings": { "$ref": "#/$defs/spacing" }
+        "paddings": { "$ref": "#/$defs/spacing" },
+        "custom_type": {
+          "type": "string",
+          "enum": ["sdui_chart", "sdui_numpad", "sdui_signature", "json_list", "bottom_sheet"]
+        },
+        "custom_props": { "type": "object", "additionalProperties": true }
       },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "custom_type": { "const": "bottom_sheet" } },
+            "required": ["custom_type"]
+          },
+          "then": {
+            "properties": {
+              "custom_props": {
+                "type": "object",
+                "required": ["card_id"],
+                "properties": {
+                  "card_id": { "type": "string", "minLength": 1 },
+                  "present_on_appear": { "type": "boolean", "default": false }
+                }
+              }
+            }
+          }
+        }
+      ],
       "additionalProperties": true
+    },
+    "bottom_sheet": {
+      "type": "object",
+      "required": ["custom_type", "custom_props"],
+      "properties": {
+        "type": { "const": "custom" },
+        "custom_type": { "const": "bottom_sheet" },
+        "custom_props": {
+          "type": "object",
+          "required": ["card_id"],
+          "properties": {
+            "card_id": { "type": "string", "minLength": 1 },
+            "present_on_appear": { "type": "boolean", "default": false }
+          }
+        }
+      }
     },
     "action": {
       "type": "object",

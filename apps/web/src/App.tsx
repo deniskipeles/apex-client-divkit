@@ -1,15 +1,18 @@
 import { useEffect, useState } from 'react'
-import { DivKitView } from '@apex/pos-ui'
+import { DivNavigationContainer, CardRegistry } from '@apex/pos-ui'
 import type { DivJson } from '@apex/pos-ui'
 import { NoopToolBridge } from './NoopToolBridge'
 
 export function App() {
-  const [card, setCard] = useState<DivJson | null>(null)
+  const [initial, setInitial] = useState<Array<{ id: string; data: DivJson }> | null>(null)
   useEffect(() => {
     fetch('/api/schema/current')
       .then((r) => r.json())
-      .then(setCard)
+      .then((launcher) => {
+        CardRegistry.register('launcher', launcher)
+        setInitial([{ id: 'launcher', data: launcher }])
+      })
   }, [])
-  if (!card) return <div>Loading…</div>
-  return <DivKitView card={card} bridge={NoopToolBridge} />
+  if (!initial) return <div>Loading…</div>
+  return <DivNavigationContainer initial={initial} bridge={NoopToolBridge} />
 }

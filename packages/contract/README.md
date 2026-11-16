@@ -25,11 +25,13 @@ contract test fails. The contract, not the code, is shared.
 | :--- | :--- |
 | `tools.json` | Source of truth for capability ids and aliases. |
 | `fixtures/canonical/v1/` | Canonical JSON inputs and expected bytes. |
+| `fixtures/navigation/v1/` | Navigation URL parse fixtures (`nav://`, `sheet://`). |
 | `docs/canonical-json.md` | Deterministic JSON canonicalisation rules. |
 | `docs/envelope.md` | Signed envelope shape and verification. |
 | `docs/sync-batch.md` | Sync request/response and retry rules. |
 | `docs/schema.md` | Workspace SQLite schema. |
 | `docs/variables.md` | DivKit `user.*` variable namespace rule. |
+| `docs/navigation.md` | Card navigation URL schemes and state-preservation rules. |
 | `docs/tools.md` | Capability identity and handler contract. |
 | `docs/api-surface.md` | Cross-platform engine API surface. |
 | `../divkit-subset/schema.json` | Permitted DivKit component subset. |

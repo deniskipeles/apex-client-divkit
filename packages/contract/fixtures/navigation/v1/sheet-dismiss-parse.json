@@ -1,0 +1,1 @@
+{ "input": "sheet://dismiss", "expected": { "op": "sheet-dismiss" } }
