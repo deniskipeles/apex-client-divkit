@@ -160,9 +160,23 @@ modules. Neither renders the other's UI. `apps/android` and `apps/ios` are untou
 - `apps/desktop` — Tauri v2 POS. Frontend `src/` uses `TauriToolBridge` (`invoke('tool_invoke')`).
   Rust engine in `src-tauri/`: `commands::tool_invoke` → `tools::dispatch` → one module per
   capability family. `tools::route` maps every canonical id **and alias** to a handler; the
-  `every_contract_capability_routes` test fails the build if a contract capability is unrouted.
+  `every_contract_capability_routes`, `aliases_resolve_to_canonical_handler` and
+  `desktop_mirrors_full_mobile_tool_inventory` tests fail the build if a contract capability is
+  unrouted or a permission gate is not granted.
   Tauri v2 is deny-by-default: a capability's plugin must be listed in
   `capabilities/default.json` or the call is blocked before it reaches Rust.
+- **Desktop tool parity.** The desktop engine is the same terminal as `apps/android` /
+  `apps/ios` — it mirrors the **full** mobile tool inventory, one module per family:
+  `haptics`, `beeper`, `audio` (shared tone synthesizer), `scanner`, `camera`, `vision`
+  (`embed_image` / `remove_background` / `u-2-Net` / `identify_product` / `image_manipulation`),
+  `security` (`secure.send` / `secure.status` / `secure.verify_identity` / `biometrics`),
+  `signal` + `libsignal` (Double-Ratchet mirror), `vectorize`, `session` (`push` /
+  `offline_cache` / `realtime`), `net` (`reqwest` HTTP + in-memory LAN hub registry), `print`
+  (ESC/POS), `code_generate` and `support` (shared helpers). Device-model inference, camera
+  frames, Bluetooth sockets and the hub server socket are platform concerns; the desktop
+  modules reproduce the same **observable result shapes** so DivKit cards render identically.
+  When adding a capability, mirror the mobile change in the matching Rust module and add the
+  canonical id + aliases to `tools::route`.
 
 Commands (root `package.json`):
 

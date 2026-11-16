@@ -252,7 +252,7 @@ Tenants can invoke hardware bridges, optical scanning, on-device AI vision model
 
 ### Supported Tools & Generalized APIs
 
-Every tool is deliberately **unopinionated**: it exposes a generic capability contract (a capability id, a set of operations, and free-form options) rather than any product-, vendor-, or SDK-specific logic. The same schema is registered on Android and iOS through each platform's `TerminalApp` composition root, held to the shared capability contract in `packages/contract/tools.json`.
+Every tool is deliberately **unopinionated**: it exposes a generic capability contract (a capability id, a set of operations, and free-form options) rather than any product-, vendor-, or SDK-specific logic. The same schema is registered on Android and iOS through each platform's `TerminalApp` composition root, and on desktop through the Rust engine's `tools::route` table, all held to the shared capability contract in `packages/contract/tools.json`. The desktop engine mirrors the full mobile tool inventory — a build-failing test (`desktop_mirrors_full_mobile_tool_inventory`) asserts every contract capability resolves to a desktop handler.
 
 | Tool URI | Display Name | Operations | Customizable Options | Default Output Mappings |
 |---|---|---|---|---|
@@ -284,6 +284,8 @@ Every tool is deliberately **unopinionated**: it exposes a generic capability co
 > **Generic networking (`tools://net`).** Built on Ktor (CIO engine), it covers both client calls (`request`/`get`/`post`/`download`/`upload`) and an embedded LAN transfer hub (`serve`/`stop`/`status`/`share`/`list`/`unshare`). `serve` starts a Ktor CIO server that hosts a discovery page at `/` and downloadable items at `/file/{id}`, so the same tool powers hubs and Xender-style device-to-device sharing.
 >
 > **Bluetooth printing (`tools://print`).** Scans bonded and discoverable Bluetooth thermal printers / POS peers (name heuristics: `printer`, `thermal`, `pos`, `rpt`, `goojprt`, `xprinter`, …), bonds (`pair`), opens an RFCOMM SPP socket (`connect`), and writes ESC/POS receipt bytes (`print` with `align`, `bold`, `width`, `feed_lines`, `cut`). On Android 12+ it requires `BLUETOOTH_CONNECT`/`BLUETOOTH_SCAN`; on older releases it falls back to `BLUETOOTH`/`BLUETOOTH_ADMIN`.
+>
+> **Desktop parity.** The Tauri desktop POS is the same terminal as the mobile apps and mirrors the full inventory above, one Rust module per family in `apps/desktop/src-tauri/src/tools/`: `haptics`, `beeper`+`audio`, `scanner`, `camera`, `vision` (`embed_image`/`remove_background`/`u-2-Net`/`identify_product`/`image_manipulation`), `security` (`secure.*`+`biometrics`), `signal`+`libsignal`, `vectorize`, `session` (`push`/`offline_cache`/`realtime`), `net` (`reqwest` HTTP + in-memory LAN hub registry), `print` (ESC/POS), `code_generate`, `clipboard` and `support`. Device-model inference, camera frames, Bluetooth sockets and the hub server socket are platform concerns; the desktop modules reproduce the same observable result shapes so DivKit cards render identically.
 
 ---
 
