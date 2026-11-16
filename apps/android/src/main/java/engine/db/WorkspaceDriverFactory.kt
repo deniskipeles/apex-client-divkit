@@ -1,0 +1,36 @@
+package engine.db
+
+import android.content.Context
+import engine.sqlite.DirectSqliteDriver
+import engine.sqlite.SqlDriver
+
+class WorkspaceDriverFactory(private val context: Context) {
+    fun create(workspaceId: String): SqlDriver {
+        require(WORKSPACE_ID_REGEX.matches(workspaceId)) { "Invalid workspaceId: $workspaceId" }
+        return DirectSqliteDriver(
+            schema = WorkspaceDatabase.Schema,
+            context = context,
+            name = "workspace_${workspaceId}.db"
+        ).apply {
+            // PRAGMAs must run outside SQLDelight's schema-creation transaction.
+            executeUpdate(null, "PRAGMA journal_mode = WAL;", 0)
+            executeUpdate(null, "PRAGMA synchronous = NORMAL;", 0)
+            executeUpdate(null, "PRAGMA foreign_keys = ON;", 0)
+        }
+    }
+
+    companion object {
+        private val WORKSPACE_ID_REGEX = Regex("^[a-zA-Z0-9_-]{1,64}$")
+    }
+}
+
+suspend fun platformDeleteWorkspaceFiles(workspaceId: String) {
+    val ctx = currentAndroidContext?.invoke()
+        ?: error("Android context not initialised")
+    ctx.deleteDatabase("workspace_${workspaceId}.db")
+    val dir = java.io.File(ctx.filesDir, "workspaces/$workspaceId")
+    dir.deleteRecursively()
+}
+
+// Set by the host Application/Activity before engine use.
+var currentAndroidContext: (() -> Context?)? = null

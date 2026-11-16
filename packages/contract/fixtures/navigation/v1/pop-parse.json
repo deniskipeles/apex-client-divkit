@@ -1,0 +1,1 @@
+{ "input": "nav://pop", "expected": { "op": "pop" } }

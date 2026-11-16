@@ -1,6 +1,6 @@
-# ApexClient Terminal — DivKit SDUI POS Multi-Tenancy KMP App Engine
+# ApexClient Terminal — DivKit SDUI POS Multi-Tenancy App Engine
 
-A Kotlin Multiplatform (KMP) Server-Driven UI (SDUI) application engine that uses **DivKit** for dynamic, on-the-fly component rendering across **Android** and **iOS**.
+A Server-Driven UI (SDUI) application engine that uses **DivKit** for dynamic, on-the-fly component rendering across **Android**, **iOS**, and **Web**. The three platforms share no code module; they are held to the same observable contract by the shared fixtures and capability set in `packages/contract/`.
 
 ---
 
@@ -39,66 +39,32 @@ A Kotlin Multiplatform (KMP) Server-Driven UI (SDUI) application engine that use
 3. **Full-Screen Self-Contained Tenant Workspace & Standout Pill**:
    - Clicking any tenant card opens a **dedicated full-screen workspace** for that tenant with all screen space available to its dynamically rendered DivKit UI (`EngineScreen` -> `DivView`), plus interactive **Public Client ID (`pk_live_...`) & cURL Webhook Dispatch**, **Active Route Path & URL Queries (Preserved on Refresh)**, and **Hardware Audio & Haptics Tester**.
    - **Standout Pill (Top-Center)**: A high-contrast, zero-shadow pill (`workspace_standout_pill`) sits at the top-center of the workspace, visible across both Light and Dark themes without shadowing any workspace content.
-   - **Persistent AppBar on Pill Click**: Clicking the standout pill opens the top AppBar overlay (`< Hub` back button, QR Scanner, Refresh `↻`, Notification Bell, and `⋮` menu with `Refresh Page`, `Workspace Settings`, `Clear Offline Cache`, `Schema Cache & Rollback`, `On-the-Fly SDUI Builder`, `Workspace SQLite & Sync`, `Security & KMP Inspector`, and `Return to Hub`), which **remains open unless the active workspace screen is clicked or the exit button is clicked**.
+   - **Persistent AppBar on Pill Click**: Clicking the standout pill opens the top AppBar overlay (`< Hub` back button, QR Scanner, Refresh `↻`, Notification Bell, and `⋮` menu with `Refresh Page`, `Workspace Settings`, `Clear Offline Cache`, `Schema Cache & Rollback`, `On-the-Fly SDUI Builder`, `Workspace Files`, `Security & Contract Inspector`, and `Return to Hub`), which **remains open unless the active workspace screen is clicked or the exit button is clicked**.
 
 ---
 
 ## 📦 Project Structure
 
 ```text
-shared/
-  src/commonMain/kotlin/engine/
-    config/EngineConfig.kt                  # Signed config.json model & HTTPS/tenantId invariants
-    crypto/PayloadVerifier.kt               # Ed25519 envelope verification, 5m iat window, jti LRU
-    crypto/CanonicalJson.kt                 # Deterministic byte-for-byte JSON canonicalisation
-    crypto/Ed25519.kt                       # expect object for platform Ed25519 verification
-    db/WorkspaceManager.kt                  # Physical per-tenant SQLite file & directory isolation
-    db/EngineRegistry.kt                    # Whitelisted SQL ops + PRAGMA table_info column guards
-    db/OpResult.kt                          # Typed DB results mapped to user.* DivKit variables
-    db/WorkspaceDatabase.sq                 # SQLDelight schema (sdui_schema_versions, op_log, pending_sync)
-    db/Migrations.sq                        # Tenant schema migrations
-    router/EngineRouter.kt                  # Intercepts local-db://, hardware://, workspace://clear_all
-    state/EngineStateBridge.kt              # StateFlow snapshot for user.* reactive variables
-    tools/NativeToolsSuite.kt               # Unopinionated tool schemas + unified `tools://` dispatch
-    tools/TerminalApp.kt                    # Composition root: capability + shorthand-alias registration
-    tools/ToolRegistry.kt                   # Versioned capability registry & ProvenanceChecker gate
-    tools/DivActionRouter.kt                # div-action://terminal.tool.invoke dispatcher
-    tools/impl/HapticsTool.kt               # hardware.haptics@1 (semantic patterns + W3C waveform arrays)
-    tools/impl/BeeperTool.kt                # hardware.beeper@1 (PCM tone synthesis, profiles, sequences)
-    tools/impl/TerminalToolsImpl.kt         # Shared tool implementations (crypto, clipboard, cache, …)
-    sync/SyncEngine.kt                      # Idempotent batch outbox sync with backoff & dead-letter
-    sync/BackgroundSyncScheduler.kt         # expect class for WorkManager (Android) / BGTaskScheduler (iOS)
-    ui/EngineScreen.kt                      # Shared Compose entry point wrapping DivKit & DivView
-    ui/DivChartSpec.kt                      # KMP custom DivKit chart AST parser (sdui_chart, bar, line, area, donut, pie)
-  src/androidMain/kotlin/engine/
-    crypto/Ed25519.android.kt               # Android JCA Ed25519 + X.509 SPKI DER key parser
-    db/WorkspaceDriverFactory.android.kt    # AndroidSqliteDriver per workspace_<id>.db
-    sync/BackgroundSyncScheduler.android.kt # WorkManager PeriodicWorkRequest + OneTimeWorkRequest
-    ui/EngineScreen.android.kt              # rememberDivKitDependencies() via DivKitEnvironment
-  src/iosMain/kotlin/engine/
-    crypto/Ed25519.ios.kt                   # iOS Security.framework SecKeyVerifySignature (EdDSA)
-    db/WorkspaceDriverFactory.ios.kt        # NativeSqliteDriver per workspace_<id>.db
-    sync/BackgroundSyncScheduler.ios.kt     # BGTaskScheduler BGAppRefreshTask + registerIosSyncHandler
-    ui/EngineScreen.ios.kt                  # DivKitKMP.createDependencies()
-
-iosApp/
-  Info.plist                                # BGTaskSchedulerPermittedIdentifiers (com.example.engine.sync)
-  EngineCustomBlockFactory.swift            # DivCustomBlockFactory for json_list (UITableView) & sdui_chart (Swift Charts + DGCharts)
-  AppDelegate.swift                         # Registers KMP sync handler on launch
-  IosHapticsTool.swift                      # hardware.haptics@1 — UIFeedbackGenerator + waveform timings
-  IosBeeperTool.swift                       # hardware.beeper@1 — AVAudioEngine PCM synthesis, profiles, sequences
-  IosScannerTool.swift                      # vision.scan_code@1 — AVFoundation optical scanner
-  IosCameraTool.swift                       # vision.capture_photo@1 — camera capture & torch
-  IosSignalTool.swift                       # crypto.signal@1 — deterministic session identity & safety number
-  IosImageManipulationTool.swift            # vision.image_manipulation@1 — on-device image processing
-
-app/
+apps/android/
   src/main/java/
-    engine/...                              # Android runtime compilation of the KMP engine
+    engine/...                              # Android runtime engine
+    engine/fs/WorkspaceFileSystem.kt        # Pure-JVM file ops: safe names, listing, sizes, text preview
+    engine/fs/WorkspaceFileManager.kt       # Workspace folder discovery + read-only tenant DB entry
+    engine/icons/NativeIconCatalog.kt       # 285-icon POS catalog + icons:// reference resolver (no Compose)
+    engine/icons/NativeIconVectors.kt       # Material identifier -> Compose ImageVector mapping
+    engine/sqlite/SqlDriver.kt              # SqlDriver/SqlSchema/SqlCursor contracts (engine.sqlite)
+    engine/sqlite/DirectSqliteDriver.kt     # SQLiteOpenHelper-backed driver per workspace_<id>.db
     engine/tools/NativeToolsSuite.kt        # Android tool schemas & unified `tools://` dispatch
-    engine/tools/TerminalApp.kt             # Android capability registry (mirrors shared TerminalApp)
+    engine/tools/TerminalApp.kt             # Android capability registry + shorthand aliases
     engine/tools/impl/HapticsTool.kt        # hardware.haptics@1 — Vibrator/VibratorManager
     engine/tools/impl/BeeperTool.kt         # hardware.beeper@1 — AudioToneSynthesizer PCM tones
+    engine/tools/impl/LibSignalTool.kt      # crypto.signal@1 — Signal Protocol sessions & prekeys
+    engine/tools/impl/VectorizeTool.kt      # vectorize — text/image embedding bridge
+    engine/tools/impl/NetTool.kt            # network.transfer@1 — Ktor HTTP client + LAN transfer hub
+    engine/tools/impl/PrintTool.kt          # device.printer@1 — Bluetooth printer scan/connect/ESC-POS print
+    engine/tools/impl/CodeGenerateTool.kt   # vision.generate_code@1 — barcode/QR generation (ZXing)
+    engine/tools/code/CodeGeneratorEngine.kt # On-device ZXing symbol encoder + PNG renderer
     engine/tools/audio/AudioToneSynthesizer.kt  # Shared PCM tone/waveform/sequence generator
     engine/tools/image/ImageManipulationEngine.kt # On-device image ops (<4MB OS-model footprint)
     com/yandex/divkit/multiplatform/
@@ -113,28 +79,157 @@ app/
       ui/EngineModalsAndSheets.kt           # App Settings, Connect Workspace & Workspace Settings sheets
       ui/PosTerminalTab.kt                  # Dedicated tenant workspace, standout pill, AppBar & rollback sheet
       ui/SduiBuilderTab.kt                  # Interactive DivKit component & chart builder, JSON editor & rollback
-      ui/DatabaseAndSyncTab.kt              # SQLite PRAGMA, op_log & pending_sync inspector
-      ui/SecurityAndKmpTab.kt               # Zero-trust threat simulator & KMP/Swift code browser
-```
+      ui/FileManagerTab.kt                  # Workspace file manager: folder browser, preview & file ops
+      ui/SecurityAndKmpTab.kt               # Zero-trust threat simulator & engine code browser
+  src/test/java/com/example/contract/       # Cross-platform contract tests (fixtures, envelope, capabilities)
 
----
+apps/ios/
+  Info.plist                                # BGTaskSchedulerPermittedIdentifiers (com.example.engine.sync)
+  EngineCustomBlockFactory.swift            # DivCustomBlockFactory for json_list (UITableView) & sdui_chart (Swift Charts + DGCharts)
+  AppDelegate.swift                         # Registers tool handlers + sync handler on launch
+  IosHapticsTool.swift                      # hardware.haptics@1 — UIFeedbackGenerator + waveform timings
+  IosBeeperTool.swift                       # hardware.beeper@1 — AVAudioEngine PCM synthesis, profiles, sequences
+  IosScannerTool.swift                      # vision.scan_code@1 — AVFoundation optical scanner
+  IosCameraTool.swift                       # vision.capture_photo@1 — camera capture & torch
+  IosSignalTool.swift                       # crypto.signal@1 — deterministic session identity & safety number
+  IosImageManipulationTool.swift            # vision.image_manipulation@1 — on-device image processing
+  IosVectorizeTool.swift                    # vectorize — Vision/NaturalLanguage embeddings & OCR
+  Sources/Contract/                         # Tool protocols + CanonicalJson/Envelope/Sync/Variables mirrors
+  Package.swift                             # Contract-only SPM package (independent compile + tests)
+  Tests/ContractTests/                      # Swift contract tests against shared fixtures
+
+apps/web/                                   # Nitro-backed cloud dashboard (read-only console)
+  server/api/                               # h3 routes: /api/schema/[tenantId], /api/schema/publish, /api/sync
+  server/middleware/                        # Signed-envelope verification (APEX_EDGE_PUBLIC_KEY)
+  src/                                      # Vite + React SPA (fetch-driven, no hardware bridge)
+  src/contract/                             # TypeScript mirrors: canonicalJson, payloadVerifier, engineStateBridge, registry, syncEngine
+  tests/contract/                           # Vitest: contract fixtures, server libs, shared pos-ui
+
+apps/desktop/                               # Tauri v2 point-of-sale terminal (Rust tool bridge)
+  src/                                      # Vite + React frontend, TauriToolBridge + OutboxSync
+  src-tauri/src/commands.rs                 # `tool_invoke` command entrypoint
+  src-tauri/src/tools/                      # capability dispatch (route + per-family modules)
+  src-tauri/capabilities/default.json       # deny-by-default permission grants
+
+packages/pos-ui/                            # Shared DivKit render layer consumed by both apps
+  src/DivKitView.tsx                        # @divkitframework/react wrapper + tools:// dispatch
+  src/customBlocks/                         # sdui_chart / sdui_signature / sdui_numpad blocks
+  src/ToolBridge.ts, ToolResult.ts          # bridge contract both apps implement
+
+packages/contract/                          # Shared contract (no executable code shared across platforms)
+  tools.json                                # Capability ids + aliases (source of truth)
+  fixtures/canonical/v1/                    # Byte-exact canonical JSON fixtures
+  docs/                                     # canonical-json, envelope, sync-batch, schema, variables, tools, api-surface
+
+packages/divkit-subset/
+  schema.json                               # Permitted DivKit component subset
+
+tools/
+  generate-tool-ids.py                      # Regenerates Android ToolIds.kt from tools.json
+```
 
 ## Custom DivKit Chart Components (`sdui_chart`)
 
 Tenants can declare interactive charts directly inside their signed DivKit JSON schema using `"type": "custom"` with `"custom_type": "sdui_chart"` (or `"bar_chart"`, `"line_chart"`, `"area_chart"`, `"donut_chart"`, `"pie_chart"`):
 
-- **KMP Common (`shared/src/commonMain/kotlin/engine/ui/DivChartSpec.kt` + `io.github.koalaplot:koalaplot-core:0.6.3`)**:
+- **Android parser (`apps/android/src/main/java/engine/ui/DivChartSpec.kt`)**:
   - `DivChartParser` parses `custom_props` and binds to either a live reactive `EngineStateBridge` JSON array variable (`"data_var": "user.orders_json"` or `"user.inventory_json"` with automatic SKU aggregation) or inline `"points"`.
 - **Android (`DivKitChartRenderer.kt` + Vico `com.patrykandpatrick.vico:compose-m3:2.0.0` + Jetpack Compose Canvas)**:
   - Renders interactive Material 3 **Bar**, **Line**, **Area**, and **Donut/Pie** charts with live chart-type switcher pills, KPI chips (`TOTAL`, `PEAK`, selected point), tap-to-inspect data points (writes to `user.selected_chart_point`), and animated transitions.
-- **iOS (`iosApp/EngineCustomBlockFactory.swift` — `EngineChartBlockFactory: DivCustomBlockFactory`)**:
+- **iOS (`apps/ios/EngineCustomBlockFactory.swift` — `EngineChartBlockFactory: DivCustomBlockFactory`)**:
   - Wired to Apple **Swift Charts** (`Charts.framework`: `BarMark`, `LineMark`, `AreaMark`, `SectorMark` via `UIHostingController`) on iOS 16+ and **DGCharts** (`~> 5.1.0`: `BarChartView`, `LineChartView`, `PieChartView`) fallback on iOS 15, subscribed to `DivVariableStorage.publisher(for: dataVar)`.
+
+---
+
+## Local Database Bridge (`local-db://op/<name>`)
+
+The **data plane** that every DivKit document uses for its own persistence. DivKit actions
+target `local-db://op/<operation>`; `EngineRouter` executes the whitelisted operation through
+`EngineRegistry` and publishes the result into reactive `user.*` variables (or a `json_list`
+JSON string). It is a URL scheme rather than a `tools://` capability, but it shares the same
+router and output-mapping contract.
+
+| Operation | Alias | Result | Purpose |
+| :--- | :--- | :--- | :--- |
+| `db.import_schema` | `schema.import` | `SchemaImported` | Import a tenant schema JSON (collections + fields). |
+| `db.list_collections` | `schema.collections` | `Rows` | List collections (`{ id, name, index }`). |
+| `db.insert` | `records.create` | `RowId` | Insert a record; `enqueue_sync: true` adds it to the `pending_sync` outbox. |
+| `db.query` | `records.query` | `Rows` | ApexQuery AST query (`select`, `where`, `sort`, `limit`, `offset`). |
+| `db.query_one` | `records.get` | `Row` | First matching record. |
+| `db.count` | `records.count` | `Count` | Count records matching a filter. |
+| `db.delete` | `records.delete` | `Count` | Delete one record by numeric `id`. |
+
+```json
+{
+  "url": "local-db://op/db.query",
+  "payload": {
+    "from": "orders",
+    "where": [{ "field": "status", "op": "=", "value": "OPEN" }],
+    "limit": 25,
+    "json_list_var": "user.orders_json"
+  }
+}
+```
+
+Output keys map columns to `user.*` variables (`output`), `json_list_var` publishes the whole
+result set as JSON, and errors land in `user.engine_error`. Payloads are capped at 128 KB,
+each operation runs under a 5 s timeout, and every call is recorded in `op_log`.
+
+> Full reference: [`docs/tools/local-db.md`](docs/tools/local-db.md).
+
+---
+
+## Native Icon Scheme (`icons://native/<name>`)
+
+A curated catalog of **285 POS-native icons** — cart, bell, receipt, payment, inventory,
+printer, scan, warehouse, and more — resolved to bundled Compose `ImageVector`s. Icons
+render instantly and offline, with no image assets and no network fetch. `EngineRouter`
+also accepts the scheme as an action, publishing the resolved name into `user.*`.
+
+| Reference | Where | Example |
+| :--- | :--- | :--- |
+| `icons://native/cart` | `image` node, `button.icon`, action `url` | `{ "type": "image", "image_url": "icons://native/cart", "size": 24 }` |
+| `cart`, `Cart`, `shopping_cart`, `ShoppingCart` | `button.icon` / action `url` | `{ "type": "button", "icon": "shopping_cart", ... }` |
+
+Action output: `user.icon_name`, `user.icon_material`, `user.icon_category`. Unknown names
+return an error instead of failing silently. The full 285-icon table (with aliases and
+categories) lives in [`docs/tools/icons.md`](docs/tools/icons.md).
+
+> **Size budget.** The scheme adds no drawable assets — every icon is a code-generated
+> vector — so the catalog adds roughly 64 KB to the R8-shrunk release APK (limit: 4 MB).
+
+---
+
+## Workspace Notifications Tray
+
+The launcher's cross-workspace notification surface. Notifications are **grouped by workspace**
+(Reddit-style collapsible groups); each row pins its **workspace glyph to the far right**
+(Google-style) and offers **View / Mark read / Mute** plus dismiss. A **bell + unread badge** in
+the top app bar opens the tray, and every tenant card's badge reads from the **live tray count**,
+so marking a notification read updates the launcher immediately.
+
+| Piece | Location |
+| :--- | :--- |
+| Model + pure reducers (Android-free) | `engine/notifications/NotificationCenter.kt` |
+| Demo seed | `engine/notifications/NotificationSeed.kt` |
+| Compose tray UI | `com/example/ui/NotificationTray.kt` |
+| State + actions | `com/example/enginehost/SduiEngineViewModel.kt` |
+
+The model is deliberately **free of Android and Compose types** (like the icon catalog), so
+grouping, unread counts, mute/unmute, dismiss and relative-time formatting are covered by plain
+JVM unit tests; the tray composable is driven entirely through an injected callback bundle and
+covered by Robolectric Compose tests.
+
+> Full reference: [`docs/tools/notifications-tray.md`](docs/tools/notifications-tray.md).
 
 ---
 
 ## Native Tools & AI Vision Suite (`tools://*`)
 
-Tenants can invoke hardware bridges, optical scanning, on-device AI vision models, and cryptographic protocols directly through standard DivKit actions using the `tools://` scheme:
+Tenants can invoke hardware bridges, optical scanning, on-device AI vision models, and cryptographic protocols directly through standard DivKit actions using the `tools://` scheme.
+
+> Per-tool reference documentation (architecture, parameters, output schema, and DivKit
+> examples) lives in [`docs/tools/`](docs/tools/README.md).
 
 ```json
 {
@@ -157,11 +252,11 @@ Tenants can invoke hardware bridges, optical scanning, on-device AI vision model
 
 ### Supported Tools & Generalized APIs
 
-Every tool is deliberately **unopinionated**: it exposes a generic capability contract (a capability id, a set of operations, and free-form options) rather than any product-, vendor-, or SDK-specific logic. The same schema is registered on Android and iOS via the shared KMP `TerminalApp` composition root.
+Every tool is deliberately **unopinionated**: it exposes a generic capability contract (a capability id, a set of operations, and free-form options) rather than any product-, vendor-, or SDK-specific logic. The same schema is registered on Android and iOS through each platform's `TerminalApp` composition root, held to the shared capability contract in `packages/contract/tools.json`.
 
 | Tool URI | Display Name | Operations | Customizable Options | Default Output Mappings |
 |---|---|---|---|---|
-| `tools://scan` | **Unified Optical Scanner (`vision.scan_code@1`)** | `scan`, `continuous_scan`, `simulate`, `parse` | `target_format` (`both`\|`barcode`\|`qr`\|`EAN_13`\|`UPC_A`\|`CODE_128`\|`QR_CODE`), `beep`, `haptics`, `camera_facing` | `user.scanned_code`, `user.scanned_format`, `user.scanned_type`, `user.scan_status`, `user.scan_timestamp` |
+| `tools://scan` | **Unified Optical Scanner (`vision.scan_code@1`)** | `scan`, `continuous_scan`, `simulate`, `parse`, `ocr` | `target_format` (`both`\|`barcode`\|`qr`\|`EAN_13`\|`UPC_A`\|`CODE_128`\|`QR_CODE`), `beep`, `haptics`, `camera_facing`, `uri` (OCR) | `user.scanned_code`, `user.scanned_format`, `user.scanned_type`, `user.scan_status`, `user.scan_timestamp`, `user.ocr_text`, `user.ocr_confidence`, `user.ocr_block_count` |
 | `tools://haptics` | **Universal Haptics & Vibration Engine (`hardware.haptics@1`)** | `perform`, `vibrate`, `click`, `heavy`, `tick`, `success`, `warning`, `error`, `stop`, `status` | `pattern` (semantic name), `duration_ms` (10-1000ms), `amplitude` (1-255), `timings` (W3C `[wait, vibrate, …]` waveform array) | `user.haptics_status`, `user.haptics_pattern` |
 | `tools://beeper` | **Universal Audio Tone Synthesizer (`hardware.beeper@1`)** | `tone`, `play`, `beep`, `chime`, `stop`, `status` | `frequency_hz`, `duration_ms`, `waveform` (`sine`\|`square`\|`triangle`\|`sawtooth`), `volume` (0-1), `profile` (semantic preset), `sequence` (`freq:ms,…`) | `user.beeper_status`, `user.beeper_frequency` |
 | `tools://camera` | **Hardware Camera Bridge (`vision.capture_photo@1`)** | `capture`, `torch_toggle`, `get_status` | `facing` (`back`\|`front`), `resolution` (`1080p`) | `user.camera_capture_uri` |
@@ -174,10 +269,21 @@ Every tool is deliberately **unopinionated**: it exposes a generic capability co
 | `tools://push` | **Background Alerts & Push Notifications (`network.push@1`)** | `send_alert`, `notify`, `send` | `channel`, `priority` | `user.push_notification_id`, `user.push_status` |
 | `tools://offline-cache` | **Offline Page & Schema Cache (`storage.offline_cache@1`)** | `cache`, `get_stats`, `clear` | `op` | `user.offline_cache_status`, `user.offline_cached_pages` |
 | `tools://realtime-ws` | **Realtime WebSocket / SSE Engine (`network.realtime@1`)** | `connect`, `disconnect`, `send`, `subscribe` | `channel` | `user.realtime_connection_state`, `user.realtime_channel` |
+| `tools://net` | **Network Transfer (Ktor) & LAN Hub (`network.transfer@1`)** | `request`, `get`, `post`, `download`, `upload`, `serve`, `stop`, `status`, `share`, `list`, `unshare` | `url`, `method`, `header_*`, `content_type`, `content_base64`\|`body`, `file_path`, `timeout_ms`, `port`, `host`, `label`, `name` | `user.net_status`, `user.net_http_status`, `user.net_bytes`, `user.net_hub_port` |
+| `tools://print` | **Bluetooth Printer / POS Bridge (`device.printer@1`)** | `scan`, `pair`, `connect`, `disconnect`, `print`, `status` | `address`, `all`, `discover`, `text`\|`lines`\|`receipt`, `align`, `bold`, `width`, `feed_lines`, `cut` | `user.print_status`, `user.print_device_count`, `user.print_bytes` |
+| `tools://code-generate` | **Barcode & QR Code Generator (`vision.generate_code@1`)** | `generate`, `qr`, `barcode`, `render` | `content`, `format` (`qr`\|`datamatrix`\|`aztec`\|`pdf417`\|`EAN_13`\|`UPC_A`\|`CODE_128`\|…), `width`, `height`, `margin`, `ec_level`, `fg_color`, `bg_color`, `encoding` (`uri`\|`base64`\|`both`) | `user.code_status`, `user.code_image_uri`, `user.code_content`, `user.code_format`, `user.code_kind`, `user.code_id`, `user.code_matrix` |
 
 > **Unified scanner.** The former split tools `tools://scan-barcode` (1D) and `tools://scan-qr` (2D) are replaced by a single `tools://scan` tool that decodes both symbologies by default. `target_format` restricts recognition (`both` by default, or `barcode`/`qr`/an explicit format), and a non-matching code returns `status = "FORMAT_MISMATCH"`. The legacy URIs are still accepted as aliases for backward compatibility.
 >
+> **OCR lives in the scanner.** Text recognition is the scanner's image-reading mode: call `tools://scan/ocr` (or the `tools://ocr/read` alias) with a `uri` to extract text, confidence, and per-block boxes. The standalone `tools://vectorize/ocr` operation was removed; `tools://vectorize/image_text` still chains OCR and embedding in one call.
+>
+> **Code generation (`tools://code-generate`).** The encode-side counterpart to the scanner. It renders any content into a 1D barcode or 2D matrix symbol (QR, DataMatrix, Aztec, PDF417, EAN, UPC, Code 128/39/93, ITF, Codabar) via ZXing `MultiFormatWriter`, writes a PNG into the tenant media sandbox, and returns the module matrix for pure-DivKit rendering. ZXing is a pure-JVM library with no Play Services dependency.
+>
 > **Unopinionated feedback APIs.** `tools://haptics` and `tools://beeper` carry no vendor or SDK coupling: the caller supplies generic parameters (patterns, frequencies, waveforms, volumes, timing arrays, sequences) and the platform chooses the physical implementation. There is no dedicated "POS tone" API — `PosTonePlayer`/`playPosTone` were removed and the haptic entry point is the platform-neutral `triggerHaptic`.
+>
+> **Generic networking (`tools://net`).** Built on Ktor (CIO engine), it covers both client calls (`request`/`get`/`post`/`download`/`upload`) and an embedded LAN transfer hub (`serve`/`stop`/`status`/`share`/`list`/`unshare`). `serve` starts a Ktor CIO server that hosts a discovery page at `/` and downloadable items at `/file/{id}`, so the same tool powers hubs and Xender-style device-to-device sharing.
+>
+> **Bluetooth printing (`tools://print`).** Scans bonded and discoverable Bluetooth thermal printers / POS peers (name heuristics: `printer`, `thermal`, `pos`, `rpt`, `goojprt`, `xprinter`, …), bonds (`pair`), opens an RFCOMM SPP socket (`connect`), and writes ESC/POS receipt bytes (`print` with `align`, `bold`, `width`, `feed_lines`, `cut`). On Android 12+ it requires `BLUETOOTH_CONNECT`/`BLUETOOTH_SCAN`; on older releases it falls back to `BLUETOOTH`/`BLUETOOTH_ADMIN`.
 
 ---
 
@@ -198,7 +304,7 @@ The terminal engine implements the zero-trust **Terminal Tool Architecture**:
    - `ToolResult.Failed(capability, message)`: Unexpected runtime failure; writes `"failed"`.
 4. **Provenance & Access Control**:
    - `Provenance.Agency`: Full access to administrative, internal, and external capabilities.
-   - `Provenance.Publisher`: Restricted strictly to the pre-approved tenant capabilities in `ProvenanceChecker` (`hardware.haptics@1`, `hardware.beeper@1`, `vision.scan_code@1`, `vision.capture_photo@1`, `vision.identify_product@1`, `vision.embed_image@1`, `vision.remove_background@1`, `secure.send@1`, `secure.status@1`, `secure.verify_identity@1`, `auth.biometrics@1`, `device.clipboard@1`, `network.push@1`, `storage.offline_cache@1`, `network.realtime@1`).
+   - `Provenance.Publisher`: Restricted strictly to the pre-approved tenant capabilities in `ProvenanceChecker` (`hardware.haptics@1`, `hardware.beeper@1`, `vision.scan_code@1`, `vision.capture_photo@1`, `vision.identify_product@1`, `vision.embed_image@1`, `vision.remove_background@1`, `secure.send@1`, `secure.status@1`, `secure.verify_identity@1`, `auth.biometrics@1`, `device.clipboard@1`, `network.push@1`, `storage.offline_cache@1`, `network.realtime@1`, `network.transfer@1`, `device.printer@1`, `vision.generate_code@1`).
 5. **Unopinionated Platform Haptics & Tones**:
    - Haptics uses Android `Vibrator` / `VibratorManager` with `VibrationEffect.createPredefined` (Android 10+), dual-pulse waveforms (Android 8+), and legacy millisecond one-shots; iOS uses `UIFeedbackGenerator` (`UIImpactFeedbackGenerator`/`UINotificationFeedbackGenerator`).
    - The beeper synthesizes PCM tones (sine/square/triangle/sawtooth) with `AudioToneSynthesizer` on Android and `AVAudioEngine` on iOS. Both degrade gracefully when hardware or permissions are unavailable.

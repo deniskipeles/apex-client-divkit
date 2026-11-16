@@ -17,3 +17,27 @@
 local.properties
 .env
 debug.keystore
+
+# --- apps/ layout (post-restructure) ---
+apps/android/build
+apps/android/local.properties
+apps/android/.gradle
+apps/ios/Pods
+apps/ios/build
+apps/ios/.build
+apps/web/node_modules
+apps/web/dist
+
+# --- apps/desktop (Tauri) ---
+apps/desktop/node_modules
+apps/desktop/dist
+apps/desktop/src-tauri/target
+apps/desktop/src-tauri/gen
+
+# --- apps/web (Nitro) ---
+apps/web/.nitro
+apps/web/.output
+
+# --- pnpm workspace ---
+node_modules/
+.pnpm-store/

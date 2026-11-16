@@ -1,0 +1,17 @@
+{
+  "name": "@apex/contract",
+  "version": "0.0.1",
+  "type": "module",
+  "private": true,
+  "description": "Cross-platform contract: capability ids + aliases, canonical JSON fixtures, docs.",
+  "exports": {
+    ".": "./index.ts",
+    "./tools.json": "./tools.json",
+    "./fixtures/*": "./fixtures/*"
+  },
+  "files": [
+    "tools.json",
+    "fixtures",
+    "docs"
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Capabilities granted to the ApexClient POS main window. Tauri v2 is deny-by-default: without these entries the tool_invoke command and every plugin are blocked.",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "haptics:allow-vibrate",
+    "haptics:allow-impact-feedback",
+    "haptics:allow-notification-feedback",
+    "haptics:allow-selection-feedback",
+    "clipboard-manager:allow-read-text",
+    "clipboard-manager:allow-write-text",
+    "sql:default",
+    "sql:allow-execute"
+  ]
+}

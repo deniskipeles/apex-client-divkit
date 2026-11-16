@@ -1,0 +1,1 @@
+{ "input": "nav://replace?id=kds", "expected": { "op": "replace", "cardId": "kds" } }

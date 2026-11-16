@@ -1,0 +1,27 @@
+[package]
+name = "apex-desktop"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "apex_desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
+
+tauri-plugin-haptics = "2"
+tauri-plugin-clipboard-manager = "2"
+tauri-plugin-sql = { version = "2", features = ["sqlite"] }
+
+# Mobile-only camera plugins. The desktop POS builds without them; scanning and photo
+# capture on mobile are covered by apps/android and apps/ios.
+[target.'cfg(mobile)'.dependencies]
+tauri-plugin-barcode-scanner = "2"
+tauri-plugin-camera = "0.1"
