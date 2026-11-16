@@ -89,11 +89,12 @@ android {
   }
 }
 
-// Contract tests read shared fixtures/docs from packages/contract; the path is exposed as a
-// system property because the test task's working directory is the module dir (apps/android).
+// Contract tests read shared fixtures/docs from the repo's packages/contract; the path is
+// exposed as a system property because the test task's working directory is this project dir
+// (apps/android). This directory is the Gradle root, so the repo root is two levels up.
 tasks.withType<Test>().configureEach {
-  val contractDir = rootProject.layout.projectDirectory.dir("packages/contract").asFile
-  systemProperty("contract.dir", contractDir.absolutePath)
+  val repoRoot = rootProject.layout.projectDirectory.asFile.parentFile.parentFile
+  systemProperty("contract.dir", File(repoRoot, "packages/contract").absolutePath)
 }
 
 // Configure the Secrets Gradle Plugin to use .env and .env.example files

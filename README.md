@@ -46,7 +46,13 @@ A Server-Driven UI (SDUI) application engine that uses **DivKit** for dynamic, o
 ## 📦 Project Structure
 
 ```text
-apps/android/
+apps/android/                               # Self-contained Gradle project (app is the root project)
+  settings.gradle.kts                       # Gradle root settings (pluginManagement, repositories)
+  build.gradle.kts                          # Android app module build script
+  gradle/libs.versions.toml                 # Version catalog
+  gradle/wrapper/                           # Gradle 9.3.1 wrapper (gradlew, gradlew.bat, jar, properties)
+  build-apks.sh                             # Zero-config multi-ABI APK build engine
+  tools/generate-tool-ids.py                # Regenerates Android ToolIds.kt from packages/contract/tools.json
   src/main/java/
     engine/...                              # Android runtime engine
     engine/fs/WorkspaceFileSystem.kt        # Pure-JVM file ops: safe names, listing, sizes, text preview
@@ -123,9 +129,6 @@ packages/contract/                          # Shared contract (no executable cod
 
 packages/divkit-subset/
   schema.json                               # Permitted DivKit component subset
-
-tools/
-  generate-tool-ids.py                      # Regenerates Android ToolIds.kt from tools.json
 ```
 
 ## Custom DivKit Chart Components (`sdui_chart`)
@@ -322,16 +325,18 @@ The build produces **3 standalone architecture APKs** + **1 universal APK** + **
 
 ### R8 Minification & High-Speed Tuning
 
-Configured via `app/build.gradle.kts` and `app/proguard-rules.pro`:
+Configured via `apps/android/build.gradle.kts` and `apps/android/proguard-rules.pro`:
 - `isMinifyEnabled = true` and `isShrinkResources = true` in `release`.
 - Preserves all KotlinX Serialization, SQLDelight/SQLite, DivKit, and crypto reflection.
 - `-optimizations !code/simplification/arithmetic,!code/simplification/cast,!field/*,!class/merging/*` prevents excessive obfuscation loops, ensuring fast JIT/AOT warmup and deterministic performance.
 
 ### 🛠️ One-Click Zero-Config Build Script (`build-apks.sh`)
 
-Run `./build-apks.sh` to automatically detect and configure the environment (JDK 17/21, Android SDK, Licenses, Keystores, and Gradle wrapper) and build all multi-architecture APKs without manual OS setup:
+The Android app is a self-contained Gradle project under `apps/android`. Run `./build-apks.sh` from that directory to automatically detect and configure the environment (JDK 17/21, Android SDK, Licenses, Keystores, and Gradle wrapper) and build all multi-architecture APKs without manual OS setup:
 
 ```bash
+cd apps/android
+
 # Build debug APK suite (arm64-v8a, armeabi-v7a, x86_64, universal)
 ./build-apks.sh
 

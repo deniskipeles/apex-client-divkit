@@ -24,7 +24,6 @@ dependencyResolutionManagement {
 
 rootProject.name = "ApexClient Terminal"
 
-// The Android app moved to apps/android; keep the Gradle project path `:app` so
-// existing `:app:*` task invocations and CI commands are unchanged.
-include(":app")
-project(":app").projectDir = file("apps/android")
+// Self-contained single-module Android project: this directory is the Gradle root and the
+// app is the root project, so the sources stay at `src/` (no nested `:app` module). Build
+// with `./gradlew assembleDebug` from this directory.

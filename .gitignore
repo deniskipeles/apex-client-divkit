@@ -18,10 +18,14 @@ local.properties
 .env
 debug.keystore
 
-# --- apps/ layout (post-restructure) ---
+# --- apps/android (self-contained Gradle project) ---
 apps/android/build
+apps/android/dist-apks
 apps/android/local.properties
 apps/android/.gradle
+apps/android/.kotlin
+apps/android/.env
+apps/android/debug.keystore
 apps/ios/Pods
 apps/ios/build
 apps/ios/.build

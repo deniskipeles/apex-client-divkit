@@ -556,6 +556,6 @@ names that resolve to the same icon.
    `material` must be a real `androidx.compose.material.icons.filled.*` identifier.
 2. Add the matching `"<material>" -> Icons.Default.<material>` branch to
    [`NativeIconVectors.kt`](../../apps/android/src/main/java/engine/icons/NativeIconVectors.kt).
-3. Run `./gradlew :app:testDebugUnitTest`. `NativeIconCatalogTest` checks that every key is
+3. Run `./gradlew testDebugUnitTest` (from `apps/android`). `NativeIconCatalogTest` checks that every key is
    unique and resolvable, and the Robolectric suite asserts every catalog icon maps to a
    Compose vector — so a missing branch fails the build.

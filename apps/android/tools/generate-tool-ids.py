@@ -2,13 +2,14 @@
 """Generates Android ToolIds.kt from packages/contract/tools.json.
 
 Run after editing tools.json:
-    python3 tools/generate-tool-ids.py
+    python3 apps/android/tools/generate-tool-ids.py
 """
 import json
 import pathlib
 import sys
 
-ROOT = pathlib.Path(__file__).resolve().parent.parent
+# Script lives at apps/android/tools/, so the repo root is three parents up.
+ROOT = pathlib.Path(__file__).resolve().parents[3]
 TOOLS_JSON = ROOT / "packages/contract/tools.json"
 OUT = ROOT / "apps/android/src/test/java/com/example/contract/ToolIds.kt"
 

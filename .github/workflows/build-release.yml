@@ -42,6 +42,7 @@ jobs:
           sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0" || true
 
       - name: Setup Environment Files
+        working-directory: apps/android
         run: |
           # Create placeholder .env to satisfy the Secrets Gradle Plugin if not present
           touch .env
@@ -50,13 +51,15 @@ jobs:
           fi
 
       - name: Ensure Executable Permissions
+        working-directory: apps/android
         run: |
           chmod +x gradlew
           chmod +x build-apks.sh
 
       - name: Compile and Package Release APKs
+        working-directory: apps/android
         env:
-          KEYSTORE_PATH: ${{ github.workspace }}/my-upload-key.jks
+          KEYSTORE_PATH: ${{ github.workspace }}/apps/android/my-upload-key.jks
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD || 'storepass123' }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD || 'storepass123' }}
         run: |

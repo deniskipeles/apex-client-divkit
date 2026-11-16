@@ -4,8 +4,11 @@ Repository-specific knowledge for the Apex Client DivKit SDUI POS app.
 
 ## Build & test
 
-- Only `:app` is registered in `settings.gradle.kts`; its `projectDir` points at
-  `apps/android`. All Android work targets that directory.
+- `apps/android` is a **self-contained, single-module Gradle project**: that directory is
+  the Gradle root and the app is the root project, so the sources live at
+  `apps/android/src` (no nested `:app` module). Run all Gradle commands from
+  `apps/android`, and drop the `:app:` task prefix (`assembleDebug`, not
+  `:app:assembleDebug`).
 - The former KMP `shared/` module has been **removed**. Cross-platform contract identity is
   now enforced by shared fixtures + mirrored implementations under `packages/contract/`
   (Android tests, iOS `Sources/Contract`, Web `src/contract`), not by shared Kotlin.
@@ -14,9 +17,10 @@ Repository-specific knowledge for the Apex Client DivKit SDUI POS app.
   polling a log file; foreground commands are capped below the idle timeout.
 
 ```bash
-./gradlew :app:compileDebugKotlin          # fast compile check
-./gradlew :app:testDebugUnitTest           # unit + Robolectric tests
-./gradlew :app:assembleDebug               # produces APKs (universal + per-ABI)
+cd apps/android
+./gradlew compileDebugKotlin          # fast compile check
+./gradlew testDebugUnitTest           # unit + Robolectric tests
+./gradlew assembleDebug               # produces APKs (universal + per-ABI)
 ```
 
 ### Environment
@@ -229,7 +233,7 @@ pnpm check:desktop           # cargo check
   outputs. Do not remove it or the universal APK balloons (~+26 MB).
 - Release builds run R8 with `isMinifyEnabled`. Ktor's debugger detector references JVM-only
   `java.lang.management` types, so `proguard-rules.pro` carries matching `-dontwarn` rules;
-  without them `:app:minifyReleaseWithR8` fails with "Missing class" errors.
+  without them `minifyReleaseWithR8` fails with "Missing class" errors.
 
 ## Demo showcase contract
 
