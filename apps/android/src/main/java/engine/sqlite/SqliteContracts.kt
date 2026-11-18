@@ -43,6 +43,15 @@ interface SqlDriver : Closeable {
     ): Long
 
     fun lastInsertedRowId(): Long
+
+    /** Opens a transaction on the underlying connection. */
+    fun beginTransaction()
+
+    /** Marks the open transaction for commit; without this it rolls back on [endTransaction]. */
+    fun setTransactionSuccessful()
+
+    /** Commits or rolls back the open transaction. */
+    fun endTransaction()
 }
 
 interface SqlSchema {

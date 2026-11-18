@@ -59,7 +59,13 @@ data class RelationDefinition(
     val sql_indexed: Boolean = false,
     val ose_indexed: Boolean = false,
     val cascade_on_target_delete: Boolean = false,
-    val target_index: String? = null
+    val target_index: String? = null,
+    /**
+     * Marks the relation as carrying edge properties. When set, a `_relations` row is
+     * materialised and the optional `<relation>_properties` object on the record is stored
+     * in the row's `properties` column.
+     */
+    val has_properties: Boolean = false
 )
 
 @Serializable
@@ -98,7 +104,7 @@ data class TenantSchemaPackage(
 
 @Serializable
 data class Record(
-    val id: Long,
+    val id: String,
     val collectionId: Long,
     val data: JsonObject,
     val created: String,

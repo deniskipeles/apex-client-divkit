@@ -45,7 +45,7 @@ class WorkspaceDatabase(val driver: SqlDriver) {
     val workspaceQueries: GenericDatabaseQueries get() = queries
 
     object Schema : SqlSchema {
-        override val version: Long = 3L
+        override val version: Long = 4L
 
         override fun create(driver: SqlDriver) {
             // 1. Collections Store
@@ -62,12 +62,14 @@ class WorkspaceDatabase(val driver: SqlDriver) {
                 0
             )
 
-            // 2. Generic JSON Records Store
+            // 2. Generic JSON Records Store. `id` is a globally-unique TEXT key so
+            //    supplied identifiers (e.g. "customer_abc") and generated numeric ones
+            //    share one representation.
             driver.executeUpdate(
                 null,
                 """
                 CREATE TABLE IF NOT EXISTS records (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    id TEXT PRIMARY KEY,
                     collection_id INTEGER NOT NULL,
                     data TEXT NOT NULL,
                     created TEXT NOT NULL,
@@ -83,53 +85,65 @@ class WorkspaceDatabase(val driver: SqlDriver) {
                 0
             )
 
-            // 3. Unique Value Constraint Index
+            // 3. Registry of schema-generated expression indexes. Uniqueness and JSON
+            //    query acceleration are enforced by SQLite indexes, not a shadow table.
             driver.executeUpdate(
                 null,
                 """
-                CREATE TABLE IF NOT EXISTS _unique_values (
-                    index_key TEXT NOT NULL,
-                    value TEXT NOT NULL,
-                    record_id INTEGER NOT NULL,
-                    PRIMARY KEY (index_key, value)
+                CREATE TABLE IF NOT EXISTS _applied_indexes (
+                    index_name    TEXT PRIMARY KEY,
+                    collection_id INTEGER NOT NULL,
+                    kind          TEXT NOT NULL,
+                    fields        TEXT NOT NULL
                 )
                 """.trimIndent(),
                 0
             )
+
+            // 4. Fallback TEXT id generator (AUTOINCREMENT needs an INTEGER key).
             driver.executeUpdate(
                 null,
-                "CREATE INDEX IF NOT EXISTS idx_unique_lookup ON _unique_values(index_key, value)",
-                0
-            )
-            driver.executeUpdate(
-                null,
-                "CREATE INDEX IF NOT EXISTS idx_unique_record ON _unique_values(record_id)",
+                """
+                CREATE TABLE IF NOT EXISTS _record_id_sequence (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT
+                )
+                """.trimIndent(),
                 0
             )
 
-            // 4. Inter-Record Relational Linkages
+            // 5. Inter-Record Relational Linkages. Endpoints are TEXT record ids with
+            //    FK cascades, so deleting a record removes its relation rows atomically.
             driver.executeUpdate(
                 null,
                 """
                 CREATE TABLE IF NOT EXISTS _relations (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    origin_col_id INTEGER NOT NULL,
-                    origin_rec_id INTEGER NOT NULL,
-                    target_col_id INTEGER NOT NULL,
-                    target_rec_id INTEGER NOT NULL,
-                    rel_name TEXT NOT NULL,
-                    properties TEXT
+                    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                    origin_rec_id TEXT NOT NULL,
+                    target_rec_id TEXT NOT NULL,
+                    properties    TEXT,
+                    FOREIGN KEY (origin_rec_id) REFERENCES records(id) ON DELETE CASCADE,
+                    FOREIGN KEY (target_rec_id) REFERENCES records(id) ON DELETE CASCADE
                 )
                 """.trimIndent(),
                 0
             )
             driver.executeUpdate(
                 null,
-                "CREATE UNIQUE INDEX IF NOT EXISTS idx_relations_unique ON _relations(origin_col_id, origin_rec_id, target_col_id, target_rec_id, rel_name)",
+                "CREATE UNIQUE INDEX IF NOT EXISTS idx_relations_unique ON _relations(origin_rec_id, target_rec_id)",
+                0
+            )
+            driver.executeUpdate(
+                null,
+                "CREATE INDEX IF NOT EXISTS idx_relations_origin ON _relations(origin_rec_id)",
+                0
+            )
+            driver.executeUpdate(
+                null,
+                "CREATE INDEX IF NOT EXISTS idx_relations_target ON _relations(target_rec_id)",
                 0
             )
 
-            // 5. System Logs
+            // 6. System Logs
             driver.executeUpdate(
                 null,
                 """
@@ -144,7 +158,7 @@ class WorkspaceDatabase(val driver: SqlDriver) {
                 0
             )
 
-            // 6. Engine Op Log & Sync Outbox
+            // 7. Engine Op Log & Sync Outbox
             driver.executeUpdate(
                 null,
                 """
@@ -176,7 +190,7 @@ class WorkspaceDatabase(val driver: SqlDriver) {
                 0
             )
 
-            // 7. DivKit SDUI Schema Version Cache
+            // 8. DivKit SDUI Schema Version Cache
             driver.executeUpdate(
                 null,
                 """
@@ -196,8 +210,130 @@ class WorkspaceDatabase(val driver: SqlDriver) {
         }
 
         override fun migrate(driver: SqlDriver, oldVersion: Long, newVersion: Long) {
+            if (oldVersion >= version) return
+
+            // Create any missing tables first; existing tables are left untouched so the
+            // rebuild steps below can convert their contents.
             create(driver)
+
+            // 1. records.id: INTEGER -> TEXT (globally-unique text identity).
+            val recordsIdType = columnType(driver, "records", "id")
+            if (recordsIdType != null && recordsIdType.uppercase().contains("INT")) {
+                driver.executeUpdate(null, "ALTER TABLE records RENAME TO _records_legacy", 0)
+                driver.executeUpdate(
+                    null,
+                    """
+                    CREATE TABLE records (
+                        id TEXT PRIMARY KEY,
+                        collection_id INTEGER NOT NULL,
+                        data TEXT NOT NULL,
+                        created TEXT NOT NULL,
+                        updated TEXT NOT NULL,
+                        FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE CASCADE
+                    )
+                    """.trimIndent(),
+                    0
+                )
+                driver.executeUpdate(
+                    null,
+                    "INSERT INTO records (id, collection_id, data, created, updated) " +
+                        "SELECT CAST(id AS TEXT), collection_id, data, created, updated FROM _records_legacy",
+                    0
+                )
+                driver.executeUpdate(null, "DROP TABLE _records_legacy", 0)
+                // The legacy index moved with the renamed table, so create it after the drop.
+                driver.executeUpdate(
+                    null,
+                    "CREATE INDEX IF NOT EXISTS idx_records_collection ON records(collection_id, id DESC)",
+                    0
+                )
+            }
+
+            // 2. _relations: drop origin_col_id/target_col_id/rel_name; TEXT endpoints + FK.
+            if (hasColumn(driver, "_relations", "rel_name") || hasColumn(driver, "_relations", "origin_col_id")) {
+                driver.executeUpdate(null, "ALTER TABLE _relations RENAME TO _relations_legacy", 0)
+                driver.executeUpdate(
+                    null,
+                    """
+                    CREATE TABLE _relations (
+                        id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                        origin_rec_id TEXT NOT NULL,
+                        target_rec_id TEXT NOT NULL,
+                        properties    TEXT,
+                        FOREIGN KEY (origin_rec_id) REFERENCES records(id) ON DELETE CASCADE,
+                        FOREIGN KEY (target_rec_id) REFERENCES records(id) ON DELETE CASCADE
+                    )
+                    """.trimIndent(),
+                    0
+                )
+                driver.executeUpdate(
+                    null,
+                    """
+                    INSERT INTO _relations (origin_rec_id, target_rec_id, properties)
+                    SELECT CAST(origin_rec_id AS TEXT), CAST(target_rec_id AS TEXT), MAX(properties)
+                    FROM _relations_legacy
+                    GROUP BY CAST(origin_rec_id AS TEXT), CAST(target_rec_id AS TEXT)
+                    """.trimIndent(),
+                    0
+                )
+                driver.executeUpdate(null, "DROP TABLE _relations_legacy", 0)
+                driver.executeUpdate(
+                    null,
+                    "CREATE UNIQUE INDEX IF NOT EXISTS idx_relations_unique ON _relations(origin_rec_id, target_rec_id)",
+                    0
+                )
+                driver.executeUpdate(
+                    null,
+                    "CREATE INDEX IF NOT EXISTS idx_relations_origin ON _relations(origin_rec_id)",
+                    0
+                )
+                driver.executeUpdate(
+                    null,
+                    "CREATE INDEX IF NOT EXISTS idx_relations_target ON _relations(target_rec_id)",
+                    0
+                )
+            }
+
+            // 3. Remove the application-maintained uniqueness table; SQLite expression
+            //    indexes are now the single source of truth.
+            driver.executeUpdate(null, "DROP TABLE IF EXISTS _unique_values", 0)
+
+            // 4. Seed the fallback id sequence above the highest numeric-looking record id.
+            val sequencePopulated = driver.executeQuery(
+                null,
+                "SELECT COUNT(*) FROM _record_id_sequence",
+                0
+            ).use { c -> if (c.next().value) (c.getLong(0) ?: 0L) > 0L else false }
+
+            if (!sequencePopulated) {
+                driver.executeUpdate(
+                    null,
+                    """
+                    INSERT INTO _record_id_sequence (id)
+                    SELECT COALESCE(MAX(CAST(id AS INTEGER)), 0)
+                    FROM records
+                    WHERE id GLOB '[0-9]*' AND id NOT GLOB '*[^0-9]*'
+                    """.trimIndent(),
+                    0
+                )
+            }
         }
+
+        private fun columnType(driver: SqlDriver, table: String, column: String): String? {
+            var type: String? = null
+            driver.executeQuery(null, "PRAGMA table_info($table)", 0).use { c ->
+                while (c.next().value) {
+                    if ((c.getString(1) ?: "") == column) {
+                        type = c.getString(2)
+                        break
+                    }
+                }
+            }
+            return type
+        }
+
+        private fun hasColumn(driver: SqlDriver, table: String, column: String): Boolean =
+            columnType(driver, table, column) != null
     }
 }
 

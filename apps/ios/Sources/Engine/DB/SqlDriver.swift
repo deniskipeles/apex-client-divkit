@@ -42,6 +42,13 @@ public protocol SqlDriver: AnyObject {
 
     func lastInsertedRowId() -> Int64
 
+    /// Message for the most recent failed statement, or nil when it succeeded.
+    func lastErrorMessage() -> String?
+
+    func beginTransaction()
+    func setTransactionSuccessful()
+    func endTransaction()
+
     func close()
 }
 
@@ -68,10 +75,14 @@ public extension SqlDriver {
 public final class DirectSqliteDriver: SqlDriver {
     private var db: OpaquePointer?
     private let lock = NSRecursiveLock()
+    private var lastStepError: String?
 
     public init(schema: SqlSchema, path: String = ":memory:") {
         sqlite3_open(path, &db)
         sqlite3_busy_timeout(db, 5_000)
+        // Foreign-key enforcement is off by default and is per-connection, so enable it
+        // before any schema DDL so the cascade constraints take effect.
+        sqlite3_exec(db, "PRAGMA foreign_keys = ON;", nil, nil, nil)
         schema.create(self)
     }
 
@@ -91,6 +102,13 @@ public final class DirectSqliteDriver: SqlDriver {
         return stmt
     }
 
+    private func step(_ stmt: OpaquePointer) {
+        lastStepError = nil
+        if sqlite3_step(stmt) != SQLITE_DONE {
+            lastStepError = sqlite3_errmsg(db).map { String(cString: $0) }
+        }
+    }
+
     @discardableResult
     public func executeUpdate(
         identifier: Int?,
@@ -99,11 +117,14 @@ public final class DirectSqliteDriver: SqlDriver {
         binders: ((SqlPreparedStatement) -> Void)?
     ) -> Int64 {
         lock.lock(); defer { lock.unlock() }
-        guard let stmt = prepare(sql) else { return 0 }
+        guard let stmt = prepare(sql) else {
+            lastStepError = sqlite3_errmsg(db).map { String(cString: $0) }
+            return 0
+        }
         defer { sqlite3_finalize(stmt) }
         let binder = SqlitePreparedStatement(stmt: stmt)
         binders?(binder)
-        sqlite3_step(stmt)
+        step(stmt)
         return Int64(sqlite3_changes(db))
     }
 
@@ -126,6 +147,28 @@ public final class DirectSqliteDriver: SqlDriver {
     public func lastInsertedRowId() -> Int64 {
         lock.lock(); defer { lock.unlock() }
         return Int64(sqlite3_last_insert_rowid(db))
+    }
+
+    public func lastErrorMessage() -> String? {
+        lock.lock(); defer { lock.unlock() }
+        return lastStepError
+    }
+
+    public func beginTransaction() {
+        lock.lock(); defer { lock.unlock() }
+        sqlite3_exec(db, "BEGIN IMMEDIATE;", nil, nil, nil)
+    }
+
+    public func setTransactionSuccessful() {
+        lock.lock(); defer { lock.unlock() }
+        sqlite3_exec(db, "COMMIT;", nil, nil, nil)
+    }
+
+    public func endTransaction() {
+        lock.lock(); defer { lock.unlock() }
+        if sqlite3_get_autocommit(db) == 0 {
+            sqlite3_exec(db, "ROLLBACK;", nil, nil, nil)
+        }
     }
 }
 

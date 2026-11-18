@@ -48,8 +48,8 @@ class SchemaContractTest {
     }
 
     @Test
-    fun schemaDeclaresVersion3() {
-        assertEquals(3L, engine.db.WorkspaceDatabase.Schema.version)
+    fun schemaDeclaresVersion4() {
+        assertEquals(4L, engine.db.WorkspaceDatabase.Schema.version)
     }
 
     @Test
@@ -59,6 +59,17 @@ class SchemaContractTest {
         db.use {
             schema.create(it) // second create must not throw (IF NOT EXISTS)
             assertTrue(it.lastInsertedRowId() >= 0L)
+        }
+    }
+
+    @Test
+    fun schemaHasNoLegacyUniqueValuesTable() {
+        driver().use { db ->
+            var found = false
+            db.executeQuery(null, "SELECT name FROM sqlite_master WHERE type='table' AND name='_unique_values'", 0).use { c ->
+                if (c.next().value) found = true
+            }
+            assertEquals(false, found)
         }
     }
 }

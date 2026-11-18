@@ -104,4 +104,114 @@ final class WorkspaceDatabaseTests: XCTestCase {
         XCTAssertNoThrow(mgr.validateWorkspaceId("ws-01"))
         // Invalid ids trip a precondition (trap), so we only assert the valid path here.
     }
+
+    // MARK: v4 storage refactor
+
+    private func engine(_ path: String = ":memory:") -> (ApexKitDatabaseEngine, SqlDriver) {
+        let driver = DirectSqliteDriver(schema: WorkspaceDatabase.Schema(), path: path)
+        return (ApexKitDatabaseEngine(driver: driver), driver)
+    }
+
+    private func indexNames(_ driver: SqlDriver) -> [String] {
+        var names: [String] = []
+        let cursor = driver.executeQuery(identifier: nil, sql: "SELECT name FROM sqlite_master WHERE type='index'", parameters: 0, binders: nil)
+        while cursor.next() { if let name = cursor.getString(index: 0) { names.append(name) } }
+        return names
+    }
+
+    private func relationRowCount(_ driver: SqlDriver) -> Int64 {
+        let cursor = driver.executeQuery(identifier: nil, sql: "SELECT COUNT(*) FROM _relations", parameters: 0, binders: nil)
+        return cursor.next() ? (cursor.getLong(index: 0) ?? 0) : 0
+    }
+
+    private func uniqueEmailSchema() -> CollectionSchema {
+        CollectionSchema(fields: [
+            "email": FieldDefinition(type: .string, unique: true, uid: "c_email"),
+            "status": FieldDefinition(type: .string, uid: "c_status", sqlIndexed: true)
+        ])
+    }
+
+    func testUniqueFieldCreatesExpressionIndexAndRejectsDuplicate() throws {
+        let (apex, driver) = engine()
+        try apex.importTenantSchema(TenantSchemaPackage(collections: [
+            Collection(id: 5, name: "customers", schema: uniqueEmailSchema())
+        ]))
+
+        XCTAssertTrue(indexNames(driver).contains("idx_u_5_email"))
+        XCTAssertTrue(indexNames(driver).contains("idx_n_5_status"))
+
+        try apex.insertRecord("customers", data: .object([("email", .string("a@b.com"))]))
+        XCTAssertThrowsError(try apex.insertRecord("customers", data: .object([("email", .string("a@b.com"))])))
+    }
+
+    func testRecordIdsAreAlwaysText() throws {
+        let (apex, _) = engine()
+        try apex.importTenantSchema(TenantSchemaPackage(collections: [
+            Collection(id: 1, name: "customers", schema: CollectionSchema())
+        ]))
+
+        XCTAssertEqual(try apex.insertRecord("customers", data: .object([("id", .string("customer_abc"))])), "customer_abc")
+        XCTAssertEqual(try apex.insertRecord("customers", data: .object([("id", .int(42))])), "42")
+        let generated = try apex.insertRecord("customers", data: .object([("name", .string("auto"))]))
+        XCTAssertNotNil(Int64(generated))
+
+        let stored = Set(apex.queryRecords("customers").map { $0.id })
+        XCTAssertTrue(stored.contains("customer_abc"))
+        XCTAssertTrue(stored.contains("42"))
+        XCTAssertTrue(stored.contains(generated))
+    }
+
+    private func relationSchema(cascade: Bool, many: Bool) -> CollectionSchema {
+        CollectionSchema(relations: [
+            "target_id": RelationDefinition(
+                targetCollection: "targets",
+                relationType: many ? .many : .one,
+                uid: "c_target",
+                cascadeOnTargetDelete: cascade
+            )
+        ])
+    }
+
+    func testSimpleReferenceDoesNotMaterialiseRelationRow() throws {
+        let (apex, driver) = engine()
+        try apex.importTenantSchema(TenantSchemaPackage(collections: [
+            Collection(id: 1, name: "targets", schema: CollectionSchema()),
+            Collection(id: 2, name: "orders", schema: relationSchema(cascade: false, many: false))
+        ]))
+
+        let target = try apex.insertRecord("targets", data: .object([("name", .string("T"))]))
+        _ = try apex.insertRecord("orders", data: .object([("target_id", .string(target))]))
+        XCTAssertEqual(relationRowCount(driver), 0)
+    }
+
+    func testForeignKeyCascadeRemovesRelationRows() throws {
+        let (apex, driver) = engine()
+        try apex.importTenantSchema(TenantSchemaPackage(collections: [
+            Collection(id: 1, name: "targets", schema: CollectionSchema()),
+            Collection(id: 2, name: "orders", schema: relationSchema(cascade: false, many: true))
+        ]))
+
+        let target = try apex.insertRecord("targets", data: .object([("name", .string("T"))]))
+        let order = try apex.insertRecord("orders", data: .object([("target_id", .string(target))]))
+        XCTAssertEqual(relationRowCount(driver), 1)
+
+        _ = try apex.deleteRecord("orders", recordId: order, user: Claims(role: "admin"))
+        XCTAssertEqual(relationRowCount(driver), 0)
+    }
+
+    func testApplicationCascadeDeletesOriginWhenTargetDeleted() throws {
+        let (apex, driver) = engine()
+        try apex.importTenantSchema(TenantSchemaPackage(collections: [
+            Collection(id: 1, name: "targets", schema: CollectionSchema()),
+            Collection(id: 2, name: "orders", schema: relationSchema(cascade: true, many: false))
+        ]))
+
+        let target = try apex.insertRecord("targets", data: .object([("name", .string("T"))]))
+        _ = try apex.insertRecord("orders", data: .object([("target_id", .string(target))]))
+
+        _ = try apex.deleteRecord("targets", recordId: target, user: Claims(role: "admin"))
+        XCTAssertEqual(apex.countRecords("targets"), 0)
+        XCTAssertEqual(apex.countRecords("orders"), 0)
+        XCTAssertEqual(relationRowCount(driver), 0)
+    }
 }

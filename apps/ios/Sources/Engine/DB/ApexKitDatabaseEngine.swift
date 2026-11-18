@@ -1,7 +1,7 @@
 import Foundation
 
-/// Record CRUD with schema enforcement and unique-index locking. Mirrors
-/// `engine.db.ApexKitDatabaseEngine`.
+/// Record CRUD with schema enforcement, schema-generated expression indexes and
+/// transactional cascades. Mirrors `engine.db.ApexKitDatabaseEngine`.
 public final class ApexKitDatabaseEngine {
     private let driver: SqlDriver
 
@@ -13,7 +13,7 @@ public final class ApexKitDatabaseEngine {
     // MARK: 1. Schema import & collection registration
 
     @discardableResult
-    public func importTenantSchema(_ package: TenantSchemaPackage) -> Int {
+    public func importTenantSchema(_ package: TenantSchemaPackage) throws -> Int {
         var importedCount = 0
         for col in package.collections {
             let schemaStr = col.schema.map { encodeSchema($0) }
@@ -29,13 +29,14 @@ public final class ApexKitDatabaseEngine {
             }
             importedCount += 1
         }
+        try ensureIndexes(listCollections())
         return importedCount
     }
 
     @discardableResult
-    public func importTenantSchemaJson(_ rawJson: String) -> Int {
+    public func importTenantSchemaJson(_ rawJson: String) throws -> Int {
         guard let parsed = JsonValue.parse(rawJson) else { return 0 }
-        return importTenantSchema(TenantSchemaPackage.decode(parsed))
+        return try importTenantSchema(TenantSchemaPackage.decode(parsed))
     }
 
     public func getCollection(_ nameOrId: String) -> Collection? {
@@ -75,10 +76,168 @@ public final class ApexKitDatabaseEngine {
         )
     }
 
+    // MARK: 1b. Schema-generated expression indexes
+
+    private struct DesiredIndex {
+        let name: String
+        let collectionId: Int64
+        let kind: String
+        let fields: [String]
+    }
+
+    private struct AppliedIndex {
+        let name: String
+        let collectionId: Int64
+        let kind: String
+        let fields: [String]
+    }
+
+    /// Reconciles the indexes required by `collections` with those recorded in
+    /// `_applied_indexes`: creates missing, drops removed, recreates changed. Runs in one
+    /// transaction so a failed reconcile leaves the previous index set intact.
+    public func ensureIndexes(_ collections: [Collection]) throws {
+        driver.executeUpdate(
+            identifier: nil,
+            sql: """
+            CREATE TABLE IF NOT EXISTS _applied_indexes (
+                index_name    TEXT PRIMARY KEY,
+                collection_id INTEGER NOT NULL,
+                kind          TEXT NOT NULL,
+                fields        TEXT NOT NULL
+            )
+            """,
+            parameters: 0,
+            binders: nil
+        )
+
+        let desired = computeDesiredIndexes(collections)
+        let applied = loadAppliedIndexes()
+
+        driver.beginTransaction()
+        do {
+            let desiredByName = Dictionary(uniqueKeysWithValues: desired.map { ($0.name, $0) })
+
+            for existing in applied where desiredByName[existing.name] == nil {
+                driver.executeUpdate(identifier: nil, sql: "DROP INDEX IF EXISTS \(quoteIdent(existing.name))", parameters: 0, binders: nil)
+                driver.executeUpdate(identifier: nil, sql: "DELETE FROM _applied_indexes WHERE index_name = ?", parameters: 1) { st in
+                    st.bindString(index: 0, string: existing.name)
+                }
+            }
+
+            for index in desired {
+                let existing = applied.first { $0.name == index.name }
+                if let existing, sameSpec(existing, index) { continue }
+
+                if let existing {
+                    driver.executeUpdate(identifier: nil, sql: "DROP INDEX IF EXISTS \(quoteIdent(existing.name))", parameters: 0, binders: nil)
+                    driver.executeUpdate(identifier: nil, sql: "DELETE FROM _applied_indexes WHERE index_name = ?", parameters: 1) { st in
+                        st.bindString(index: 0, string: existing.name)
+                    }
+                }
+
+                if index.kind == "unique" || index.kind == "composite", let duplicate = findDuplicate(index) {
+                    throw EngineError.validation(
+                        "Cannot create unique index '\(index.name)' on (\(index.fields.joined(separator: ", "))): duplicate value '\(duplicate)' already exists."
+                    )
+                }
+
+                driver.executeUpdate(identifier: nil, sql: createIndexSql(index), parameters: 0, binders: nil)
+                driver.executeUpdate(
+                    identifier: nil,
+                    sql: "INSERT OR REPLACE INTO _applied_indexes (index_name, collection_id, kind, fields) VALUES (?, ?, ?, ?)",
+                    parameters: 4
+                ) { st in
+                    st.bindString(index: 0, string: index.name)
+                    st.bindLong(index: 1, long: index.collectionId)
+                    st.bindString(index: 2, string: index.kind)
+                    st.bindString(index: 3, string: JsonValue.array(index.fields.map { .string($0) }).serialized)
+                }
+            }
+
+            driver.setTransactionSuccessful()
+            driver.endTransaction()
+        } catch {
+            driver.endTransaction()
+            throw error
+        }
+    }
+
+    private func computeDesiredIndexes(_ collections: [Collection]) -> [DesiredIndex] {
+        var desired: [DesiredIndex] = []
+        for col in collections {
+            guard let schema = col.schema else { continue }
+            for (fieldName, fieldDef) in schema.fields {
+                if fieldDef.unique == true {
+                    desired.append(DesiredIndex(name: "idx_u_\(col.id)_\(sanitize(fieldName))", collectionId: col.id, kind: "unique", fields: [fieldName]))
+                } else if fieldDef.sqlIndexed {
+                    desired.append(DesiredIndex(name: "idx_n_\(col.id)_\(sanitize(fieldName))", collectionId: col.id, kind: "non_unique", fields: [fieldName]))
+                }
+            }
+            for (i, comp) in schema.compositeUnique.enumerated() where !comp.isEmpty {
+                desired.append(DesiredIndex(name: "idx_c_\(col.id)_\(i)", collectionId: col.id, kind: "composite", fields: comp))
+            }
+        }
+        return desired
+    }
+
+    private func loadAppliedIndexes() -> [AppliedIndex] {
+        var list: [AppliedIndex] = []
+        let cursor = driver.executeQuery(identifier: nil, sql: "SELECT index_name, collection_id, kind, fields FROM _applied_indexes", parameters: 0, binders: nil)
+        while cursor.next() {
+            let fields = (cursor.getString(index: 3).flatMap { JsonValue.parse($0) }?.arrayValue ?? []).compactMap { $0.stringOrNull }
+            list.append(AppliedIndex(
+                name: cursor.getString(index: 0) ?? "",
+                collectionId: cursor.getLong(index: 1) ?? 0,
+                kind: cursor.getString(index: 2) ?? "",
+                fields: fields
+            ))
+        }
+        return list
+    }
+
+    private func sameSpec(_ a: AppliedIndex, _ b: DesiredIndex) -> Bool {
+        a.collectionId == b.collectionId && a.kind == b.kind && a.fields == b.fields
+    }
+
+    private func createIndexSql(_ index: DesiredIndex) -> String {
+        let unique = (index.kind == "unique" || index.kind == "composite") ? "UNIQUE " : ""
+        let expressions = index.fields.map { field in
+            "json_extract(data, '$.\(field.replacingOccurrences(of: "'", with: "''"))')"
+        }.joined(separator: ", ")
+        return "CREATE \(unique)INDEX \(quoteIdent(index.name)) ON records (collection_id, \(expressions))"
+    }
+
+    /// Returns a duplicated value for the index's field set, or nil when all values are distinct.
+    private func findDuplicate(_ index: DesiredIndex) -> String? {
+        let expressions = index.fields.map { field in
+            "json_extract(data, '$.\(field.replacingOccurrences(of: "'", with: "''"))')"
+        }.joined(separator: ", ")
+        let sql = """
+            SELECT \(expressions) AS dup
+            FROM records
+            WHERE collection_id = \(index.collectionId)
+            GROUP BY \(expressions)
+            HAVING COUNT(*) > 1
+            LIMIT 1
+            """
+        var duplicate: String?
+        let cursor = driver.executeQuery(identifier: nil, sql: sql, parameters: 0, binders: nil)
+        if cursor.next() { duplicate = cursor.getString(index: 0) ?? "" }
+        return duplicate
+    }
+
+    private func sanitize(_ name: String) -> String {
+        String(name.map { $0.isLetter || $0.isNumber || $0 == "_" ? $0 : "_" })
+    }
+
+    private func quoteIdent(_ name: String) -> String {
+        "\"" + name.replacingOccurrences(of: "\"", with: "\"\"") + "\""
+    }
+
     // MARK: 2. Record creation with schema enforcement
 
     @discardableResult
-    public func insertRecord(_ collectionName: String, data: JsonValue, user: Claims? = nil) throws -> Int64 {
+    public func insertRecord(_ collectionName: String, data: JsonValue, user: Claims? = nil) throws -> String {
         guard let col = getCollection(collectionName) else {
             throw EngineError.validation("Collection '\(collectionName)' not found in schema.")
         }
@@ -96,77 +255,99 @@ public final class ApexKitDatabaseEngine {
             throw EngineError.validation("Field '\(fieldName)' is required in collection '\(collectionName)'.")
         }
 
-        // 3. Single-field uniqueness
-        for (fieldName, fieldDef) in schema.fields where fieldDef.unique == true {
-            guard let raw = dict[fieldName] else { continue }
-            let rawVal = raw.contentOrNull ?? raw.serialized
-            let idxKey = "\(col.id)-\(fieldDef.uid)"
-            if let conflict = uniqueConflict(indexKey: idxKey, value: rawVal) {
-                throw EngineError.validation("Unique constraint violation: Field '\(fieldName)' with value '\(rawVal)' already exists (Record #\(conflict)).")
-            }
-        }
-
-        // 4. Composite uniqueness
-        for comp in schema.compositeUnique where comp.allSatisfy({ dict[$0] != nil }) {
-            let compKey = "\(col.id)-comp-" + comp.joined(separator: "_")
-            let compVal = comp.map { dict[$0]!.contentOrNull ?? dict[$0]!.serialized }.joined(separator: "|")
-            if let conflict = uniqueConflict(indexKey: compKey, value: compVal) {
-                throw EngineError.validation("Composite unique violation on (\(comp.joined(separator: ", "))): Value '\(compVal)' already exists (Record #\(conflict)).")
-            }
-        }
-
         let now = String(Int64(Date().timeIntervalSince1970 * 1000))
         let dataStr = data.serialized
 
-        // 5. Insert record
-        driver.executeUpdate(
-            identifier: nil,
-            sql: "INSERT INTO records (collection_id, data, created, updated) VALUES (?, ?, ?, ?)",
-            parameters: 4
-        ) { st in
-            st.bindLong(index: 0, long: col.id)
-            st.bindString(index: 1, string: dataStr)
-            st.bindString(index: 2, string: now)
-            st.bindString(index: 3, string: now)
-        }
-        let recordId = driver.lastInsertedRowId()
+        var recordId = ""
+        driver.beginTransaction()
+        do {
+            // 3. Resolve the record identity (supplied id preserved as text, else generated).
+            recordId = try resolveRecordId(dict["id"])
 
-        // 6. Register single-field unique tokens
-        for (fieldName, fieldDef) in schema.fields where fieldDef.unique == true {
-            guard let raw = dict[fieldName] else { continue }
-            let rawVal = raw.contentOrNull ?? raw.serialized
-            insertUniqueToken(indexKey: "\(col.id)-\(fieldDef.uid)", value: rawVal, recordId: recordId)
-        }
-
-        // 7. Register composite unique tokens
-        for comp in schema.compositeUnique where comp.allSatisfy({ dict[$0] != nil }) {
-            let compKey = "\(col.id)-comp-" + comp.joined(separator: "_")
-            let compVal = comp.map { dict[$0]!.contentOrNull ?? dict[$0]!.serialized }.joined(separator: "|")
-            insertUniqueToken(indexKey: compKey, value: compVal, recordId: recordId)
-        }
-
-        // 8. Register relations
-        for (relName, relDef) in schema.relations {
-            guard let targetRecId = dict[relName]?.longOrNull else { continue }
-            guard let targetCol = getCollection(relDef.targetCollection) else { continue }
-            driver.executeUpdate(
+            // 4. Insert the record. Uniqueness is enforced by the schema-generated
+            //    expression indexes; SQLite raises a constraint error on collision.
+            let affected = driver.executeUpdate(
                 identifier: nil,
-                sql: """
-                INSERT OR REPLACE INTO _relations
-                (origin_col_id, origin_rec_id, target_col_id, target_rec_id, rel_name, properties)
-                VALUES (?, ?, ?, ?, ?, NULL)
-                """,
+                sql: "INSERT INTO records (id, collection_id, data, created, updated) VALUES (?, ?, ?, ?, ?)",
                 parameters: 5
             ) { st in
-                st.bindLong(index: 0, long: col.id)
-                st.bindLong(index: 1, long: recordId)
-                st.bindLong(index: 2, long: targetCol.id)
-                st.bindLong(index: 3, long: targetRecId)
-                st.bindString(index: 4, string: relName)
+                st.bindString(index: 0, string: recordId)
+                st.bindLong(index: 1, long: col.id)
+                st.bindString(index: 2, string: dataStr)
+                st.bindString(index: 3, string: now)
+                st.bindString(index: 4, string: now)
             }
+
+            if affected <= 0 || driver.lastErrorMessage() != nil {
+                driver.endTransaction()
+                throw translateConstraintError(driver.lastErrorMessage() ?? "", schema: schema, dict: dict, collectionName: collectionName)
+            }
+
+            // 5. Materialise relation rows only where behaviour requires them.
+            insertRelationRows(schema: schema, recordId: recordId, dict: dict)
+
+            driver.setTransactionSuccessful()
+        } catch {
+            driver.endTransaction()
+            throw error
         }
+        driver.endTransaction()
 
         return recordId
+    }
+
+    /// Resolves a record id: a supplied non-empty value is preserved as text, otherwise a
+    /// value is drawn from `_record_id_sequence` and stored as text.
+    private func resolveRecordId(_ input: JsonValue?) throws -> String {
+        if let input, !input.isNull {
+            let text = (input.contentOrNull ?? "").trimmingCharacters(in: .whitespaces)
+            if text.isEmpty {
+                throw EngineError.validation("Record 'id' must not be empty.")
+            }
+            return text
+        }
+        driver.executeUpdate(identifier: nil, sql: "INSERT INTO _record_id_sequence (id) VALUES (NULL)", parameters: 0, binders: nil)
+        return String(driver.lastInsertedRowId())
+    }
+
+    private func insertRelationRows(schema: CollectionSchema, recordId: String, dict: [String: JsonValue]) {
+        for (relName, relDef) in schema.relations {
+            guard let targetRecId = recordIdText(dict[relName]) else { continue }
+
+            let requiresRow = relDef.cascadeOnTargetDelete
+                || relDef.relationType == .many
+                || relDef.hasProperties
+                || relDef.sqlIndexed
+            if !requiresRow { continue }
+
+            let properties: String? = relDef.hasProperties ? dict["\(relName)_properties"]?.serialized : nil
+
+            driver.executeUpdate(
+                identifier: nil,
+                sql: "INSERT OR REPLACE INTO _relations (origin_rec_id, target_rec_id, properties) VALUES (?, ?, ?)",
+                parameters: 3
+            ) { st in
+                st.bindString(index: 0, string: recordId)
+                st.bindString(index: 1, string: targetRecId)
+                if let properties { st.bindString(index: 2, string: properties) } else { st.bindNull(index: 2) }
+            }
+        }
+    }
+
+    private func translateConstraintError(_ message: String, schema: CollectionSchema, dict: [String: JsonValue], collectionName: String) -> EngineError {
+        guard message.uppercased().contains("UNIQUE") || message.uppercased().contains("CONSTRAINT") else {
+            return .validation("Insert failed on collection '\(collectionName)': \(message)")
+        }
+        let uniqueFields = schema.fields.filter { $0.value.unique == true && dict[$0.key] != nil }.keys.sorted()
+        let detail: String
+        if !uniqueFields.isEmpty {
+            detail = "Field(s) \(uniqueFields.map { "'\($0)'" }.joined(separator: ", ")) already exist"
+        } else if !schema.compositeUnique.isEmpty {
+            detail = "Composite unique constraint violated"
+        } else {
+            detail = "Unique constraint violated"
+        }
+        return .validation("Unique constraint violation on collection '\(collectionName)': \(detail).")
     }
 
     // MARK: 3. Query engine
@@ -233,7 +414,7 @@ public final class ApexKitDatabaseEngine {
             let rawData = cursor.getString(index: 2) ?? "{}"
             let dataObj = JsonValue.parse(rawData) ?? .object([])
             records.append(Record(
-                id: cursor.getLong(index: 0) ?? 0,
+                id: cursor.getString(index: 0) ?? "",
                 collectionId: cursor.getLong(index: 1) ?? col.id,
                 data: dataObj,
                 created: cursor.getString(index: 3) ?? "",
@@ -266,8 +447,28 @@ public final class ApexKitDatabaseEngine {
         return count
     }
 
+    // MARK: 4. Transactional recursive delete
+
     @discardableResult
-    public func deleteRecord(_ collectionName: String, recordId: Int64, user: Claims? = nil) throws -> Bool {
+    public func deleteRecord(_ collectionName: String, recordId: String, user: Claims? = nil) throws -> Bool {
+        var deleted = false
+        driver.beginTransaction()
+        do {
+            var visited = Set<String>()
+            deleted = try deleteRecordRec(collectionName, recordId: recordId, user: user, visited: &visited)
+            driver.setTransactionSuccessful()
+        } catch {
+            driver.endTransaction()
+            throw error
+        }
+        driver.endTransaction()
+        return deleted
+    }
+
+    private func deleteRecordRec(_ collectionName: String, recordId: String, user: Claims?, visited: inout Set<String>) throws -> Bool {
+        let id = recordId.trimmingCharacters(in: .whitespaces)
+        guard visited.insert(id).inserted else { return false }
+
         guard let col = getCollection(collectionName) else { return false }
         let schema = col.schema ?? CollectionSchema()
         let rlsSql = PolicyEngine.compileToSql(schema.policies.delete, user: user)
@@ -275,51 +476,94 @@ public final class ApexKitDatabaseEngine {
             throw EngineError.accessDenied("Delete rejected by policy on collection '\(collectionName)'.")
         }
 
-        driver.executeUpdate(identifier: nil, sql: "DELETE FROM _unique_values WHERE record_id = ?", parameters: 1) { st in
-            st.bindLong(index: 0, long: recordId)
-        }
-        driver.executeUpdate(identifier: nil, sql: "DELETE FROM _relations WHERE origin_rec_id = ? OR target_rec_id = ?", parameters: 2) { st in
-            st.bindLong(index: 0, long: recordId)
-            st.bindLong(index: 1, long: recordId)
-        }
+        // Resolve cascading origins before deleting: the FK cascade removes the relation
+        // rows that identify them.
+        let cascadingOrigins = findCascadingOrigins(id)
+
         let affected = driver.executeUpdate(
             identifier: nil,
-            sql: "DELETE FROM records WHERE collection_id = ? AND id = ?",
-            parameters: 2
+            sql: "DELETE FROM records WHERE id = ?",
+            parameters: 1
         ) { st in
-            st.bindLong(index: 0, long: col.id)
-            st.bindLong(index: 1, long: recordId)
+            st.bindString(index: 0, string: id)
         }
+
+        for originId in cascadingOrigins {
+            guard let originCollection = collectionNameForRecord(originId) else { continue }
+            _ = try deleteRecordRec(originCollection, recordId: originId, user: user, visited: &visited)
+        }
+
         return affected > 0
     }
 
-    // MARK: Helpers
-
-    private func uniqueConflict(indexKey: String, value: String) -> Int64? {
-        var conflict: Int64?
+    /// Returns the ids of records that reference `targetRecordId` through a relation marked
+    /// `cascade_on_target_delete`.
+    private func findCascadingOrigins(_ targetRecordId: String) -> [String] {
+        var origins: [String] = []
         let cursor = driver.executeQuery(
             identifier: nil,
-            sql: "SELECT record_id FROM _unique_values WHERE index_key = ? AND value = ? LIMIT 1",
-            parameters: 2
+            sql: "SELECT DISTINCT origin_rec_id FROM _relations WHERE target_rec_id = ?",
+            parameters: 1
         ) { st in
-            st.bindString(index: 0, string: indexKey)
-            st.bindString(index: 1, string: value)
+            st.bindString(index: 0, string: targetRecordId)
         }
-        if cursor.next() { conflict = cursor.getLong(index: 0) }
-        return conflict
+        while cursor.next() {
+            if let origin = cursor.getString(index: 0) { origins.append(origin) }
+        }
+
+        var cascading: [String] = []
+        for originId in origins {
+            guard let record = loadRecord(originId) else { continue }
+            guard let originSchema = getCollection(String(record.collectionId))?.schema else { continue }
+            for (relName, relDef) in originSchema.relations where relDef.cascadeOnTargetDelete {
+                if recordIdText(record.data[relName]) == targetRecordId {
+                    cascading.append(originId)
+                    break
+                }
+            }
+        }
+        return cascading
     }
 
-    private func insertUniqueToken(indexKey: String, value: String, recordId: Int64) {
-        driver.executeUpdate(
-            identifier: nil,
-            sql: "INSERT OR REPLACE INTO _unique_values (index_key, value, record_id) VALUES (?, ?, ?)",
-            parameters: 3
-        ) { st in
-            st.bindString(index: 0, string: indexKey)
-            st.bindString(index: 1, string: value)
-            st.bindLong(index: 2, long: recordId)
-        }
+    private struct LoadedRecord {
+        let id: String
+        let collectionId: Int64
+        let data: JsonValue
     }
+
+    private func loadRecord(_ id: String) -> LoadedRecord? {
+        var result: LoadedRecord?
+        let cursor = driver.executeQuery(identifier: nil, sql: "SELECT id, collection_id, data FROM records WHERE id = ? LIMIT 1", parameters: 1) { st in
+            st.bindString(index: 0, string: id)
+        }
+        if cursor.next() {
+            let dataObj = cursor.getString(index: 2).flatMap { JsonValue.parse($0) } ?? .object([])
+            result = LoadedRecord(id: cursor.getString(index: 0) ?? id, collectionId: cursor.getLong(index: 1) ?? 0, data: dataObj)
+        }
+        return result
+    }
+
+    private func collectionNameForRecord(_ recordId: String) -> String? {
+        var name: String?
+        let cursor = driver.executeQuery(
+            identifier: nil,
+            sql: "SELECT c.name FROM records r JOIN collections c ON c.id = r.collection_id WHERE r.id = ? LIMIT 1",
+            parameters: 1
+        ) { st in
+            st.bindString(index: 0, string: recordId)
+        }
+        if cursor.next() { name = cursor.getString(index: 0) }
+        return name
+    }
+
+    /// Normalizes a JSON relation value to the text form used for `records.id`.
+    private func recordIdText(_ el: JsonValue?) -> String? {
+        guard let el, !el.isNull else { return nil }
+        guard let text = el.contentOrNull?.trimmingCharacters(in: .whitespaces), !text.isEmpty else { return nil }
+        return text
+    }
+
+    // MARK: Schema encoding
 
     private func encodeSchema(_ schema: CollectionSchema) -> String {
         var fieldPairs: [(String, JsonValue)] = []
@@ -327,6 +571,7 @@ public final class ApexKitDatabaseEngine {
             var pairs: [(String, JsonValue)] = [("type", .string(def.type.rawValue)), ("required", .bool(def.required))]
             if let unique = def.unique { pairs.append(("unique", .bool(unique))) }
             if let relationTo = def.relationTo { pairs.append(("relation_to", .string(relationTo))) }
+            if def.sqlIndexed { pairs.append(("sql_indexed", .bool(true))) }
             pairs.append(("uid", .string(def.uid)))
             fieldPairs.append((name, .object(pairs)))
         }
@@ -336,7 +581,9 @@ public final class ApexKitDatabaseEngine {
                 ("target_collection", .string(def.targetCollection)),
                 ("relation_type", .string(def.relationType.rawValue)),
                 ("required", .bool(def.required)),
-                ("uid", .string(def.uid))
+                ("uid", .string(def.uid)),
+                ("cascade_on_target_delete", .bool(def.cascadeOnTargetDelete)),
+                ("has_properties", .bool(def.hasProperties))
             ])))
         }
         let policies: JsonValue = .object([

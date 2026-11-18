@@ -51,9 +51,9 @@ public final class WorkspaceDatabase {
     /// Alias used by the sync engine and UI telemetry.
     public var workspaceQueries: GenericDatabaseQueries { queries }
 
-    /// Workspace DDL, mirroring `WorkspaceDatabase.Schema` (version 3).
+    /// Workspace DDL, mirroring `WorkspaceDatabase.Schema` (version 4).
     public struct Schema: SqlSchema {
-        public static let versionValue: Int64 = 3
+        public static let versionValue: Int64 = 4
 
         public init() {}
 
@@ -71,7 +71,7 @@ public final class WorkspaceDatabase {
                 """,
                 """
                 CREATE TABLE IF NOT EXISTS records (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    id TEXT PRIMARY KEY,
                     collection_id INTEGER NOT NULL,
                     data TEXT NOT NULL,
                     created TEXT NOT NULL,
@@ -81,27 +81,31 @@ public final class WorkspaceDatabase {
                 """,
                 "CREATE INDEX IF NOT EXISTS idx_records_collection ON records(collection_id, id DESC)",
                 """
-                CREATE TABLE IF NOT EXISTS _unique_values (
-                    index_key TEXT NOT NULL,
-                    value TEXT NOT NULL,
-                    record_id INTEGER NOT NULL,
-                    PRIMARY KEY (index_key, value)
+                CREATE TABLE IF NOT EXISTS _applied_indexes (
+                    index_name    TEXT PRIMARY KEY,
+                    collection_id INTEGER NOT NULL,
+                    kind          TEXT NOT NULL,
+                    fields        TEXT NOT NULL
                 )
                 """,
-                "CREATE INDEX IF NOT EXISTS idx_unique_lookup ON _unique_values(index_key, value)",
-                "CREATE INDEX IF NOT EXISTS idx_unique_record ON _unique_values(record_id)",
+                """
+                CREATE TABLE IF NOT EXISTS _record_id_sequence (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT
+                )
+                """,
                 """
                 CREATE TABLE IF NOT EXISTS _relations (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    origin_col_id INTEGER NOT NULL,
-                    origin_rec_id INTEGER NOT NULL,
-                    target_col_id INTEGER NOT NULL,
-                    target_rec_id INTEGER NOT NULL,
-                    rel_name TEXT NOT NULL,
-                    properties TEXT
+                    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                    origin_rec_id TEXT NOT NULL,
+                    target_rec_id TEXT NOT NULL,
+                    properties    TEXT,
+                    FOREIGN KEY (origin_rec_id) REFERENCES records(id) ON DELETE CASCADE,
+                    FOREIGN KEY (target_rec_id) REFERENCES records(id) ON DELETE CASCADE
                 )
                 """,
-                "CREATE UNIQUE INDEX IF NOT EXISTS idx_relations_unique ON _relations(origin_col_id, origin_rec_id, target_col_id, target_rec_id, rel_name)",
+                "CREATE UNIQUE INDEX IF NOT EXISTS idx_relations_unique ON _relations(origin_rec_id, target_rec_id)",
+                "CREATE INDEX IF NOT EXISTS idx_relations_origin ON _relations(origin_rec_id)",
+                "CREATE INDEX IF NOT EXISTS idx_relations_target ON _relations(target_rec_id)",
                 """
                 CREATE TABLE IF NOT EXISTS _system_logs (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -151,7 +155,86 @@ public final class WorkspaceDatabase {
         }
 
         public func migrate(_ driver: SqlDriver, oldVersion: Int64, newVersion: Int64) {
+            if oldVersion >= version { return }
+
+            // Create any missing tables first; existing tables are left untouched so the
+            // rebuild steps below can convert their contents.
             create(driver)
+
+            // 1. records.id: INTEGER -> TEXT (globally-unique text identity).
+            if let idType = columnType(driver, table: "records", column: "id"), idType.uppercased().contains("INT") {
+                driver.executeUpdate(identifier: nil, sql: "ALTER TABLE records RENAME TO _records_legacy", parameters: 0, binders: nil)
+                driver.executeUpdate(identifier: nil, sql: """
+                    CREATE TABLE records (
+                        id TEXT PRIMARY KEY,
+                        collection_id INTEGER NOT NULL,
+                        data TEXT NOT NULL,
+                        created TEXT NOT NULL,
+                        updated TEXT NOT NULL,
+                        FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE CASCADE
+                    )
+                    """, parameters: 0, binders: nil)
+                driver.executeUpdate(identifier: nil, sql: "INSERT INTO records (id, collection_id, data, created, updated) SELECT CAST(id AS TEXT), collection_id, data, created, updated FROM _records_legacy", parameters: 0, binders: nil)
+                driver.executeUpdate(identifier: nil, sql: "DROP TABLE _records_legacy", parameters: 0, binders: nil)
+                driver.executeUpdate(identifier: nil, sql: "CREATE INDEX IF NOT EXISTS idx_records_collection ON records(collection_id, id DESC)", parameters: 0, binders: nil)
+            }
+
+            // 2. _relations: drop origin_col_id/target_col_id/rel_name; TEXT endpoints + FK.
+            if hasColumn(driver, table: "_relations", column: "rel_name") || hasColumn(driver, table: "_relations", column: "origin_col_id") {
+                driver.executeUpdate(identifier: nil, sql: "ALTER TABLE _relations RENAME TO _relations_legacy", parameters: 0, binders: nil)
+                driver.executeUpdate(identifier: nil, sql: """
+                    CREATE TABLE _relations (
+                        id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                        origin_rec_id TEXT NOT NULL,
+                        target_rec_id TEXT NOT NULL,
+                        properties    TEXT,
+                        FOREIGN KEY (origin_rec_id) REFERENCES records(id) ON DELETE CASCADE,
+                        FOREIGN KEY (target_rec_id) REFERENCES records(id) ON DELETE CASCADE
+                    )
+                    """, parameters: 0, binders: nil)
+                driver.executeUpdate(identifier: nil, sql: """
+                    INSERT INTO _relations (origin_rec_id, target_rec_id, properties)
+                    SELECT CAST(origin_rec_id AS TEXT), CAST(target_rec_id AS TEXT), MAX(properties)
+                    FROM _relations_legacy
+                    GROUP BY CAST(origin_rec_id AS TEXT), CAST(target_rec_id AS TEXT)
+                    """, parameters: 0, binders: nil)
+                driver.executeUpdate(identifier: nil, sql: "DROP TABLE _relations_legacy", parameters: 0, binders: nil)
+                driver.executeUpdate(identifier: nil, sql: "CREATE UNIQUE INDEX IF NOT EXISTS idx_relations_unique ON _relations(origin_rec_id, target_rec_id)", parameters: 0, binders: nil)
+                driver.executeUpdate(identifier: nil, sql: "CREATE INDEX IF NOT EXISTS idx_relations_origin ON _relations(origin_rec_id)", parameters: 0, binders: nil)
+                driver.executeUpdate(identifier: nil, sql: "CREATE INDEX IF NOT EXISTS idx_relations_target ON _relations(target_rec_id)", parameters: 0, binders: nil)
+            }
+
+            // 3. Remove the application-maintained uniqueness table.
+            driver.executeUpdate(identifier: nil, sql: "DROP TABLE IF EXISTS _unique_values", parameters: 0, binders: nil)
+
+            // 4. Seed the fallback id sequence above the highest numeric-looking record id.
+            var sequencePopulated = false
+            let seqCursor = driver.executeQuery(identifier: nil, sql: "SELECT COUNT(*) FROM _record_id_sequence", parameters: 0, binders: nil)
+            if seqCursor.next() { sequencePopulated = (seqCursor.getLong(index: 0) ?? 0) > 0 }
+            if !sequencePopulated {
+                driver.executeUpdate(identifier: nil, sql: """
+                    INSERT INTO _record_id_sequence (id)
+                    SELECT COALESCE(MAX(CAST(id AS INTEGER)), 0)
+                    FROM records
+                    WHERE id GLOB '[0-9]*' AND id NOT GLOB '*[^0-9]*'
+                    """, parameters: 0, binders: nil)
+            }
+        }
+
+        private func columnType(_ driver: SqlDriver, table: String, column: String) -> String? {
+            var type: String?
+            let cursor = driver.executeQuery(identifier: nil, sql: "PRAGMA table_info(\(table))", parameters: 0, binders: nil)
+            while cursor.next() {
+                if (cursor.getString(index: 1) ?? "") == column {
+                    type = cursor.getString(index: 2)
+                    break
+                }
+            }
+            return type
+        }
+
+        private func hasColumn(_ driver: SqlDriver, table: String, column: String) -> Bool {
+            columnType(driver, table: table, column: column) != nil
         }
     }
 }

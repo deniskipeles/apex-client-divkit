@@ -16,13 +16,15 @@ public struct FieldDefinition: Sendable {
     public var unique: Bool?
     public var relationTo: String?
     public var uid: String
+    public var sqlIndexed: Bool
 
-    public init(type: FieldType, required: Bool = false, unique: Bool? = nil, relationTo: String? = nil, uid: String = "") {
+    public init(type: FieldType, required: Bool = false, unique: Bool? = nil, relationTo: String? = nil, uid: String = "", sqlIndexed: Bool = false) {
         self.type = type
         self.required = required
         self.unique = unique
         self.relationTo = relationTo
         self.uid = uid
+        self.sqlIndexed = sqlIndexed
     }
 }
 
@@ -31,12 +33,28 @@ public struct RelationDefinition: Sendable {
     public var relationType: RelationType
     public var required: Bool
     public var uid: String
+    public var cascadeOnTargetDelete: Bool
+    public var sqlIndexed: Bool
+    /// Marks the relation as carrying edge properties. When set, a `_relations` row is
+    /// materialised and the optional `<relation>_properties` object is stored in `properties`.
+    public var hasProperties: Bool
 
-    public init(targetCollection: String, relationType: RelationType, required: Bool = false, uid: String = "") {
+    public init(
+        targetCollection: String,
+        relationType: RelationType,
+        required: Bool = false,
+        uid: String = "",
+        cascadeOnTargetDelete: Bool = false,
+        sqlIndexed: Bool = false,
+        hasProperties: Bool = false
+    ) {
         self.targetCollection = targetCollection
         self.relationType = relationType
         self.required = required
         self.uid = uid
+        self.cascadeOnTargetDelete = cascadeOnTargetDelete
+        self.sqlIndexed = sqlIndexed
+        self.hasProperties = hasProperties
     }
 }
 
@@ -90,7 +108,8 @@ public struct CollectionSchema: Sendable {
                         required: def["required"]?.boolOrNull ?? false,
                         unique: def["unique"]?.boolOrNull,
                         relationTo: def["relation_to"]?.stringOrNull,
-                        uid: def["uid"]?.stringOrNull ?? ""
+                        uid: def["uid"]?.stringOrNull ?? "",
+                        sqlIndexed: def["sql_indexed"]?.boolOrNull ?? false
                     )
                 }
             case "relations":
@@ -100,7 +119,9 @@ public struct CollectionSchema: Sendable {
                         targetCollection: def["target_collection"]?.stringOrNull ?? "",
                         relationType: rt,
                         required: def["required"]?.boolOrNull ?? false,
-                        uid: def["uid"]?.stringOrNull ?? ""
+                        uid: def["uid"]?.stringOrNull ?? "",
+                        cascadeOnTargetDelete: def["cascade_on_target_delete"]?.boolOrNull ?? false,
+                        hasProperties: def["has_properties"]?.boolOrNull ?? false
                     )
                 }
             case "policies":
@@ -156,13 +177,13 @@ public struct TenantSchemaPackage: Sendable {
 }
 
 public struct Record: Sendable {
-    public let id: Int64
+    public let id: String
     public let collectionId: Int64
     public let data: JsonValue
     public let created: String
     public let updated: String
 
-    public init(id: Int64, collectionId: Int64, data: JsonValue, created: String, updated: String) {
+    public init(id: String, collectionId: Int64, data: JsonValue, created: String, updated: String) {
         self.id = id
         self.collectionId = collectionId
         self.data = data

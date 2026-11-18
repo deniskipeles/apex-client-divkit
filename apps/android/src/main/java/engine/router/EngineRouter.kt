@@ -224,7 +224,7 @@ class EngineRouter(
             }
             is OpResult.RowId -> output?.get("id")?.jsonPrimitive?.contentOrNull?.let { v ->
                 requireVar(v)
-                EngineStateBridge.pushUpdate(v, DivVariableValue.IntVal(result.id))
+                EngineStateBridge.pushUpdate(v, DivVariableValue.Str(result.id))
             }
             is OpResult.Count -> output?.get("count")?.jsonPrimitive?.contentOrNull?.let { v ->
                 requireVar(v)

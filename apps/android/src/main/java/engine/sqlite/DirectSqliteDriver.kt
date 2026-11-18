@@ -47,6 +47,18 @@ class DirectSqliteDriver(
 
     override fun lastInsertedRowId(): Long = lastRowId.get()
 
+    override fun beginTransaction() {
+        writableDb.beginTransaction()
+    }
+
+    override fun setTransactionSuccessful() {
+        writableDb.setTransactionSuccessful()
+    }
+
+    override fun endTransaction() {
+        writableDb.endTransaction()
+    }
+
     override fun close() {
         helper.close()
     }
@@ -125,6 +137,18 @@ private class DirectDriver(
     }
 
     override fun lastInsertedRowId(): Long = lastRowId.get()
+
+    override fun beginTransaction() {
+        db.beginTransaction()
+    }
+
+    override fun setTransactionSuccessful() {
+        db.setTransactionSuccessful()
+    }
+
+    override fun endTransaction() {
+        db.endTransaction()
+    }
 
     override fun close() {
         db.close()

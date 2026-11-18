@@ -46,7 +46,7 @@ public enum FloatPacking {
             let end = data.index(index, offsetBy: 4, limitedBy: data.endIndex) ?? data.endIndex
             let chunk = data[index..<end]
             if chunk.count < 4 { break }
-            let bits = chunk.withUnsafeBytes { $0.load(as: UInt32.self) }
+            let bits = chunk.withUnsafeBytes { $0.loadUnaligned(as: UInt32.self) }
             out.append(Float(bitPattern: UInt32(littleEndian: bits)))
             index = end
         }

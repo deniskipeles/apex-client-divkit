@@ -5,7 +5,7 @@ public enum OpResult: Sendable {
     case rows([[String: JsonValue]])
     case row([String: JsonValue]?)
     case scalar(JsonValue)
-    case rowId(Int64)
+    case rowId(String)
     case count(Int64)
     case schemaImported(Int)
     case empty
@@ -72,7 +72,7 @@ public final class EngineRegistry {
         switch opName {
         case "db.import_schema", "schema.import":
             let schemaObj = payload["schema"] ?? payload
-            let count = apexEngine.importTenantSchemaJson(schemaObj.serialized)
+            let count = try apexEngine.importTenantSchemaJson(schemaObj.serialized)
             return .schemaImported(count)
 
         case "db.list_collections", "schema.collections":
@@ -155,7 +155,7 @@ public final class EngineRegistry {
             var map = first.data.asDictionary.mapValues { v in
                 v.contentOrNull.map { JsonValue.string($0) } ?? .string(v.serialized)
             }
-            map["id"] = .int(first.id)
+            map["id"] = .string(first.id)
             return .row(map)
 
         case "db.count", "records.count":
@@ -169,7 +169,7 @@ public final class EngineRegistry {
 
         case "db.delete", "records.delete":
             let col = try require(payload["collection"]?.stringOrNull ?? payload["table"]?.stringOrNull, "Missing 'collection' parameter")
-            let recordId = try require(payload["id"]?.longOrNull ?? payload["record_id"]?.longOrNull, "Missing 'id' parameter for delete operation")
+            let recordId = try require(payload["id"]?.contentOrNull ?? payload["record_id"]?.contentOrNull, "Missing 'id' parameter for delete operation")
             let user = Claims(
                 uid: payload["auth_uid"]?.longOrNull ?? 0,
                 role: payload["auth_role"]?.stringOrNull ?? "public"

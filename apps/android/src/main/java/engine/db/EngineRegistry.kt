@@ -176,8 +176,8 @@ class EngineRegistry(
                         ?: payload["table"]?.jsonPrimitive?.contentOrNull
                         ?: error("Missing 'collection' parameter")
 
-                    val recordId = payload["id"]?.jsonPrimitive?.longOrNull
-                        ?: payload["record_id"]?.jsonPrimitive?.longOrNull
+                    val recordId = payload["id"]?.jsonPrimitive?.contentOrNull
+                        ?: payload["record_id"]?.jsonPrimitive?.contentOrNull
                         ?: error("Missing 'id' parameter for delete operation")
 
                     val userRole = payload["auth_role"]?.jsonPrimitive?.contentOrNull ?: "public"

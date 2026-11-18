@@ -39,6 +39,11 @@ sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
 keystore `my-upload-key.jks` uses `storepass123`). R8 itself runs fine without them —
 only `packageRelease` fails when the passwords are unset.
 
+- `apps/ios` is a SwiftPM package (`Package.swift`) that builds and tests on Linux CI:
+  `swift build` / `swift test`. The `CSQLite` system-library target binds the platform
+  `libsqlite3`, so `libsqlite3-dev` (for `sqlite3.h`) must be installed. A Swift 6.x toolchain
+  plus `libncurses6` are required; download from swift.org and add its `usr/bin` to `PATH`.
+
 ## Tool capability architecture (`tools://*`)
 
 New terminal capabilities must be wired through **all** of these:
@@ -108,6 +113,30 @@ showcase of the SDUI surface. When a tool gains a user-facing operation, surface
 `EngineRouter` and documented in `docs/tools/local-db.md`.
 
 `icons://native/<name>` is the icon resolver scheme, documented in `docs/tools/icons.md`.
+
+## Storage engine (SQLite, schema v4)
+
+`engine/db/WorkspaceDatabase.kt` (Android) and `Sources/Engine/DB/WorkspaceDatabase.swift`
+(iOS) own the per-workspace SQLite schema. Both are mirrored; keep them in step. The v4
+contract is in `packages/contract/docs/schema.md`. Key invariants:
+
+- **`records.id` is `TEXT`** so callers may supply identifiers (`"customer_abc"`, `"42"`).
+  A missing `id` is drawn from the `_record_id_sequence` AUTOINCREMENT table. `OpResult.RowId`
+  and `Record.id` are therefore `String`.
+- **Uniqueness is enforced by schema-generated expression indexes**, not a shadow table. For
+  each collection the engine derives `idx_u_<colId>_<field>` (UNIQUE) per `unique` field,
+  `idx_c_<colId>_<n>` (UNIQUE) per `composite_unique` list and `idx_n_<colId>_<field>` per
+  `sql_indexed` field, each `(collection_id, json_extract(data, '$.<field>'))`. `_applied_indexes`
+  records the live set and `ensureIndexes` reconciles it (create/drop/recreate) on schema
+  import, refusing a UNIQUE index when duplicates already exist.
+- **`_relations`** holds only the edges that need storage: `cascade_on_target_delete`,
+  `relation_type = many`, or `has_properties`. Endpoints are text ids with `ON DELETE CASCADE`
+  FKs, so deleting either endpoint removes the edge. A plain single reference lives in
+  `records.data` only. Application cascade walks cascade-marked origins in the engine (the FK
+  cascade removes the edge rows first); a visited-set guards cycles.
+- `SqlDriver` gained `beginTransaction()`/`setTransactionSuccessful()`/`endTransaction()` (and
+  `lastErrorMessage()` on iOS). Enable `PRAGMA foreign_keys = ON` per connection — it is off by
+  default and is what makes the cascades fire.
 
 ## Workspace notifications tray
 

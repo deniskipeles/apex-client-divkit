@@ -230,7 +230,7 @@ public final class EngineRouter {
         case let .rowId(id):
             if let v = output?["id"]?.contentOrNull {
                 requireVar(v)
-                state.pushUpdate(name: v, value: .intVal(id))
+                state.pushUpdate(name: v, value: .str(id))
             }
         case let .count(n):
             if let v = output?["count"]?.contentOrNull {
