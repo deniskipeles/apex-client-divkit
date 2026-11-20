@@ -279,6 +279,20 @@ object NativeToolsSuite {
                 "code_id" to "user.code_id",
                 "matrix" to "user.code_matrix"
             )
+        ),
+        ToolSchema(
+            toolId = "keep-awake",
+            displayName = "Keep-Awake / Screen Wake-Lock Controller",
+            description = "Holds the terminal awake (screen on / wake-lock) while a long-running task is in flight, with optional timeout and wake level. Unopinionated device capability.",
+            supportedOperations = listOf("enable", "disable", "toggle", "status"),
+            defaultOptions = mapOf(
+                "level" to "screen",
+                "timeout_ms" to "0"
+            ),
+            defaultOutputMapping = mapOf(
+                "status" to "user.keep_awake_status",
+                "enabled" to "user.keep_awake_enabled"
+            )
         )
     )
 
@@ -336,6 +350,7 @@ object NativeToolsSuite {
             "net" -> executeNet(operation, options, payload, tenantId)
             "print" -> executePrint(operation, options, payload, tenantId)
             "code-generate" -> executeCodeGenerate(operation, options, payload, tenantId)
+            "keep-awake" -> executeKeepAwake(operation, options, payload)
             else -> executeGenericFallback(toolId, operation, payload)
         }
 
@@ -392,6 +407,7 @@ object NativeToolsSuite {
         "print", "printer", "device.printer", "device.printer@1", "bluetooth.print", "pos.print" -> "print"
         "code-generate", "code_gen", "codegen", "generate-code", "generate_code", "barcode-generate",
         "qr-generate", "vision.generate_code@1", "vision.generate_code" -> "code-generate"
+        "keep-awake", "keep_awake", "keepawake", "device.keep_awake", "device.keep_awake@1", "wakelock" -> "keep-awake"
         else -> raw
     }
 
@@ -984,6 +1000,29 @@ object NativeToolsSuite {
             toolResult = toolResult,
             label = "Code generator",
             successSummary = "Code $operation generated"
+        )
+    }
+
+    // -------------------------------------------------------------------------
+    // KEEP-AWAKE / SCREEN WAKE-LOCK
+    // -------------------------------------------------------------------------
+    private suspend fun executeKeepAwake(
+        operation: String,
+        options: Map<String, String>,
+        payload: JsonObject
+    ): InternalToolResult {
+        val mergedArgs = buildMap {
+            putAll(options)
+            if (operation !in setOf("default", "invoke")) {
+                put("op", operation)
+            }
+            payload.forEach { (k, v) -> put(k, jsonContent(v)) }
+        }
+        val toolResult = engine.tools.impl.KeepAwakeTool().invoke(ToolArgs(mergedArgs), ToolContext())
+        return internalFromToolResult(
+            toolResult = toolResult,
+            label = "Keep-awake",
+            successSummary = "Keep-awake ${mergedArgs["op"] ?: operation} executed"
         )
     }
 

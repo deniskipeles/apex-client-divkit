@@ -182,6 +182,16 @@ public enum NativeToolsSuite {
                 "status": "user.code_status", "uri": "user.code_image_uri", "content": "user.code_content",
                 "format": "user.code_format", "kind": "user.code_kind", "code_id": "user.code_id", "matrix": "user.code_matrix"
             ]
+        ),
+        ToolSchema(
+            toolId: "keep-awake",
+            displayName: "Keep-Awake / Screen Wake-Lock Controller",
+            description: "Holds the terminal awake (screen on / wake-lock) while a long-running task is in flight, with optional timeout and wake level.",
+            supportedOperations: ["enable", "disable", "toggle", "status"],
+            defaultOptions: ["level": "screen", "timeout_ms": "0"],
+            defaultOutputMapping: [
+                "status": "user.keep_awake_status", "enabled": "user.keep_awake_enabled"
+            ]
         )
     ]
 
@@ -255,6 +265,8 @@ public enum NativeToolsSuite {
             outcome = await executePrint(operation: operation, options: options, payload: payload, tenantId: tenantId)
         case "code-generate":
             outcome = await executeCodeGenerate(operation: operation, options: options, payload: payload, tenantId: tenantId)
+        case "keep-awake":
+            outcome = await executeKeepAwake(operation: operation, options: options, payload: payload)
         default:
             outcome = executeGenericFallback(toolId: toolId, operation: operation, payload: payload)
         }
@@ -298,6 +310,7 @@ public enum NativeToolsSuite {
         case "net", "network.transfer", "network.transfer@1", "network", "http", "transfer": return "net"
         case "print", "printer", "device.printer", "device.printer@1", "bluetooth.print", "pos.print": return "print"
         case "code-generate", "code_gen", "codegen", "generate-code", "generate_code", "barcode-generate", "qr-generate", "vision.generate_code@1", "vision.generate_code": return "code-generate"
+        case "keep-awake", "keep_awake", "keepawake", "device.keep_awake", "device.keep_awake@1", "wakelock": return "keep-awake"
         default: return raw
         }
     }
@@ -503,6 +516,14 @@ public enum NativeToolsSuite {
         for (k, v) in payload.asDictionary { merged[k] = v.contentOrNull ?? v.serialized }
         let result = await CodeGenerateTool().invoke(args: ToolArgs(merged), ctx: ToolContext(workspaceId: tenantId))
         return internalFromToolResult(result, label: "Code generator", successSummary: "Code \(operation) generated")
+    }
+
+    private static func executeKeepAwake(operation: String, options: [String: String], payload: JsonValue) async -> InternalToolResult {
+        var merged = options
+        if !["default", "invoke"].contains(operation) { merged["op"] = operation }
+        for (k, v) in payload.asDictionary { merged[k] = v.contentOrNull ?? v.serialized }
+        let result = await KeepAwakeTool().invoke(args: ToolArgs(merged), ctx: ToolContext())
+        return internalFromToolResult(result, label: "Keep-awake", successSummary: "Keep-awake \(merged["op"] ?? operation) executed")
     }
 
     private static func executeGenericFallback(toolId: String, operation: String, payload: JsonValue) -> InternalToolResult {

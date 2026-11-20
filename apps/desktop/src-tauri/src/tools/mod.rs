@@ -45,6 +45,7 @@ pub enum Route {
     Net,
     Print,
     CodeGenerate,
+    KeepAwake,
     /// Not a capability in the contract.
     Unknown,
 }
@@ -136,6 +137,9 @@ pub fn route(capability: &str) -> Route {
         // vision.generate_code@1
         "vision.generate_code@1" | "code-generate" | "code_gen" | "generate-code"
         | "barcode-generate" | "qr-generate" | "vision.generate_code" => Route::CodeGenerate,
+        // device.keep_awake@1
+        "device.keep_awake@1" | "keep-awake" | "keep_awake" | "keepawake" | "device.keep_awake"
+        | "wakelock" => Route::KeepAwake,
 
         _ => Route::Unknown,
     }
@@ -184,6 +188,7 @@ pub async fn dispatch(app: &AppHandle, capability: &str, args: Value) -> Result<
         Route::Net => net::invoke(app, args).await,
         Route::Print => print::invoke(app, args).await,
         Route::CodeGenerate => code_generate::invoke(app, args, &workspace).await,
+        Route::KeepAwake => session::keep_awake(app, args).await,
         Route::Unknown => Err(ToolError::Failed {
             tool: capability.into(),
             message: "unknown capability".into(),
@@ -261,7 +266,7 @@ mod tests {
     fn desktop_mirrors_full_mobile_tool_inventory() {
         let tools: Value = serde_json::from_str(TOOLS_JSON).expect("tools.json parses");
         let capabilities = tools["capabilities"].as_array().expect("capabilities array");
-        assert_eq!(capabilities.len(), 20, "contract capability count changed");
+        assert_eq!(capabilities.len(), 21, "contract capability count changed");
 
         for capability in capabilities {
             let id = capability["id"].as_str().expect("id");
