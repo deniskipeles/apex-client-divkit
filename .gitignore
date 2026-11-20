@@ -26,6 +26,8 @@ apps/android/.gradle
 apps/android/.kotlin
 apps/android/.env
 apps/android/debug.keystore
+# ML assets fetched by apps/android/build-apks.sh
+apps/android/src/main/assets/*.tflite
 apps/ios/Pods
 apps/ios/build
 apps/ios/.build

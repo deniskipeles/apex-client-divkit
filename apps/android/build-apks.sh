@@ -92,35 +92,176 @@ echo "=================================================================="
 echo -e "${RESET}"
 
 # ------------------------------------------------------------------------------
-# 1. Java JDK Environment Auto-Discovery & Validation
+# 0. Toolchain Bootstrap Helpers
+# ------------------------------------------------------------------------------
+# Every step below is *additive*: a usable tool already present in the ambient
+# environment (PATH, JAVA_HOME, ANDROID_HOME, ...) always wins and is never
+# overwritten. Downloads happen only when a tool is genuinely missing.
+TOOLCHAIN_DIR="${APEX_TOOLCHAIN_DIR:-${HOME}/.apex-toolchain}"
+SDK_PLATFORM="platforms;android-36.1"
+SDK_BUILD_TOOLS="build-tools;36.0.0"
+
+have() { command -v "$1" >/dev/null 2>&1; }
+
+# ensure_on_path <dir> <cmd>... — prepend <dir> only if one of <cmd> is unresolvable.
+ensure_on_path() {
+    local dir="$1"; shift
+    local missing=false c
+    for c in "$@"; do have "${c}" || missing=true; done
+    if [[ "${missing}" == true && -d "${dir}" ]]; then
+        export PATH="${dir}:${PATH}"
+        info "Added ${dir} to PATH"
+    fi
+}
+
+# fetch_to <url> <dest> [label] — curl or wget, atomic via .part
+fetch_to() {
+    local url="$1" dest="$2" label="${3:-$(basename "$2")}"
+    mkdir -p "$(dirname "${dest}")"
+    info "  ↓ ${label}"
+    if have curl; then
+        if curl -fL --retry 3 --retry-delay 2 --connect-timeout 20 \
+                 -A "ApexClient-Build/1.0" -o "${dest}.part" "${url}"; then
+            mv -f "${dest}.part" "${dest}"; return 0
+        fi
+    elif have wget; then
+        if wget -q --tries=3 --timeout=30 -O "${dest}.part" "${url}"; then
+            mv -f "${dest}.part" "${dest}"; return 0
+        fi
+    else
+        error "  ✗ Neither curl nor wget is available."
+        return 1
+    fi
+    rm -f "${dest}.part"
+    return 1
+}
+
+# extract_zip <zip> <dir> — unzip, python3, or jar; preserves the exec bit
+extract_zip() {
+    local zip="$1" dir="$2"
+    mkdir -p "${dir}"
+    if have unzip; then
+        unzip -q -o "${zip}" -d "${dir}"
+    elif have python3; then
+        # zipfile.extractall drops unix modes, which leaves SDK scripts non-executable.
+        python3 - "${zip}" "${dir}" <<'PYEOF'
+import os, sys, zipfile
+zf = zipfile.ZipFile(sys.argv[1])
+root = sys.argv[2]
+zf.extractall(root)
+for info in zf.infolist():
+    mode = (info.external_attr >> 16) & 0o777
+    if mode and not info.is_dir():
+        path = os.path.join(root, info.filename)
+        if os.path.exists(path):
+            os.chmod(path, mode)
+PYEOF
+    elif have jar; then
+        (cd "${dir}" && jar xf "${zip}")
+    else
+        error "  ✗ Cannot extract ${zip}: no unzip, python3, or jar available."
+        return 1
+    fi
+    # Belt and braces: SDK launcher scripts must be executable regardless of tool.
+    if [[ -d "${dir}/bin" ]]; then
+        chmod -R u+x "${dir}/bin" 2>/dev/null || true
+    fi
+    local d
+    for d in "${dir}"/*/bin; do
+        [[ -d "${d}" ]] && chmod -R u+x "${d}" 2>/dev/null || true
+    done
+}
+
+java_major() {   # java_major <java-binary> → major version, 0 if unparseable
+    local v
+    v="$("$1" -version 2>&1 | head -n 1 | sed -E 's/.*version "([0-9]+).*/\1/')"
+    [[ "${v}" =~ ^[0-9]+$ ]] || { echo 0; return; }
+    [[ "${v}" == "1" ]] && v=8   # legacy "1.8.0_x" scheme
+    echo "${v}"
+}
+
+jdk_usable() {   # jdk_usable <jdk-home> — JDK 17+ with a javac, else false
+    local home="$1"
+    [[ -n "${home}" && -d "${home}" ]] || return 1
+    [[ -x "${home}/bin/java" && -x "${home}/bin/javac" ]] || return 1
+    [[ "$(java_major "${home}/bin/java")" -ge 17 ]]
+}
+
+sdk_has_platform_tools() { [[ -n "${1:-}" && -d "$1/platform-tools" ]]; }
+
+# pkg_path <sdk-root> <package> — on-disk directory for an sdkmanager package id
+# ("platforms;android-36.1" → "<root>/platforms/android-36.1").
+pkg_path() {
+    local root="$1" pkg="$2"
+    echo "${root}/${pkg//;/\/}"
+}
+
+# sdk_licenses_present <sdk-root> — licence hash files Gradle checks for
+sdk_licenses_present() {
+    local root="$1"
+    [[ -s "${root}/licenses/android-sdk-license" ]]
+}
+
+# write_sdk_licenses <sdk-root> — write the standard Google licence hashes.
+# Gradle only checks these files; sdkmanager writes the same content.
+write_sdk_licenses() {
+    local root="$1" lic="${1}/licenses"
+    mkdir -p "${lic}" 2>/dev/null || return 1
+    printf '\n24333f8a63cbd82421b10a14942e828b24159494\nd56f5187479451eabf01fb78af6dfcb131a6481e\n24333f8a63cbd82421b10a14942e828b24159494\n' \
+        > "${lic}/android-sdk-license" 2>/dev/null || return 1
+    printf '\n84831b9409646a918e30573bab4c9c91346d8abd\n' \
+        > "${lic}/android-sdk-preview-license" 2>/dev/null || return 1
+    return 0
+}
+
+# sdkmanager_for <sdk-root> — locate sdkmanager inside <sdk-root> or on PATH
+sdkmanager_for() {
+    local root="$1" c
+    for c in "${root}/cmdline-tools/latest/bin/sdkmanager" \
+             "${root}/cmdline-tools/bin/sdkmanager" \
+             "${root}/tools/bin/sdkmanager"; do
+        if [[ -x "${c}" ]]; then echo "${c}"; return 0; fi
+    done
+    if have sdkmanager; then command -v sdkmanager; return 0; fi
+    return 1
+}
+
+# ------------------------------------------------------------------------------
+# 1. Java JDK — reuse the environment's JDK, bootstrap Temurin only if absent
 # ------------------------------------------------------------------------------
 info "Checking Java Development Kit (JDK)..."
 
-if [[ -z "${JAVA_HOME:-}" ]]; then
-    if command -v java >/dev/null 2>&1; then
-        JAVA_BIN="$(which java)"
-        # Resolve symlinks to find the JDK root
-        REAL_JAVA="$(readlink -f "${JAVA_BIN}" 2>/dev/null || echo "${JAVA_BIN}")"
-        POTENTIAL_HOME="$(dirname "$(dirname "${REAL_JAVA}")")"
-        if [[ -d "${POTENTIAL_HOME}/include" || -d "${POTENTIAL_HOME}/lib" ]]; then
-            export JAVA_HOME="${POTENTIAL_HOME}"
-            info "Discovered JAVA_HOME from binary: ${JAVA_HOME}"
-        fi
+JDK_BOOTSTRAPPED=false
+JDK_FROM_CACHE=false
+
+# 1a. Honour an explicit, working JAVA_HOME untouched.
+if jdk_usable "${JAVA_HOME:-}"; then
+    info "Using existing JAVA_HOME: ${JAVA_HOME}"
+elif [[ -n "${JAVA_HOME:-}" ]]; then
+    warn "JAVA_HOME=${JAVA_HOME} is not a usable JDK 17+; looking for another."
+fi
+
+# 1b. Derive JAVA_HOME from a `java` already on PATH (PATH is left alone).
+if ! jdk_usable "${JAVA_HOME:-}" && have java; then
+    REAL_JAVA="$(readlink -f "$(command -v java)" 2>/dev/null || command -v java)"
+    POTENTIAL_HOME="$(dirname "$(dirname "${REAL_JAVA}")")"
+    if jdk_usable "${POTENTIAL_HOME}"; then
+        export JAVA_HOME="${POTENTIAL_HOME}"
+        info "Derived JAVA_HOME from PATH java: ${JAVA_HOME}"
     fi
 fi
 
-# Fallback JDK search paths across Linux & macOS
-if [[ -z "${JAVA_HOME:-}" || ! -d "${JAVA_HOME:-}" ]]; then
-    CANDIDATES=(
-        "/usr/lib/jvm/java-21-openjdk-amd64"
-        "/usr/lib/jvm/temurin-21-jdk-amd64"
-        "/usr/lib/jvm/java-17-openjdk-amd64"
-        "/usr/lib/jvm/temurin-17-jdk-amd64"
-        "/usr/lib/jvm/default-java"
-        "/Library/Java/JavaVirtualMachines"
-    )
-    for c in "${CANDIDATES[@]}"; do
-        if [[ -d "${c}" ]]; then
+# 1c. Well-known install locations (Linux & macOS).
+if ! jdk_usable "${JAVA_HOME:-}"; then
+    for c in "/usr/lib/jvm/java-21-openjdk-amd64" \
+             "/usr/lib/jvm/temurin-21-jdk-amd64" \
+             "/usr/lib/jvm/java-17-openjdk-amd64" \
+             "/usr/lib/jvm/temurin-17-jdk-amd64" \
+             "/usr/lib/jvm/default-java" \
+             "/opt/java/openjdk" \
+             "/Library/Java/JavaVirtualMachines/temurin-21.jdk/Contents/Home" \
+             "/Library/Java/JavaVirtualMachines/temurin-17.jdk/Contents/Home"; do
+        if jdk_usable "${c}"; then
             export JAVA_HOME="${c}"
             info "Located JDK installation at: ${JAVA_HOME}"
             break
@@ -128,64 +269,185 @@ if [[ -z "${JAVA_HOME:-}" || ! -d "${JAVA_HOME:-}" ]]; then
     done
 fi
 
-if ! command -v java >/dev/null 2>&1; then
-    die "Java is not installed or not in PATH. Please install OpenJDK 17 or 21."
+# 1d. Last resort: download Temurin 21 into the private toolchain dir.
+if ! jdk_usable "${JAVA_HOME:-}"; then
+    if jdk_usable "${TOOLCHAIN_DIR}/jdk/current"; then
+        export JAVA_HOME="${TOOLCHAIN_DIR}/jdk/current"
+        JDK_FROM_CACHE=true
+        info "Reusing cached JDK: ${JAVA_HOME}"
+    else
+        case "$(uname -s)" in
+            Linux)  JDK_OS="linux" ;;
+            Darwin) JDK_OS="mac" ;;
+            *) die "Unsupported OS for JDK bootstrap: $(uname -s)" ;;
+        esac
+        case "$(uname -m)" in
+            x86_64|amd64) JDK_ARCH="x64" ;;
+            aarch64|arm64) JDK_ARCH="aarch64" ;;
+            *) die "Unsupported CPU architecture for JDK bootstrap: $(uname -m)" ;;
+        esac
+        info "No usable JDK found — downloading Eclipse Temurin 21 (${JDK_OS}/${JDK_ARCH})..."
+        JDK_TMP="$(mktemp "${TMPDIR:-/tmp}/jdk-XXXXXX.tar.gz")"
+        if ! fetch_to "https://api.adoptium.net/v3/binary/latest/21/ga/${JDK_OS}/${JDK_ARCH}/jdk/hotspot/normal/eclipse" \
+                      "${JDK_TMP}" "Temurin JDK 21"; then
+            rm -f "${JDK_TMP}"
+            die "JDK download failed. Install OpenJDK 17+ or set JAVA_HOME, then re-run."
+        fi
+        JDK_EXTRACT="${TOOLCHAIN_DIR}/jdk/extract"
+        rm -rf "${JDK_EXTRACT}"; mkdir -p "${JDK_EXTRACT}"
+        tar -xzf "${JDK_TMP}" -C "${JDK_EXTRACT}" || { rm -f "${JDK_TMP}"; die "JDK archive extraction failed."; }
+        rm -f "${JDK_TMP}"
+        JDK_ROOT="$(find "${JDK_EXTRACT}" -mindepth 1 -maxdepth 1 -type d | head -n 1)"
+        [[ -n "${JDK_ROOT}" ]] || die "Unexpected JDK archive layout."
+        rm -rf "${TOOLCHAIN_DIR}/jdk/current"
+        mv -f "${JDK_ROOT}" "${TOOLCHAIN_DIR}/jdk/current"
+        rm -rf "${JDK_EXTRACT}"
+        export JAVA_HOME="${TOOLCHAIN_DIR}/jdk/current"
+        JDK_BOOTSTRAPPED=true
+        success "Installed JDK into ${JAVA_HOME}"
+    fi
 fi
 
-JAVA_VERSION_STR="$(java -version 2>&1 | head -n 1)"
+jdk_usable "${JAVA_HOME:-}" || die "No usable JDK 17+ found. Install one or set JAVA_HOME."
+ensure_on_path "${JAVA_HOME}/bin" java javac keytool
+
+JAVA_VERSION_STR="$("${JAVA_HOME}/bin/java" -version 2>&1 | head -n 1)"
 info "Java runtime: ${JAVA_VERSION_STR}"
+if [[ "${JDK_BOOTSTRAPPED}" == true ]]; then
+    info "JDK source: downloaded (${TOOLCHAIN_DIR}/jdk)"
+elif [[ "${JDK_FROM_CACHE}" == true ]]; then
+    info "JDK source: cached toolchain (${TOOLCHAIN_DIR}/jdk)"
+else
+    info "JDK source: existing environment (${JAVA_HOME})"
+fi
 
 # ------------------------------------------------------------------------------
-# 2. Android SDK Auto-Discovery & License Auto-Acceptance
+# 2. Android SDK — reuse the environment's SDK, bootstrap only what is missing
 # ------------------------------------------------------------------------------
 info "Checking Android SDK..."
 
-SDK_PATHS=(
-    "${ANDROID_HOME:-}"
-    "${ANDROID_SDK_ROOT:-}"
-    "/opt/android/sdk"
-    "/opt/android-sdk"
-    "${HOME}/Android/Sdk"
-    "${HOME}/Library/Android/sdk"
-    "/usr/lib/android-sdk"
-)
+SDK_BOOTSTRAPPED=false
+SDK_FROM_CACHE=false
 
-FOUND_SDK=""
-for p in "${SDK_PATHS[@]}"; do
-    if [[ -n "${p}" && -d "${p}" && -d "${p}/platform-tools" ]]; then
-        FOUND_SDK="${p}"
-        break
-    fi
-done
-
-if [[ -z "${FOUND_SDK}" ]]; then
-    # Relaxed check for sdk root
-    for p in "${SDK_PATHS[@]}"; do
-        if [[ -n "${p}" && -d "${p}" ]]; then
-            FOUND_SDK="${p}"
+if sdk_has_platform_tools "${ANDROID_HOME:-}"; then
+    info "Using existing ANDROID_HOME: ${ANDROID_HOME}"
+else
+    for p in "${ANDROID_SDK_ROOT:-}" \
+             "/opt/android/sdk" "/opt/android-sdk" "/opt/android" \
+             "${HOME}/Android/Sdk" "${HOME}/Android/sdk" \
+             "${HOME}/Library/Android/sdk" "/usr/lib/android-sdk"; do
+        if sdk_has_platform_tools "${p}"; then
+            export ANDROID_HOME="${p}"
+            info "Located Android SDK at: ${ANDROID_HOME}"
             break
         fi
     done
 fi
 
-if [[ -n "${FOUND_SDK}" ]]; then
-    export ANDROID_HOME="${FOUND_SDK}"
-    export ANDROID_SDK_ROOT="${FOUND_SDK}"
-    success "Configured Android SDK: ${ANDROID_HOME}"
-else
-    warn "Android SDK not found in default paths. Gradle will attempt auto-download if SDK component manager is active."
+# 2a. No SDK at all → bootstrap a private one (cmdline-tools + required packages).
+if ! sdk_has_platform_tools "${ANDROID_HOME:-}"; then
+    SDK_ROOT="${TOOLCHAIN_DIR}/android-sdk"
+    if sdk_has_platform_tools "${SDK_ROOT}"; then
+        SDK_FROM_CACHE=true
+    elif ! sdkmanager_for "${SDK_ROOT}" >/dev/null; then
+        case "$(uname -s)" in
+            Linux)  CMDLINE_OS="linux" ;;
+            Darwin) CMDLINE_OS="mac" ;;
+            *) die "Unsupported OS for Android SDK bootstrap: $(uname -s)" ;;
+        esac
+        info "No Android SDK found — downloading Android command-line tools..."
+        CT_ZIP="$(mktemp "${TMPDIR:-/tmp}/cmdline-tools-XXXXXX.zip")"
+        if ! fetch_to "https://dl.google.com/android/repository/commandlinetools-${CMDLINE_OS}-13114758_latest.zip" \
+                      "${CT_ZIP}" "Android command-line tools"; then
+            rm -f "${CT_ZIP}"
+            die "Android command-line tools download failed. Set ANDROID_HOME to an existing SDK and re-run."
+        fi
+        rm -rf "${SDK_ROOT}/cmdline-tools/latest" "${SDK_ROOT}/cmdline-tools/.tmp"
+        mkdir -p "${SDK_ROOT}/cmdline-tools"
+        if ! extract_zip "${CT_ZIP}" "${SDK_ROOT}/cmdline-tools/.tmp"; then
+            rm -f "${CT_ZIP}"; die "Could not extract Android command-line tools."
+        fi
+        rm -f "${CT_ZIP}"
+        mv -f "${SDK_ROOT}/cmdline-tools/.tmp/cmdline-tools" "${SDK_ROOT}/cmdline-tools/latest"
+        rm -rf "${SDK_ROOT}/cmdline-tools/.tmp"
+    fi
+    export ANDROID_HOME="${SDK_ROOT}"
+    [[ "${SDK_FROM_CACHE}" == true ]] || SDK_BOOTSTRAPPED=true
 fi
 
-# Auto-accept Android SDK licenses if directory is writable
-if [[ -n "${ANDROID_HOME:-}" && -w "${ANDROID_HOME}" ]]; then
-    LIC_DIR="${ANDROID_HOME}/licenses"
-    mkdir -p "${LIC_DIR}" 2>/dev/null || true
-    if [[ -w "${LIC_DIR}" ]]; then
-        # Standard Google Android SDK license hashes
-        echo -e "\n24333f8a63cbd82421b10a14942e828b24159494\nd56f5187479451eabf01fb78af6dfcb131a6481e\n24333f8a63cbd82421b10a14942e828b24159494" > "${LIC_DIR}/android-sdk-license" 2>/dev/null || true
-        echo -e "\n84831b9409646a918e30573bab4c9c91346d8abd" > "${LIC_DIR}/android-sdk-preview-license" 2>/dev/null || true
-        info "Android SDK license agreements auto-provisioned."
+export ANDROID_SDK_ROOT="${ANDROID_HOME}"
+success "Configured Android SDK: ${ANDROID_HOME}"
+if [[ "${SDK_BOOTSTRAPPED}" == true ]]; then
+    info "SDK source: downloaded (${TOOLCHAIN_DIR}/android-sdk)"
+elif [[ "${SDK_FROM_CACHE}" == true ]]; then
+    info "SDK source: cached toolchain (${TOOLCHAIN_DIR}/android-sdk)"
+else
+    info "SDK source: existing environment (${ANDROID_HOME})"
+fi
+
+# 2b. Install only the packages this project needs that are not already present.
+SDKMANAGER="$(sdkmanager_for "${ANDROID_HOME}" || true)"
+if [[ -z "${SDKMANAGER}" ]]; then
+    warn "sdkmanager not found — relying on Gradle's SDK auto-download."
+else
+    MISSING_PKGS=()
+    [[ -d "$(pkg_path "${ANDROID_HOME}" platform-tools)" ]] || MISSING_PKGS+=("platform-tools")
+    [[ -d "$(pkg_path "${ANDROID_HOME}" "${SDK_PLATFORM}")" ]] || MISSING_PKGS+=("${SDK_PLATFORM}")
+    compgen -G "$(pkg_path "${ANDROID_HOME}" "${SDK_BUILD_TOOLS}")" >/dev/null \
+        || MISSING_PKGS+=("${SDK_BUILD_TOOLS}")
+
+    if [[ ${#MISSING_PKGS[@]} -gt 0 ]]; then
+        if [[ -w "${ANDROID_HOME}" ]]; then
+            info "Installing missing SDK packages: ${MISSING_PKGS[*]}"
+            # `yes` closing the pipe early is expected (SIGPIPE); never fatal.
+            yes | "${SDKMANAGER}" --sdk_root="${ANDROID_HOME}" --licenses >/dev/null 2>&1 || true
+            if ! "${SDKMANAGER}" --sdk_root="${ANDROID_HOME}" --install "${MISSING_PKGS[@]}" >/dev/null 2>&1; then
+                warn "sdkmanager could not install: ${MISSING_PKGS[*]} (Gradle may auto-download)."
+            else
+                success "Installed SDK packages: ${MISSING_PKGS[*]}"
+            fi
+        else
+            warn "Android SDK at ${ANDROID_HOME} is not writable; cannot install ${MISSING_PKGS[*]}."
+        fi
+    else
+        success "All required SDK packages already present."
     fi
+fi
+
+# 2b-bis. Licence files. Gradle refuses to auto-download packages unless these
+# exist, so write them directly when sdkmanager could not (or is absent).
+if [[ -w "${ANDROID_HOME}" ]]; then
+    if [[ -n "${SDKMANAGER}" ]]; then
+        yes | "${SDKMANAGER}" --sdk_root="${ANDROID_HOME}" --licenses >/dev/null 2>&1 || true
+    fi
+    if sdk_licenses_present "${ANDROID_HOME}"; then
+        info "Android SDK licences accepted."
+    elif write_sdk_licenses "${ANDROID_HOME}"; then
+        success "Wrote Android SDK licence hashes to ${ANDROID_HOME}/licenses"
+    else
+        warn "Could not write SDK licences; Gradle may refuse to install packages."
+    fi
+fi
+
+# 2c. Keep local.properties consistent with the SDK actually in use.
+LOCAL_PROPS="${SCRIPT_DIR}/local.properties"
+CURRENT_SDK_DIR=""
+if [[ -f "${LOCAL_PROPS}" ]]; then
+    CURRENT_SDK_DIR="$(sed -n 's/^sdk\.dir=//p' "${LOCAL_PROPS}" | head -n 1)"
+fi
+if [[ -d "${CURRENT_SDK_DIR:-/nonexistent}" ]]; then
+    info "local.properties sdk.dir is valid: ${CURRENT_SDK_DIR}"
+else
+    if [[ -n "${CURRENT_SDK_DIR}" ]]; then
+        warn "local.properties sdk.dir=${CURRENT_SDK_DIR} does not exist; rewriting to ${ANDROID_HOME}"
+    else
+        info "Writing local.properties sdk.dir=${ANDROID_HOME}"
+    fi
+    if [[ -f "${LOCAL_PROPS}" ]]; then
+        grep -v '^sdk\.dir=' "${LOCAL_PROPS}" > "${LOCAL_PROPS}.tmp" 2>/dev/null || true
+        mv -f "${LOCAL_PROPS}.tmp" "${LOCAL_PROPS}"
+    fi
+    echo "sdk.dir=${ANDROID_HOME}" >> "${LOCAL_PROPS}"
 fi
 
 # ------------------------------------------------------------------------------
@@ -193,14 +455,22 @@ fi
 # ------------------------------------------------------------------------------
 info "Checking cryptographic signing keys..."
 
+# keytool ships with the JDK, so resolve it from JAVA_HOME before falling back to PATH.
+KEYTOOL_BIN=""
+if [[ -x "${JAVA_HOME}/bin/keytool" ]]; then
+    KEYTOOL_BIN="${JAVA_HOME}/bin/keytool"
+elif have keytool; then
+    KEYTOOL_BIN="$(command -v keytool)"
+fi
+
 # Debug Keystore
 if [[ ! -f "${SCRIPT_DIR}/debug.keystore" ]]; then
     if [[ -f "${SCRIPT_DIR}/debug.keystore.base64" ]]; then
         info "Restoring debug.keystore from base64 snapshot..."
         base64 -d "${SCRIPT_DIR}/debug.keystore.base64" > "${SCRIPT_DIR}/debug.keystore"
-    elif command -v keytool >/dev/null 2>&1; then
+    elif [[ -n "${KEYTOOL_BIN}" ]]; then
         info "Generating standard Android debug.keystore via keytool..."
-        keytool -genkey -v \
+        "${KEYTOOL_BIN}" -genkey -v \
             -keystore "${SCRIPT_DIR}/debug.keystore" \
             -alias "androiddebugkey" \
             -keyalg RSA \
@@ -214,15 +484,15 @@ fi
 if [[ -f "${SCRIPT_DIR}/debug.keystore" ]]; then
     success "Debug keystore ready: ${SCRIPT_DIR}/debug.keystore"
 else
-    warn "Debug keystore not found; Gradle debug signing may require keytool."
+    die "Debug keystore could not be created and keytool is unavailable; install a JDK or provide debug.keystore."
 fi
 
 # Release Keystore (for --release or --all)
 if [[ "${BUILD_MODE}" == "release" || "${BUILD_MODE}" == "all" ]]; then
     if [[ -z "${KEYSTORE_PATH:-}" && ! -f "${SCRIPT_DIR}/my-upload-key.jks" ]]; then
-        if command -v keytool >/dev/null 2>&1; then
+        if [[ -n "${KEYTOOL_BIN}" ]]; then
             info "Generating local production release signing keystore (my-upload-key.jks)..."
-            keytool -genkey -v \
+            "${KEYTOOL_BIN}" -genkey -v \
                 -keystore "${SCRIPT_DIR}/my-upload-key.jks" \
                 -alias "upload" \
                 -keyalg RSA \
@@ -323,18 +593,13 @@ else
         [[ "${magic}" == "TFL3" ]]
     }
 
-    # fetch <url> <dest> <label> [extra curl args…]
+    # fetch <url> <dest> <label> — thin wrapper over fetch_to (curl or wget).
     fetch() {
-        local url="$1" dest="$2" label="$3"; shift 3
-        info "  ↓ ${label}"
-        if ! curl -fL --retry 3 --retry-delay 2 --connect-timeout 15 \
-                  -A "ApexClient-Build/1.0" \
-                  "$@" -o "${dest}.part" "${url}"; then
-            rm -f "${dest}.part"
+        local url="$1" dest="$2" label="$3"
+        if ! fetch_to "${url}" "${dest}" "${label}"; then
             error "  ✗ Download failed: ${label} (${url})"
             return 1
         fi
-        mv -f "${dest}.part" "${dest}"
         success "  ✓ ${label} ($(numfmt --to=iec-i --suffix=B "$(file_size "${dest}")" 2>/dev/null || echo "? bytes"))"
         return 0
     }
@@ -347,20 +612,10 @@ else
     MV4_ZIP_URL="https://qaihub-public-assets.s3.us-west-2.amazonaws.com/qai-hub-models/models/mobilenet_v4/releases/v0.64.0/mobilenet_v4-tflite-w8a8.zip"
 
     if need_download "${MV4_TFLITE}" "${MV4_MIN}" || ! is_tflite "${MV4_TFLITE}"; then
-        if ! command -v unzip >/dev/null 2>&1; then
-            warn "  unzip not found — trying python3 zipfile fallback."
-        fi
-
         TMP_ZIP="$(mktemp "${TMPDIR:-/tmp}/mv4-XXXXXX.zip")"
         if fetch "${MV4_ZIP_URL}" "${TMP_ZIP}" "MobileNetV4 w8a8 zip"; then
             TMP_EXTRACT="$(mktemp -d "${TMPDIR:-/tmp}/mv4-XXXXXX")"
-            if command -v unzip >/dev/null 2>&1; then
-                unzip -q -o "${TMP_ZIP}" -d "${TMP_EXTRACT}"
-            elif command -v python3 >/dev/null 2>&1; then
-                python3 -c "import zipfile,sys; zipfile.ZipFile(sys.argv[1]).extractall(sys.argv[2])" \
-                    "${TMP_ZIP}" "${TMP_EXTRACT}"
-            else
-                error "  ✗ Cannot extract zip: neither unzip nor python3 available."
+            if ! extract_zip "${TMP_ZIP}" "${TMP_EXTRACT}"; then
                 ASSET_FAILURES=$((ASSET_FAILURES + 1))
             fi
 
