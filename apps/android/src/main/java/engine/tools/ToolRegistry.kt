@@ -55,7 +55,8 @@ class ProvenanceChecker {
         "network.realtime@1",
         "network.transfer@1",
         "device.printer@1",
-        "vision.generate_code@1"
+        "vision.generate_code@1",
+        "device.keep_awake@1"
     )
 
     fun allows(provenance: Provenance, capability: String): Boolean = when (provenance) {

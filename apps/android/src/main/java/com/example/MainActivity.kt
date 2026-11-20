@@ -1,6 +1,7 @@
 package com.example
 
 import android.os.Bundle
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
@@ -30,15 +31,28 @@ import com.example.enginehost.SduiEngineViewModel
 import com.example.ui.AppSettingsBottomSheet
 import com.example.ui.FileManagerTab
 import com.example.ui.NotificationTrayOverlay
+import com.example.ui.NotificationsTab
 import com.example.ui.PosTerminalTab
-import com.example.ui.SecurityAndKmpTab
 import com.example.ui.TenantLauncherScreen
 import com.example.ui.theme.MyApplicationTheme
+import engine.tools.impl.KeepAwakeTool
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        // Platform bridge for the tools://keep-awake capability: toggle the window's
+        // FLAG_KEEP_SCREEN_ON so a card can hold the terminal awake during long tasks.
+        KeepAwakeTool.sink = { enabled ->
+            runOnUiThread {
+                if (enabled) {
+                    window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                } else {
+                    window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                }
+            }
+            true
+        }
         setContent {
             SduiPosEngineRoot()
         }
@@ -48,7 +62,7 @@ class MainActivity : ComponentActivity() {
 private enum class LauncherSection {
     TENANT_GRID,
     FILES,
-    SECURITY_KMP
+    NOTIFICATIONS
 }
 
 @Composable
@@ -239,11 +253,26 @@ fun SduiPosEngineApp(viewModel: SduiEngineViewModel) {
                         modifier = Modifier.testTag("nav_files")
                     )
                     NavigationBarItem(
-                        selected = launcherSection == LauncherSection.SECURITY_KMP,
-                        onClick = { launcherSection = LauncherSection.SECURITY_KMP },
-                        icon = { Icon(Icons.Default.Security, contentDescription = "Security & Contract") },
-                        label = { Text("Security & Contract", fontSize = 11.sp) },
-                        modifier = Modifier.testTag("nav_security_kmp")
+                        selected = launcherSection == LauncherSection.NOTIFICATIONS,
+                        onClick = { launcherSection = LauncherSection.NOTIFICATIONS },
+                        icon = {
+                            BadgedBox(
+                                badge = {
+                                    if (uiState.totalUnreadNotifications > 0) {
+                                        Badge(modifier = Modifier.testTag("nav_notifications_badge")) {
+                                            Text(uiState.totalUnreadNotifications.toString())
+                                        }
+                                    }
+                                }
+                            ) {
+                                Icon(
+                                    Icons.Default.Notifications,
+                                    contentDescription = "Notifications"
+                                )
+                            }
+                        },
+                        label = { Text("Notifications", fontSize = 11.sp) },
+                        modifier = Modifier.testTag("nav_notifications")
                     )
                 }
             }
@@ -272,7 +301,7 @@ fun SduiPosEngineApp(viewModel: SduiEngineViewModel) {
                         uiState = uiState,
                         viewModel = viewModel
                     )
-                    LauncherSection.SECURITY_KMP -> SecurityAndKmpTab(
+                    LauncherSection.NOTIFICATIONS -> NotificationsTab(
                         uiState = uiState,
                         viewModel = viewModel
                     )

@@ -32,7 +32,8 @@ object TerminalApp {
             PrintTool(),
             CodeGenerateTool(),
             LibSignalTool(),
-            VectorizeTool()
+            VectorizeTool(),
+            KeepAwakeTool()
         )
         // Map canonical capabilities + common shorthand aliases
         val handlerMap = mutableMapOf<String, ToolHandler>()
@@ -135,6 +136,13 @@ object TerminalApp {
                     handlerMap["embed"] = h
                     handlerMap["embed-text"] = h
                     handlerMap["embed-image"] = h
+                }
+                "device.keep_awake@1" -> {
+                    handlerMap["keep-awake"] = h
+                    handlerMap["keep_awake"] = h
+                    handlerMap["keepawake"] = h
+                    handlerMap["device.keep_awake"] = h
+                    handlerMap["wakelock"] = h
                 }
             }
         }

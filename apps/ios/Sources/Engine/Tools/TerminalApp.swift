@@ -32,7 +32,8 @@ public enum TerminalApp {
             PrintTool(),
             CodeGenerateTool(),
             LibSignalTool(),
-            VectorizeTool()
+            VectorizeTool(),
+            KeepAwakeTool()
         ]
 
         var handlerMap: [String: ToolHandler] = [:]
@@ -66,6 +67,7 @@ public enum TerminalApp {
         "device.printer@1": ["print", "printer", "device.printer"],
         "vision.generate_code@1": ["code-generate", "code_gen", "generate-code", "barcode-generate", "qr-generate", "vision.generate_code"],
         "crypto.signal@1": ["signal", "crypto.signal"],
-        "vectorize": ["vector", "embed", "embed-text", "embed-image"]
+        "vectorize": ["vector", "embed", "embed-text", "embed-image"],
+        "device.keep_awake@1": ["keep-awake", "keep_awake", "keepawake", "device.keep_awake", "wakelock"]
     ]
 }

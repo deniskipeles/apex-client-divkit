@@ -25,19 +25,55 @@ cd apps/android
 
 ### Environment
 
-`JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64`, `ANDROID_HOME=/home/openhands/Android/Sdk`.
-The sandbox can be reset between sessions, wiping the JDK and Android SDK. To restore:
+`apps/android/build-apks.sh` is self-bootstrapping: it needs only `bash`, `curl` (or `wget`)
+and `tar`. On a bare machine it downloads Eclipse Temurin 21 and the Android command-line
+tools into `~/.apex-toolchain` (override with `APEX_TOOLCHAIN_DIR`), installs
+`platform-tools`, `platforms;android-36.1` and `build-tools;36.0.0`, and writes the SDK
+licence hashes. Zip extraction falls back to `python3`/`jar` when `unzip` is missing.
 
-```bash
-sudo apt-get install -y openjdk-21-jdk-headless unzip curl
-# cmdline-tools 11076708 → /home/openhands/Android/Sdk/cmdline-tools/latest
-sdkmanager --licenses
-sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
-```
+Provisioning is additive — a usable `JAVA_HOME`/`ANDROID_HOME`/`java` on `PATH` always wins
+and is never overwritten, and only missing SDK packages are installed. `local.properties`
+`sdk.dir` is rewritten only when the recorded path no longer exists.
 
 `assembleRelease` needs `STORE_PASSWORD`/`KEY_PASSWORD` (see `build-apks.sh`; the default
 keystore `my-upload-key.jks` uses `storepass123`). R8 itself runs fine without them —
 only `packageRelease` fails when the passwords are unset.
+
+To provision the toolchains by hand instead (e.g. to share them across projects):
+
+```bash
+sudo apt-get install -y openjdk-21-jdk-headless unzip curl
+# cmdline-tools → $ANDROID_HOME/cmdline-tools/latest
+sdkmanager --licenses
+sdkmanager "platform-tools" "platforms;android-36.1" "build-tools;36.0.0"
+```
+
+ML assets (`src/main/assets/*.tflite`) are fetched on demand by the script and gitignored;
+set `SKIP_ML_ASSETS=true` to reuse whatever is already there.
+
+### Desktop (Tauri v2) and iOS Swift builds
+
+Both toolchains are absent by default and can be installed into `$HOME/toolchain`:
+
+```bash
+# Rust (desktop): install with rustup, then PATH=$HOME/toolchain/cargo/bin:$PATH
+# Tauri Linux deps (needs sudo):
+sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libsoup-3.0-dev \
+  libjavascriptcoregtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev \
+  build-essential pkg-config libssl-dev
+cargo check --manifest-path apps/desktop/src-tauri/Cargo.toml
+cargo test  --manifest-path apps/desktop/src-tauri/Cargo.toml --lib
+
+# Swift (iOS): download swift-6.x-RELEASE-debian12 from swift.org into $HOME/toolchain
+sudo apt-get install -y binutils-gold libcurl4-openssl-dev libncurses-dev libsqlite3-dev libxml2-dev
+cd apps/ios && swift build && swift test   # Engine + Contract build/test on Linux
+```
+
+The iOS Xcode app target (`apps/ios/*.swift`) cannot be compiled on Linux; only the
+SwiftPM `Contract`/`Engine` package under `apps/ios/Sources` is verifiable there. When
+editing `Sources/Contract/TerminalRegistry.swift` or `Sources/Engine/Tools/TerminalApp.swift`,
+keep `aliases` byte-identical to `packages/contract/tools.json` — `ContractTests.testAliasesMatchToolsJson`
+and the Android `CapabilityContractTest` both assert this.
 
 - `apps/ios` is a SwiftPM package (`Package.swift`) that builds and tests on Linux CI:
   `swift build` / `swift test`. The `CSQLite` system-library target binds the platform
@@ -150,10 +186,18 @@ with per-notification actions. Wired through four files:
    unit-testable on plain JVM.
 2. `engine/notifications/NotificationSeed.kt` — Android-free demo seed (`demo(now)`,
    `incoming(workspaceId, now, sequence)`), keyed by the demo tenant ids.
-3. `com/example/ui/NotificationTray.kt` — Compose UI. `NotificationTrayOverlay` builds a
-   `NotificationTrayActions` bundle and renders `NotificationTrayPanel`, a **dumb,
-   state-driven** composable driven entirely by injected callbacks (so tests render it without
-   a ViewModel). Group glyphs use `engine.icons.nativeIconVector(reference)`.
+3. `com/example/ui/NotificationTray.kt` — Compose UI. `rememberNotificationTrayActions`
+   builds the `NotificationTrayActions` bundle shared by both surfaces;
+   `NotificationTrayOverlay` renders `NotificationTrayPanel` (the dropdown) and `NotificationFeed`
+   is the grouped/expandable list they both reuse. Both panels are **dumb, state-driven**
+   composables driven entirely by injected callbacks (so tests render them without a ViewModel).
+   Group glyphs use `engine.icons.nativeIconVector(reference)`.
+   `com/example/ui/NotificationsTab.kt` adds the full-page surface: `NotificationsTab` wraps
+   `NotificationsTabContent` (also state-driven) with a summary header, per-workspace filter
+   chips and the same feed. It is reachable from the launcher bottom nav (`nav_notifications`,
+   badged with the global unread count) and from the in-tenant app bar bell / overflow menu,
+   where it renders inside the host bottom sheet with `showHeader = false` to avoid a duplicate
+   title.
 4. `com/example/enginehost/SduiEngineViewModel.kt` — state (`notifications`,
    `expandedNotificationGroups`, `notificationShowRead`, ...) + actions. All mutations funnel
    through `mutateNotifications { ... }`, so unread counts, group ordering and the top-bar
@@ -170,6 +214,10 @@ Invariants enforced by `NotificationCenterTest` + `NotificationTrayUiTest`:
   `NativeIconCatalog` — a typo'd icon name fails the build.
 - The tray panel renders grouped headers, expansion revealing rows with the right-aligned
   workspace glyph (`notification_row_glyph_<id>`) and View/Mark read/Mute actions.
+- `NotificationsTabUiTest` pins the tab: header summary copy, the "All" + per-workspace filter
+  chips narrowing the feed, the settings panel, embedded (`showHeader = false`) mode, and the
+  empty/loading states. The chip row is a `LazyRow`, so those assertions scroll with
+  `performScrollToNode` instead of assuming every chip is composed.
 
 Adding a notification source = feed items through `NotificationCenter.add` into
 `setNotifications`, or add a seed in `NotificationSeed`. New notification kinds add a

@@ -920,6 +920,74 @@ class ExampleUnitTest {
     }
 
     // ------------------------------------------------------------------
+    // tools://keep-awake (device.keep_awake@1)
+    // ------------------------------------------------------------------
+
+    @Test
+    fun keepAwakeTool_isRegisteredAndAdvertisesWakeLockPermission() {
+        val manifest = TerminalApp.registry.manifest()
+        assertTrue(manifest.has("device.keep_awake@1"))
+        assertTrue(manifest.has("keep-awake"))
+        val handler = TerminalApp.registry.resolve("device.keep_awake@1")
+        assertNotNull(handler)
+        assertEquals("device.keep_awake@1", handler!!.capability)
+        assertTrue(handler.requiredPermissions.contains("android.permission.WAKE_LOCK"))
+    }
+
+    @Test
+    fun keepAwakeTool_schemaIsRegisteredWithAllOperations() {
+        val schema = engine.tools.NativeToolsSuite.registeredSchemas.first { it.toolId == "keep-awake" }
+        assertEquals(
+            listOf("enable", "disable", "toggle", "status"),
+            schema.supportedOperations
+        )
+    }
+
+    @Test
+    fun keepAwakeTool_enablesAndReportsStateThroughSink() = kotlinx.coroutines.runBlocking {
+        var sinkState: Boolean? = null
+        engine.tools.impl.KeepAwakeTool.sink = { enabled ->
+            sinkState = enabled
+            true
+        }
+        try {
+            val enable = engine.tools.NativeToolsSuite.execute(
+                url = "tools://keep-awake/enable",
+                payload = buildJsonObject {
+                    put("level", "screen")
+                    put("timeout_ms", "300000")
+                }
+            )
+            assertEquals("keep-awake", enable.toolId)
+            assertEquals("ENABLED", enable.resultData.jsonObject["status"]?.jsonPrimitive?.contentOrNull)
+            assertEquals("ENABLED", (enable.outputVariables["user.keep_awake_status"] as DivVariableValue.Str).value)
+            assertEquals(true, sinkState)
+
+            val disable = engine.tools.NativeToolsSuite.execute(url = "tools://keep-awake/disable", payload = buildJsonObject {})
+            assertEquals("DISABLED", disable.resultData.jsonObject["status"]?.jsonPrimitive?.contentOrNull)
+            assertEquals(false, sinkState)
+        } finally {
+            engine.tools.impl.KeepAwakeTool.sink = null
+        }
+    }
+
+    @Test
+    fun keepAwakeTool_statusReportsCapabilities() = kotlinx.coroutines.runBlocking {
+        val status = engine.tools.NativeToolsSuite.execute(url = "tools://keep-awake/status", payload = buildJsonObject {})
+        assertEquals("keep-awake", status.toolId)
+        assertTrue(status.resultData.jsonObject.containsKey("supported_levels"))
+        assertTrue(status.resultData.jsonObject.containsKey("supported_operations"))
+    }
+
+    @Test
+    fun demoCard_surfacesKeepAwakeBlock() {
+        val spec = WorkspaceProvisioner.defaultWorkspaces.first()
+        val json = WorkspaceProvisioner.buildDefaultDivKitCardJson(spec)
+        assertTrue(json.contains("tools://keep-awake/enable"))
+        assertTrue(json.contains("tools://keep-awake/disable"))
+    }
+
+    // ------------------------------------------------------------------
     // Built-in demo workspace showcase (DivKit card)
     // ------------------------------------------------------------------
 

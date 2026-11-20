@@ -254,3 +254,65 @@ public final class ImageManipulationTool: ToolHandler {
         ])
     }
 }
+
+/// Universal keep-awake / screen wake-lock controller ("device.keep_awake@1"). Mirrors
+/// Android `KeepAwakeTool`.
+///
+/// Actual actuation is delegated to a platform sink (`UIApplication.isIdleTimerDisabled` on
+/// iOS); when unset the tool still reports success with the same metadata, matching Android's
+/// headless/emulated path.
+public final class KeepAwakeTool: ToolHandler {
+    public let capability = "device.keep_awake@1"
+    public let requiredPermissions: Set<String> = []
+
+    /// Platform wake-lock bridge: receives the desired enabled state and returns whether the
+    /// platform applied it.
+    public nonisolated(unsafe) static var sink: ((_ enabled: Bool) -> Bool)?
+    nonisolated(unsafe) private static var enabledState = false
+
+    public init() {}
+
+    public static func isEnabled() -> Bool { enabledState }
+
+    public func invoke(args: ToolArgs, ctx: ToolContext) async -> ToolResult {
+        let op = (args["op"] ?? args["action"] ?? args["operation"] ?? "enable").lowercased()
+        switch op {
+        case "disable", "off", "release", "stop":
+            return setEnabled(false, args)
+        case "toggle":
+            return setEnabled(!KeepAwakeTool.enabledState, args)
+        case "status", "get_status", "capabilities":
+            return status()
+        default:
+            return setEnabled(true, args)
+        }
+    }
+
+    private func setEnabled(_ enabled: Bool, _ args: ToolArgs) -> ToolResult {
+        let level = (args["level"] ?? args["mode"] ?? "screen").lowercased()
+        let timeoutMs = max(args.getInt("timeout_ms", default: 0), 0)
+        let tag = args["tag"] ?? "apexkit:keep-awake"
+
+        _ = KeepAwakeTool.sink?(enabled)
+        KeepAwakeTool.enabledState = enabled
+
+        return ToolSupport.success([
+            "status": enabled ? "ENABLED" : "DISABLED",
+            "enabled": enabled,
+            "level": level,
+            "timeout_ms": timeoutMs,
+            "tag": tag,
+            "timestamp": ToolSupport.nowMs()
+        ])
+    }
+
+    private func status() -> ToolResult {
+        ToolSupport.success([
+            "status": KeepAwakeTool.enabledState ? "ENABLED" : "DISABLED",
+            "enabled": KeepAwakeTool.enabledState,
+            "supported_levels": ["screen", "full", "partial"],
+            "supported_operations": ["enable", "disable", "toggle", "status"],
+            "timestamp": ToolSupport.nowMs()
+        ])
+    }
+}

@@ -551,6 +551,16 @@ object WorkspaceProvisioner {
                         put("value", "0")
                     }
                     addJsonObject {
+                        put("name", "user.keep_awake_status")
+                        put("type", "string")
+                        put("value", "DISABLED")
+                    }
+                    addJsonObject {
+                        put("name", "user.keep_awake_enabled")
+                        put("type", "string")
+                        put("value", "false")
+                    }
+                    addJsonObject {
                         put("name", "user.icon_name")
                         put("type", "string")
                         put("value", "cart")
@@ -901,6 +911,7 @@ object WorkspaceProvisioner {
                                 add(SduiOnFlyBuilder.buildRealtimeWsToolBlock(spec))
                                 add(SduiOnFlyBuilder.buildNetToolBlock(spec))
                                 add(SduiOnFlyBuilder.buildPrintToolBlock(spec))
+                                add(SduiOnFlyBuilder.buildKeepAwakeToolBlock(spec))
 
                                 // 5a. Native icon scheme (icons://native/<name>)
                                 add(SduiOnFlyBuilder.buildNativeIconSchemeBlock(spec))

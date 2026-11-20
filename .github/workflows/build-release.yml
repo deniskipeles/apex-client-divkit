@@ -39,7 +39,8 @@ jobs:
       - name: Accept Android SDK Licenses & Install Platform Tools
         run: |
           yes | sdkmanager --licenses || true
-          sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0" || true
+          # build.gradle.kts compiles against API 36 minor level 1.
+          sdkmanager "platform-tools" "platforms;android-36.1" "build-tools;36.0.0"
 
       - name: Setup Environment Files
         working-directory: apps/android

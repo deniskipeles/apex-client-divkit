@@ -1113,6 +1113,93 @@ object SduiOnFlyBuilder {
     }
 
     /**
+     * Keep-Awake / Screen Wake-Lock Controller Block (device.keep_awake@1 / tools://keep-awake).
+     */
+    fun buildKeepAwakeToolBlock(spec: TenantWorkspaceSpec): JsonObject = buildJsonObject {
+        put("type", "container")
+        put("orientation", "vertical")
+        put("background_color", "#1E293B")
+        put("corner_radius", 12)
+        putJsonObject("paddings") {
+            put("left", 12); put("right", 12); put("top", 10); put("bottom", 10)
+        }
+        putJsonObject("border") {
+            put("corner_radius", 12)
+            putJsonObject("stroke") {
+                put("color", "#38BDF8")
+                put("width", 1)
+            }
+        }
+        putJsonArray("items") {
+            addJsonObject {
+                put("type", "text")
+                put("text", "☀️ KEEP-AWAKE / SCREEN WAKE-LOCK (tools://keep-awake)")
+                put("font_size", 11)
+                put("font_weight", "bold")
+                put("text_color", "#7DD3FC")
+            }
+            addJsonObject {
+                put("type", "text")
+                put("text", "Status: @{user.keep_awake_status} • Enabled: @{user.keep_awake_enabled}")
+                put("font_size", 12)
+                put("text_color", "#E0F2FE")
+                put("font_family", "monospace")
+            }
+            addJsonObject {
+                put("type", "container")
+                put("orientation", "horizontal")
+                put("item_spacing", 8)
+                putJsonArray("items") {
+                    addJsonObject {
+                        put("type", "container")
+                        put("weight", 1f)
+                        putJsonArray("items") {
+                            add(
+                                buildNativeToolTriggerBlock(
+                                    toolId = "keep-awake",
+                                    operation = "enable",
+                                    label = "Hold Screen Awake",
+                                    subtitle = "tools://keep-awake/enable • 5 min",
+                                    icon = "bell",
+                                    backgroundColor = "#0284C7",
+                                    textColor = "#FFFFFF",
+                                    options = mapOf("level" to "screen", "timeout_ms" to "300000"),
+                                    outputMapping = mapOf(
+                                        "status" to "user.keep_awake_status",
+                                        "enabled" to "user.keep_awake_enabled"
+                                    )
+                                )
+                            )
+                        }
+                    }
+                    addJsonObject {
+                        put("type", "container")
+                        put("weight", 1f)
+                        putJsonArray("items") {
+                            add(
+                                buildNativeToolTriggerBlock(
+                                    toolId = "keep-awake",
+                                    operation = "disable",
+                                    label = "Release Wake-Lock",
+                                    subtitle = "tools://keep-awake/disable",
+                                    icon = "volume_off",
+                                    backgroundColor = "#075985",
+                                    textColor = "#FFFFFF",
+                                    options = mapOf("op" to "disable"),
+                                    outputMapping = mapOf(
+                                        "status" to "user.keep_awake_status",
+                                        "enabled" to "user.keep_awake_enabled"
+                                    )
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
      * LibSignal End-to-End Encrypted Terminal Session Block
      */
     fun buildLibSignalToolBlock(spec: TenantWorkspaceSpec): JsonObject = buildJsonObject {

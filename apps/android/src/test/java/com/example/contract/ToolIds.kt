@@ -22,7 +22,8 @@ object ToolIds {
         "network.realtime@1",
         "network.transfer@1",
         "device.printer@1",
-        "vision.generate_code@1"
+        "vision.generate_code@1",
+        "device.keep_awake@1"
     )
 
     val ALIASES: Map<String, List<String>> = mapOf(
@@ -45,6 +46,7 @@ object ToolIds {
         "network.realtime@1" to listOf("realtime-ws", "realtime_ws", "network.realtime", "realtime"),
         "network.transfer@1" to listOf("net", "network.transfer", "tools.net"),
         "device.printer@1" to listOf("print", "printer", "device.printer"),
-        "vision.generate_code@1" to listOf("code-generate", "code_gen", "generate-code", "barcode-generate", "qr-generate", "vision.generate_code")
+        "vision.generate_code@1" to listOf("code-generate", "code_gen", "generate-code", "barcode-generate", "qr-generate", "vision.generate_code"),
+        "device.keep_awake@1" to listOf("keep-awake", "keep_awake", "keepawake", "device.keep_awake", "wakelock")
     )
 }

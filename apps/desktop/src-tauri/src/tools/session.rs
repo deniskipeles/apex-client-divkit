@@ -42,6 +42,25 @@ pub async fn offline_cache(_app: &AppHandle, args: Value, workspace: &str) -> Re
     }))
 }
 
+/// `device.keep_awake@1` — screen / wake-lock controller. Mirrors Android `KeepAwakeTool`.
+///
+/// The desktop engine has no physical screen to hold awake, so this reports the same result
+/// shape the mobile engines emit; the host may map `enabled` onto an OS idle-inhibitor.
+pub async fn keep_awake(_app: &AppHandle, args: Value) -> Result<Value, ToolError> {
+    let operation = str_arg(&args, "op").unwrap_or("enable");
+    let level = str_arg(&args, "level").unwrap_or("screen");
+    let tag = str_arg(&args, "tag").unwrap_or("apexkit:keep-awake");
+    let enabled = !matches!(operation, "disable" | "off" | "release" | "stop");
+    Ok(json!({
+        "state": "ok",
+        "status": if enabled { "ENABLED" } else { "DISABLED" },
+        "enabled": enabled,
+        "level": level,
+        "tag": tag,
+        "timestamp": now_ms(),
+    }))
+}
+
 /// `network.realtime@1` — realtime WSS/SSE channel. Mirrors Android `RealtimeWsTool`.
 pub async fn realtime(_app: &AppHandle, args: Value) -> Result<Value, ToolError> {
     let operation = op(&args, "connect");

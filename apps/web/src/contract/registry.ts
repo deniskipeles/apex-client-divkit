@@ -29,6 +29,7 @@ export const ALIASES: Record<string, string[]> = {
   'network.transfer@1': ['net', 'network.transfer', 'tools.net'],
   'device.printer@1': ['print', 'printer', 'device.printer'],
   'vision.generate_code@1': ['code-generate', 'code_gen', 'generate-code', 'barcode-generate', 'qr-generate', 'vision.generate_code'],
+  'device.keep_awake@1': ['keep-awake', 'keep_awake', 'keepawake', 'device.keep_awake', 'wakelock'],
 };
 
 export class TerminalRegistry {
