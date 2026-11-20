@@ -64,6 +64,53 @@ data class NotificationTrayActions(
 )
 
 /**
+ * Wires [NotificationTrayActions] to [SduiEngineViewModel] so both the dropdown tray and the
+ * full-page Notifications tab drive the same state. [onDismiss] runs after an action that
+ * navigates away (open workspace / view notification).
+ */
+@Composable
+internal fun rememberNotificationTrayActions(
+    uiState: SduiEngineUiState,
+    viewModel: SduiEngineViewModel,
+    onDismiss: () -> Unit
+): NotificationTrayActions = remember(viewModel, uiState) {
+    NotificationTrayActions(
+        onMarkAllRead = { viewModel.markAllNotificationsRead() },
+        onToggleSettings = { viewModel.setNotificationSettingsOpen(!uiState.notificationSettingsOpen) },
+        onClose = onDismiss,
+        onShowReadChange = { viewModel.setNotificationShowRead(it) },
+        onSimulateIncoming = { viewModel.simulateIncomingNotification() },
+        onToggleGroup = { viewModel.toggleNotificationGroup(it) },
+        onOpenWorkspace = { workspaceId ->
+            uiState.workspaces.firstOrNull { it.tenantId == workspaceId }
+                ?.let { viewModel.openTenantWorkspace(it) }
+            onDismiss()
+        },
+        onMarkWorkspaceRead = { group ->
+            viewModel.markWorkspaceNotificationsRead(group.workspaceId, group.workspaceName)
+        },
+        onMuteWorkspaceToggle = { group ->
+            if (group.isMuted) {
+                viewModel.unmuteNotificationWorkspace(group.workspaceId, group.workspaceName)
+            } else {
+                viewModel.muteNotificationWorkspace(group.workspaceId, group.workspaceName)
+            }
+        },
+        onClearWorkspace = { group ->
+            viewModel.dismissNotificationWorkspace(group.workspaceId, group.workspaceName)
+        },
+        onView = { notification ->
+            viewModel.openNotificationTarget(notification)
+            onDismiss()
+        },
+        onMarkRead = { viewModel.markNotificationRead(it.id) },
+        onMute = { viewModel.muteNotification(it.id) },
+        onToggleExpand = { viewModel.toggleNotificationExpanded(it.id) },
+        onDismissNotification = { viewModel.dismissNotification(it.id) }
+    )
+}
+
+/**
  * Advanced workspace notifications tray.
  *
  * Groups notifications by workspace (Reddit-style), expands each group into individual rows whose
@@ -81,42 +128,7 @@ fun NotificationTrayOverlay(
     viewModel: SduiEngineViewModel,
     onDismiss: () -> Unit
 ) {
-    val actions = remember(viewModel, uiState) {
-        NotificationTrayActions(
-            onMarkAllRead = { viewModel.markAllNotificationsRead() },
-            onToggleSettings = { viewModel.setNotificationSettingsOpen(!uiState.notificationSettingsOpen) },
-            onClose = onDismiss,
-            onShowReadChange = { viewModel.setNotificationShowRead(it) },
-            onSimulateIncoming = { viewModel.simulateIncomingNotification() },
-            onToggleGroup = { viewModel.toggleNotificationGroup(it) },
-            onOpenWorkspace = { workspaceId ->
-                uiState.workspaces.firstOrNull { it.tenantId == workspaceId }
-                    ?.let { viewModel.openTenantWorkspace(it) }
-                onDismiss()
-            },
-            onMarkWorkspaceRead = { group ->
-                viewModel.markWorkspaceNotificationsRead(group.workspaceId, group.workspaceName)
-            },
-            onMuteWorkspaceToggle = { group ->
-                if (group.isMuted) {
-                    viewModel.unmuteNotificationWorkspace(group.workspaceId, group.workspaceName)
-                } else {
-                    viewModel.muteNotificationWorkspace(group.workspaceId, group.workspaceName)
-                }
-            },
-            onClearWorkspace = { group ->
-                viewModel.dismissNotificationWorkspace(group.workspaceId, group.workspaceName)
-            },
-            onView = { notification ->
-                viewModel.openNotificationTarget(notification)
-                onDismiss()
-            },
-            onMarkRead = { viewModel.markNotificationRead(it.id) },
-            onMute = { viewModel.muteNotification(it.id) },
-            onToggleExpand = { viewModel.toggleNotificationExpanded(it.id) },
-            onDismissNotification = { viewModel.dismissNotification(it.id) }
-        )
-    }
+    val actions = rememberNotificationTrayActions(uiState, viewModel, onDismiss)
 
     Box(modifier = Modifier.fillMaxSize()) {
         // Scrim: tapping outside the tray closes it.
@@ -194,46 +206,68 @@ internal fun NotificationTrayPanel(
             when {
                 uiState.notificationsLoading && groups.isEmpty() -> NotificationSkeletonList()
                 groups.isEmpty() -> NotificationEmptyState()
-                else -> LazyColumn(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("notification_tray_list")
-                ) {
-                    groups.forEachIndexed { index, group ->
-                        val expanded = group.workspaceId in uiState.expandedNotificationGroups
-                        item(key = "group_${group.workspaceId}") {
-                            Column {
-                                WorkspaceGroupHeader(
-                                    group = group,
-                                    expanded = expanded,
-                                    now = now,
-                                    onToggle = { actions.onToggleGroup(group.workspaceId) },
-                                    onOpenWorkspace = { actions.onOpenWorkspace(group.workspaceId) },
-                                    onMarkAllRead = { actions.onMarkWorkspaceRead(group) },
-                                    onMuteToggle = { actions.onMuteWorkspaceToggle(group) },
-                                    onClear = { actions.onClearWorkspace(group) }
-                                )
-                                if (index != groups.lastIndex) {
-                                    HorizontalDivider(color = colorScheme.outline.copy(alpha = 0.35f))
-                                }
-                            }
-                        }
+                else -> NotificationFeed(
+                    groups = groups,
+                    expandedGroups = uiState.expandedNotificationGroups,
+                    now = now,
+                    compact = compact,
+                    actions = actions,
+                    modifier = Modifier.testTag("notification_tray_list")
+                )
+            }
+        }
+    }
+}
 
-                        if (expanded) {
-                            items(group.notifications, key = { "ntf_${it.id}" }) { notification ->
-                                NotificationRow(
-                                    notification = notification,
-                                    now = now,
-                                    compact = compact,
-                                    onView = { actions.onView(notification) },
-                                    onMarkRead = { actions.onMarkRead(notification) },
-                                    onMute = { actions.onMute(notification) },
-                                    onToggleExpand = { actions.onToggleExpand(notification) },
-                                    onDismiss = { actions.onDismissNotification(notification) }
-                                )
-                            }
-                        }
+/**
+ * Grouped, expandable notification list shared by the dropdown tray and the Notifications tab.
+ *
+ * [modifier] is applied to the scrolling container, so the tab can let the list fill the page
+ * while the tray caps its height.
+ */
+@Composable
+internal fun NotificationFeed(
+    groups: List<NotificationGroup>,
+    expandedGroups: Set<String>,
+    now: Long,
+    compact: Boolean,
+    actions: NotificationTrayActions,
+    modifier: Modifier = Modifier
+) {
+    val colorScheme = MaterialTheme.colorScheme
+    LazyColumn(modifier = modifier.fillMaxWidth()) {
+        groups.forEachIndexed { index, group ->
+            val expanded = group.workspaceId in expandedGroups
+            item(key = "group_${group.workspaceId}") {
+                Column {
+                    WorkspaceGroupHeader(
+                        group = group,
+                        expanded = expanded,
+                        now = now,
+                        onToggle = { actions.onToggleGroup(group.workspaceId) },
+                        onOpenWorkspace = { actions.onOpenWorkspace(group.workspaceId) },
+                        onMarkAllRead = { actions.onMarkWorkspaceRead(group) },
+                        onMuteToggle = { actions.onMuteWorkspaceToggle(group) },
+                        onClear = { actions.onClearWorkspace(group) }
+                    )
+                    if (index != groups.lastIndex) {
+                        HorizontalDivider(color = colorScheme.outline.copy(alpha = 0.35f))
                     }
+                }
+            }
+
+            if (expanded) {
+                items(group.notifications, key = { "ntf_${it.id}" }) { notification ->
+                    NotificationRow(
+                        notification = notification,
+                        now = now,
+                        compact = compact,
+                        onView = { actions.onView(notification) },
+                        onMarkRead = { actions.onMarkRead(notification) },
+                        onMute = { actions.onMute(notification) },
+                        onToggleExpand = { actions.onToggleExpand(notification) },
+                        onDismiss = { actions.onDismissNotification(notification) }
+                    )
                 }
             }
         }
@@ -729,7 +763,7 @@ private fun MutedBadge() {
 }
 
 @Composable
-private fun NotificationEmptyState() {
+internal fun NotificationEmptyState() {
     val colorScheme = MaterialTheme.colorScheme
     Column(
         modifier = Modifier
@@ -760,7 +794,7 @@ private fun NotificationEmptyState() {
 }
 
 @Composable
-private fun NotificationSkeletonList() {
+internal fun NotificationSkeletonList() {
     val colorScheme = MaterialTheme.colorScheme
     Column(
         modifier = Modifier

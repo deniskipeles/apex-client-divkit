@@ -56,7 +56,7 @@ private enum class ActiveHostOverlay {
     SCHEMA_ROLLBACK,
     SDUI_BUILDER,
     FILES,
-    SECURITY_KMP
+    NOTIFICATIONS
 }
 
 /**
@@ -781,13 +781,7 @@ fun PosTerminalTab(
                             // Notification Bell Icon with Red Dot Badge
                             Box {
                                 IconButton(
-                                    onClick = {
-                                        Toast.makeText(
-                                            context,
-                                            "${spec.unreadCount} kitchen/POS alerts logged for ${spec.displayName}",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                    },
+                                    onClick = { activeOverlay = ActiveHostOverlay.NOTIFICATIONS },
                                     modifier = Modifier.size(38.dp).testTag("appbar_notifications_button")
                                 ) {
                                     Icon(
@@ -881,11 +875,11 @@ fun PosTerminalTab(
                                         }
                                     )
                                     DropdownMenuItem(
-                                        text = { Text("Security & Contract Inspector") },
-                                        leadingIcon = { Icon(Icons.Default.Security, contentDescription = null) },
+                                        text = { Text("Notifications") },
+                                        leadingIcon = { Icon(Icons.Default.Notifications, contentDescription = null) },
                                         onClick = {
                                             showOverflowMenu = false
-                                            activeOverlay = ActiveHostOverlay.SECURITY_KMP
+                                            activeOverlay = ActiveHostOverlay.NOTIFICATIONS
                                         }
                                     )
                                     HorizontalDivider()
@@ -925,7 +919,7 @@ fun PosTerminalTab(
         )
     }
 
-    // Other Host Engine Overlay Modal Sheets (Schema Rollback, SDUI Builder, SQLite & Sync, Security & KMP)
+    // Other Host Engine Overlay Modal Sheets (Schema Rollback, SDUI Builder, SQLite & Sync, Notifications)
     if (activeOverlay != ActiveHostOverlay.NONE && activeOverlay != ActiveHostOverlay.WORKSPACE_SETTINGS) {
         ModalBottomSheet(
             onDismissRequest = { activeOverlay = ActiveHostOverlay.NONE },
@@ -948,8 +942,8 @@ fun PosTerminalTab(
                                 "Receive / Build New DivKit SDUI Schema"
                             ActiveHostOverlay.FILES ->
                                 "Workspace Files (${spec.tenantId})"
-                            ActiveHostOverlay.SECURITY_KMP ->
-                                "Zero-Trust Security & Contract Architecture"
+                            ActiveHostOverlay.NOTIFICATIONS ->
+                                "Workspace Notifications"
                             else -> ""
                         },
                         fontWeight = FontWeight.Bold,
@@ -983,9 +977,10 @@ fun PosTerminalTab(
                         viewModel = viewModel,
                         initialFolderId = spec.tenantId
                     )
-                    ActiveHostOverlay.SECURITY_KMP -> SecurityAndKmpTab(
+                    ActiveHostOverlay.NOTIFICATIONS -> NotificationsTab(
                         uiState = uiState,
-                        viewModel = viewModel
+                        viewModel = viewModel,
+                        showHeader = false
                     )
                     else -> Unit
                 }
