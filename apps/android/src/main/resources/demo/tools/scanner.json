@@ -1,0 +1,138 @@
+{
+    "type": "container",
+    "orientation": "vertical",
+    "background_color": "#0F291E",
+    "corner_radius": 12,
+    "paddings": {
+        "left": 12,
+        "right": 12,
+        "top": 10,
+        "bottom": 10
+    },
+    "border": {
+        "corner_radius": 12,
+        "stroke": {
+            "color": "#10B981",
+            "width": 1
+        }
+    },
+    "items": [
+        {
+            "type": "text",
+            "text": "📷 UNIFIED OPTICAL SCANNER + OCR (tools://scan)",
+            "font_size": 11,
+            "font_weight": "bold",
+            "text_color": "#6EE7B7"
+        },
+        {
+            "type": "text",
+            "text": "Decoded: @{user.scanned_code} (@{user.scanned_format} • @{user.scanned_type}) → @{user.scan_status}",
+            "font_size": 12,
+            "text_color": "#D1FAE5",
+            "font_family": "monospace"
+        },
+        {
+            "type": "text",
+            "text": "OCR: @{user.ocr_text} (conf @{user.ocr_confidence})",
+            "font_size": 12,
+            "text_color": "#A7F3D0",
+            "font_family": "monospace"
+        },
+        {
+            "type": "container",
+            "orientation": "horizontal",
+            "item_spacing": 8,
+            "items": [
+                {
+                    "type": "container",
+                    "weight": 1.0,
+                    "items": [
+                        {
+                            "type": "button",
+                            "id": "tool_scan_scan",
+                            "text": "Scan 1D Barcode",
+                            "subtitle": "tools://scan/scan (EAN-13 / UPC)",
+                            "icon": "scanner",
+                            "background_color": "#059669",
+                            "text_color": "#FFFFFF",
+                            "corner_radius": 10,
+                            "action": {
+                                "log_id": "exec_tool_scan_scan",
+                                "url": "tools://scan/scan",
+                                "payload": {
+                                    "operation": "scan",
+                                    "options": {
+                                        "target_format": "barcode"
+                                    },
+                                    "output": {
+                                        "raw_value": "user.scanned_code",
+                                        "format": "user.scanned_format",
+                                        "type": "user.scanned_type",
+                                        "status": "user.scan_status"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "container",
+                    "weight": 1.0,
+                    "items": [
+                        {
+                            "type": "button",
+                            "id": "tool_scan_scan",
+                            "text": "Scan 2D QR Code",
+                            "subtitle": "tools://scan/scan (DeepLink / Pay)",
+                            "icon": "qr_code",
+                            "background_color": "#0D9488",
+                            "text_color": "#FFFFFF",
+                            "corner_radius": 10,
+                            "action": {
+                                "log_id": "exec_tool_scan_scan",
+                                "url": "tools://scan/scan",
+                                "payload": {
+                                    "operation": "scan",
+                                    "options": {
+                                        "target_format": "qr"
+                                    },
+                                    "output": {
+                                        "raw_value": "user.scanned_code",
+                                        "format": "user.scanned_format",
+                                        "type": "user.scanned_type",
+                                        "status": "user.scan_status"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "button",
+            "id": "tool_scan_ocr",
+            "text": "Read Text from Image (OCR)",
+            "subtitle": "tools://scan/ocr • ML Kit Text Recognition v2 (Latin)",
+            "icon": "search",
+            "background_color": "#047857",
+            "text_color": "#FFFFFF",
+            "corner_radius": 10,
+            "action": {
+                "log_id": "exec_tool_scan_ocr",
+                "url": "tools://scan/ocr",
+                "payload": {
+                    "operation": "ocr",
+                    "options": {
+                        "uri": "${demoImageUri}"
+                    },
+                    "output": {
+                        "text": "user.ocr_text",
+                        "confidence": "user.ocr_confidence",
+                        "block_count": "user.ocr_block_count"
+                    }
+                }
+            }
+        }
+    ]
+}

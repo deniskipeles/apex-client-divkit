@@ -1,0 +1,97 @@
+{
+    "type": "container",
+    "orientation": "vertical",
+    "background_color": "#0F291E",
+    "corner_radius": 12,
+    "paddings": {
+        "left": 12,
+        "right": 12,
+        "top": 10,
+        "bottom": 10
+    },
+    "border": {
+        "corner_radius": 12,
+        "stroke": {
+            "color": "#10B981",
+            "width": 1
+        }
+    },
+    "items": [
+        {
+            "type": "text",
+            "text": "📋 CLIPBOARD & REALTIME NOTIFICATIONS (tools://clipboard & tools://push)",
+            "font_size": 11,
+            "font_weight": "bold",
+            "text_color": "#6EE7B7"
+        },
+        {
+            "type": "text",
+            "text": "Clipboard: @{user.clipboard_content} • Alert: @{user.last_push_alert}",
+            "font_size": 12,
+            "text_color": "#D1FAE5",
+            "font_family": "monospace"
+        },
+        {
+            "type": "container",
+            "orientation": "horizontal",
+            "item_spacing": 8,
+            "items": [
+                {
+                    "type": "container",
+                    "weight": 1.0,
+                    "items": [
+                        {
+                            "type": "button",
+                            "id": "tool_clipboard_copy",
+                            "text": "Copy Receipt",
+                            "subtitle": "tools://clipboard/copy",
+                            "icon": "copy",
+                            "background_color": "#047857",
+                            "text_color": "#FFFFFF",
+                            "corner_radius": 10,
+                            "action": {
+                                "log_id": "exec_tool_clipboard_copy",
+                                "url": "tools://clipboard/copy",
+                                "payload": {
+                                    "operation": "copy",
+                                    "options": {
+                                        "text": "RECEIPT #8891 - Total $24.50 @ ${displayName}"
+                                    },
+                                    "output": {}
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "container",
+                    "weight": 1.0,
+                    "items": [
+                        {
+                            "type": "button",
+                            "id": "tool_push_send_alert",
+                            "text": "Kitchen Push Alert",
+                            "subtitle": "tools://push/send_alert",
+                            "icon": "bell",
+                            "background_color": "#0D9488",
+                            "text_color": "#FFFFFF",
+                            "corner_radius": 10,
+                            "action": {
+                                "log_id": "exec_tool_push_send_alert",
+                                "url": "tools://push/send_alert",
+                                "payload": {
+                                    "operation": "send_alert",
+                                    "options": {
+                                        "channel": "kitchen_dispatch",
+                                        "message": "Order #1042 Ready for Pickup"
+                                    },
+                                    "output": {}
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

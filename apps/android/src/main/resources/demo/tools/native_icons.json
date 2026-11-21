@@ -1,0 +1,173 @@
+{
+    "type": "container",
+    "orientation": "vertical",
+    "background_color": "#1E1B4B",
+    "corner_radius": 12,
+    "paddings": {
+        "left": 12,
+        "right": 12,
+        "top": 10,
+        "bottom": 10
+    },
+    "border": {
+        "corner_radius": 12,
+        "stroke": {
+            "color": "#818CF8",
+            "width": 1
+        }
+    },
+    "items": [
+        {
+            "type": "text",
+            "text": "🎨 NATIVE ICON SCHEME (icons://native/<name> • 285 icons)",
+            "font_size": 11,
+            "font_weight": "bold",
+            "text_color": "#A5B4FC"
+        },
+        {
+            "type": "text",
+            "text": "Resolved: @{user.icon_name} • Material: @{user.icon_material} • Category: @{user.icon_category}",
+            "font_size": 12,
+            "text_color": "#E0E7FF",
+            "font_family": "monospace"
+        },
+        {
+            "type": "container",
+            "orientation": "horizontal",
+            "item_spacing": 10,
+            "items": [
+                {
+                    "type": "image",
+                    "image_url": "icons://native/cart",
+                    "size": 26,
+                    "tint": "#C7D2FE"
+                },
+                {
+                    "type": "image",
+                    "image_url": "icons://native/bell",
+                    "size": 26,
+                    "tint": "#C7D2FE"
+                },
+                {
+                    "type": "image",
+                    "image_url": "icons://native/receipt",
+                    "size": 26,
+                    "tint": "#C7D2FE"
+                },
+                {
+                    "type": "image",
+                    "image_url": "icons://native/payment",
+                    "size": 26,
+                    "tint": "#C7D2FE"
+                },
+                {
+                    "type": "image",
+                    "image_url": "icons://native/inventory",
+                    "size": 26,
+                    "tint": "#C7D2FE"
+                },
+                {
+                    "type": "image",
+                    "image_url": "icons://native/printer",
+                    "size": 26,
+                    "tint": "#C7D2FE"
+                },
+                {
+                    "type": "image",
+                    "image_url": "icons://native/scan",
+                    "size": 26,
+                    "tint": "#C7D2FE"
+                },
+                {
+                    "type": "image",
+                    "image_url": "icons://native/warehouse",
+                    "size": 26,
+                    "tint": "#C7D2FE"
+                }
+            ]
+        },
+        {
+            "type": "container",
+            "orientation": "horizontal",
+            "item_spacing": 8,
+            "items": [
+                {
+                    "type": "container",
+                    "weight": 1.0,
+                    "items": [
+                        {
+                            "type": "button",
+                            "id": "icon_cart",
+                            "text": "Cart",
+                            "icon": "icons://native/cart",
+                            "background_color": "#4338CA",
+                            "text_color": "#F8FAFC",
+                            "corner_radius": 8,
+                            "action": {
+                                "log_id": "icon_pick_cart",
+                                "url": "icons://native/cart"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "container",
+                    "weight": 1.0,
+                    "items": [
+                        {
+                            "type": "button",
+                            "id": "icon_bell",
+                            "text": "Bell",
+                            "icon": "icons://native/bell",
+                            "background_color": "#7C3AED",
+                            "text_color": "#F8FAFC",
+                            "corner_radius": 8,
+                            "action": {
+                                "log_id": "icon_pick_bell",
+                                "url": "icons://native/bell"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "container",
+                    "weight": 1.0,
+                    "items": [
+                        {
+                            "type": "button",
+                            "id": "icon_receipt",
+                            "text": "Receipt",
+                            "icon": "icons://native/receipt",
+                            "background_color": "#2563EB",
+                            "text_color": "#F8FAFC",
+                            "corner_radius": 8,
+                            "action": {
+                                "log_id": "icon_pick_receipt",
+                                "url": "icons://native/receipt"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "container",
+                    "weight": 1.0,
+                    "items": [
+                        {
+                            "type": "button",
+                            "id": "icon_discount",
+                            "text": "Discount",
+                            "icon": "icons://native/discount",
+                            "background_color": "#DB2777",
+                            "text_color": "#F8FAFC",
+                            "corner_radius": 8,
+                            "action": {
+                                "log_id": "icon_pick_discount",
+                                "url": "icons://native/discount"
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

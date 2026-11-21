@@ -17,10 +17,17 @@ import engine.db.PendingSyncEntry
 import engine.db.WorkspaceDriverFactory
 import engine.db.WorkspaceManager
 import engine.db.currentAndroidContext
+import com.example.enginehost.demo.DemoCardRepository
+import engine.fs.FileOpenWith
 import engine.fs.FsEntry
 import engine.fs.WorkspaceFileManager
 import engine.fs.WorkspaceFileSystem
 import engine.fs.WorkspaceFolder
+import engine.navigation.CardEntry
+import engine.navigation.CardRegistry
+import engine.navigation.DivCardNavigator
+import engine.navigation.NavOp
+import engine.navigation.NavigationUrlParser
 import engine.notifications.NotificationCenter
 import engine.notifications.NotificationSeed
 import engine.notifications.WorkspaceNotification
@@ -78,6 +85,12 @@ data class SduiEngineUiState(
     val activeConfig: EngineConfig? = null,
     val keyPair: SigningKeyPair? = null,
     val verifiedDivKitJson: String = "",
+    /** Card currently on screen: the entry hub at route index 0, or a pushed tool card. */
+    val activeCardJson: String = "",
+    /** CardRegistry id of [activeCardJson]. */
+    val activeCardId: String = "",
+    /** Breadcrumb of card ids from the hub down to the active card. */
+    val cardStack: List<String> = emptyList(),
     val draftDivKitJson: String = "",
     val lastSignedEnvelopeJson: String = "",
     val lastVerificationStatus: String = "Initializing Ed25519 Verifier...",
@@ -146,6 +159,9 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
     private val verifiers = mutableMapOf<String, PayloadVerifier>()
 
     private var activeRouter: EngineRouter? = null
+
+    /** Card stack for the active workspace: the entry hub at index 0, pushed cards on top. */
+    private var navigator: DivCardNavigator? = null
 
     private val _uiState = MutableStateFlow(
         WorkspaceProvisioner.defaultWorkspaces
@@ -495,7 +511,11 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                     }
                 }
 
-                // 3. Construct EngineRouter for the active workspace
+                // 3. Register every card for this tenant and start the stack at the entry hub,
+                //    so route index 0 is the landing card that links out to the tool cards.
+                val stack = registerCards(spec)
+
+                // 4. Construct EngineRouter for the active workspace
                 val router = EngineRouter(
                     config = verifiedConfig,
                     workspaceManager = workspaceManager,
@@ -503,11 +523,12 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                     activeWorkspace = { spec.tenantId },
                     hardwareDispatcher = { capability, url, _ ->
                         handleHardwareCapability(spec, capability, url)
-                    }
+                    },
+                    navigationDispatcher = { url -> handleNavigation(url) }
                 )
                 activeRouter = router
 
-                // 4. Schedule Periodic Background Sync via BackgroundSyncScheduler
+                // 5. Schedule Periodic Background Sync via BackgroundSyncScheduler
                 syncScheduler.schedule(
                     workspaceId = spec.tenantId,
                     endpoint = verifiedConfig.edgeEndpoint,
@@ -679,6 +700,9 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
             val outcome = withContext(Dispatchers.IO) {
                 router.handle(url, payloadObj)
             }
+            // Card navigation touches no database state, so it neither reports a DB banner
+            // nor forces a telemetry refresh.
+            if (url.startsWith("nav://") || url.startsWith("sheet://")) return@launch
             val banner = when (outcome) {
                 is EngineRouter.ActionOutcome.Handled -> "Executed $url on workspace_${spec.tenantId}.db"
                 is EngineRouter.ActionOutcome.Error -> "Blocked ($url): ${outcome.message}"
@@ -687,6 +711,74 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
             _uiState.update { it.copy(statusBannerMessage = banner) }
             refreshDatabaseTelemetry(spec.tenantId)
         }
+    }
+
+    /**
+     * Registers the tenant's cards (entry hub first) and seeds the stack at the hub.
+     *
+     * Returns the registered ids in registration order; index 0 is the hub, which is the card
+     * the workspace opens on. Registration is idempotent, so re-entering a tenant is safe.
+     */
+    private fun registerCards(spec: TenantWorkspaceSpec): List<String> {
+        // Tool card ids are tenant-independent, so drop the previous tenant's cards rather
+        // than letting a stale hub stay resolvable through nav://.
+        CardRegistry.clear()
+        val cards = SduiOnFlyBuilder.buildCardStack(spec)
+        cards.forEach { (id, data) -> CardRegistry.register(id, data) }
+
+        val hubId = DemoCardRepository.hubCardId(spec)
+        val hub = CardRegistry.card(hubId)
+        if (hub != null) {
+            navigator = DivCardNavigator(listOf(CardEntry(hubId, hub)))
+            publishActiveCard()
+        }
+        return cards.map { it.first }
+    }
+
+    /** Mirrors the navigator's visible card into UI state so Compose can render it. */
+    private fun publishActiveCard() {
+        val current = navigator?.current
+        val json = current?.let { CardRegistry.card(it.id)?.let(DemoCardRepository::encode) }
+        _uiState.update {
+            it.copy(
+                activeCardId = current?.id.orEmpty(),
+                activeCardJson = json.orEmpty(),
+                cardStack = navigator?.stack?.map { entry -> entry.id }.orEmpty()
+            )
+        }
+    }
+
+    /**
+     * Owns `nav://` / `sheet://` for the active workspace.
+     *
+     * Returns true for any URL the navigation layer parses, including a push whose card id is
+     * unknown, which is a silent no-op per the navigation contract.
+     */
+    private fun handleNavigation(url: String): Boolean {
+        val nav = navigator ?: return false
+        val op = NavigationUrlParser.parse(url) ?: return false
+        val before = nav.current?.id
+        when (op) {
+            is NavOp.Push -> CardRegistry.card(op.cardId)?.let { nav.push(CardEntry(op.cardId, it)) }
+            NavOp.Pop -> nav.pop()
+            is NavOp.Replace -> CardRegistry.card(op.cardId)?.let { nav.replace(CardEntry(op.cardId, it)) }
+            is NavOp.Reset -> CardRegistry.card(op.cardId)?.let { nav.reset(CardEntry(op.cardId, it)) }
+            // Sheets are hosted by the Compose navigation host, not the stack.
+            is NavOp.SheetPresent, NavOp.SheetDismiss -> return true
+        }
+        publishActiveCard()
+        val after = nav.current?.id
+        if (before != after) {
+            _uiState.update {
+                it.copy(statusBannerMessage = "Card: ${nav.current?.id ?: "none"}")
+            }
+        }
+        return true
+    }
+
+    /** Pops the active card. No-op on the hub, so the landing card cannot be popped away. */
+    fun navigateBack() {
+        handleNavigation("nav://pop")
     }
 
     /**
@@ -1359,6 +1451,31 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
 
     fun closeFilePreview() {
         _uiState.update { it.copy(filePreview = null) }
+    }
+
+    /**
+     * Hands [entry] to an external app through the system chooser. Directories have nothing to
+     * view, so they stay in the built-in browser; text files keep the in-app preview as well.
+     */
+    fun openFileWith(entry: FsEntry) {
+        if (entry.isDirectory) {
+            navigateToDirectory(File(entry.path))
+            return
+        }
+        when (val outcome = FileOpenWith.open(context, File(entry.path))) {
+            is FileOpenWith.Outcome.Launched ->
+                _uiState.update {
+                    it.copy(statusBannerMessage = "Opening ${entry.name} as ${outcome.mimeType}")
+                }
+            FileOpenWith.Outcome.NoHandler ->
+                _uiState.update {
+                    it.copy(statusBannerMessage = "No installed app can open ${entry.name}")
+                }
+            is FileOpenWith.Outcome.Failed ->
+                _uiState.update {
+                    it.copy(statusBannerMessage = "Open with failed: ${outcome.reason}")
+                }
+        }
     }
 
     /** Leaves the browser and returns to the workspace folder list. */

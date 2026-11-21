@@ -12,9 +12,15 @@ import engine.db.WorkspaceManager
 import engine.router.EngineRouter
 import engine.state.EngineStateBridge
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -143,6 +149,36 @@ class ExampleRobolectricTest {
         val router = EngineRouter(config, manager, registry, activeWorkspace = { spec.tenantId })
         val outcome = router.handle("icons://native/not_a_real_icon", null)
         assertTrue(outcome is EngineRouter.ActionOutcome.Error)
+    }
+
+    @Test
+    fun `db query exposes record fields to json list bindings`() = runBlocking {
+        // records are stored as a `data` JSON blob, so a query row must be flattened or the
+        // DivKit json_list row_card renders `#5` but an empty item name.
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val manager = WorkspaceManager(WorkspaceDriverFactory(context))
+        val registry = EngineRegistry()
+        val spec = WorkspaceProvisioner.defaultWorkspaces.first()
+        val keyPair = Ed25519.generateKeyPair("test-seed")
+        val config = WorkspaceProvisioner.createVerifiedConfig(spec, keyPair)
+        EngineStateBridge.clear()
+
+        val router = EngineRouter(config, manager, registry, activeWorkspace = { spec.tenantId })
+        manager.useDatabase(spec.tenantId) { db ->
+            WorkspaceProvisioner.ensureTenantSchemaAndSeed(db, spec, registry)
+        }
+        router.handle(
+            "local-db://op/db.query",
+            WorkspaceProvisioner.buildQueryInventoryAction()["payload"]?.jsonObject
+        )
+
+        val jsonList = EngineStateBridge.state.value["user.inventory_json"]?.asDisplayString()
+        assertNotNull("user.inventory_json was not populated", jsonList)
+        val firstRow = Json.parseToJsonElement(jsonList!!).jsonArray.first().jsonObject
+        assertEquals("Wagyu Smash Burger", firstRow["item_name"]?.jsonPrimitive?.contentOrNull)
+        assertEquals("ACM-101", firstRow["sku"]?.jsonPrimitive?.contentOrNull)
+        assertNotNull(firstRow["price"])
+        assertNotNull(firstRow["stock"])
     }
 
     @Test

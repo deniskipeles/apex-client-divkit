@@ -137,9 +137,7 @@ public final class EngineRegistry {
             )
             let resultArray = QueryEngine.execute(db.driver, query, collectionId: colId)
             let rows: [[String: JsonValue]] = (resultArray.arrayValue ?? []).map { el in
-                el.asDictionary.mapValues { v in
-                    v.contentOrNull.map { JsonValue.string($0) } ?? .string(v.serialized)
-                }
+                flattenRecordRow(el.asDictionary)
             }
             return .rows(rows)
 
@@ -185,6 +183,23 @@ public final class EngineRegistry {
     private func require<T>(_ value: T?, _ message: String) throws -> T {
         guard let value else { throw EngineError.validation(message) }
         return value
+    }
+
+    /// `db.query` projects the record store's `data` blob as one nested column, so a flat row
+    /// would leave `@{item.item_name}` empty while `@{item.id}` still resolves. Merge the `data`
+    /// object up into the row so json_list bindings can address the stored fields directly.
+    private func flattenRecordRow(_ obj: [String: JsonValue]) -> [String: JsonValue] {
+        var out: [String: JsonValue] = [:]
+        for (key, value) in obj {
+            if key == "data", case let .object(pairs) = value {
+                for (field, fieldValue) in pairs {
+                    out[field] = .string(fieldValue.contentOrNull ?? fieldValue.serialized)
+                }
+            } else {
+                out[key] = .string(value.contentOrNull ?? value.serialized)
+            }
+        }
+        return out
     }
 
     private func parseFilters(_ array: [JsonValue]?) -> [QueryFilter] {

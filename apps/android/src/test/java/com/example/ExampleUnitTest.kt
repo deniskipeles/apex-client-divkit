@@ -2,7 +2,9 @@ package com.example
 
 import com.example.enginehost.SduiEngineViewModel
 import com.example.enginehost.SduiOnFlyBuilder
+import com.example.enginehost.TenantWorkspaceSpec
 import com.example.enginehost.WorkspaceProvisioner
+import com.example.enginehost.demo.DemoCardRepository
 import com.example.enginehost.sortedByUsage
 import engine.db.CachedSchemaVersion
 import engine.config.EngineConfig
@@ -28,6 +30,11 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
 class ExampleUnitTest {
+    /** Concatenated JSON of every card in the tenant stack, hub first. */
+    private fun allCardsJson(spec: TenantWorkspaceSpec): String =
+        WorkspaceProvisioner.buildDivKitCardStack(spec)
+            .joinToString("\n") { (_, card) -> DemoCardRepository.encode(card) }
+
     @Test
     fun canonicalJson_sortsKeysAndFormatsNumbers() {
         val input = mapOf(
@@ -89,6 +96,7 @@ class ExampleUnitTest {
             url = "tools://scan/scan",
             payload = buildJsonObject {
                 put("simulated_code", "9780201633610")
+                put("format", "EAN_13")
             }
         )
         assertTrue(outcome.success)
@@ -111,6 +119,7 @@ class ExampleUnitTest {
                     put("target_format", "barcode")
                 }
                 put("simulated_code", "https://hospital.org/patient/10492")
+                put("format", "QR_CODE")
             }
         )
         assertFalse(outcome.success)
@@ -127,6 +136,7 @@ class ExampleUnitTest {
                     put("target_format", "qr")
                 }
                 put("simulated_code", "apexpos://connect?device=kiosk_01")
+                put("format", "QR_CODE")
             }
         )
         assertTrue(outcome.success)
@@ -984,7 +994,7 @@ class ExampleUnitTest {
     @Test
     fun demoCard_surfacesKeepAwakeBlock() {
         val spec = WorkspaceProvisioner.defaultWorkspaces.first()
-        val json = WorkspaceProvisioner.buildDefaultDivKitCardJson(spec)
+        val json = allCardsJson(spec)
         assertTrue(json.contains("tools://keep-awake/enable"))
         assertTrue(json.contains("tools://keep-awake/disable"))
     }
@@ -996,7 +1006,7 @@ class ExampleUnitTest {
     @Test
     fun demoCard_showcasesScannerOcrAndCodeGeneratorBlocks() {
         val spec = WorkspaceProvisioner.defaultWorkspaces.first()
-        val json = WorkspaceProvisioner.buildDefaultDivKitCardJson(spec)
+        val json = allCardsJson(spec)
 
         // OCR is reached through the unified scanner's image-reading mode
         assertTrue(json.contains("tools://scan/ocr"))
@@ -1011,7 +1021,7 @@ class ExampleUnitTest {
     @Test
     fun demoCard_surfacesEveryRegisteredNativeTool() {
         val spec = WorkspaceProvisioner.defaultWorkspaces.first()
-        val json = WorkspaceProvisioner.buildDefaultDivKitCardJson(spec)
+        val json = allCardsJson(spec)
 
         // The showcase must exercise the full tool inventory, so every registered
         // tool schema has to appear as a tools:// trigger in the built-in card.
@@ -1025,7 +1035,7 @@ class ExampleUnitTest {
     @Test
     fun demoCard_surfacesNativeIconScheme() {
         val spec = WorkspaceProvisioner.defaultWorkspaces.first()
-        val json = WorkspaceProvisioner.buildDefaultDivKitCardJson(spec)
+        val json = allCardsJson(spec)
 
         // The showcase must exercise the icons:// scheme in both node and action positions.
         assertTrue("Demo card does not reference icons://native/", json.contains("icons://native/"))
@@ -1038,7 +1048,7 @@ class ExampleUnitTest {
     @Test
     fun demoCard_declaresEveryReferencedUserVariable() {
         val spec = WorkspaceProvisioner.defaultWorkspaces.first()
-        val json = WorkspaceProvisioner.buildDefaultDivKitCardJson(spec)
+        val json = allCardsJson(spec)
 
         val referenced = Regex("""@\{(user\.[a-zA-Z0-9_.]+)\}""")
             .findAll(json).map { it.groupValues[1] }.toSet()
@@ -1049,6 +1059,46 @@ class ExampleUnitTest {
 
         val missing = referenced - known
         assertTrue("Demo card references undeclared variables: $missing", missing.isEmpty())
+    }
+
+    @Test
+    fun cardStack_startsWithEntryHubThenEveryToolCard() {
+        val spec = WorkspaceProvisioner.defaultWorkspaces.first()
+        val stack = WorkspaceProvisioner.buildDivKitCardStack(spec)
+
+        // Route index 0 is the entry hub.
+        assertEquals(DemoCardRepository.hubCardId(spec), stack.first().first)
+        // Every tool card follows, and no id repeats.
+        assertEquals(stack.size, stack.map { it.first }.toSet().size)
+        assertEquals(
+            DemoCardRepository.toolCardOrder,
+            stack.drop(1).map { (id, _) -> id.removePrefix("tool_") }
+        )
+    }
+
+    @Test
+    fun entryHub_linksToEveryToolCard() {
+        val spec = WorkspaceProvisioner.defaultWorkspaces.first()
+        val stack = WorkspaceProvisioner.buildDivKitCardStack(spec)
+        val hubJson = DemoCardRepository.encode(stack.first().second)
+
+        // The hub must not inline tool markup: it links out instead.
+        assertFalse("Hub still inlines tools:// actions", hubJson.contains("tools://"))
+
+        val links = Regex("""nav://push\?id=([a-z0-9_]+)""")
+            .findAll(hubJson).map { it.groupValues[1] }.toSet()
+        assertEquals(stack.drop(1).map { it.first }.toSet(), links)
+    }
+
+    @Test
+    fun toolCard_carriesBackActionToHub() {
+        val spec = WorkspaceProvisioner.defaultWorkspaces.first()
+        val stack = WorkspaceProvisioner.buildDivKitCardStack(spec)
+
+        stack.drop(1).forEach { (id, card) ->
+            val json = DemoCardRepository.encode(card)
+            assertTrue("$id is missing nav://pop", json.contains("nav://pop"))
+        }
     }
 
     @Test

@@ -1,0 +1,60 @@
+{
+    "type": "container",
+    "orientation": "vertical",
+    "background_color": "#18181B",
+    "corner_radius": 12,
+    "paddings": {
+        "left": 12,
+        "right": 12,
+        "top": 10,
+        "bottom": 10
+    },
+    "border": {
+        "corner_radius": 12,
+        "stroke": {
+            "color": "#A1A1AA",
+            "width": 1
+        }
+    },
+    "items": [
+        {
+            "type": "text",
+            "text": "🛡️ SUPERVISOR BIOMETRIC AUTH (auth.biometrics@1 • tools://biometrics)",
+            "font_size": 11,
+            "font_weight": "bold",
+            "text_color": "#E4E4E7"
+        },
+        {
+            "type": "text",
+            "text": "Authorized: @{user.supervisor_authenticated} • Role: @{user.supervisor_role}",
+            "font_size": 12,
+            "text_color": "#FAFAFA",
+            "font_family": "monospace"
+        },
+        {
+            "type": "button",
+            "id": "tool_biometrics_authenticate",
+            "text": "Request Supervisor Authorization (Biometric / PIN)",
+            "subtitle": "tools://biometrics/authenticate • Gates Manager Refunds & Voids",
+            "icon": "lock",
+            "background_color": "#3F3F46",
+            "text_color": "#FFFFFF",
+            "corner_radius": 10,
+            "action": {
+                "log_id": "exec_tool_biometrics_authenticate",
+                "url": "tools://biometrics/authenticate",
+                "payload": {
+                    "operation": "authenticate",
+                    "options": {
+                        "required_role": "SUPERVISOR"
+                    },
+                    "output": {
+                        "authenticated": "user.supervisor_authenticated",
+                        "role": "user.supervisor_role",
+                        "auth_token": "user.supervisor_auth_token"
+                    }
+                }
+            }
+        }
+    ]
+}

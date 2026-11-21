@@ -1,0 +1,104 @@
+{
+    "type": "container",
+    "orientation": "vertical",
+    "background_color": "#111C2E",
+    "corner_radius": 12,
+    "paddings": {
+        "left": 12,
+        "right": 12,
+        "top": 10,
+        "bottom": 10
+    },
+    "border": {
+        "corner_radius": 12,
+        "stroke": {
+            "color": "#60A5FA",
+            "width": 1
+        }
+    },
+    "items": [
+        {
+            "type": "text",
+            "text": "🌐 NETWORK TRANSFER (Ktor) & LAN HUB (tools://net)",
+            "font_size": 11,
+            "font_weight": "bold",
+            "text_color": "#93C5FD"
+        },
+        {
+            "type": "text",
+            "text": "Status: @{user.net_status} • HTTP: @{user.net_http_status} • Bytes: @{user.net_bytes} • Hub: @{user.net_hub_port}",
+            "font_size": 12,
+            "text_color": "#DBEAFE",
+            "font_family": "monospace"
+        },
+        {
+            "type": "container",
+            "orientation": "horizontal",
+            "item_spacing": 8,
+            "items": [
+                {
+                    "type": "container",
+                    "weight": 1.0,
+                    "items": [
+                        {
+                            "type": "button",
+                            "id": "tool_net_get",
+                            "text": "HTTP GET",
+                            "subtitle": "tools://net/get • Ktor CIO",
+                            "icon": "sync",
+                            "background_color": "#1D4ED8",
+                            "text_color": "#FFFFFF",
+                            "corner_radius": 10,
+                            "action": {
+                                "log_id": "exec_tool_net_get",
+                                "url": "tools://net/get",
+                                "payload": {
+                                    "operation": "get",
+                                    "options": {
+                                        "url": "https://api.apexpos.local/v1/health",
+                                        "timeout_ms": "30000"
+                                    },
+                                    "output": {
+                                        "status": "user.net_status",
+                                        "http_status": "user.net_http_status",
+                                        "bytes": "user.net_bytes"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "container",
+                    "weight": 1.0,
+                    "items": [
+                        {
+                            "type": "button",
+                            "id": "tool_net_share",
+                            "text": "Start LAN Hub",
+                            "subtitle": "tools://net/share • peer-to-peer",
+                            "icon": "cloud",
+                            "background_color": "#1E40AF",
+                            "text_color": "#FFFFFF",
+                            "corner_radius": 10,
+                            "action": {
+                                "log_id": "exec_tool_net_share",
+                                "url": "tools://net/share",
+                                "payload": {
+                                    "operation": "share",
+                                    "options": {
+                                        "port": "8899"
+                                    },
+                                    "output": {
+                                        "status": "user.net_status",
+                                        "port": "user.net_hub_port"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

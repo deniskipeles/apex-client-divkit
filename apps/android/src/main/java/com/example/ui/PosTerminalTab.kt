@@ -109,6 +109,15 @@ fun PosTerminalTab(
         }
     }
 
+    // A pushed card is a different document, so it must open at the top rather than
+    // inheriting the scroll offset of the card the user navigated away from.
+    val workspaceScrollState = rememberScrollState()
+    LaunchedEffect(uiState.activeCardId) { workspaceScrollState.scrollTo(0) }
+
+    // A pushed card is one level of history: back pops to the hub before leaving the tenant.
+    val canPopCard = uiState.cardStack.size > 1
+    BackHandler(enabled = !hasOpenTenantPopup && canPopCard) { viewModel.navigateBack() }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -138,7 +147,7 @@ fun PosTerminalTab(
                         }
                     }
                 }
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(workspaceScrollState)
                 .padding(
                     start = 14.dp,
                     end = 14.dp,
@@ -147,16 +156,30 @@ fun PosTerminalTab(
                 ),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // A. Dynamic DivKit SDUI Schema Card (Rendered on the fly from cached SQLite schema)
-            if (uiState.verifiedDivKitJson.isNotBlank()) {
+            // A1. Card stack breadcrumb — pinned above the card so a long tool card cannot
+            //     push the only way back to the hub off-screen.
+            if (uiState.cardStack.size > 1) {
+                CardStackBreadcrumb(
+                    stack = uiState.cardStack,
+                    onBack = { viewModel.navigateBack() }
+                )
+            }
+
+            // A2. Dynamic DivKit SDUI card. Route index 0 is the entry hub; tool cards are
+            //    pushed on top of it through nav://push, so only the visible card renders here.
+            val visibleCardJson = uiState.activeCardJson.ifBlank { uiState.verifiedDivKitJson }
+            if (visibleCardJson.isNotBlank()) {
                 key(
                     uiState.activeSchemaVersion?.versionId ?: 0L,
-                    uiState.verifiedDivKitJson.hashCode()
+                    uiState.activeCardId,
+                    visibleCardJson.hashCode()
                 ) {
                     EngineScreen(
                         divKitDependencies = divKitDeps,
-                        initialJson = uiState.verifiedDivKitJson,
-                        cardId = "pos_card_${spec.tenantId}_${activeSchemaTag}",
+                        initialJson = visibleCardJson,
+                        cardId = uiState.activeCardId.ifBlank {
+                            "pos_card_${spec.tenantId}_$activeSchemaTag"
+                        },
                         onAction = { url, payload ->
                             viewModel.dispatchDivKitAction(url, payload)
                         }
@@ -985,6 +1008,61 @@ fun PosTerminalTab(
                     else -> Unit
                 }
             }
+        }
+    }
+}
+
+/** Shows how deep the card stack is and offers one-tap return to the hub. */
+@Composable
+private fun CardStackBreadcrumb(
+    stack: List<String>,
+    onBack: () -> Unit
+) {
+    val colorScheme = MaterialTheme.colorScheme
+    Surface(
+        color = colorScheme.surface,
+        shape = RoundedCornerShape(12.dp),
+        border = BorderStroke(1.dp, colorScheme.outline),
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("card_stack_breadcrumb")
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Surface(
+                color = colorScheme.primary.copy(alpha = 0.15f),
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable(onClick = onBack)
+                    .testTag("card_stack_back_button")
+            ) {
+                Text(
+                    text = "← Hub",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = colorScheme.primary,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                )
+            }
+            Text(
+                text = stack.joinToString(" › "),
+                fontSize = 11.sp,
+                fontFamily = FontFamily.Monospace,
+                color = colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
+            )
+            Text(
+                text = "${stack.size}",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = colorScheme.primary
+            )
         }
     }
 }

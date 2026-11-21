@@ -1,0 +1,60 @@
+{
+    "type": "container",
+    "orientation": "vertical",
+    "background_color": "#142834",
+    "corner_radius": 12,
+    "paddings": {
+        "left": 12,
+        "right": 12,
+        "top": 10,
+        "bottom": 10
+    },
+    "border": {
+        "corner_radius": 12,
+        "stroke": {
+            "color": "#06B6D4",
+            "width": 1
+        }
+    },
+    "items": [
+        {
+            "type": "text",
+            "text": "🪄 U-2-Net.tflite SALIENT OBJECT SEGMENTATION (tools://u-2-Net.tflite)",
+            "font_size": 11,
+            "font_weight": "bold",
+            "text_color": "#67E8F9"
+        },
+        {
+            "type": "text",
+            "text": "Matte Status: @{user.bg_remove_status} • Mask: @{user.u2net_mask_uri}",
+            "font_size": 12,
+            "text_color": "#E0F2FE",
+            "font_family": "monospace"
+        },
+        {
+            "type": "button",
+            "id": "tool_u-2-Net_tflite_segment",
+            "text": "Extract Foreground Alpha Matte (u-2-Net.tflite)",
+            "subtitle": "tools://u-2-Net.tflite/segment • 320x320 INT8 Saliency Map",
+            "icon": "crop",
+            "background_color": "#0891B2",
+            "text_color": "#FFFFFF",
+            "corner_radius": 10,
+            "action": {
+                "log_id": "exec_tool_u-2-Net.tflite_segment",
+                "url": "tools://u-2-Net.tflite/segment",
+                "payload": {
+                    "operation": "segment",
+                    "options": {
+                        "saliency_cutoff": "0.45",
+                        "quantization": "INT8"
+                    },
+                    "output": {
+                        "mask_uri": "user.u2net_mask_uri",
+                        "status": "user.bg_remove_status"
+                    }
+                }
+            }
+        }
+    ]
+}

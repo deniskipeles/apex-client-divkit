@@ -7,6 +7,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -113,7 +114,8 @@ fun FileManagerTab(
                 onNewFolder = { showNewFolderDialog = true },
                 onNewFile = { showNewFileDialog = true },
                 onRename = { renameTarget = it },
-                onDelete = { deleteTarget = it }
+                onDelete = { deleteTarget = it },
+                onOpenWith = { viewModel.openFileWith(it) }
             )
         }
     }
@@ -303,7 +305,8 @@ private fun FileBrowser(
     onNewFolder: () -> Unit,
     onNewFile: () -> Unit,
     onRename: (FsEntry) -> Unit,
-    onDelete: (FsEntry) -> Unit
+    onDelete: (FsEntry) -> Unit,
+    onOpenWith: (FsEntry) -> Unit
 ) {
     val atRoot = uiState.fileBrowserPath == folder.dirPath
 
@@ -364,7 +367,8 @@ private fun FileBrowser(
                         entry = entry,
                         onOpen = { viewModel.openFileEntry(entry) },
                         onRename = { onRename(entry) },
-                        onDelete = { onDelete(entry) }
+                        onDelete = { onDelete(entry) },
+                        onOpenWith = { onOpenWith(entry) }
                     )
                 }
             }
@@ -377,7 +381,8 @@ private fun FileEntryRow(
     entry: FsEntry,
     onOpen: () -> Unit,
     onRename: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onOpenWith: () -> Unit
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
 
@@ -428,6 +433,17 @@ private fun FileEntryRow(
                     Icon(Icons.Default.MoreVert, contentDescription = "Actions", tint = TextMuted)
                 }
                 DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                    if (!entry.isDirectory) {
+                        DropdownMenuItem(
+                            text = { Text("Open with") },
+                            leadingIcon = { Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null) },
+                            modifier = Modifier.testTag("file_entry_open_with_${entry.name}"),
+                            onClick = {
+                                menuExpanded = false
+                                onOpenWith()
+                            }
+                        )
+                    }
                     DropdownMenuItem(
                         text = { Text("Rename") },
                         enabled = !entry.isReadOnly,

@@ -1,0 +1,103 @@
+{
+    "type": "container",
+    "orientation": "vertical",
+    "background_color": "#1E293B",
+    "corner_radius": 12,
+    "paddings": {
+        "left": 12,
+        "right": 12,
+        "top": 10,
+        "bottom": 10
+    },
+    "border": {
+        "corner_radius": 12,
+        "stroke": {
+            "color": "#38BDF8",
+            "width": 1
+        }
+    },
+    "items": [
+        {
+            "type": "text",
+            "text": "☀️ KEEP-AWAKE / SCREEN WAKE-LOCK (tools://keep-awake)",
+            "font_size": 11,
+            "font_weight": "bold",
+            "text_color": "#7DD3FC"
+        },
+        {
+            "type": "text",
+            "text": "Status: @{user.keep_awake_status} • Enabled: @{user.keep_awake_enabled}",
+            "font_size": 12,
+            "text_color": "#E0F2FE",
+            "font_family": "monospace"
+        },
+        {
+            "type": "container",
+            "orientation": "horizontal",
+            "item_spacing": 8,
+            "items": [
+                {
+                    "type": "container",
+                    "weight": 1.0,
+                    "items": [
+                        {
+                            "type": "button",
+                            "id": "tool_keep-awake_enable",
+                            "text": "Hold Screen Awake",
+                            "subtitle": "tools://keep-awake/enable • 5 min",
+                            "icon": "bell",
+                            "background_color": "#0284C7",
+                            "text_color": "#FFFFFF",
+                            "corner_radius": 10,
+                            "action": {
+                                "log_id": "exec_tool_keep-awake_enable",
+                                "url": "tools://keep-awake/enable",
+                                "payload": {
+                                    "operation": "enable",
+                                    "options": {
+                                        "level": "screen",
+                                        "timeout_ms": "300000"
+                                    },
+                                    "output": {
+                                        "status": "user.keep_awake_status",
+                                        "enabled": "user.keep_awake_enabled"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "container",
+                    "weight": 1.0,
+                    "items": [
+                        {
+                            "type": "button",
+                            "id": "tool_keep-awake_disable",
+                            "text": "Release Wake-Lock",
+                            "subtitle": "tools://keep-awake/disable",
+                            "icon": "volume_off",
+                            "background_color": "#075985",
+                            "text_color": "#FFFFFF",
+                            "corner_radius": 10,
+                            "action": {
+                                "log_id": "exec_tool_keep-awake_disable",
+                                "url": "tools://keep-awake/disable",
+                                "payload": {
+                                    "operation": "disable",
+                                    "options": {
+                                        "op": "disable"
+                                    },
+                                    "output": {
+                                        "status": "user.keep_awake_status",
+                                        "enabled": "user.keep_awake_enabled"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

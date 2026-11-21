@@ -1,0 +1,20 @@
+{
+    "type": "custom",
+    "custom_type": "sdui_chart",
+    "id": "onfly_chart_bar_orders",
+    "custom_props": {
+        "chart_type": "bar",
+        "title": "LIVE REVENUE BY SKU (${terminalCode})",
+        "subtitle": "Reactive DivKit sdui_chart → user.orders_json (Vico Android / Swift Charts iOS)",
+        "data_var": "user.orders_json",
+        "label_field": "sku",
+        "value_field": "price",
+        "value_prefix": "$",
+        "value_suffix": "",
+        "accent_color": "#0284C7",
+        "height": 210,
+        "show_grid": true,
+        "show_legend": true,
+        "interactive": true
+    }
+}

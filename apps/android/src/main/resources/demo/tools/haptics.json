@@ -1,0 +1,121 @@
+{
+    "type": "container",
+    "orientation": "vertical",
+    "background_color": "#1F2937",
+    "corner_radius": 12,
+    "paddings": {
+        "left": 12,
+        "right": 12,
+        "top": 10,
+        "bottom": 10
+    },
+    "border": {
+        "corner_radius": 12,
+        "stroke": {
+            "color": "#F59E0B",
+            "width": 1
+        }
+    },
+    "items": [
+        {
+            "type": "text",
+            "text": "📳 HAPTIC TACTILE ENGINE (device.haptics@1 • tools://haptics)",
+            "font_size": 11,
+            "font_weight": "bold",
+            "text_color": "#FCD34D"
+        },
+        {
+            "type": "text",
+            "text": "State: @{user.haptic_state} • Pattern: @{user.haptic_pattern}",
+            "font_size": 12,
+            "text_color": "#FEF3C7",
+            "font_family": "monospace"
+        },
+        {
+            "type": "container",
+            "orientation": "horizontal",
+            "item_spacing": 8,
+            "items": [
+                {
+                    "type": "button",
+                    "weight": 1.0,
+                    "text": "Click",
+                    "background_color": "#374151",
+                    "text_color": "#F9FAFB",
+                    "corner_radius": 8,
+                    "action": {
+                        "log_id": "haptic_click",
+                        "url": "div-action://terminal.tool.invoke?tool=device.haptics@1&pattern=click&result_var=haptic_state"
+                    }
+                },
+                {
+                    "type": "button",
+                    "weight": 1.0,
+                    "text": "Heavy",
+                    "background_color": "#D97706",
+                    "text_color": "#FFFFFF",
+                    "corner_radius": 8,
+                    "action": {
+                        "log_id": "haptic_heavy",
+                        "url": "div-action://terminal.tool.invoke?tool=device.haptics@1&pattern=heavy_click&result_var=haptic_state"
+                    }
+                },
+                {
+                    "type": "button",
+                    "weight": 1.0,
+                    "text": "Success",
+                    "background_color": "#059669",
+                    "text_color": "#FFFFFF",
+                    "corner_radius": 8,
+                    "action": {
+                        "log_id": "haptic_success",
+                        "url": "div-action://terminal.tool.invoke?tool=device.haptics@1&pattern=success&result_var=haptic_state"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "container",
+            "orientation": "horizontal",
+            "item_spacing": 8,
+            "items": [
+                {
+                    "type": "button",
+                    "weight": 1.0,
+                    "text": "Warning",
+                    "background_color": "#B45309",
+                    "text_color": "#FFFFFF",
+                    "corner_radius": 8,
+                    "action": {
+                        "log_id": "haptic_warning",
+                        "url": "div-action://terminal.tool.invoke?tool=device.haptics@1&pattern=warning&result_var=haptic_state"
+                    }
+                },
+                {
+                    "type": "button",
+                    "weight": 1.0,
+                    "text": "Error Buzz",
+                    "background_color": "#DC2626",
+                    "text_color": "#FFFFFF",
+                    "corner_radius": 8,
+                    "action": {
+                        "log_id": "haptic_error",
+                        "url": "div-action://terminal.tool.invoke?tool=device.haptics@1&pattern=error&result_var=haptic_state"
+                    }
+                },
+                {
+                    "type": "button",
+                    "weight": 1.0,
+                    "text": "Tick (tools://)",
+                    "background_color": "#4B5563",
+                    "text_color": "#F9FAFB",
+                    "corner_radius": 8,
+                    "action": {
+                        "log_id": "haptic_tick",
+                        "url": "tools://haptics/tick"
+                    }
+                }
+            ]
+        }
+    ]
+}

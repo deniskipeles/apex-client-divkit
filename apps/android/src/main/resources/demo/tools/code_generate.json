@@ -1,0 +1,129 @@
+{
+    "type": "container",
+    "orientation": "vertical",
+    "background_color": "#2A1F0B",
+    "corner_radius": 12,
+    "paddings": {
+        "left": 12,
+        "right": 12,
+        "top": 10,
+        "bottom": 10
+    },
+    "border": {
+        "corner_radius": 12,
+        "stroke": {
+            "color": "#F59E0B",
+            "width": 1
+        }
+    },
+    "items": [
+        {
+            "type": "text",
+            "text": "🔳 BARCODE & QR CODE GENERATOR (tools://code-generate)",
+            "font_size": 11,
+            "font_weight": "bold",
+            "text_color": "#FCD34D"
+        },
+        {
+            "type": "text",
+            "text": "Generated: @{user.code_format} (@{user.code_kind}) • @{user.code_id}",
+            "font_size": 12,
+            "text_color": "#FEF3C7",
+            "font_family": "monospace"
+        },
+        {
+            "type": "text",
+            "text": "Content: @{user.code_content}",
+            "font_size": 11,
+            "text_color": "#FDE68A",
+            "font_family": "monospace"
+        },
+        {
+            "type": "text",
+            "text": "PNG: @{user.code_image_uri}",
+            "font_size": 11,
+            "text_color": "#FDE68A",
+            "font_family": "monospace"
+        },
+        {
+            "type": "container",
+            "orientation": "horizontal",
+            "item_spacing": 8,
+            "items": [
+                {
+                    "type": "container",
+                    "weight": 1.0,
+                    "items": [
+                        {
+                            "type": "button",
+                            "id": "tool_code-generate_generate",
+                            "text": "Generate Order QR",
+                            "subtitle": "tools://code-generate/generate (QR_CODE)",
+                            "icon": "qr_code",
+                            "background_color": "#D97706",
+                            "text_color": "#FFFFFF",
+                            "corner_radius": 10,
+                            "action": {
+                                "log_id": "exec_tool_code-generate_generate",
+                                "url": "tools://code-generate/generate",
+                                "payload": {
+                                    "operation": "generate",
+                                    "options": {
+                                        "content": "apexpos://order/pickup?terminal=${terminalCode}",
+                                        "format": "qr",
+                                        "width": "512",
+                                        "ec_level": "M",
+                                        "encoding": "uri"
+                                    },
+                                    "output": {
+                                        "uri": "user.code_image_uri",
+                                        "format": "user.code_format",
+                                        "kind": "user.code_kind",
+                                        "content": "user.code_content",
+                                        "code_id": "user.code_id"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "container",
+                    "weight": 1.0,
+                    "items": [
+                        {
+                            "type": "button",
+                            "id": "tool_code-generate_barcode",
+                            "text": "Generate SKU Barcode",
+                            "subtitle": "tools://code-generate/barcode (EAN_13)",
+                            "icon": "barcode",
+                            "background_color": "#B45309",
+                            "text_color": "#FFFFFF",
+                            "corner_radius": 10,
+                            "action": {
+                                "log_id": "exec_tool_code-generate_barcode",
+                                "url": "tools://code-generate/barcode",
+                                "payload": {
+                                    "operation": "barcode",
+                                    "options": {
+                                        "content": "9780201633610",
+                                        "format": "EAN_13",
+                                        "width": "400",
+                                        "height": "160"
+                                    },
+                                    "output": {
+                                        "uri": "user.code_image_uri",
+                                        "format": "user.code_format",
+                                        "kind": "user.code_kind",
+                                        "content": "user.code_content",
+                                        "code_id": "user.code_id"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

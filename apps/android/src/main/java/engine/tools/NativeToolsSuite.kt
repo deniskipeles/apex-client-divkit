@@ -9,6 +9,7 @@ import engine.crypto.currentTimeMillis
 import engine.state.DivVariableValue
 import engine.state.EngineStateBridge
 import engine.tools.audio.AudioToneSynthesizer
+import engine.tools.scan.BarcodeDecoder
 import engine.tools.vector.ImageVectorizer
 import engine.tools.vector.OcrExtractor
 import engine.tools.vector.TextVectorizer
@@ -445,30 +446,70 @@ object NativeToolsSuite {
 
         val targetFormat = targetFormatRaw.trim().lowercase()
 
-        // 2. Extract decoded value from camera analyzer or test simulation payload
-        val rawValue = payload["raw_value"]?.jsonPrimitive?.contentOrNull
+        // 2. Decode real pixels when an image is supplied. `simulated_code` stays supported so
+        // callers (and tests) can inject a payload without a camera, but it is never inferred
+        // from string shape: the format comes from ZXing or from the explicit payload.
+        val imageRef = payload["uri"]?.jsonPrimitive?.contentOrNull
+            ?: payload["image"]?.jsonPrimitive?.contentOrNull
+            ?: payload["base64"]?.jsonPrimitive?.contentOrNull
+            ?: options["uri"]
+            ?: options["image"]
+
+        val decoded = imageRef?.let { ref ->
+            BarcodeDecoder.loadBitmap(ref)?.let { bitmap ->
+                try {
+                    BarcodeDecoder.decode(bitmap)
+                } finally {
+                    bitmap.recycle()
+                }
+            }
+        }
+
+        if (imageRef != null && decoded == null) {
+            val failure = mapOf(
+                "status" to "NO_CODE_FOUND",
+                "error" to "No barcode or QR code could be decoded from $imageRef",
+                "source" to imageRef
+            )
+            return InternalToolResult(
+                summary = "Scan failed: no symbology found in image",
+                dataMap = failure,
+                resultJson = buildJsonObject { failure.forEach { (k, v) -> put(k, v) } }
+            )
+        }
+
+        val rawValue = decoded?.rawValue
+            ?: payload["raw_value"]?.jsonPrimitive?.contentOrNull
             ?: payload["simulated_code"]?.jsonPrimitive?.contentOrNull
             ?: payload["code"]?.jsonPrimitive?.contentOrNull
             ?: options["simulated_code"]
-            ?: "9780201633610" // Deterministic fallback
+            ?: options["code"]
+            ?: return InternalToolResult(
+                summary = "Scan failed: no camera frame or image supplied",
+                dataMap = mapOf(
+                    "status" to "NO_INPUT",
+                    "error" to "Provide a camera frame, an image uri, or a code payload"
+                ),
+                resultJson = buildJsonObject {
+                    put("status", "NO_INPUT")
+                    put("error", "Provide a camera frame, an image uri, or a code payload")
+                }
+            )
 
-        // 3. Classify symbology based purely on optical characteristics
-        val isUriOrMatrix = rawValue.contains("://") || rawValue.startsWith("{") || rawValue.contains("\n")
-        val detectedFormat: String
-        val detectedType: String
-
-        if (isUriOrMatrix || rawValue.length > 32) {
-            detectedFormat = "QR_CODE"
-            detectedType = "2D"
-        } else {
-            detectedType = "1D"
-            detectedFormat = when (rawValue.length) {
-                13 -> "EAN_13"
-                12 -> "UPC_A"
-                8 -> "EAN_8"
-                else -> "CODE_128"
+        // 3. Symbology comes from the decoder when pixels were decoded, otherwise from an
+        // explicit payload declaration. Never guessed from string length.
+        val declaredFormat = payload["format"]?.jsonPrimitive?.contentOrNull
+            ?: payload["symbology"]?.jsonPrimitive?.contentOrNull
+            ?: options["symbology"]
+        val detectedFormat = decoded?.format
+            ?: declaredFormat?.trim()?.uppercase()?.replace("-", "_")
+            ?: "UNKNOWN"
+        val detectedType = decoded?.type
+            ?: when {
+                BarcodeDecoder.matchesTarget(detectedFormat, "qr") -> "2D"
+                detectedFormat != "UNKNOWN" -> "1D"
+                else -> "UNKNOWN"
             }
-        }
 
         // 4. Enforce target_format filter
         val matches = when {

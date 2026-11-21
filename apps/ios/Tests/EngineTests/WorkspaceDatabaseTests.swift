@@ -81,6 +81,39 @@ final class WorkspaceDatabaseTests: XCTestCase {
         XCTAssertEqual(resultRows[0]["sku"]?.stringOrNull, "ACM-101")
     }
 
+    func testQueryFlattensRecordDataIntoRowFields() throws {
+        let mgr = manager()
+        let registry = EngineRegistry(clock: { 1_700_000_000_000 })
+        let ws = "acme_pos"
+
+        _ = try mgr.useDatabase(ws) { db in
+            try registry.execute(opName: "db.import_schema", db: db, workspaceId: ws, payload: schemaPayload())
+        }
+        _ = try mgr.useDatabase(ws) { db in
+            try registry.execute(opName: "db.insert", db: db, workspaceId: ws, payload: .object([
+                ("table", .string("orders")),
+                ("values", .object([
+                    ("item_name", .string("Wagyu Smash Burger")),
+                    ("sku", .string("ACM-101")),
+                    ("price", .double(16.50))
+                ]))
+            ]))
+        }
+
+        // A json_list row_card binds `@{item.item_name}`, so the stored fields must be addressable
+        // directly instead of only through the nested `data` column.
+        let rows = try mgr.useDatabase(ws) { db in
+            try registry.execute(opName: "db.query", db: db, workspaceId: ws, payload: .object([
+                ("table", .string("orders"))
+            ]))
+        }
+        guard case let .rows(resultRows) = rows else { return XCTFail("expected rows") }
+        XCTAssertEqual(resultRows.count, 1)
+        XCTAssertEqual(resultRows[0]["item_name"]?.stringOrNull, "Wagyu Smash Burger")
+        XCTAssertEqual(resultRows[0]["sku"]?.stringOrNull, "ACM-101")
+        XCTAssertNil(resultRows[0]["data"])
+    }
+
     func testUnknownOperationIsRejected() {
         let mgr = manager()
         let registry = EngineRegistry()

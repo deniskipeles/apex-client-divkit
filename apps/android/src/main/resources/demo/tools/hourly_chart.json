@@ -1,0 +1,53 @@
+{
+    "type": "custom",
+    "custom_type": "sdui_chart",
+    "id": "onfly_hourly_area_${tenantId}",
+    "custom_props": {
+        "chart_type": "area",
+        "title": "HOURLY POS THROUGHPUT (${terminalCode})",
+        "subtitle": "Custom DivKit AREA Chart • KMP KoalaPlot + Vico M3 + iOS Swift Charts",
+        "value_prefix": "$",
+        "accent_color": "#0284C7",
+        "height": 200,
+        "show_grid": true,
+        "show_legend": true,
+        "points": [
+            {
+                "label": "09:00",
+                "value": 145.0,
+                "color": "#38BDF8",
+                "subtitle": "Window 09:00"
+            },
+            {
+                "label": "11:00",
+                "value": 310.5,
+                "color": "#34D399",
+                "subtitle": "Window 11:00"
+            },
+            {
+                "label": "13:00",
+                "value": 540.0,
+                "color": "#818CF8",
+                "subtitle": "Window 13:00"
+            },
+            {
+                "label": "15:00",
+                "value": 390.0,
+                "color": "#F59E0B",
+                "subtitle": "Window 15:00"
+            },
+            {
+                "label": "17:00",
+                "value": 620.75,
+                "color": "#EC4899",
+                "subtitle": "Window 17:00"
+            },
+            {
+                "label": "19:00",
+                "value": 485.25,
+                "color": "#A78BFA",
+                "subtitle": "Window 19:00"
+            }
+        ]
+    }
+}

@@ -1,0 +1,61 @@
+{
+    "type": "container",
+    "orientation": "vertical",
+    "background_color": "#1E1B4B",
+    "corner_radius": 12,
+    "paddings": {
+        "left": 12,
+        "right": 12,
+        "top": 10,
+        "bottom": 10
+    },
+    "border": {
+        "corner_radius": 12,
+        "stroke": {
+            "color": "#6366F1",
+            "width": 1
+        }
+    },
+    "items": [
+        {
+            "type": "text",
+            "text": "🧠 MobileNetV4-Small INT8 AI SKU DETECTOR (tools://MobileNetV4-small)",
+            "font_size": 11,
+            "font_weight": "bold",
+            "text_color": "#A5B4FC"
+        },
+        {
+            "type": "text",
+            "text": "AI Prediction: @{user.ai_prediction_label} • Conf: @{user.ai_confidence_score} • Latency: @{user.tool_last_latency}ms",
+            "font_size": 12,
+            "text_color": "#E0E7FF",
+            "font_family": "monospace"
+        },
+        {
+            "type": "button",
+            "id": "tool_MobileNetV4-small_classify",
+            "text": "⚡ Detect Item via MobileNetV4-Small INT8",
+            "subtitle": "tools://MobileNetV4-small/classify • 0.2ms latency, 3.8MB INT8",
+            "icon": "camera",
+            "background_color": "#4F46E5",
+            "text_color": "#FFFFFF",
+            "corner_radius": 10,
+            "action": {
+                "log_id": "exec_tool_MobileNetV4-small_classify",
+                "url": "tools://MobileNetV4-small/classify",
+                "payload": {
+                    "operation": "classify",
+                    "options": {
+                        "top_k": "3",
+                        "min_confidence": "0.40"
+                    },
+                    "output": {
+                        "prediction_label": "user.ai_prediction_label",
+                        "prediction_sku": "user.ai_prediction_sku",
+                        "confidence": "user.ai_confidence_score"
+                    }
+                }
+            }
+        }
+    ]
+}

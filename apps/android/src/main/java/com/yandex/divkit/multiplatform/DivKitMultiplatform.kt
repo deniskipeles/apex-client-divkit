@@ -468,39 +468,44 @@ private fun RenderDivNode(
         }
 
         "image" -> {
-            // Native icon node: `image_url` (or `icon`) accepts icons://native/<name>,
-            // a catalog name, or an alias. Non-icon URLs are ignored (no network loader).
+            // Two modes. A `file://`/`content://`/`data:` source is a real bitmap and renders
+            // through Coil so tool output (generated QR PNGs, camera captures, processed
+            // images) is actually visible. Anything else is treated as a native icon name.
             val iconRef = node["image_url"]?.jsonPrimitive?.contentOrNull
                 ?: node["icon"]?.jsonPrimitive?.contentOrNull
                 ?: node["custom_props"]?.jsonObject?.get("icon")?.jsonPrimitive?.contentOrNull
             val resolved = iconRef?.let { evalExpr(it, variables, rowContext) }
-            val sizeDp = node["width"]?.jsonObject?.get("value")?.jsonPrimitive?.intOrNull
-                ?: node["height"]?.jsonObject?.get("value")?.jsonPrimitive?.intOrNull
-                ?: node["size"]?.jsonPrimitive?.intOrNull
-                ?: 24
-            val tintHex = node["tint"]?.jsonPrimitive?.contentOrNull
-                ?: node["text_color"]?.jsonPrimitive?.contentOrNull
-            val tint = tintHex?.let { adaptTextColorForTheme(evalExpr(it, variables, rowContext), isDark) }
-                ?: MaterialTheme.colorScheme.onSurface
-            val alignStr = node["alignment_horizontal"]?.jsonPrimitive?.contentOrNull ?: "center"
-            val horizontal = when (alignStr) {
-                "left", "start" -> Alignment.CenterStart
-                "right", "end" -> Alignment.CenterEnd
-                else -> Alignment.Center
-            }
-            Box(
-                modifier = Modifier.fillMaxWidth().then(boxModifier),
-                contentAlignment = horizontal
-            ) {
-                Icon(
-                    imageVector = resolveIcon(resolved.orEmpty()),
-                    contentDescription = node["content_description"]?.jsonPrimitive?.contentOrNull
-                        ?: resolved,
-                    tint = tint,
-                    modifier = Modifier
-                        .size(sizeDp.dp)
-                        .testTag("div_icon_${resolved?.replace(Regex("[^a-z0-9]+"), "_") ?: "unknown"}")
-                )
+            if (resolved != null && isBitmapSource(resolved)) {
+                RenderDivBitmap(node, resolved, variables, rowContext, boxModifier)
+            } else {
+                val sizeDp = node["width"]?.jsonObject?.get("value")?.jsonPrimitive?.intOrNull
+                    ?: node["height"]?.jsonObject?.get("value")?.jsonPrimitive?.intOrNull
+                    ?: node["size"]?.jsonPrimitive?.intOrNull
+                    ?: 24
+                val tintHex = node["tint"]?.jsonPrimitive?.contentOrNull
+                    ?: node["text_color"]?.jsonPrimitive?.contentOrNull
+                val tint = tintHex?.let { adaptTextColorForTheme(evalExpr(it, variables, rowContext), isDark) }
+                    ?: MaterialTheme.colorScheme.onSurface
+                val alignStr = node["alignment_horizontal"]?.jsonPrimitive?.contentOrNull ?: "center"
+                val horizontal = when (alignStr) {
+                    "left", "start" -> Alignment.CenterStart
+                    "right", "end" -> Alignment.CenterEnd
+                    else -> Alignment.Center
+                }
+                Box(
+                    modifier = Modifier.fillMaxWidth().then(boxModifier),
+                    contentAlignment = horizontal
+                ) {
+                    Icon(
+                        imageVector = resolveIcon(resolved.orEmpty()),
+                        contentDescription = node["content_description"]?.jsonPrimitive?.contentOrNull
+                            ?: resolved,
+                        tint = tint,
+                        modifier = Modifier
+                            .size(sizeDp.dp)
+                            .testTag("div_icon_${resolved?.replace(Regex("[^a-z0-9]+"), "_") ?: "unknown"}")
+                    )
+                }
             }
         }
 
@@ -724,7 +729,7 @@ private fun resolveJsonExpressions(
 
 private val EXPR_REGEX = Regex("@\\{([^}]+)\\}")
 
-private fun evalExpr(
+internal fun evalExpr(
     input: String,
     variables: Map<String, DivVariableValue>,
     rowContext: Map<String, Any?>

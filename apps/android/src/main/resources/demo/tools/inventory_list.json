@@ -1,0 +1,112 @@
+{
+    "type": "container",
+    "orientation": "vertical",
+    "item_spacing": 8,
+    "items": [
+        {
+            "type": "text",
+            "text": "ON-THE-FLY INVENTORY JSON_LIST (user.inventory_json)",
+            "font_size": 11,
+            "font_weight": "bold",
+            "text_color": "#34D399"
+        },
+        {
+            "type": "json_list",
+            "data_var": "user.inventory_json",
+            "empty_text": "No SKUs in ${tenantId}_inventory",
+            "row_card": {
+                "type": "container",
+                "orientation": "horizontal",
+                "background_color": "#0F172A",
+                "corner_radius": 10,
+                "paddings": {
+                    "left": 12,
+                    "right": 12,
+                    "top": 8,
+                    "bottom": 8
+                },
+                "border": {
+                    "corner_radius": 10,
+                    "stroke": {
+                        "color": "#1E293B",
+                        "width": 1
+                    }
+                },
+                "items": [
+                    {
+                        "type": "container",
+                        "orientation": "vertical",
+                        "weight": 1.0,
+                        "items": [
+                            {
+                                "type": "text",
+                                "text": "@{item.item_name} (@{item.category})",
+                                "font_size": 13,
+                                "font_weight": "bold",
+                                "text_color": "#F8FAFC"
+                            },
+                            {
+                                "type": "text",
+                                "text": "SKU: @{item.sku} • $@{item.price} • Stock: @{item.stock}",
+                                "font_size": 11,
+                                "text_color": "#34D399",
+                                "font_family": "monospace"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "button",
+                        "weight": 0.4,
+                        "text": "+1 Order",
+                        "background_color": "#065F46",
+                        "text_color": "#A7F3D0",
+                        "corner_radius": 8,
+                        "actions": [
+                            {
+                                "log_id": "insert_order",
+                                "url": "local-db://op/db.insert",
+                                "payload": {
+                                    "table": "orders",
+                                    "values": {
+                                        "item_name": "@{item.item_name}",
+                                        "sku": "@{item.sku}",
+                                        "price": "@{item.price}",
+                                        "qty": 1,
+                                        "terminal_id": "${terminalCode}",
+                                        "status": "OPEN"
+                                    },
+                                    "output": {
+                                        "id": "user.last_order_id"
+                                    }
+                                }
+                            },
+                            {
+                                "log_id": "refresh_orders_list",
+                                "url": "local-db://op/db.query",
+                                "payload": {
+                                    "table": "orders",
+                                    "order_by": "id",
+                                    "limit": 50,
+                                    "json_list_var": "user.orders_json",
+                                    "output": {
+                                        "_json": "user.orders_json"
+                                    }
+                                }
+                            },
+                            {
+                                "log_id": "count_orders",
+                                "url": "local-db://op/db.count",
+                                "payload": {
+                                    "table": "orders",
+                                    "output": {
+                                        "count": "user.order_count"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    ]
+}

@@ -1,0 +1,78 @@
+{
+    "type": "container",
+    "orientation": "vertical",
+    "background_color": "#1E1B4B",
+    "corner_radius": 12,
+    "paddings": {
+        "left": 12,
+        "right": 12,
+        "top": 10,
+        "bottom": 10
+    },
+    "border": {
+        "corner_radius": 12,
+        "stroke": {
+            "color": "#818CF8",
+            "width": 1
+        }
+    },
+    "items": [
+        {
+            "type": "text",
+            "text": "🔔 HARDWARE BEEPER AUDIO (device.beeper@1 • tools://beeper)",
+            "font_size": 11,
+            "font_weight": "bold",
+            "text_color": "#C7D2FE"
+        },
+        {
+            "type": "text",
+            "text": "Beeper Tone: @{user.beeper_tone} • Status: @{user.beeper_status}",
+            "font_size": 12,
+            "text_color": "#EEF2FF",
+            "font_family": "monospace"
+        },
+        {
+            "type": "container",
+            "orientation": "horizontal",
+            "item_spacing": 8,
+            "items": [
+                {
+                    "type": "button",
+                    "weight": 1.0,
+                    "text": "Ring (1200Hz)",
+                    "background_color": "#4338CA",
+                    "text_color": "#FFFFFF",
+                    "corner_radius": 8,
+                    "action": {
+                        "log_id": "beeper_ring",
+                        "url": "tools://beeper/ring"
+                    }
+                },
+                {
+                    "type": "button",
+                    "weight": 1.0,
+                    "text": "Alert (2400Hz)",
+                    "background_color": "#D97706",
+                    "text_color": "#FFFFFF",
+                    "corner_radius": 8,
+                    "action": {
+                        "log_id": "beeper_alert",
+                        "url": "tools://beeper/alert"
+                    }
+                },
+                {
+                    "type": "button",
+                    "weight": 1.0,
+                    "text": "Error (600Hz)",
+                    "background_color": "#DC2626",
+                    "text_color": "#FFFFFF",
+                    "corner_radius": 8,
+                    "action": {
+                        "log_id": "beeper_error",
+                        "url": "tools://beeper/error_buzz"
+                    }
+                }
+            ]
+        }
+    ]
+}

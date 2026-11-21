@@ -120,15 +120,7 @@ class EngineRegistry(
                     val jsonResultArray = QueryEngine.execute(db.driver, apexQuery, colId)
 
                     // Convert to map rows for OpResult.Rows
-                    val rows = jsonResultArray.map { el ->
-                        val obj = el.jsonObject
-                        obj.mapValues { (_, v) ->
-                            when (v) {
-                                is JsonPrimitive -> v.contentOrNull ?: v.toString()
-                                else -> v.toString()
-                            }
-                        }
-                    }
+                    val rows = jsonResultArray.map { el -> flattenRecordRow(el.jsonObject) }
 
                     OpResult.Rows(rows)
                 }
@@ -214,6 +206,28 @@ class EngineRegistry(
             )
             throw e
         }
+    }
+
+    /**
+     * `db.query` over the record store projects `records.data` as one nested JSON column, so a
+     * flat map would leave `@{item.item_name}` empty while `@{item.id}` still resolves. Merge the
+     * `data` object up into the row so json_list bindings can address the stored fields directly.
+     */
+    private fun flattenRecordRow(obj: JsonObject): Map<String, Any?> {
+        val out = LinkedHashMap<String, Any?>()
+        obj.forEach { (k, v) ->
+            if (k == "data" && v is JsonObject) {
+                v.forEach { (field, fieldValue) -> out[field] = fieldValue.asScalar() }
+            } else {
+                out[k] = v.asScalar()
+            }
+        }
+        return out
+    }
+
+    private fun JsonElement.asScalar(): Any? = when (this) {
+        is JsonPrimitive -> contentOrNull
+        else -> toString()
     }
 
     private fun parseFilters(array: JsonArray?): List<QueryFilter> {
