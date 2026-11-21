@@ -7,6 +7,51 @@ object SduiOnFlyBuilder {
     private val prettyJson = Json { prettyPrint = true }
 
     /**
+     * Source bitmap for the image-manipulation and OCR demo cards. Those tools do real pixel
+     * work and refuse to run without a decodable image, so the card needs a concrete source
+     * rather than the synthetic `content://` URIs used for display-only fields. The bitmap also
+     * carries legible text so the OCR demo returns real blocks. Generated once per tenant into
+     * its media sandbox and reused, so the demo works offline on any device.
+     */
+    private fun demoSampleImageUri(tenantId: String): String {
+        val context = engine.db.currentAndroidContext?.invoke()
+            ?: return DEMO_FALLBACK_IMAGE_DATA_URL
+        val mediaDir = java.io.File(context.filesDir, "workspaces/$tenantId/media")
+            .apply { mkdirs() }
+        val file = java.io.File(mediaDir, "demo_source.png")
+        if (!file.exists() || file.length() == 0L) {
+            val bitmap = android.graphics.Bitmap.createBitmap(
+                640, 400, android.graphics.Bitmap.Config.ARGB_8888
+            )
+            val canvas = android.graphics.Canvas(bitmap)
+            canvas.drawColor(android.graphics.Color.rgb(235, 235, 240))
+            canvas.drawCircle(
+                480f, 120f, 80f, android.graphics.Paint().apply {
+                    color = android.graphics.Color.rgb(180, 60, 40)
+                    isAntiAlias = true
+                }
+            )
+            val textPaint = android.graphics.Paint().apply {
+                color = android.graphics.Color.rgb(20, 20, 30)
+                textSize = 56f
+                isAntiAlias = true
+            }
+            canvas.drawText("APEX POS", 48f, 150f, textPaint)
+            canvas.drawText("ORDER #4821", 48f, 240f, textPaint)
+            canvas.drawText("TOTAL 12.50", 48f, 330f, textPaint)
+            file.outputStream().use {
+                bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it)
+            }
+            bitmap.recycle()
+        }
+        return "file://${file.absolutePath}"
+    }
+
+    /** 1x1 PNG used only when no Android context is available at card-build time. */
+    private const val DEMO_FALLBACK_IMAGE_DATA_URL =
+        "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+
+    /**
      * Dynamically injects a new DivKit component node into the root container of an existing
      * DivKit JSON card on the fly.
      */
@@ -263,115 +308,118 @@ object SduiOnFlyBuilder {
     /**
      * Optical 1D Barcode, 2D QR & OCR Block (tools://scan).
      */
-    fun buildScannerToolBlock(spec: TenantWorkspaceSpec): JsonObject = buildJsonObject {
-        put("type", "container")
-        put("orientation", "vertical")
-        put("background_color", "#0F291E")
-        put("corner_radius", 12)
-        putJsonObject("paddings") {
-            put("left", 12); put("right", 12); put("top", 10); put("bottom", 10)
-        }
-        putJsonObject("border") {
+    fun buildScannerToolBlock(spec: TenantWorkspaceSpec): JsonObject {
+        val ocrSourceUri = demoSampleImageUri(spec.tenantId)
+        return buildJsonObject {
+            put("type", "container")
+            put("orientation", "vertical")
+            put("background_color", "#0F291E")
             put("corner_radius", 12)
-            putJsonObject("stroke") {
-                put("color", "#10B981")
-                put("width", 1)
+            putJsonObject("paddings") {
+                put("left", 12); put("right", 12); put("top", 10); put("bottom", 10)
             }
-        }
-        putJsonArray("items") {
-            addJsonObject {
-                put("type", "text")
-                put("text", "📷 UNIFIED OPTICAL SCANNER + OCR (tools://scan)")
-                put("font_size", 11)
-                put("font_weight", "bold")
-                put("text_color", "#6EE7B7")
+            putJsonObject("border") {
+                put("corner_radius", 12)
+                putJsonObject("stroke") {
+                    put("color", "#10B981")
+                    put("width", 1)
+                }
             }
-            addJsonObject {
-                put("type", "text")
-                put("text", "Decoded: @{user.scanned_code} (@{user.scanned_format} • @{user.scanned_type}) → @{user.scan_status}")
-                put("font_size", 12)
-                put("text_color", "#D1FAE5")
-                put("font_family", "monospace")
-            }
-            addJsonObject {
-                put("type", "text")
-                put("text", "OCR: @{user.ocr_text} (conf @{user.ocr_confidence})")
-                put("font_size", 12)
-                put("text_color", "#A7F3D0")
-                put("font_family", "monospace")
-            }
-            addJsonObject {
-                put("type", "container")
-                put("orientation", "horizontal")
-                put("item_spacing", 8)
-                putJsonArray("items") {
-                    addJsonObject {
-                        put("type", "container")
-                        put("weight", 1f)
-                        putJsonArray("items") {
-                            add(
-                                buildNativeToolTriggerBlock(
-                                    toolId = "scan",
-                                    operation = "scan",
-                                    label = "Scan 1D Barcode",
-                                    subtitle = "tools://scan/scan (EAN-13 / UPC)",
-                                    icon = "scanner",
-                                    backgroundColor = "#059669",
-                                    textColor = "#FFFFFF",
-                                    options = mapOf("target_format" to "barcode"),
-                                    outputMapping = mapOf(
-                                        "raw_value" to "user.scanned_code",
-                                        "format" to "user.scanned_format",
-                                        "type" to "user.scanned_type",
-                                        "status" to "user.scan_status"
+            putJsonArray("items") {
+                addJsonObject {
+                    put("type", "text")
+                    put("text", "📷 UNIFIED OPTICAL SCANNER + OCR (tools://scan)")
+                    put("font_size", 11)
+                    put("font_weight", "bold")
+                    put("text_color", "#6EE7B7")
+                }
+                addJsonObject {
+                    put("type", "text")
+                    put("text", "Decoded: @{user.scanned_code} (@{user.scanned_format} • @{user.scanned_type}) → @{user.scan_status}")
+                    put("font_size", 12)
+                    put("text_color", "#D1FAE5")
+                    put("font_family", "monospace")
+                }
+                addJsonObject {
+                    put("type", "text")
+                    put("text", "OCR: @{user.ocr_text} (conf @{user.ocr_confidence})")
+                    put("font_size", 12)
+                    put("text_color", "#A7F3D0")
+                    put("font_family", "monospace")
+                }
+                addJsonObject {
+                    put("type", "container")
+                    put("orientation", "horizontal")
+                    put("item_spacing", 8)
+                    putJsonArray("items") {
+                        addJsonObject {
+                            put("type", "container")
+                            put("weight", 1f)
+                            putJsonArray("items") {
+                                add(
+                                    buildNativeToolTriggerBlock(
+                                        toolId = "scan",
+                                        operation = "scan",
+                                        label = "Scan 1D Barcode",
+                                        subtitle = "tools://scan/scan (EAN-13 / UPC)",
+                                        icon = "scanner",
+                                        backgroundColor = "#059669",
+                                        textColor = "#FFFFFF",
+                                        options = mapOf("target_format" to "barcode"),
+                                        outputMapping = mapOf(
+                                            "raw_value" to "user.scanned_code",
+                                            "format" to "user.scanned_format",
+                                            "type" to "user.scanned_type",
+                                            "status" to "user.scan_status"
+                                        )
                                     )
                                 )
-                            )
+                            }
                         }
-                    }
-                    addJsonObject {
-                        put("type", "container")
-                        put("weight", 1f)
-                        putJsonArray("items") {
-                            add(
-                                buildNativeToolTriggerBlock(
-                                    toolId = "scan",
-                                    operation = "scan",
-                                    label = "Scan 2D QR Code",
-                                    subtitle = "tools://scan/scan (DeepLink / Pay)",
-                                    icon = "qr_code",
-                                    backgroundColor = "#0D9488",
-                                    textColor = "#FFFFFF",
-                                    options = mapOf("target_format" to "qr"),
-                                    outputMapping = mapOf(
-                                        "raw_value" to "user.scanned_code",
-                                        "format" to "user.scanned_format",
-                                        "type" to "user.scanned_type",
-                                        "status" to "user.scan_status"
+                        addJsonObject {
+                            put("type", "container")
+                            put("weight", 1f)
+                            putJsonArray("items") {
+                                add(
+                                    buildNativeToolTriggerBlock(
+                                        toolId = "scan",
+                                        operation = "scan",
+                                        label = "Scan 2D QR Code",
+                                        subtitle = "tools://scan/scan (DeepLink / Pay)",
+                                        icon = "qr_code",
+                                        backgroundColor = "#0D9488",
+                                        textColor = "#FFFFFF",
+                                        options = mapOf("target_format" to "qr"),
+                                        outputMapping = mapOf(
+                                            "raw_value" to "user.scanned_code",
+                                            "format" to "user.scanned_format",
+                                            "type" to "user.scanned_type",
+                                            "status" to "user.scan_status"
+                                        )
                                     )
                                 )
-                            )
+                            }
                         }
                     }
                 }
-            }
-            add(
-                buildNativeToolTriggerBlock(
-                    toolId = "scan",
-                    operation = "ocr",
-                    label = "Read Text from Image (OCR)",
-                    subtitle = "tools://scan/ocr • ML Kit Text Recognition v2 (Latin)",
-                    icon = "search",
-                    backgroundColor = "#047857",
-                    textColor = "#FFFFFF",
-                    options = mapOf("uri" to "content://com.example.provider/camera/last_capture.png"),
-                    outputMapping = mapOf(
-                        "text" to "user.ocr_text",
-                        "confidence" to "user.ocr_confidence",
-                        "block_count" to "user.ocr_block_count"
+                add(
+                    buildNativeToolTriggerBlock(
+                        toolId = "scan",
+                        operation = "ocr",
+                        label = "Read Text from Image (OCR)",
+                        subtitle = "tools://scan/ocr • ML Kit Text Recognition v2 (Latin)",
+                        icon = "search",
+                        backgroundColor = "#047857",
+                        textColor = "#FFFFFF",
+                        options = mapOf("uri" to ocrSourceUri),
+                        outputMapping = mapOf(
+                            "text" to "user.ocr_text",
+                            "confidence" to "user.ocr_confidence",
+                            "block_count" to "user.ocr_block_count"
+                        )
                     )
                 )
-            )
+            }
         }
     }
 
@@ -545,7 +593,7 @@ object SduiOnFlyBuilder {
                                     backgroundColor = "#0891B2",
                                     textColor = "#FFFFFF",
                                     options = mapOf("facing" to "back", "resolution" to "1080p"),
-                                    outputMapping = mapOf("capture_uri" to "user.camera_capture_uri")
+                                    outputMapping = mapOf("uri" to "user.camera_capture_uri")
                                 )
                             )
                         }
@@ -577,83 +625,96 @@ object SduiOnFlyBuilder {
     /**
      * Universal Image Manipulation & Background Removal Block (tools://image-manipulation).
      */
-    fun buildImageManipulationToolBlock(spec: TenantWorkspaceSpec): JsonObject = buildJsonObject {
-        put("type", "container")
-        put("orientation", "vertical")
-        put("background_color", "#1E1B2E")
-        put("corner_radius", 12)
-        putJsonObject("paddings") {
-            put("left", 12); put("right", 12); put("top", 10); put("bottom", 10)
-        }
-        putJsonObject("border") {
+    fun buildImageManipulationToolBlock(spec: TenantWorkspaceSpec): JsonObject {
+        val sourceImageUri = demoSampleImageUri(spec.tenantId)
+        return buildJsonObject {
+            put("type", "container")
+            put("orientation", "vertical")
+            put("background_color", "#1E1B2E")
             put("corner_radius", 12)
-            putJsonObject("stroke") {
-                put("color", "#A78BFA")
-                put("width", 1)
+            putJsonObject("paddings") {
+                put("left", 12); put("right", 12); put("top", 10); put("bottom", 10)
             }
-        }
-        putJsonArray("items") {
-            addJsonObject {
-                put("type", "text")
-                put("text", "🎛️ IMAGE MANIPULATION & BG REMOVAL (tools://image-manipulation)")
-                put("font_size", 11)
-                put("font_weight", "bold")
-                put("text_color", "#C4B5FD")
+            putJsonObject("border") {
+                put("corner_radius", 12)
+                putJsonObject("stroke") {
+                    put("color", "#A78BFA")
+                    put("width", 1)
+                }
             }
-            addJsonObject {
-                put("type", "text")
-                put("text", "Output: @{user.processed_image_uri} • Status: @{user.image_processing_status}")
-                put("font_size", 12)
-                put("text_color", "#EDE9FE")
-                put("font_family", "monospace")
-            }
-            addJsonObject {
-                put("type", "container")
-                put("orientation", "horizontal")
-                put("item_spacing", 8)
-                putJsonArray("items") {
-                    addJsonObject {
-                        put("type", "container")
-                        put("weight", 1f)
-                        putJsonArray("items") {
-                            add(
-                                buildNativeToolTriggerBlock(
-                                    toolId = "image-manipulation",
-                                    operation = "remove_background",
-                                    label = "Remove Background",
-                                    subtitle = "tools://image-manipulation/remove_background",
-                                    icon = "crop",
-                                    backgroundColor = "#7C3AED",
-                                    textColor = "#FFFFFF",
-                                    options = mapOf("op" to "remove_background", "encoding" to "uri"),
-                                    outputMapping = mapOf(
-                                        "uri" to "user.processed_image_uri",
-                                        "status" to "user.image_processing_status"
+            putJsonArray("items") {
+                addJsonObject {
+                    put("type", "text")
+                    put("text", "🎛️ IMAGE MANIPULATION & BG REMOVAL (tools://image-manipulation)")
+                    put("font_size", 11)
+                    put("font_weight", "bold")
+                    put("text_color", "#C4B5FD")
+                }
+                addJsonObject {
+                    put("type", "text")
+                    put("text", "Output: @{user.processed_image_uri} • Status: @{user.image_processing_status}")
+                    put("font_size", 12)
+                    put("text_color", "#EDE9FE")
+                    put("font_family", "monospace")
+                }
+                addJsonObject {
+                    put("type", "container")
+                    put("orientation", "horizontal")
+                    put("item_spacing", 8)
+                    putJsonArray("items") {
+                        addJsonObject {
+                            put("type", "container")
+                            put("weight", 1f)
+                            putJsonArray("items") {
+                                add(
+                                    buildNativeToolTriggerBlock(
+                                        toolId = "image-manipulation",
+                                        operation = "remove_background",
+                                        label = "Remove Background",
+                                        subtitle = "tools://image-manipulation/remove_background",
+                                        icon = "crop",
+                                        backgroundColor = "#7C3AED",
+                                        textColor = "#FFFFFF",
+                                        options = mapOf(
+                                            "op" to "remove_background",
+                                            "encoding" to "uri",
+                                            // The engine performs real bitmap work, so it needs a
+                                            // decodable source rather than the URI-only stub payload.
+                                            "uri" to sourceImageUri
+                                        ),
+                                        outputMapping = mapOf(
+                                            "uri" to "user.processed_image_uri",
+                                            "status" to "user.image_processing_status"
+                                        )
                                     )
                                 )
-                            )
+                            }
                         }
-                    }
-                    addJsonObject {
-                        put("type", "container")
-                        put("weight", 1f)
-                        putJsonArray("items") {
-                            add(
-                                buildNativeToolTriggerBlock(
-                                    toolId = "image-manipulation",
-                                    operation = "smooth",
-                                    label = "Edge-Preserving Smooth",
-                                    subtitle = "tools://image-manipulation/smooth",
-                                    icon = "refresh",
-                                    backgroundColor = "#6D28D9",
-                                    textColor = "#FFFFFF",
-                                    options = mapOf("op" to "smooth", "strength" to "0.6"),
-                                    outputMapping = mapOf(
-                                        "uri" to "user.processed_image_uri",
-                                        "status" to "user.image_processing_status"
+                        addJsonObject {
+                            put("type", "container")
+                            put("weight", 1f)
+                            putJsonArray("items") {
+                                add(
+                                    buildNativeToolTriggerBlock(
+                                        toolId = "image-manipulation",
+                                        operation = "smooth",
+                                        label = "Edge-Preserving Smooth",
+                                        subtitle = "tools://image-manipulation/smooth",
+                                        icon = "refresh",
+                                        backgroundColor = "#6D28D9",
+                                        textColor = "#FFFFFF",
+                                        options = mapOf(
+                                            "op" to "smooth",
+                                            "strength" to "0.6",
+                                            "uri" to sourceImageUri
+                                        ),
+                                        outputMapping = mapOf(
+                                            "uri" to "user.processed_image_uri",
+                                            "status" to "user.image_processing_status"
+                                        )
                                     )
                                 )
-                            )
+                            }
                         }
                     }
                 }

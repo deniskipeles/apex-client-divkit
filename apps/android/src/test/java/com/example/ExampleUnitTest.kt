@@ -1,8 +1,10 @@
 package com.example
 
+import com.example.enginehost.SduiEngineViewModel
 import com.example.enginehost.SduiOnFlyBuilder
 import com.example.enginehost.WorkspaceProvisioner
 import com.example.enginehost.sortedByUsage
+import engine.db.CachedSchemaVersion
 import engine.config.EngineConfig
 import engine.crypto.CanonicalJson
 import engine.state.DivVariableValue
@@ -1047,6 +1049,145 @@ class ExampleUnitTest {
 
         val missing = referenced - known
         assertTrue("Demo card references undeclared variables: $missing", missing.isEmpty())
+    }
+
+    @Test
+    fun demoImageManipulationBlock_suppliesDecodableSourceImage() = kotlinx.coroutines.runBlocking {
+        val spec = WorkspaceProvisioner.defaultWorkspaces.first()
+        val block = SduiOnFlyBuilder.buildImageManipulationToolBlock(spec)
+
+        val buttons = mutableListOf<JsonObject>()
+        fun collect(node: JsonElement) {
+            when (node) {
+                is JsonObject -> {
+                    if (node["action"]?.jsonObject?.get("url") != null) buttons.add(node)
+                    node.values.forEach { collect(it) }
+                }
+                is JsonArray -> node.forEach { collect(it) }
+                else -> Unit
+            }
+        }
+        collect(block)
+
+        assertEquals("expected a bg-remove and a smooth trigger", 2, buttons.size)
+
+        buttons.forEach { button ->
+            val action = button["action"]!!.jsonObject
+            val payload = action["payload"]!!.jsonObject
+            val options = payload["options"]!!.jsonObject
+            val source = options["uri"]?.jsonPrimitive?.contentOrNull
+            assertNotNull("demo card must pass a source image", source)
+            assertTrue(
+                "source image must be decodable, was '$source'",
+                source!!.startsWith("file://") || source.startsWith("data:image")
+            )
+
+            val outcome = NativeToolsSuite.execute(
+                url = action["url"]!!.jsonPrimitive.content,
+                payload = payload
+            )
+            assertEquals(
+                "image manipulation failed: ${outcome.resultData}",
+                "SUCCESS",
+                outcome.resultData.jsonObject["status"]?.jsonPrimitive?.contentOrNull
+            )
+            assertTrue(outcome.outputVariables.containsKey("user.processed_image_uri"))
+        }
+    }
+
+    @Test
+    fun demoCardRefresh_isDrivenByCardContentNotAVersionConstant() {
+        fun version(id: Long, json: String, active: Boolean) =
+            CachedSchemaVersion(
+                versionId = id,
+                schemaVersion = "1.4",
+                jti = "jti-$id",
+                signedEnvelope = "{}",
+                verifiedPayload = json,
+                receivedAt = id,
+                isActive = active,
+                summary = "s$id"
+            )
+
+        // Stale content on the newest active row -> refresh.
+        assertTrue(
+            SduiEngineViewModel.needsDemoCardRefresh(
+                listOf(version(1, "old-card", true)), "new-card"
+            )
+        )
+        // Already current -> no churn on every launch.
+        assertFalse(
+            SduiEngineViewModel.needsDemoCardRefresh(
+                listOf(version(1, "new-card", true)), "new-card"
+            )
+        )
+        // User rolled back to an older row -> leave their choice alone.
+        assertFalse(
+            SduiEngineViewModel.needsDemoCardRefresh(
+                listOf(version(1, "old-card", true), version(2, "newer-card", false)),
+                "new-card"
+            )
+        )
+        // No cached versions at all -> seed.
+        assertTrue(SduiEngineViewModel.needsDemoCardRefresh(emptyList(), "new-card"))
+    }
+
+    @Test
+    fun demoOcrBlock_suppliesDecodableSourceImage() = kotlinx.coroutines.runBlocking {
+        val spec = WorkspaceProvisioner.defaultWorkspaces.first()
+        val block = SduiOnFlyBuilder.buildScannerToolBlock(spec)
+
+        var ocrButton: JsonObject? = null
+        fun collect(node: JsonElement) {
+            when (node) {
+                is JsonObject -> {
+                    val url = node["action"]?.jsonObject?.get("url")?.jsonPrimitive?.contentOrNull
+                    if (url != null && url.contains("/ocr")) ocrButton = node
+                    node.values.forEach { collect(it) }
+                }
+                is JsonArray -> node.forEach { collect(it) }
+                else -> Unit
+            }
+        }
+        collect(block)
+
+        val action = ocrButton?.get("action")?.jsonObject
+        assertNotNull("expected an OCR trigger in the scanner demo block", action)
+        val payload = action!!["payload"]!!.jsonObject
+        val source = payload["options"]!!.jsonObject["uri"]?.jsonPrimitive?.contentOrNull
+        assertNotNull("OCR demo must pass a source image", source)
+        assertTrue(
+            "OCR source must be decodable, was '$source'",
+            source!!.startsWith("file://") || source.startsWith("data:image")
+        )
+
+        val outcome = NativeToolsSuite.execute(
+            url = action["url"]!!.jsonPrimitive.content,
+            payload = payload
+        )
+        // ML Kit is unavailable under Robolectric, so this asserts the tool reaches the
+        // recognizer with a real image instead of failing to decode the demo source.
+        val status = outcome.resultData.jsonObject["status"]?.jsonPrimitive?.contentOrNull
+        val error = outcome.resultData.jsonObject["error"]?.jsonPrimitive?.contentOrNull ?: ""
+        assertTrue(
+            "OCR demo failed on the source image, not the recognizer: $status / $error",
+            status == "SUCCESS" || error.contains("MlKitContext")
+        )
+    }
+
+    @Test
+    fun demoToolOutputMappings_referenceFieldsTheToolsActuallyReturn() {
+        // Guards the class of bug where a card maps e.g. `capture_uri` while the tool
+        // returns `uri`, leaving the bound variable permanently blank.
+        val camera = NativeToolsSuite.registeredSchemas.first { it.toolId == "camera" }
+        assertEquals(
+            setOf("user.camera_capture_uri"),
+            camera.defaultOutputMapping.values.toSet()
+        )
+        assertTrue(
+            "camera mapping key must match CameraTool's result field",
+            camera.defaultOutputMapping.containsKey("uri")
+        )
     }
 
     @Test

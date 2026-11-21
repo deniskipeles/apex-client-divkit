@@ -102,6 +102,16 @@ private class DirectDriver(
         binders?.invoke(stmt)
         val trimmed = sql.trim()
         val upper = trimmed.uppercase()
+
+        // Some statements are routed here that still produce a result set. SQLiteStatement
+        // .execute() throws "Queries can be performed using SQLiteDatabase query or rawQuery
+        // methods only" for those, so run them through rawQuery and discard the rows.
+        // `PRAGMA journal_mode = WAL` is the important one: it returns the resulting mode.
+        if (returnsRows(upper)) {
+            db.rawQuery(inlineArgs(sql, stmt.args), null).use { it.moveToFirst() }
+            return 0L
+        }
+
         val compiled = db.compileStatement(sql)
         return try {
             stmt.args.forEachIndexed { idx, value ->
@@ -152,6 +162,25 @@ private class DirectDriver(
 
     override fun close() {
         db.close()
+    }
+}
+
+/**
+ * True for statements that yield a result set, which `SQLiteStatement.execute()` rejects.
+ *
+ * `INSERT ... SELECT` also contains SELECT but does not return rows, so the leading keyword
+ * decides. PRAGMAs are the awkward case: most (`foreign_keys`) return nothing while
+ * `journal_mode` and `wal_checkpoint` return a row, and SQLite gives no way to tell them apart
+ * without running them, so every PRAGMA goes through the query path — reading a row-free
+ * statement that way is harmless.
+ */
+internal fun returnsRows(upperSql: String): Boolean {
+    val firstWord = upperSql.takeWhile { !it.isWhitespace() }
+    return when (firstWord) {
+        "SELECT", "EXPLAIN", "PRAGMA" -> true
+        // A CTE is only a query when it does not wrap a write.
+        "WITH" -> listOf("INSERT", "UPDATE", "DELETE").none { upperSql.contains(it) }
+        else -> false
     }
 }
 

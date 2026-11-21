@@ -242,4 +242,74 @@ class StorageRefactorTest {
         }
         return n
     }
+
+    /**
+     * `WorkspaceDriverFactory` issues `PRAGMA journal_mode = WAL`, which returns the resulting
+     * mode as a row. Routing it through `SQLiteStatement.execute()` throws
+     * "Queries can be performed using SQLiteDatabase query or rawQuery methods only" and aborts
+     * provisioning, so every workspace failed to open while the app itself started fine.
+     */
+    @Test
+    fun workspaceDriverFactoryAppliesPragmas() {
+        val driver = engine.db.WorkspaceDriverFactory(RuntimeEnvironment.getApplication())
+            .create("pragma_workspace")
+
+        driver.executeQuery(null, "PRAGMA journal_mode", 0).use { c ->
+            assertTrue("journal_mode should be readable", c.next().value)
+            assertEquals("wal", c.getString(0)?.lowercase())
+        }
+        driver.executeQuery(null, "PRAGMA foreign_keys", 0).use { c ->
+            assertTrue(c.next().value)
+            assertEquals(1L, c.getLong(0))
+        }
+        driver.close()
+    }
+
+    /**
+     * Robolectric's SQLite does not reproduce Android's "queries can only be performed with
+     * rawQuery" guard, so the integration test above passes even when the bug is present.
+     * Pin the statement classification directly.
+     */
+    @Test
+    fun rowReturningStatementsAreClassified() {
+        assertTrue(engine.sqlite.returnsRows("PRAGMA JOURNAL_MODE = WAL;"))
+        assertTrue(engine.sqlite.returnsRows("PRAGMA FOREIGN_KEYS = ON;"))
+        assertTrue(engine.sqlite.returnsRows("SELECT * FROM records"))
+        assertTrue(engine.sqlite.returnsRows("EXPLAIN SELECT 1"))
+
+        // Write statements must keep using execute() so their row counts survive.
+        assertFalse(engine.sqlite.returnsRows("INSERT INTO t VALUES (1)"))
+        assertFalse(engine.sqlite.returnsRows("INSERT INTO t SELECT * FROM u"))
+        assertFalse(engine.sqlite.returnsRows("UPDATE t SET a = 1"))
+        assertFalse(engine.sqlite.returnsRows("DELETE FROM t"))
+        assertFalse(engine.sqlite.returnsRows("CREATE TABLE t (a INT)"))
+        assertFalse(engine.sqlite.returnsRows("WITH x AS (SELECT 1) INSERT INTO t SELECT * FROM x"))
+    }
+
+    /** Row-returning statements must survive the executeUpdate entry point. */
+    @Test
+    fun executeUpdateAcceptsRowReturningStatements() {
+        val driver = engine("row_returning").driver
+
+        // Returns a row, so it must not be handed to SQLiteStatement.execute().
+        assertEquals(0L, driver.executeUpdate(null, "PRAGMA journal_mode = WAL;", 0))
+        assertEquals(0L, driver.executeUpdate(null, "PRAGMA journal_mode;", 0))
+
+        // Writes still work and still report their row counts.
+        driver.executeUpdate(null, "CREATE TABLE t (id INTEGER PRIMARY KEY, v TEXT)", 0)
+        assertEquals(1L, driver.executeUpdate(null, "INSERT INTO t (v) VALUES ('a')", 0))
+        assertEquals(1L, driver.executeUpdate(null, "UPDATE t SET v = 'b' WHERE id = 1", 0))
+
+        // INSERT ... SELECT contains SELECT but returns no rows, so it must use execute().
+        driver.executeUpdate(null, "CREATE TABLE t2 (id INTEGER PRIMARY KEY, v TEXT)", 0)
+        assertEquals(
+            1L,
+            driver.executeUpdate(null, "INSERT INTO t2 (v) SELECT v FROM t", 0)
+        )
+        driver.executeQuery(null, "SELECT COUNT(*) FROM t2", 0).use { c ->
+            assertTrue(c.next().value)
+            assertEquals(1L, c.getLong(0))
+        }
+        driver.close()
+    }
 }

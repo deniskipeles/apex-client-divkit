@@ -107,7 +107,7 @@ object NativeToolsSuite {
             description = "Camera frame capture and torch controller.",
             supportedOperations = listOf("capture", "torch_toggle", "get_status"),
             defaultOptions = mapOf("facing" to "back", "resolution" to "1080p"),
-            defaultOutputMapping = mapOf("capture_uri" to "user.camera_capture_uri")
+            defaultOutputMapping = mapOf("uri" to "user.camera_capture_uri")
         ),
         // -------------------------------------------------------------
         // UNIFIED IMAGE MANIPULATION ENGINE (OS Models / <4MB footprint)
@@ -554,7 +554,17 @@ object NativeToolsSuite {
             )
         }
 
-        val ocr = OcrExtractor.extract(bmp)
+        val ocr = try {
+            OcrExtractor.extract(bmp)
+        } catch (e: Exception) {
+            return InternalToolResult(
+                summary = "OCR failed: ${e.message}",
+                dataMap = mapOf("status" to "FAILED", "error" to (e.message ?: "recognizer unavailable")),
+                resultJson = buildJsonObject {
+                    put("status", "FAILED"); put("error", e.message ?: "recognizer unavailable")
+                }
+            )
+        }
         val blocks = buildJsonArray {
             ocr.blocks.forEach { b ->
                 add(buildJsonObject {

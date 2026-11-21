@@ -328,6 +328,15 @@ object ImageManipulationEngine {
                 val bytes = Base64.getDecoder().decode(base64Data)
                 BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
             }
+            // The SDUI cards hand the engine `content://` URIs, so resolve them through the
+            // ContentResolver before falling back to plain file paths.
+            trimmed.startsWith("content://") -> {
+                runCatching {
+                    currentAndroidContext?.invoke()?.contentResolver?.openInputStream(
+                        android.net.Uri.parse(trimmed)
+                    )?.use { BitmapFactory.decodeStream(it) }
+                }.getOrNull()
+            }
             trimmed.startsWith("file://") -> {
                 BitmapFactory.decodeFile(trimmed.removePrefix("file://"))
             }

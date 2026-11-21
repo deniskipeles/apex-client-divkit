@@ -240,12 +240,12 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
             )
             val v10Verified = verifier.verify(v10Env)
 
-            // Receive & verify v1.1 active POS Register + SDUI Charts schema
+            // Receive & verify the current demo card revision (POS Register + SDUI Charts)
             val v11Raw = WorkspaceProvisioner.buildDefaultDivKitCardJson(spec)
             val v11Jti = UUID.randomUUID().toString()
             val v11Env = PayloadVerifier.createSignedEnvelope(
                 tenant = spec.tenantId,
-                schemaVersion = "1.1",
+                schemaVersion = DEMO_CARD_REVISION,
                 payloadJson = v11Raw,
                 keyPair = keyPair,
                 jtiOverride = v11Jti
@@ -262,35 +262,40 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                     summary = "v1.0 • Initial Stock & Inventory Donut Chart Schema"
                 )
                 db.workspaceQueries.cacheAndActivateSchemaVersion(
-                    schemaVersion = "1.1",
+                    schemaVersion = DEMO_CARD_REVISION,
                     jti = v11Jti,
                     signedEnvelope = v11Env,
                     verifiedPayload = v11Verified,
                     receivedAt = currentTimeMillis(),
-                    summary = "v1.1 • Full POS Register + Live KMP SDUI Chart Schema"
+                    summary = "$DEMO_CARD_REVISION • Full POS Register + Live KMP SDUI Chart Schema"
                 )
             }
-        } else if (existingVersions.none { it.divkitJson.contains("tools://") }) {
-            // Upgrade existing cached tenant with new v1.3 schema containing all 7 Native Tools & AI vision models
-            val v13Raw = WorkspaceProvisioner.buildDefaultDivKitCardJson(spec)
-            val v13Jti = UUID.randomUUID().toString()
-            val v13Env = PayloadVerifier.createSignedEnvelope(
-                tenant = spec.tenantId,
-                schemaVersion = "1.3",
-                payloadJson = v13Raw,
-                keyPair = keyPair,
-                jtiOverride = v13Jti
-            )
-            val v13Verified = verifier.verify(v13Env)
-            workspaceManager.useDatabase(spec.tenantId) { db ->
-                db.workspaceQueries.cacheAndActivateSchemaVersion(
-                    schemaVersion = "1.3",
-                    jti = v13Jti,
-                    signedEnvelope = v13Env,
-                    verifiedPayload = v13Verified,
-                    receivedAt = currentTimeMillis(),
-                    summary = "v1.3 • POS Register + tools:// (libsignal, MobileNetV4, U-2-Net, Barcode/QR)"
+        } else {
+            // Cached cards never refresh on their own, so a stale tenant would keep running an
+            // old demo card forever. Compare the stored payload with the freshly built card and
+            // re-cache only when it actually differs, so edits reach existing workspaces without
+            // a version constant that can be forgotten.
+            val fresh = WorkspaceProvisioner.buildDefaultDivKitCardJson(spec)
+            if (needsDemoCardRefresh(existingVersions, fresh)) {
+                val jti = UUID.randomUUID().toString()
+                val env = PayloadVerifier.createSignedEnvelope(
+                    tenant = spec.tenantId,
+                    schemaVersion = DEMO_CARD_REVISION,
+                    payloadJson = fresh,
+                    keyPair = keyPair,
+                    jtiOverride = jti
                 )
+                val verified = verifier.verify(env)
+                workspaceManager.useDatabase(spec.tenantId) { db ->
+                    db.workspaceQueries.cacheAndActivateSchemaVersion(
+                        schemaVersion = DEMO_CARD_REVISION,
+                        jti = jti,
+                        signedEnvelope = env,
+                        verifiedPayload = verified,
+                        receivedAt = currentTimeMillis(),
+                        summary = "$DEMO_CARD_REVISION • POS Register + tools:// (libsignal, MobileNetV4, U-2-Net, Barcode/QR)"
+                    )
+                }
             }
         }
     }
@@ -1577,6 +1582,29 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                 securityEvents = listOf(event) + it.securityEvents.take(29),
                 statusBannerMessage = "$title — $detail"
             )
+        }
+    }
+
+    companion object {
+        /**
+         * Label for the bundled demo card. Card content, not this constant, decides whether a
+         * cached tenant is refreshed.
+         */
+        const val DEMO_CARD_REVISION = "1.4"
+
+        /**
+         * Whether a cached tenant should be re-seeded with [freshCardJson].
+         *
+         * A rollback activates an older row, so refreshing then would silently undo the user's
+         * rollback on every launch; only the newest row may be replaced.
+         */
+        fun needsDemoCardRefresh(
+            existing: List<CachedSchemaVersion>,
+            freshCardJson: String
+        ): Boolean {
+            val active = existing.firstOrNull { it.isActive } ?: existing.firstOrNull() ?: return true
+            val rolledBack = active.versionId != existing.maxOf { it.versionId }
+            return !rolledBack && active.divkitJson != freshCardJson
         }
     }
 }
