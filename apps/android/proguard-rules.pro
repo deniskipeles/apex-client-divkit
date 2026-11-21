@@ -32,6 +32,12 @@
 -keep class java.security.** { *; }
 -keep class org.bouncycastle.** { *; }
 
+# libsignal's curve25519 providers are instantiated by name inside
+# `Curve25519.constructClass` via `Class.forName`, so R8 cannot see the reference
+# and strips them — the release APK then throws NoClassDefFoundError the first
+# time an E2EE session is opened.
+-keep class org.whispersystems.curve25519.** { *; }
+
 # 4. DivKit & UI Engine Components
 -keep class com.yandex.divkit.** { *; }
 -keep class com.yandex.div.** { *; }

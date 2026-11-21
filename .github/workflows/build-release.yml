@@ -81,11 +81,46 @@ jobs:
           echo "### SHA-256 Checksums"
           cat dist-apks/checksums.sha256
 
-      - name: Upload Build Artifacts to Actions Run
+      # Each ABI is published as its own artifact so a download pulls only the
+      # architecture that is actually needed instead of the whole multi-ABI bundle.
+      - name: Upload arm64-v8a APK
         uses: actions/upload-artifact@v4
         with:
-          name: divkit-sdui-pos-apks-${{ github.ref_name }}
-          path: dist-apks/*
+          name: divkit-sdui-pos-arm64-v8a-${{ github.ref_name }}
+          path: dist-apks/*-arm64-v8a-release.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload armeabi-v7a APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: divkit-sdui-pos-armeabi-v7a-${{ github.ref_name }}
+          path: dist-apks/*-armeabi-v7a-release.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload x86_64 APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: divkit-sdui-pos-x86_64-${{ github.ref_name }}
+          path: dist-apks/*-x86_64-release.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload universal APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: divkit-sdui-pos-universal-${{ github.ref_name }}
+          path: dist-apks/*-universal-release.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload checksums
+        uses: actions/upload-artifact@v4
+        with:
+          name: divkit-sdui-pos-checksums-${{ github.ref_name }}
+          path: dist-apks/checksums.sha256
+          if-no-files-found: error
           retention-days: 30
 
       - name: Create GitHub Release

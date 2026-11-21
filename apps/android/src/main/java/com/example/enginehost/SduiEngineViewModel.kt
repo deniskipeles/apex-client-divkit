@@ -170,26 +170,39 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
         }
         // Initiate connected tenants by receiving, verifying, and caching their initial DivKit schemas in SQLite
         viewModelScope.launch(Dispatchers.IO) {
-            _uiState.update { it.copy(keyPair = keyPair) }
-            WorkspaceProvisioner.defaultWorkspaces.forEach { spec ->
-                ensureTenantInitiatedWithCachedSchema(spec)
-            }
-            refreshTenantCachedBadges()
-            val dbFiles = workspaceManager.activeDatabaseFileNames()
-            _uiState.update {
-                it.copy(
-                    activeDbFiles = dbFiles,
-                    statusBannerMessage = "${WorkspaceProvisioner.defaultWorkspaces.size} tenants initiated & cached in SQLite"
-                )
-            }
-            // Resume the previously opened tenant on relaunch; otherwise land on the launcher.
-            val resumeSpec = resumeTenantId?.let { id ->
-                WorkspaceProvisioner.defaultWorkspaces.firstOrNull { it.tenantId == id }
-            }
-            if (resumeSpec != null && shouldResumeWorkspace) {
-                switchWorkspace(resumeSpec, openDedicatedScreen = true, recordVisit = false)
-            } else {
-                switchWorkspace(WorkspaceProvisioner.defaultWorkspaces.first(), openDedicatedScreen = false)
+            // Provisioning touches SQLite, Ed25519 and the filesystem. A failure here must not
+            // take the process down before the launcher can render, so surface it as banner
+            // state instead of letting the coroutine throw.
+            try {
+                _uiState.update { it.copy(keyPair = keyPair) }
+                WorkspaceProvisioner.defaultWorkspaces.forEach { spec ->
+                    ensureTenantInitiatedWithCachedSchema(spec)
+                }
+                refreshTenantCachedBadges()
+                val dbFiles = workspaceManager.activeDatabaseFileNames()
+                _uiState.update {
+                    it.copy(
+                        activeDbFiles = dbFiles,
+                        statusBannerMessage = "${WorkspaceProvisioner.defaultWorkspaces.size} tenants initiated & cached in SQLite"
+                    )
+                }
+                // Resume the previously opened tenant on relaunch; otherwise land on the launcher.
+                val resumeSpec = resumeTenantId?.let { id ->
+                    WorkspaceProvisioner.defaultWorkspaces.firstOrNull { it.tenantId == id }
+                }
+                if (resumeSpec != null && shouldResumeWorkspace) {
+                    switchWorkspace(resumeSpec, openDedicatedScreen = true, recordVisit = false)
+                } else {
+                    switchWorkspace(WorkspaceProvisioner.defaultWorkspaces.first(), openDedicatedScreen = false)
+                }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        lastVerificationStatus = "Provisioning Error: ${e.message}",
+                        isEnvelopeVerified = false,
+                        statusBannerMessage = "Workspace provisioning failed: ${e.message}"
+                    )
+                }
             }
         }
     }
