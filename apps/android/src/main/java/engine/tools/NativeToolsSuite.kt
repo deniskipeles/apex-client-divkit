@@ -35,6 +35,15 @@ object NativeToolsSuite {
      */
     var liveScanSink: (suspend () -> engine.tools.scan.ScanResult?)? = null
 
+    /**
+     * Asks the user for an image (camera or an existing file) and returns a path the tools can
+     * decode, or null when the user cancelled. Installed by the Android host.
+     *
+     * Vision tools run without an Activity, so they cannot open a picker or a camera. Without
+     * this sink a card can only work if it hardcodes an image reference, which is why the OCR
+     * and classifier cards could not operate on the user's own photo.
+     */
+    var imageSourceSink: (suspend (allowCamera: Boolean) -> String?)? = null
 
     @Serializable
     data class ToolSchema(
@@ -357,7 +366,7 @@ object NativeToolsSuite {
             "biometrics" -> executeBiometrics(operation, options, payload)
             "libsignal" -> executeLibSignal(operation, options, payload, tenantId)
             "mobilenetv4-small", "mobilenetv4" -> executeMobileNetV4(operation, options, payload, tenantId)
-            "u-2-net.tflite", "u2net" -> executeU2Net(operation, options, payload)
+            "u-2-net.tflite", "u2net" -> executeU2Net(operation, options, payload, tenantId)
             "push" -> executePush(operation, options, payload)
             "offline-cache" -> executeOfflineCache(operation, options, payload, tenantId)
             "realtime-ws" -> executeRealtimeWs(operation, options, payload, tenantId)
@@ -598,7 +607,10 @@ object NativeToolsSuite {
     // -------------------------------------------------------------------------
     // OPTICAL CHARACTER RECOGNITION (TEXT READING MODE)
     // -------------------------------------------------------------------------
-    private fun executeScanOcr(options: Map<String, String>, payload: JsonObject): InternalToolResult {
+    private suspend fun executeScanOcr(
+        options: Map<String, String>,
+        payload: JsonObject
+    ): InternalToolResult {
         val ctx = engine.db.currentAndroidContext?.invoke()
             ?: return InternalToolResult(
                 summary = "OCR unavailable: no Android context",
@@ -608,10 +620,30 @@ object NativeToolsSuite {
                 }
             )
 
-        val uri = payload["uri"]?.jsonPrimitive?.contentOrNull
+        val declaredUri = payload["uri"]?.jsonPrimitive?.contentOrNull
             ?: payload["image"]?.jsonPrimitive?.contentOrNull
             ?: payload["base64"]?.jsonPrimitive?.contentOrNull
             ?: options["uri"]
+
+        // No image in the call means the user wants to supply one, so ask. `camera=false` only
+        // forbids the camera; the file picker stays available.
+        val allowCamera = (payload["camera"]?.jsonPrimitive?.contentOrNull ?: options["camera"])
+            ?.equals("false", ignoreCase = true) != true
+        val uri = declaredUri ?: imageSourceSink?.invoke(allowCamera)
+
+        if (uri == null) {
+            return InternalToolResult(
+                summary = "OCR cancelled: no image supplied",
+                dataMap = mapOf(
+                    "status" to "NO_INPUT",
+                    "error" to "No image was captured or selected"
+                ),
+                resultJson = buildJsonObject {
+                    put("status", "NO_INPUT")
+                    put("error", "No image was captured or selected")
+                }
+            )
+        }
 
         val bmp = try {
             decodeBitmap(ctx, uri)
@@ -649,6 +681,8 @@ object NativeToolsSuite {
             "confidence" to ocr.meanConfidence,
             "block_count" to ocr.blocks.size,
             "blocks" to blocks,
+            // Echo the image back so the card can show what was read instead of only the text.
+            "source_image" to uri,
             "status" to "SUCCESS",
             "model" to "ML Kit Text Recognition v2 (Latin)",
             "timestamp" to currentTimeMillis()
@@ -901,6 +935,7 @@ object NativeToolsSuite {
 
         // With no image argument, acquire a real frame from the camera rather than inventing a
         // prediction: classification is only meaningful against actual pixels.
+        var sourceImage = imageRef
         val bitmap = if (imageRef != null) {
             try {
                 decodeBitmap(ctx, imageRef)
@@ -915,29 +950,35 @@ object NativeToolsSuite {
                 )
             }
         } else {
-            val sink = engine.tools.impl.CameraTool.captureSink
-                ?: return unsupported(
-                    "MobileNetV4 classify",
-                    "No image argument was supplied and no camera host is installed to capture one"
-                )
-            val bytes = sink(engine.tools.impl.CameraTool.CaptureRequest("back", 1080, true))
+            // No image argument: let the user choose a photo from the gallery or take one now,
+            // rather than only supporting the camera.
+            val wantsCamera = (payload["camera"]?.jsonPrimitive?.contentOrNull ?: options["camera"])
+                ?.equals("false", ignoreCase = true) != true
+            val acquired = imageSourceSink?.invoke(wantsCamera)
                 ?: return InternalToolResult(
-                    summary = "MobileNetV4 capture cancelled",
-                    dataMap = mapOf("status" to "CANCELLED", "error" to "Camera capture was cancelled"),
+                    summary = "MobileNetV4 cancelled: no image supplied",
+                    dataMap = mapOf(
+                        "status" to "NO_INPUT",
+                        "error" to "No image was captured or selected"
+                    ),
                     resultJson = buildJsonObject {
-                        put("status", "CANCELLED")
-                        put("error", "Camera capture was cancelled")
+                        put("status", "NO_INPUT")
+                        put("error", "No image was captured or selected")
                     }
                 )
-            BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-                ?: return InternalToolResult(
-                    summary = "MobileNetV4 capture unreadable",
-                    dataMap = mapOf("status" to "FAILED", "error" to "Captured frame could not be decoded"),
+            sourceImage = acquired
+            try {
+                decodeBitmap(ctx, acquired)
+            } catch (e: Exception) {
+                return InternalToolResult(
+                    summary = "MobileNetV4 could not read the image",
+                    dataMap = mapOf("status" to "FAILED", "error" to (e.message ?: "unreadable image")),
                     resultJson = buildJsonObject {
                         put("status", "FAILED")
-                        put("error", "Captured frame could not be decoded")
+                        put("error", e.message ?: "unreadable image")
                     }
                 )
+            }
         }
 
         val t0 = currentTimeMillis()
@@ -985,6 +1026,8 @@ object NativeToolsSuite {
             "model" to "MobileNetV4-small INT8 (ImageNet-1k)",
             "tenant_id" to tenantId,
             "inference_ms" to elapsed,
+            // Echo the classified image so the card can show it next to the prediction.
+            "source_image" to (sourceImage ?: ""),
             "timestamp" to currentTimeMillis()
         )
         return InternalToolResult(
@@ -997,20 +1040,75 @@ object NativeToolsSuite {
     // -------------------------------------------------------------------------
     // ON-DEVICE SALIENT SEGMENTATION (U-2-Net alpha matte)
     // -------------------------------------------------------------------------
-    private fun executeU2Net(
+    private suspend fun executeU2Net(
         operation: String,
         options: Map<String, String>,
-        payload: JsonObject
+        payload: JsonObject,
+        tenantId: String
     ): InternalToolResult {
-        // No U-2-Net graph is bundled and no inference path exists for one: the smallest public
-        // weights are ~176MB ONNX, and this build has neither the model nor an ONNX runtime.
-        // The previous implementation returned a synthetic mask URI plus a made-up 0.94
-        // confidence, so the card looked functional while no alpha matte was ever produced.
-        return unsupported(
-            "U-2-Net segmentation",
-            "No U-2-Net model or ONNX runtime is bundled with this build, so no alpha matte can " +
-                "be produced. Use image-manipulation/remove_background for real on-device " +
-                "background removal."
+        // No U-2-Net graph is bundled and no ONNX runtime exists here: the smallest public
+        // weights are ~176MB ONNX. Rather than return a synthetic mask (what this used to do),
+        // run the real on-device background remover so the card does something genuine, and say
+        // plainly that the algorithm is not U-2-Net.
+        engine.db.currentAndroidContext?.invoke()
+            ?: return unsupported("Background removal", "No Android context")
+
+        val declared = payload["uri"]?.jsonPrimitive?.contentOrNull
+            ?: payload["image"]?.jsonPrimitive?.contentOrNull
+            ?: options["uri"]
+            ?: options["image"]
+        val wantsCamera = (payload["camera"]?.jsonPrimitive?.contentOrNull ?: options["camera"])
+            ?.equals("false", ignoreCase = true) != true
+        val uri = declared ?: imageSourceSink?.invoke(wantsCamera)
+            ?: return InternalToolResult(
+                summary = "Background removal cancelled: no image supplied",
+                dataMap = mapOf(
+                    "status" to "NO_INPUT",
+                    "error" to "No image was captured or selected"
+                ),
+                resultJson = buildJsonObject {
+                    put("status", "NO_INPUT")
+                    put("error", "No image was captured or selected")
+                }
+            )
+
+        val result = try {
+            engine.tools.image.ImageManipulationEngine.process(
+                tenantId = tenantId,
+                inputUriOrBase64 = uri,
+                operations = listOf(
+                    buildJsonObject {
+                        put("op", "remove_background")
+                        // Older cards sent `saliency_cutoff`; accept both so the control works.
+                        put("threshold", options["threshold"] ?: options["saliency_cutoff"] ?: "0.45")
+                    }
+                ),
+                encoding = "uri"
+            )
+        } catch (e: Throwable) {
+            return InternalToolResult(
+                summary = "Background removal failed",
+                dataMap = mapOf("status" to "FAILED", "error" to (e.message ?: "processing error")),
+                resultJson = buildJsonObject {
+                    put("status", "FAILED")
+                    put("error", e.message ?: "processing error")
+                }
+            )
+        }
+
+        val data = mapOf(
+            "status" to "SUCCESS",
+            "uri" to result.uri,
+            "image_id" to result.imageId,
+            "width" to result.width,
+            "height" to result.height,
+            "algorithm" to "on-device colour-distance matte (not U-2-Net)",
+            "note" to "U-2-Net weights are not bundled; this is the native background remover"
+        )
+        return InternalToolResult(
+            summary = "Background removed with the on-device matte (U-2-Net weights not bundled)",
+            dataMap = data,
+            resultJson = buildJsonObject { data.forEach { (k, v) -> put(k, v.toString()) } }
         )
     }
 

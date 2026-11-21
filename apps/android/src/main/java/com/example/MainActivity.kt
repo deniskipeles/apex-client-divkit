@@ -38,6 +38,9 @@ import com.example.auth.CredentialGateOverlay
 import com.example.camera.CameraHostOverlay
 import com.example.camera.CameraMode
 import com.example.camera.CameraOutcome
+import com.example.camera.ImageSourceChoice
+import com.example.camera.ImageSourceHost
+import com.example.camera.ImageSourceOverlay
 import com.example.ui.PosTerminalTab
 import com.example.ui.TenantLauncherScreen
 import com.example.ui.theme.MyApplicationTheme
@@ -96,6 +99,21 @@ class MainActivity : ComponentActivity() {
                 else -> null
             }
         }
+        // Platform bridge for every vision tool that needs real pixels (OCR, MobileNetV4,
+        // background removal). The user chooses the camera or an existing file; the bytes are
+        // written to the app cache so the tools can decode them by path.
+        NativeToolsSuite.imageSourceSink = { allowCamera ->
+            when (val choice = ImageSourceHost.choose(allowCamera)) {
+                is ImageSourceChoice.File -> writeTempImage(choice.bytes, "picked")
+                is ImageSourceChoice.Camera -> when (
+                    val outcome = CameraHost.run(CameraMode.Capture, "back", 1280)
+                ) {
+                    is CameraOutcome.Photo -> writeTempImage(outcome.bytes, "captured")
+                    else -> null
+                }
+                ImageSourceChoice.Cancelled -> null
+            }
+        }
         // Platform bridge for tools://biometrics/authenticate: the tool has no Activity, so it
         // parks a request on CredentialGate and the overlay shows the OS device-credential
         // prompt. Without a lock screen the gate fails closed instead of approving everyone.
@@ -106,6 +124,13 @@ class MainActivity : ComponentActivity() {
             SduiPosEngineRoot()
         }
     }
+
+    /** Persists bytes to the app cache and returns a decodable path, or null on failure. */
+    private fun writeTempImage(bytes: ByteArray, prefix: String): String? = runCatching {
+        val file = java.io.File(cacheDir, "${prefix}_${System.currentTimeMillis()}.jpg")
+        file.writeBytes(bytes)
+        file.absolutePath
+    }.getOrNull()
 }
 
 private enum class LauncherSection {
@@ -380,5 +405,7 @@ fun SduiPosEngineApp(viewModel: SduiEngineViewModel) {
     // Live camera surface. Renders only while a tool has parked a capture/scan request, and sits
     // above every other layer so the viewfinder is never hidden behind a card.
     CameraHostOverlay()
+    ImageSourceOverlay()
     CredentialGateOverlay()
+
 }

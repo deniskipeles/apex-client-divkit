@@ -32,6 +32,13 @@
             "font_family": "monospace"
         },
         {
+            "type": "image",
+            "image_url": "@{user.scan_image_uri}",
+            "preview_height": 180,
+            "corner_radius": 10,
+            "content_description": "Last scanned image"
+        },
+        {
             "type": "text",
             "text": "LIVE — opens the viewfinder and decodes what you point at",
             "font_size": 11,
@@ -205,7 +212,7 @@
                 {
                     "type": "button",
                     "id": "tool_scan_ocr",
-                    "text": "Read Text from Sample",
+                    "text": "Read Text (camera or file)",
                     "subtitle": "ML Kit text recognition",
                     "icon": "search",
                     "background_color": "#34D399",
@@ -216,13 +223,12 @@
                         "url": "tools://scan/ocr",
                         "payload": {
                             "operation": "ocr",
-                            "options": {
-                                "uri": "${demoImageUri}"
-                            },
+                            "options": {},
                             "output": {
                                 "text": "user.ocr_text",
                                 "confidence": "user.ocr_confidence",
-                                "block_count": "user.ocr_block_count"
+                                "block_count": "user.ocr_block_count",
+                                "source_image": "user.scan_image_uri"
                             }
                         }
                     }

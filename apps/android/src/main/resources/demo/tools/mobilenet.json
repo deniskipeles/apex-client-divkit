@@ -32,29 +32,84 @@
             "font_family": "monospace"
         },
         {
-            "type": "button",
-            "id": "tool_MobileNetV4-small_classify",
-            "text": "📷 Classify What The Camera Sees",
-            "subtitle": "tools://MobileNetV4-small/classify • Captures a frame, runs real INT8 inference",
-            "icon": "camera",
-            "background_color": "#4F46E5",
-            "text_color": "#FFFFFF",
+            "type": "image",
+            "image_url": "@{user.ai_source_image_uri}",
+            "preview_height": 200,
             "corner_radius": 10,
-            "action": {
-                "log_id": "exec_tool_MobileNetV4-small_classify",
-                "url": "tools://MobileNetV4-small/classify",
-                "payload": {
-                    "operation": "classify",
-                    "options": {
-                        "top_k": "3",
-                        "min_confidence": "0.40"
-                    },
-                    "output": {
-                        "prediction_label": "user.ai_prediction_label",
-                        "confidence": "user.ai_confidence_score"
-                    }
+            "content_description": "Classified image"
+        },
+        {
+            "type": "container",
+            "orientation": "horizontal",
+            "item_spacing": 8,
+            "items": [
+                {
+                    "type": "container",
+                    "weight": 1.0,
+                    "items": [
+                        {
+                            "type": "button",
+                            "id": "tool_MobileNetV4-small_classify",
+                            "text": "📷 Classify What The Camera Sees",
+                            "subtitle": "Captures a frame, runs real INT8 inference",
+                            "icon": "camera",
+                            "background_color": "#4F46E5",
+                            "text_color": "#FFFFFF",
+                            "corner_radius": 10,
+                            "action": {
+                                "log_id": "exec_tool_MobileNetV4-small_classify",
+                                "url": "tools://MobileNetV4-small/classify",
+                                "payload": {
+                                    "operation": "classify",
+                                    "options": {
+                                        "top_k": "3",
+                                        "min_confidence": "0.40",
+                                        "camera": "true"
+                                    },
+                                    "output": {
+                                        "prediction_label": "user.ai_prediction_label",
+                                        "confidence": "user.ai_confidence_score",
+                                        "source_image": "user.ai_source_image_uri"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "container",
+                    "weight": 1.0,
+                    "items": [
+                        {
+                            "type": "button",
+                            "id": "tool_MobileNetV4-small_classify_file",
+                            "text": "🖼 Classify A Photo",
+                            "subtitle": "Pick an existing image",
+                            "icon": "image",
+                            "background_color": "#3730A3",
+                            "text_color": "#FFFFFF",
+                            "corner_radius": 10,
+                            "action": {
+                                "log_id": "exec_tool_MobileNetV4-small_classify_file",
+                                "url": "tools://MobileNetV4-small/classify",
+                                "payload": {
+                                    "operation": "classify",
+                                    "options": {
+                                        "top_k": "3",
+                                        "min_confidence": "0.40",
+                                        "camera": "false"
+                                    },
+                                    "output": {
+                                        "prediction_label": "user.ai_prediction_label",
+                                        "confidence": "user.ai_confidence_score",
+                                        "source_image": "user.ai_source_image_uri"
+                                    }
+                                }
+                            }
+                        }
+                    ]
                 }
-            }
+            ]
         }
     ]
 }

@@ -389,8 +389,43 @@ class ExampleUnitTest {
 
         // Must not invent a prediction when it has no pixels to look at.
         assertFalse("classify must not succeed without an image", outcome.success)
-        assertEquals("UNSUPPORTED", outcome.resultData.jsonObject["status"]?.jsonPrimitive?.contentOrNull)
+        assertEquals("NO_INPUT", outcome.resultData.jsonObject["status"]?.jsonPrimitive?.contentOrNull)
     }
+
+    @Test
+    fun nativeTools_mobileNetV4ClassifiesAPickedFileThroughTheImageSourceSink() =
+        kotlinx.coroutines.runBlocking {
+            val context = androidx.test.core.app.ApplicationProvider.getApplicationContext<android.content.Context>()
+            engine.db.currentAndroidContext = { context }
+
+            // Write a real PNG to disk and hand its path back through the sink, standing in for
+            // the user picking a file. The classifier must consume those pixels.
+            val file = java.io.File(context.cacheDir, "pick_${System.currentTimeMillis()}.png")
+            val bmp = android.graphics.Bitmap.createBitmap(320, 320, android.graphics.Bitmap.Config.ARGB_8888)
+            bmp.eraseColor(android.graphics.Color.rgb(90, 140, 60))
+            file.outputStream().use { bmp.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
+            bmp.recycle()
+
+            val previous = NativeToolsSuite.imageSourceSink
+            NativeToolsSuite.imageSourceSink = { file.absolutePath }
+            try {
+                val outcome = NativeToolsSuite.execute(
+                    "tools://MobileNetV4-small/classify",
+                    buildJsonObject { putJsonObject("options") { put("top_k", "3") } }
+                )
+                // On the JVM the TFLite native library is absent, so inference reports FAILED
+                // rather than a made-up label. What matters here is that the sink was consulted
+                // and the image was read, not that a model ran.
+                val status = outcome.resultData.jsonObject["status"]?.jsonPrimitive?.contentOrNull
+                assertTrue(
+                    "picked image must be consumed, got status=$status",
+                    status in setOf("FAILED", "SUCCESS", "NO_CODE_FOUND")
+                )
+            } finally {
+                NativeToolsSuite.imageSourceSink = previous
+                file.delete()
+            }
+        }
 
     @Test
     fun nativeTools_u2NetReportsUnsupportedInsteadOfFabricatingMask() = kotlinx.coroutines.runBlocking {
@@ -404,13 +439,43 @@ class ExampleUnitTest {
             }
         )
 
-        // No U-2-Net weights ship with this build, so there is no alpha matte to return.
-        assertFalse("segmentation must not claim success without a model", outcome.success)
+        // No image and no host sink, so nothing can be segmented. Critically it must not return
+        // a mask uri: the old implementation fabricated one without computing anything.
+        assertFalse("segmentation must not succeed without an image", outcome.success)
         val result = outcome.resultData.jsonObject
-        assertEquals("UNSUPPORTED", result["status"]?.jsonPrimitive?.contentOrNull)
+        assertEquals("NO_INPUT", result["status"]?.jsonPrimitive?.contentOrNull)
         assertNull("must not fabricate a mask uri", result["mask_uri"]?.jsonPrimitive?.contentOrNull)
-        assertNotNull("should explain why", result["reason"]?.jsonPrimitive?.contentOrNull)
     }
+
+    @Test
+    fun nativeTools_u2NetRemovesBackgroundFromARealImageAndSaysItIsNotU2Net() =
+        kotlinx.coroutines.runBlocking {
+            val context = androidx.test.core.app.ApplicationProvider.getApplicationContext<android.content.Context>()
+            engine.db.currentAndroidContext = { context }
+
+            val file = java.io.File(context.cacheDir, "bg_${System.currentTimeMillis()}.png")
+            val bmp = android.graphics.Bitmap.createBitmap(64, 64, android.graphics.Bitmap.Config.ARGB_8888)
+            bmp.eraseColor(android.graphics.Color.WHITE)
+            file.outputStream().use { bmp.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
+            bmp.recycle()
+
+            val outcome = NativeToolsSuite.execute(
+                "tools://u-2-Net.tflite/segment",
+                buildJsonObject { putJsonObject("options") { put("uri", file.absolutePath) } }
+            )
+            val result = outcome.resultData.jsonObject
+            assertEquals("SUCCESS", result["status"]?.jsonPrimitive?.contentOrNull)
+            // The output must be a real written file, not a placeholder.
+            val uri = result["uri"]?.jsonPrimitive?.contentOrNull
+            assertNotNull("must return the processed image", uri)
+            assertTrue("must be a file uri, was $uri", uri!!.startsWith("file://"))
+            assertTrue("processed file must exist", java.io.File(uri.removePrefix("file://")).exists())
+            // And it must not pretend to be U-2-Net.
+            val algorithm = result["algorithm"]?.jsonPrimitive?.contentOrNull ?: ""
+            assertTrue("must disclose the real algorithm, was $algorithm", algorithm.contains("not U-2-Net"))
+            file.delete()
+            Unit
+        }
 
     @Test
     fun genericHaptics_executesSemanticPatterns() = kotlinx.coroutines.runBlocking {
@@ -1169,6 +1234,109 @@ class ExampleUnitTest {
     }
 
     @Test
+    fun decodeLuminance_decodesA1DBarcodeOnlyWhenSensorRotationIsApplied() = kotlinx.coroutines.runBlocking {
+        // Regression for "QR scans but barcodes never do". A camera sensor is mounted rotated, so
+        // the Y plane arrives landscape while the user holds the phone upright. A 1D barcode is a
+        // single scan line; without rotating the frame back, that line runs the wrong way and
+        // ZXing's linear readers find nothing. QR is square, so it survived - which is exactly the
+        // reported symptom.
+        val outcome = engine.tools.NativeToolsSuite.execute(
+            url = "tools://code-generate/barcode",
+            payload = buildJsonObject {
+                put("content", "9780201633610")
+                put("format", "EAN_13")
+                put("width", "400")
+                put("height", "160")
+            }
+        )
+        val uri = (outcome.outputVariables["user.code_image_uri"] as DivVariableValue.Str).value
+        val bitmap = engine.tools.scan.BarcodeDecoder.loadBitmap(uri)
+        assertNotNull("generated barcode should load", bitmap)
+        try {
+            val w = bitmap!!.width
+            val h = bitmap.height
+
+            // Dense luminance of the upright code, as if the sensor had been level with it.
+            val upright = ByteArray(w * h)
+            val pixels = IntArray(w * h)
+            bitmap.getPixels(pixels, 0, w, 0, 0, w, h)
+            for (i in pixels.indices) {
+                val c = pixels[i]
+                val r = (c shr 16) and 0xFF
+                val g = (c shr 8) and 0xFF
+                val b = c and 0xFF
+                upright[i] = ((r * 299 + g * 587 + b * 114) / 1000).toByte()
+            }
+
+            // Rotate 90 degrees clockwise: this is what the sensor actually delivers.
+            val rotatedW = h
+            val rotatedH = w
+            val rotated = ByteArray(rotatedW * rotatedH)
+            for (y in 0 until h) {
+                for (x in 0 until w) {
+                    val nx = h - 1 - y
+                    val ny = x
+                    rotated[ny * rotatedW + nx] = upright[y * w + x]
+                }
+            }
+
+            val unrotated = engine.tools.scan.BarcodeDecoder
+                .decodeLuminance(rotated, rotatedW, rotatedH, 0)
+            assertNull(
+                "an unrotated sensor frame must not decode a 1D code; that was the bug",
+                unrotated
+            )
+
+            val corrected = engine.tools.scan.BarcodeDecoder
+                .decodeLuminance(rotated, rotatedW, rotatedH, 270)
+            assertNotNull("rotating the frame back must recover the barcode", corrected)
+            assertEquals("9780201633610", corrected!!.rawValue)
+            assertEquals("EAN_13", corrected.format)
+        } finally {
+            bitmap!!.recycle()
+        }
+    }
+
+    @Test
+    fun rotateLuminance_leavesChromaTailUntouchedAndRotatesOnlyLuma() {
+        // A camera YUV frame is luma followed by chroma, so the buffer is larger than
+        // `width * height`. Reversing the whole buffer to rotate 180 degrees would pull chroma
+        // bytes into the image and destroy it; only the luma region may be touched.
+        val w = 4
+        val h = 2
+        val luma = byteArrayOf(1, 2, 3, 4, 5, 6, 7, 8)
+        val chroma = ByteArray(4) { 0x40 }
+        val frame = luma + chroma
+
+        val rotated = engine.tools.scan.BarcodeDecoder.rotateLuminance(frame, w, h, 180)
+
+        assertEquals("dimensions must be unchanged at 180 degrees", w, rotated.width)
+        assertEquals(h, rotated.height)
+        assertArrayEquals(
+            "luma must be reversed; reversing the whole buffer would pull chroma in here",
+            byteArrayOf(8, 7, 6, 5, 4, 3, 2, 1),
+            rotated.data.copyOfRange(0, w * h)
+        )
+    }
+
+    @Test
+    fun rotateLuminance_swapsDimensionsForQuarterTurns() {
+        // 90 and 270 degrees transpose the frame, so width and height swap. Getting this wrong
+        // leaves PlanarYUVLuminanceSource reading past the end of a short row.
+        val w = 3
+        val h = 2
+        val frame = ByteArray(w * h) { it.toByte() }
+
+        val cw = engine.tools.scan.BarcodeDecoder.rotateLuminance(frame, w, h, 90)
+        assertEquals(h, cw.width)
+        assertEquals(w, cw.height)
+
+        val ccw = engine.tools.scan.BarcodeDecoder.rotateLuminance(frame, w, h, 270)
+        assertEquals(h, ccw.width)
+        assertEquals(w, ccw.height)
+    }
+
+    @Test
     fun codeGenerateEngine_keepsAQuietZoneAroundLinearSymbologies() {
         val narrow = engine.tools.code.CodeGeneratorEngine.effectiveMargin(
             com.google.zxing.BarcodeFormat.EAN_13, 4
@@ -1481,25 +1649,46 @@ class ExampleUnitTest {
         val action = ocrButton?.get("action")?.jsonObject
         assertNotNull("expected an OCR trigger in the scanner demo block", action)
         val payload = action!!["payload"]!!.jsonObject
-        val source = payload["options"]!!.jsonObject["uri"]?.jsonPrimitive?.contentOrNull
-        assertNotNull("OCR demo must pass a source image", source)
-        assertTrue(
-            "OCR source must be decodable, was '$source'",
-            source!!.startsWith("file://") || source.startsWith("data:image")
+        val options = payload["options"]?.jsonObject ?: buildJsonObject { }
+
+        // The card no longer hardcodes a bundled sample: tapping it asks the user for a photo,
+        // either from the camera or an existing file, the same way the scanners work.
+        assertNull(
+            "OCR card should not pin a sample image; it must ask the user for one",
+            options["uri"]?.jsonPrimitive?.contentOrNull
         )
 
-        val outcome = NativeToolsSuite.execute(
-            url = action["url"]!!.jsonPrimitive.content,
-            payload = payload
-        )
-        // ML Kit is unavailable under Robolectric, so this asserts the tool reaches the
-        // recognizer with a real image instead of failing to decode the demo source.
-        val status = outcome.resultData.jsonObject["status"]?.jsonPrimitive?.contentOrNull
-        val error = outcome.resultData.jsonObject["error"]?.jsonPrimitive?.contentOrNull ?: ""
-        assertTrue(
-            "OCR demo failed on the source image, not the recognizer: $status / $error",
-            status == "SUCCESS" || error.contains("MlKitContext")
-        )
+        // Drive the tool the way the host does: install a sink that returns a real file and
+        // confirm OCR consumes those pixels instead of failing to find an image.
+        val context = androidx.test.core.app.ApplicationProvider.getApplicationContext<android.content.Context>()
+        engine.db.currentAndroidContext = { context }
+        val file = java.io.File(context.cacheDir, "ocr_${System.currentTimeMillis()}.png")
+        val bmp = android.graphics.Bitmap.createBitmap(64, 64, android.graphics.Bitmap.Config.ARGB_8888)
+        bmp.eraseColor(android.graphics.Color.WHITE)
+        file.outputStream().use { bmp.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
+        bmp.recycle()
+
+        val previous = NativeToolsSuite.imageSourceSink
+        var sinkCalls = 0
+        NativeToolsSuite.imageSourceSink = { sinkCalls++; file.absolutePath }
+        try {
+            val outcome = NativeToolsSuite.execute(
+                url = action["url"]!!.jsonPrimitive.content,
+                payload = payload
+            )
+            assertEquals("the OCR card must go through the image-source sink", 1, sinkCalls)
+            // ML Kit is unavailable under Robolectric, so this asserts the tool reached the
+            // recognizer with a real image rather than failing to acquire one.
+            val status = outcome.resultData.jsonObject["status"]?.jsonPrimitive?.contentOrNull
+            val error = outcome.resultData.jsonObject["error"]?.jsonPrimitive?.contentOrNull ?: ""
+            assertTrue(
+                "OCR demo failed on the source image, not the recognizer: $status / $error",
+                status == "SUCCESS" || error.contains("MlKitContext")
+            )
+        } finally {
+            NativeToolsSuite.imageSourceSink = previous
+            file.delete()
+        }
     }
 
     @Test
@@ -1571,10 +1760,11 @@ class ExampleUnitTest {
     fun demoCodeGenerateBlock_triggersGeneratorAndMapsOutputs() = kotlinx.coroutines.runBlocking {
         val spec = WorkspaceProvisioner.defaultWorkspaces.first()
         val block = SduiOnFlyBuilder.buildCodeGenerateToolBlock(spec)
-        val button = block["items"]!!.jsonArray[4].jsonObject["items"]!!.jsonArray[0]
-            .jsonObject["items"]!!.jsonArray[0].jsonObject
-
-        val action = button["action"]!!.jsonObject
+        // Locate by URL rather than by position: the card now carries a preview image, so item
+        // indices shift whenever the layout changes.
+        val action = collectToolActions(block)
+            .firstOrNull { it["url"]?.jsonPrimitive?.content == "tools://code-generate/generate" }
+            ?: throw AssertionError("generator card has no generate trigger")
         val url = action["url"]!!.jsonPrimitive.content
         val payload = action["payload"]!!.jsonObject
 

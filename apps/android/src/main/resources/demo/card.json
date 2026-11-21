@@ -83,6 +83,11 @@
         "value": 3
       },
       {
+        "name": "user.scan_image_uri",
+        "type": "string",
+        "value": ""
+      },
+      {
         "name": "user.code_image_uri",
         "type": "string",
         "value": "file:///data/user/0/com.example/files/workspaces/${tenantId}/media/code_9f3c1a2b7d10.png"
@@ -128,14 +133,19 @@
         "value": "0.93"
       },
       {
+        "name": "user.ai_source_image_uri",
+        "type": "string",
+        "value": ""
+      },
+      {
         "name": "user.u2net_mask_uri",
         "type": "string",
-        "value": "content://com.example.provider/u2net/alpha_matte_01.png"
+        "value": ""
       },
       {
         "name": "user.bg_remove_status",
         "type": "string",
-        "value": "Transparent PNG Ready"
+        "value": "Not run yet"
       },
       {
         "name": "user.signal_session_id",

@@ -167,24 +167,32 @@ class CameraTool : ToolHandler {
     private fun executeTorch(args: ToolArgs): ToolResult {
         val enabled = args.getFlag("enabled") || args["state"] == "on" || args["torch"] == "true"
         val context = currentAndroidContext?.invoke()
-        if (context != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            try {
-                val cameraManager = context.getSystemService(Context.CAMERA_SERVICE) as CameraManager
-                val cameraId = cameraManager.cameraIdList.firstOrNull { id ->
-                    val chars = cameraManager.getCameraCharacteristics(id)
-                    chars.get(CameraCharacteristics.FLASH_INFO_AVAILABLE) == true
-                }
-                if (cameraId != null) {
-                    cameraManager.setTorchMode(cameraId, enabled)
-                }
-            } catch (_: Exception) {}
+            ?: return ToolResult.Unsupported(capability, "No Android context to drive the torch")
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            return ToolResult.Unsupported(capability, "Torch control requires Android 6.0+")
         }
-        return ToolResult.Success(
-            mapOf(
-                "torch_state" to enabled,
-                "status" to "SUCCESS"
+
+        val cameraManager = context.getSystemService(Context.CAMERA_SERVICE) as? CameraManager
+            ?: return ToolResult.Unsupported(capability, "Camera service unavailable")
+        val cameraId = try {
+            cameraManager.cameraIdList.firstOrNull { id ->
+                cameraManager.getCameraCharacteristics(id)
+                    .get(CameraCharacteristics.FLASH_INFO_AVAILABLE) == true
+            }
+        } catch (e: Exception) {
+            return ToolResult.Failed(capability, e.message ?: "Could not query camera flash")
+        } ?: return ToolResult.Unsupported(capability, "This device has no flash unit")
+
+        return try {
+            cameraManager.setTorchMode(cameraId, enabled)
+            ToolResult.Success(
+                mapOf("torch_state" to enabled, "status" to "SUCCESS", "camera_id" to cameraId)
             )
-        )
+        } catch (e: Exception) {
+            // setTorchMode throws when another app holds the camera; reporting SUCCESS here
+            // would tell the user the light is on when it is not.
+            ToolResult.Failed(capability, e.message ?: "Torch could not be toggled")
+        }
     }
 
     private fun executeStatus(): ToolResult {

@@ -7,6 +7,7 @@ import android.os.Handler
 import android.os.Looper
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageCapture
@@ -33,6 +34,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -45,6 +47,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import engine.tools.scan.BarcodeDecoder
 import engine.tools.scan.ScanResult
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.io.File
 import java.util.concurrent.Executors
@@ -108,7 +111,11 @@ object CameraHost {
      * dispatcher; the request is published on the main thread so the overlay recomposes, and the
      * result is delivered on the main thread.
      */
-    suspend fun run(mode: CameraMode, facing: String, maxDimension: Int): CameraOutcome =
+    suspend fun run(
+        mode: CameraMode,
+        facing: String,
+        maxDimension: Int
+    ): CameraOutcome =
         suspendCancellableCoroutine { cont ->
             val main = Handler(Looper.getMainLooper())
             val request = Request(mode, facing, maxDimension) { outcome ->
@@ -186,6 +193,13 @@ private fun CameraPreview(request: CameraHost.Request) {
     var analysis by remember { mutableStateOf<ImageAnalysis?>(null) }
     var bound by remember { mutableStateOf(false) }
     var errorText by remember { mutableStateOf<String?>(null) }
+    var camera by remember { mutableStateOf<Camera?>(null) }
+    var torchOn by remember { mutableStateOf(false) }
+    val hasFlash = camera?.cameraInfo?.hasFlashUnit() == true
+    LaunchedEffect(torchOn, camera) {
+        val cam = camera ?: return@LaunchedEffect
+        runCatching { cam.cameraControl.enableTorch(torchOn) }
+    }
 
     DisposableEffect(lifecycleOwner) {
         val providerFuture = ProcessCameraProvider.getInstance(context)
@@ -221,7 +235,7 @@ private fun CameraPreview(request: CameraHost.Request) {
                 }
 
                 provider.unbindAll()
-                provider.bindToLifecycle(lifecycleOwner, selector, *useCases.toTypedArray())
+                camera = provider.bindToLifecycle(lifecycleOwner, selector, *useCases.toTypedArray())
                 bound = true
             } catch (e: Exception) {
                 val message = e.message ?: "Camera unavailable"
@@ -232,6 +246,7 @@ private fun CameraPreview(request: CameraHost.Request) {
 
         onDispose {
             analysis?.clearAnalyzer()
+            runCatching { camera?.cameraControl?.enableTorch(false) }
             runCatching { providerFuture.get().unbindAll() }
             executor.shutdown()
         }
@@ -264,6 +279,12 @@ private fun CameraPreview(request: CameraHost.Request) {
                     onClick = { takePhoto(context, imageCapture, currentRequest) },
                     enabled = bound
                 ) { Text("Capture") }
+            }
+
+            if (hasFlash) {
+                Button(onClick = { torchOn = !torchOn }) {
+                    Text(if (torchOn) "Torch On" else "Torch Off")
+                }
             }
 
             TextButton(onClick = { CameraHost.cancel() }) {
@@ -346,6 +367,13 @@ private class BarcodeAnalyzer(
                 System.arraycopy(row, 0, out, y * width, width)
             }
         }
-        return BarcodeDecoder.decodeLuminance(out, width, height)
+
+        // Camera sensors are mounted rotated, so the buffer arrives landscape while the user
+        // holds the device upright. A 1D barcode is a single scan line: if the frame is not
+        // rotated back, that line is vertical in the buffer and ZXing's linear readers cannot
+        // find it at all. QR survives (it is square and rotation-independent), which is exactly
+        // the symptom of QR scanning while barcodes never resolve.
+        val rotation = image.imageInfo.rotationDegrees
+        return BarcodeDecoder.decodeLuminance(out, width, height, rotation)
     }
 }

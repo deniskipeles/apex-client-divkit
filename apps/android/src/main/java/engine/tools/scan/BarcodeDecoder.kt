@@ -82,11 +82,74 @@ object BarcodeDecoder {
         return runReader(BinaryBitmap(HybridBinarizer(source)))
     }
 
-    /** Decodes a camera frame already in luminance (Y) plane form. */
-    fun decodeLuminance(data: ByteArray, width: Int, height: Int): ScanResult? {
+    /**
+     * Decodes a camera frame already in luminance (Y) plane form.
+     *
+     * [rotationDegrees] is the sensor orientation reported by CameraX. The buffer arrives in
+     * sensor order, which on a phone is landscape even when the device is upright. Rotating it
+     * back into the user's frame matters most for 1D symbologies: a barcode is a single scan
+     * line, and ZXing's linear readers only search horizontally and vertically over the image as
+     * given, so an unrotated frame leaves the code running the wrong way.
+     */
+    fun decodeLuminance(
+        data: ByteArray,
+        width: Int,
+        height: Int,
+        rotationDegrees: Int = 0
+    ): ScanResult? {
         if (width <= 0 || height <= 0 || data.size < width * height) return null
         val source = PlanarYUVLuminanceSource(data, width, height, 0, 0, width, height, false)
-        return runReader(BinaryBitmap(HybridBinarizer(source)))
+        runReader(BinaryBitmap(HybridBinarizer(source)))?.let { return it }
+        if (rotationDegrees % 360 == 0) return null
+
+        // Rotate the luminance plane by hand: PlanarYUVLuminanceSource has no rotation support,
+        // and rotating the source is cheaper than building a Bitmap per frame.
+        val rotated = rotateLuminance(data, width, height, rotationDegrees)
+        val rotatedSource = PlanarYUVLuminanceSource(
+            rotated.data, rotated.width, rotated.height, 0, 0, rotated.width, rotated.height, false
+        )
+        return runReader(BinaryBitmap(HybridBinarizer(rotatedSource)))
+    }
+
+    internal class RotatedLuminance(val data: ByteArray, val width: Int, val height: Int)
+
+    /** Rotates a dense luminance buffer clockwise by [degrees] (90, 180 or 270). */
+    internal fun rotateLuminance(
+        data: ByteArray,
+        width: Int,
+        height: Int,
+        degrees: Int
+    ): RotatedLuminance {
+        val d = ((degrees % 360) + 360) % 360
+        if (d == 180) {
+            // Only the luma region is rotated: a YUV frame carries chroma past `width * height`,
+            // and folding those bytes in would corrupt every pixel.
+            val luma = width * height
+            val out = ByteArray(data.size)
+            for (i in 0 until luma) out[i] = data[luma - 1 - i]
+            return RotatedLuminance(out, width, height)
+        }
+        val out = ByteArray(data.size)
+        if (d == 90) {
+            // New width is the old height.
+            for (y in 0 until height) {
+                for (x in 0 until width) {
+                    val nx = height - 1 - y
+                    val ny = x
+                    out[ny * height + nx] = data[y * width + x]
+                }
+            }
+            return RotatedLuminance(out, height, width)
+        }
+        // 270
+        for (y in 0 until height) {
+            for (x in 0 until width) {
+                val nx = y
+                val ny = width - 1 - x
+                out[ny * height + nx] = data[y * width + x]
+            }
+        }
+        return RotatedLuminance(out, height, width)
     }
 
     private fun runReader(image: BinaryBitmap): ScanResult? = try {

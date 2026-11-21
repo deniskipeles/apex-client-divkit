@@ -555,6 +555,7 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                         "user.ocr_text" to DivVariableValue.Str("TABLE 12 • 2 GUESTS • ORDER #4821"),
                         "user.ocr_confidence" to DivVariableValue.Str("0.94"),
                         "user.ocr_block_count" to DivVariableValue.IntVal(3L),
+                        "user.scan_image_uri" to DivVariableValue.Str(""),
                         "user.code_image_uri" to DivVariableValue.Str("file:///data/user/0/com.example/files/workspaces/${spec.tenantId}/media/code_9f3c1a2b7d10.png"),
                         "user.code_format" to DivVariableValue.Str("QR_CODE"),
                         "user.code_kind" to DivVariableValue.Str("2D"),
@@ -563,8 +564,11 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                         "user.code_status" to DivVariableValue.Str("SUCCESS"),
                         "user.ai_prediction_label" to DivVariableValue.Str("Wagyu Smash Burger (Entree)"),
                         "user.ai_confidence_score" to DivVariableValue.Str("0.93"),
-                        "user.u2net_mask_uri" to DivVariableValue.Str("content://com.example.provider/u2net/alpha_matte_01.png"),
-                        "user.bg_remove_status" to DivVariableValue.Str("Transparent PNG Ready"),
+                        "user.ai_source_image_uri" to DivVariableValue.Str(""),
+                        // Nothing has been segmented yet: a fabricated URI here would render an
+                        // empty preview and claim a result the tool never produced.
+                        "user.u2net_mask_uri" to DivVariableValue.Str(""),
+                        "user.bg_remove_status" to DivVariableValue.Str("Not run yet"),
                         "user.signal_session_id" to DivVariableValue.Str("sig_sess_acme_peer_01"),
                         "user.signal_fingerprint" to DivVariableValue.Str("4E-91-A2-5F-C0-83"),
                         "user.signal_status" to DivVariableValue.Str("ESTABLISHED"),

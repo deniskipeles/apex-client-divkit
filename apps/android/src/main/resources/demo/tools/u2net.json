@@ -19,42 +19,93 @@
     "items": [
         {
             "type": "text",
-            "text": "🪄 U-2-Net.tflite SALIENT SEGMENTATION — MODEL NOT BUNDLED (tools://u-2-Net.tflite)",
+            "text": "🪄 BACKGROUND REMOVAL — ON-DEVICE MATTE, NOT U-2-NET (tools://u-2-Net.tflite)",
             "font_size": 11,
             "font_weight": "bold",
             "text_color": "#67E8F9"
         },
         {
             "type": "text",
-            "text": "Status: @{user.bg_remove_status} • No alpha matte is produced; the U-2-Net weights are not shipped in this build",
+            "text": "Status: @{user.bg_remove_status}",
             "font_size": 12,
             "text_color": "#E0F2FE",
             "font_family": "monospace"
         },
         {
-            "type": "button",
-            "id": "tool_u-2-Net_tflite_segment",
-            "text": "Check U-2-Net Availability (reports UNSUPPORTED)",
-            "subtitle": "tools://u-2-Net.tflite/segment • Use image-manipulation/remove_background instead",
-            "icon": "crop",
-            "background_color": "#0891B2",
-            "text_color": "#FFFFFF",
+            "type": "image",
+            "image_url": "@{user.u2net_mask_uri}",
+            "preview_height": 200,
             "corner_radius": 10,
-            "action": {
-                "log_id": "exec_tool_u-2-Net.tflite_segment",
-                "url": "tools://u-2-Net.tflite/segment",
-                "payload": {
-                    "operation": "segment",
-                    "options": {
-                        "saliency_cutoff": "0.45",
-                        "quantization": "INT8"
-                    },
-                    "output": {
-                        "status": "user.bg_remove_status",
-                        "reason": "user.u2net_unavailable_reason"
-                    }
+            "content_description": "Background-removed image"
+        },
+        {
+            "type": "container",
+            "orientation": "horizontal",
+            "item_spacing": 8,
+            "items": [
+                {
+                    "type": "container",
+                    "weight": 1.0,
+                    "items": [
+                        {
+                            "type": "button",
+                            "id": "tool_u-2-Net_tflite_segment",
+                            "text": "🪄 Remove Background (Camera)",
+                            "subtitle": "Runs the on-device matte",
+                            "icon": "crop",
+                            "background_color": "#0891B2",
+                            "text_color": "#FFFFFF",
+                            "corner_radius": 10,
+                            "action": {
+                                "log_id": "exec_tool_u-2-Net.tflite_segment",
+                                "url": "tools://u-2-Net.tflite/segment",
+                                "payload": {
+                                    "operation": "segment",
+                                    "options": {
+                                        "threshold": "0.45",
+                                        "camera": "true"
+                                    },
+                                    "output": {
+                                        "status": "user.bg_remove_status",
+                                        "uri": "user.u2net_mask_uri"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "container",
+                    "weight": 1.0,
+                    "items": [
+                        {
+                            "type": "button",
+                            "id": "tool_u-2-Net_tflite_segment_file",
+                            "text": "🖼 Remove Background (Photo)",
+                            "subtitle": "Pick an existing image",
+                            "icon": "image",
+                            "background_color": "#155E75",
+                            "text_color": "#FFFFFF",
+                            "corner_radius": 10,
+                            "action": {
+                                "log_id": "exec_tool_u-2-Net.tflite_segment_file",
+                                "url": "tools://u-2-Net.tflite/segment",
+                                "payload": {
+                                    "operation": "segment",
+                                    "options": {
+                                        "threshold": "0.45",
+                                        "camera": "false"
+                                    },
+                                    "output": {
+                                        "status": "user.bg_remove_status",
+                                        "uri": "user.u2net_mask_uri"
+                                    }
+                                }
+                            }
+                        }
+                    ]
                 }
-            }
+            ]
         }
     ]
 }

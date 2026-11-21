@@ -39,6 +39,13 @@
             "font_family": "monospace"
         },
         {
+            "type": "image",
+            "image_url": "@{user.code_image_uri}",
+            "preview_height": 220,
+            "corner_radius": 10,
+            "content_description": "Generated code"
+        },
+        {
             "type": "text",
             "text": "PNG: @{user.code_image_uri}",
             "font_size": 11,

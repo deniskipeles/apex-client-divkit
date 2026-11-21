@@ -32,6 +32,13 @@
             "font_family": "monospace"
         },
         {
+            "type": "image",
+            "image_url": "@{user.camera_capture_uri}",
+            "preview_height": 200,
+            "corner_radius": 10,
+            "content_description": "Last capture"
+        },
+        {
             "type": "text",
             "text": "Torch: @{user.camera_torch_state}",
             "font_size": 12,
