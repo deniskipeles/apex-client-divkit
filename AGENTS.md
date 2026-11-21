@@ -311,6 +311,18 @@ pnpm check:desktop           # cargo check
 - Release builds run R8 with `isMinifyEnabled`. Ktor's debugger detector references JVM-only
   `java.lang.management` types, so `proguard-rules.pro` carries matching `-dontwarn` rules;
   without them `minifyReleaseWithR8` fails with "Missing class" errors.
+- `-repackageclasses` is enabled, so anything loaded **by name** must have a keep rule.
+  `org.whispersystems.curve25519.**` is the important one: `Curve25519.constructClass` does
+  `Class.forName("org.whispersystems.curve25519.NativeCurve25519Provider")`, so R8 sees no
+  reference and strips the providers. The debug APK works and the release APK throws
+  `NoClassDefFoundError` on the first `tools://libsignal` call. When adding a dependency that
+  loads classes reflectively, add a keep rule and confirm the class is still in the minified
+  dex (`unzip -p app-release.apk classes.dex | strings | grep <name>`).
+- Keep rules pulled in for classes that are only *referenced* (not reflectively loaded) can
+  break the build: `-keep class com.google.mediapipe.framework.Graph { *; }` dragged in
+  `com.google.mediapipe.proto.GraphTemplateProto$CalculatorGraphTemplate`, which is not on the
+  classpath, and `minifyReleaseWithR8` failed. MediaPipe/TFLite/CameraX already ship consumer
+  ProGuard rules, so they need no project-side keeps.
 
 ## Demo showcase contract
 
