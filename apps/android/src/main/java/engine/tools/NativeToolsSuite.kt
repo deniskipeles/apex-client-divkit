@@ -733,21 +733,21 @@ object NativeToolsSuite {
         val data: Map<String, Any>
         when (op) {
             "text" -> {
-                val text = payload["text"]?.jsonPrimitive?.contentOrNull ?: ""
+                val text = payload["text"]?.jsonPrimitive?.contentOrNull ?: options["text"] ?: ""
                 val v = TextVectorizer.embed(ctx, text)
                 data = mapOf("vector_b64" to packFloats(v), "dim" to v.size,
                              "source_type" to "text", "status" to "SUCCESS",
                              "model" to "MediaPipe USE-Lite")
             }
             "image" -> {
-                val bmp = decodeBitmap(ctx, payload["uri"]?.jsonPrimitive?.contentOrNull)
+                val bmp = decodeBitmap(ctx, payload["uri"]?.jsonPrimitive?.contentOrNull ?: options["uri"])
                 val v = ImageVectorizer.embed(ctx, bmp)
                 data = mapOf("vector_b64" to packFloats(v), "dim" to v.size,
                              "source_type" to "image", "status" to "SUCCESS",
                              "model" to "MobileNetV4-small INT8")
             }
             "image_text" -> {
-                val bmp = decodeBitmap(ctx, payload["uri"]?.jsonPrimitive?.contentOrNull)
+                val bmp = decodeBitmap(ctx, payload["uri"]?.jsonPrimitive?.contentOrNull ?: options["uri"])
                 val ocr = OcrExtractor.extract(bmp)
                 val v = TextVectorizer.embed(ctx, ocr.text)
                 data = mapOf("vector_b64" to packFloats(v), "dim" to v.size,

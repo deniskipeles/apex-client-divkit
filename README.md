@@ -136,7 +136,7 @@ packages/divkit-subset/
 Tenants can declare interactive charts directly inside their signed DivKit JSON schema using `"type": "custom"` with `"custom_type": "sdui_chart"` (or `"bar_chart"`, `"line_chart"`, `"area_chart"`, `"donut_chart"`, `"pie_chart"`):
 
 - **Android parser (`apps/android/src/main/java/engine/ui/DivChartSpec.kt`)**:
-  - `DivChartParser` parses `custom_props` and binds to either a live reactive `EngineStateBridge` JSON array variable (`"data_var": "user.orders_json"` or `"user.inventory_json"` with automatic SKU aggregation) or inline `"points"`.
+  - `DivChartParser` parses `custom_props` and binds to either a live reactive `EngineStateBridge` JSON array variable (`"data_var": "user.orders_json"` or `"user.catalog_json"` with automatic SKU aggregation) or inline `"points"`.
 - **Android (`DivKitChartRenderer.kt` + Vico `com.patrykandpatrick.vico:compose-m3:2.0.0` + Jetpack Compose Canvas)**:
   - Renders interactive Material 3 **Bar**, **Line**, **Area**, and **Donut/Pie** charts with live chart-type switcher pills, KPI chips (`TOTAL`, `PEAK`, selected point), tap-to-inspect data points (writes to `user.selected_chart_point`), and animated transitions.
 - **iOS (`apps/ios/EngineCustomBlockFactory.swift` — `EngineChartBlockFactory: DivCustomBlockFactory`)**:

@@ -1039,7 +1039,7 @@ class ExampleUnitTest {
 
         // The showcase must exercise the icons:// scheme in both node and action positions.
         assertTrue("Demo card does not reference icons://native/", json.contains("icons://native/"))
-        listOf("cart", "bell", "receipt", "payment", "inventory", "printer", "scan", "warehouse")
+        listOf("cart", "bell", "receipt", "payment", "stock", "printer", "scan", "warehouse")
             .forEach { name ->
                 assertTrue("Demo card missing icons://native/$name", json.contains("icons://native/$name"))
             }
@@ -1223,6 +1223,56 @@ class ExampleUnitTest {
             "OCR demo failed on the source image, not the recognizer: $status / $error",
             status == "SUCCESS" || error.contains("MlKitContext")
         )
+    }
+
+    @Test
+    fun demoCards_supplyTheArgumentsTheirToolsRequire() = kotlinx.coroutines.runBlocking {
+        // Guards the class of bug where a card button dispatches a tool without the
+        // argument the handler needs (a missing `uri`, `text`, or share payload), so the
+        // button silently fails instead of doing what its label promises.
+        val spec = WorkspaceProvisioner.defaultWorkspaces.first()
+        val missingArgument = Regex("""(missing \S+ argument|requires a \S+)""", RegexOption.IGNORE_CASE)
+
+        val deadEnds = mutableListOf<String>()
+        DemoCardRepository.toolCardOrder.forEach { name ->
+            val card = DemoCardRepository.toolCard(spec, name) ?: return@forEach
+            collectToolActions(card).forEach { action ->
+                val url = action["url"]!!.jsonPrimitive.content
+                val payload = action["payload"] as? JsonObject ?: buildJsonObject { }
+                // Tools that need a device-native library throw here; only argument
+                // errors are this test's concern.
+                val error = runCatching {
+                    NativeToolsSuite.execute(url = url, payload = payload)
+                        .resultData.jsonObject["error"]?.jsonPrimitive?.contentOrNull
+                }.getOrElse { it.message }
+                if (error != null && missingArgument.containsMatchIn(error)) {
+                    deadEnds.add("$name -> $url: $error")
+                }
+            }
+        }
+        // The LAN hub card really starts a server; leave the shared NetTool idle again.
+        runCatching { NativeToolsSuite.execute(url = "tools://net/stop", payload = buildJsonObject { }) }
+
+        assertTrue("Demo buttons dispatch tools without their required arguments: $deadEnds", deadEnds.isEmpty())
+    }
+
+    /** Every `tools://` action object nested anywhere in [card]. */
+    private fun collectToolActions(card: JsonObject): List<JsonObject> {
+        val found = mutableListOf<JsonObject>()
+        fun walk(node: JsonElement) {
+            when (node) {
+                is JsonObject -> {
+                    val action = node["action"] as? JsonObject
+                    val url = action?.get("url")?.jsonPrimitive?.contentOrNull
+                    if (url != null && url.startsWith("tools://")) found.add(action)
+                    node.values.forEach(::walk)
+                }
+                is JsonArray -> node.forEach(::walk)
+                else -> Unit
+            }
+        }
+        walk(card)
+        return found
     }
 
     @Test

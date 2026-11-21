@@ -315,27 +315,27 @@ object WorkspaceProvisioner {
         }
     }
 
-    fun buildCountInventoryAction(): JsonObject = buildJsonObject {
-        put("log_id", "count_inventory")
+    fun buildCatalogCountAction(): JsonObject = buildJsonObject {
+        put("log_id", "count_catalog")
         put("url", "local-db://op/db.count")
         putJsonObject("payload") {
             put("table", "inventory")
             putJsonObject("output") {
-                put("count", "user.inventory_count")
+                put("count", "user.catalog_count")
             }
         }
     }
 
-    fun buildQueryInventoryAction(): JsonObject = buildJsonObject {
-        put("log_id", "query_inventory")
+    fun buildCatalogQueryAction(): JsonObject = buildJsonObject {
+        put("log_id", "query_catalog")
         put("url", "local-db://op/db.query")
         putJsonObject("payload") {
             put("table", "inventory")
             put("order_by", "id")
             put("limit", 50)
-            put("json_list_var", "user.inventory_json")
+            put("json_list_var", "user.catalog_json")
             putJsonObject("output") {
-                put("_json", "user.inventory_json")
+                put("_json", "user.catalog_json")
             }
         }
     }

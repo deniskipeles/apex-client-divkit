@@ -204,7 +204,7 @@ object SduiOnFlyBuilder {
     fun buildPrintToolBlock(spec: TenantWorkspaceSpec): JsonObject = buildToolCard(spec, "print")
     fun buildKeepAwakeToolBlock(spec: TenantWorkspaceSpec): JsonObject = buildToolCard(spec, "keep_awake")
     fun buildNativeIconSchemeBlock(spec: TenantWorkspaceSpec): JsonObject = buildToolCard(spec, "native_icons")
-    fun buildInventoryJsonListBlock(spec: TenantWorkspaceSpec): JsonObject = buildToolCard(spec, "inventory_list")
+    fun buildCatalogJsonListBlock(spec: TenantWorkspaceSpec): JsonObject = buildToolCard(spec, "catalog_list")
 
     fun buildSduiChartBlock(
         spec: TenantWorkspaceSpec,
@@ -233,11 +233,11 @@ object SduiOnFlyBuilder {
         }
     }
 
-    /** The inventory terminal blueprint: banner, donut chart, inventory list, reload button. */
-    fun buildInventoryTerminalBlueprint(spec: TenantWorkspaceSpec): String {
+    /** The catalog terminal blueprint: banner, donut chart, catalog list, reload button. */
+    fun buildCatalogTerminalBlueprint(spec: TenantWorkspaceSpec): String {
         val root = buildJsonObject {
             putJsonObject("card") {
-                put("log_id", "inventory_terminal_${spec.tenantId}")
+                put("log_id", "catalog_terminal_${spec.tenantId}")
                 putJsonArray("states") {
                     addJsonObject {
                         put("state_id", 0)
@@ -249,23 +249,23 @@ object SduiOnFlyBuilder {
                                 add(
                                     buildMetricBannerBlock(
                                         title = "${spec.displayName} • Stock Controller",
-                                        variableExpr = "@{user.inventory_count} SKUs",
+                                        variableExpr = "@{user.catalog_count} SKUs",
                                         accentHex = "#34D399"
                                     )
                                 )
-                                add(buildSduiChartBlock(spec, chartType = "donut", dataSource = "inventory"))
-                                add(buildInventoryJsonListBlock(spec))
+                                add(buildSduiChartBlock(spec, chartType = "donut", dataSource = "catalog"))
+                                add(buildCatalogJsonListBlock(spec))
                                 addJsonObject {
                                     put("type", "button")
                                     put("id", "refresh_inv_btn")
-                                    put("text", "Reload SQLite Inventory (local-db://op/db.query)")
+                                    put("text", "Reload SQLite Catalog (local-db://op/db.query)")
                                     put("icon", "refresh")
                                     put("background_color", "#0284C7")
                                     put("text_color", "#F8FAFC")
                                     put("corner_radius", 10)
                                     putJsonArray("actions") {
-                                        add(WorkspaceProvisioner.buildQueryInventoryAction())
-                                        add(WorkspaceProvisioner.buildCountInventoryAction())
+                                        add(WorkspaceProvisioner.buildCatalogQueryAction())
+                                        add(WorkspaceProvisioner.buildCatalogCountAction())
                                     }
                                 }
                             }

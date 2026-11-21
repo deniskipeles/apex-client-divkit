@@ -407,9 +407,9 @@ fun PosTerminalTab(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         RoutePresetButton(
-                            title = "📦 Inventory Stock",
+                            title = "📦 Catalog Stock",
                             queries = "category=beverage",
-                            onClick = { viewModel.switchActiveRoute("/inventory", "category=beverage") },
+                            onClick = { viewModel.switchActiveRoute("/catalog", "category=beverage") },
                             modifier = Modifier.weight(1f)
                         )
                         RoutePresetButton(
@@ -626,7 +626,7 @@ fun PosTerminalTab(
                         )
                     }
                     bridgeVars.entries
-                        .filter { it.key != "user.orders_json" && it.key != "user.inventory_json" }
+                        .filter { it.key != "user.orders_json" && it.key != "user.catalog_json" }
                         .forEach { (k, v) ->
                             Row(
                                 modifier = Modifier.fillMaxWidth(),

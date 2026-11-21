@@ -62,7 +62,7 @@
                 },
                 {
                     "type": "image",
-                    "image_url": "icons://native/inventory",
+                    "image_url": "icons://native/stock",
                     "size": 26,
                     "tint": "#C7D2FE"
                 },

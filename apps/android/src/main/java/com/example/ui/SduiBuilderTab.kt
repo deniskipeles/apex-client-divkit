@@ -208,16 +208,16 @@ fun SduiBuilderTab(
                 ) {
                     FilledTonalButton(
                         onClick = {
-                            val block = SduiOnFlyBuilder.buildInventoryJsonListBlock(spec)
-                            viewModel.injectOnFlyComponent(block, "Inventory json_list Block")
+                            val block = SduiOnFlyBuilder.buildCatalogJsonListBlock(spec)
+                            viewModel.injectOnFlyComponent(block, "Catalog json_list Block")
                             onSwitchToTerminalPreview()
                         },
                         modifier = Modifier
                             .weight(1f)
                             .defaultMinSize(minHeight = 48.dp)
-                            .testTag("inject_inventory_json_list_button")
+                            .testTag("inject_catalog_json_list_button")
                     ) {
-                        Text("+ json_list (Inventory)", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                        Text("+ json_list (Catalog)", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                     }
 
                     FilledTonalButton(
@@ -303,11 +303,11 @@ fun SduiBuilderTab(
                             val block = SduiOnFlyBuilder.buildSduiChartBlock(
                                 spec = spec,
                                 chartType = "donut",
-                                dataSource = "inventory"
+                                dataSource = "catalog"
                             )
                             viewModel.injectOnFlyComponent(
                                 block = block,
-                                description = "sdui_chart Donut (Inventory Stock)",
+                                description = "sdui_chart Donut (Catalog Stock)",
                                 prepend = true
                             )
                             onSwitchToTerminalPreview()
@@ -538,7 +538,7 @@ fun SduiBuilderTab(
                     }
                     OutlinedButton(
                         onClick = {
-                            val json = SduiOnFlyBuilder.buildInventoryTerminalBlueprint(spec)
+                            val json = SduiOnFlyBuilder.buildCatalogTerminalBlueprint(spec)
                             viewModel.applySduiBlueprint(json, "Stock & SKU Replenishment Schema")
                             onSwitchToTerminalPreview()
                         },

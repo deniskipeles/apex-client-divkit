@@ -62,7 +62,8 @@
                                 "payload": {
                                     "operation": "scan",
                                     "options": {
-                                        "target_format": "barcode"
+                                        "target_format": "barcode",
+                                        "uri": "${demoBarcodeUri}"
                                     },
                                     "output": {
                                         "raw_value": "user.scanned_code",
@@ -94,7 +95,8 @@
                                 "payload": {
                                     "operation": "scan",
                                     "options": {
-                                        "target_format": "qr"
+                                        "target_format": "qr",
+                                        "uri": "${demoQrUri}"
                                     },
                                     "output": {
                                         "raw_value": "user.scanned_code",

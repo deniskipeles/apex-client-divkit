@@ -4,6 +4,9 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.EncodeHintType
+import com.google.zxing.MultiFormatWriter
 import engine.db.currentAndroidContext
 import java.io.File
 
@@ -42,6 +45,65 @@ object DemoMedia {
             FALLBACK_DATA_URL
         }
     }
+
+    private const val BARCODE_FILE_NAME = "demo_barcode.png"
+    private const val QR_FILE_NAME = "demo_qr.png"
+
+    /** `file://` URI of a real EAN-13 barcode bitmap, or null when no Android context exists. */
+    fun barcodeImageUri(tenantId: String): String? =
+        symbologyUri(tenantId, BARCODE_FILE_NAME, BARCODE_VALUE, BarcodeFormat.EAN_13, 480, 240)
+
+    /** `file://` URI of a real QR bitmap, or null when no Android context exists. */
+    fun qrImageUri(tenantId: String): String? =
+        symbologyUri(tenantId, QR_FILE_NAME, QR_VALUE, BarcodeFormat.QR_CODE, 480, 480)
+
+    private fun symbologyUri(
+        tenantId: String,
+        fileName: String,
+        content: String,
+        format: BarcodeFormat,
+        width: Int,
+        height: Int
+    ): String? {
+        val dir = mediaDir(tenantId) ?: return null
+        val file = File(dir, fileName)
+        if (!file.exists() || file.length() == 0L) {
+            runCatching { writeSymbology(file, content, format, width, height) }
+        }
+        return if (file.exists() && file.length() > 0L) "file://${file.absolutePath}" else null
+    }
+
+    /**
+     * Encodes [content] into real pixels so the scanner decodes genuine symbology. The demo
+     * never injects a `simulated_code`: the card has to produce what a camera frame would.
+     */
+    private fun writeSymbology(
+        file: File,
+        content: String,
+        format: BarcodeFormat,
+        width: Int,
+        height: Int
+    ) {
+        val hints = mapOf(EncodeHintType.MARGIN to 2)
+        val matrix = MultiFormatWriter().encode(content, format, width, height, hints)
+        val bitmap = Bitmap.createBitmap(matrix.width, matrix.height, Bitmap.Config.ARGB_8888)
+        try {
+            for (x in 0 until matrix.width) {
+                for (y in 0 until matrix.height) {
+                    bitmap.setPixel(x, y, if (matrix.get(x, y)) Color.BLACK else Color.WHITE)
+                }
+            }
+            file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        } finally {
+            bitmap.recycle()
+        }
+    }
+
+    /** Payload carried by the demo barcode (EAN-13 requires 12 digits + checksum). */
+    const val BARCODE_VALUE = "9780201633610"
+
+    /** Payload carried by the demo QR code. */
+    const val QR_VALUE = "apexpos://order/pickup?terminal=POS-TERM-01"
 
     private fun writeSampleImage(file: File) {
         val bitmap = Bitmap.createBitmap(640, 400, Bitmap.Config.ARGB_8888)

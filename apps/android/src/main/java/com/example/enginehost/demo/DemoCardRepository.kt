@@ -53,7 +53,7 @@ object DemoCardRepository {
         "print",
         "keep_awake",
         "native_icons",
-        "inventory_list",
+        "catalog_list",
         "hourly_chart",
         "sdui_chart"
     )
@@ -97,7 +97,9 @@ object DemoCardRepository {
         "tenantId" to spec.tenantId,
         "terminalCode" to spec.terminalCode,
         "displayName" to spec.displayName,
-        "demoImageUri" to DemoMedia.sampleImageUri(spec.tenantId)
+        "demoImageUri" to DemoMedia.sampleImageUri(spec.tenantId),
+        "demoBarcodeUri" to (DemoMedia.barcodeImageUri(spec.tenantId) ?: ""),
+        "demoQrUri" to (DemoMedia.qrImageUri(spec.tenantId) ?: "")
     )
 
     /** All tool cards for [spec], in [toolCardOrder]. Missing resources are skipped. */

@@ -74,18 +74,18 @@
                     "items": [
                         {
                             "type": "button",
-                            "id": "tool_net_share",
+                            "id": "tool_net_serve",
                             "text": "Start LAN Hub",
-                            "subtitle": "tools://net/share • peer-to-peer",
+                            "subtitle": "tools://net/serve • peer-to-peer",
                             "icon": "cloud",
                             "background_color": "#1E40AF",
                             "text_color": "#FFFFFF",
                             "corner_radius": 10,
                             "action": {
-                                "log_id": "exec_tool_net_share",
-                                "url": "tools://net/share",
+                                "log_id": "exec_tool_net_serve",
+                                "url": "tools://net/serve",
                                 "payload": {
-                                    "operation": "share",
+                                    "operation": "serve",
                                     "options": {
                                         "port": "8899"
                                     },

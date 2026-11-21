@@ -63,7 +63,8 @@
                                 "payload": {
                                     "operation": "text",
                                     "options": {
-                                        "normalize": "true"
+                                        "normalize": "true",
+                                        "text": "Wagyu Smash Burger • ACM-101 • $16.50"
                                     },
                                     "output": {
                                         "vector_b64": "user.vector_b64",
@@ -95,7 +96,8 @@
                                     "operation": "image_text",
                                     "options": {
                                         "normalize": "true",
-                                        "include_ocr_text": "true"
+                                        "include_ocr_text": "true",
+                                        "uri": "${demoImageUri}"
                                     },
                                     "output": {
                                         "vector_b64": "user.vector_b64",

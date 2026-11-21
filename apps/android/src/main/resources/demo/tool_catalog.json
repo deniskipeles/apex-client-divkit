@@ -20,7 +20,7 @@
     { "file": "print",              "label": "Thermal Printer",     "icon": "printer",    "accent_color": "#7C3AED" },
     { "file": "keep_awake",         "label": "Keep Awake",          "icon": "sun",        "accent_color": "#EAB308" },
     { "file": "native_icons",       "label": "Native Icon Scheme",  "icon": "palette",    "accent_color": "#D946EF" },
-    { "file": "inventory_list",     "label": "Inventory List",      "icon": "inventory",  "accent_color": "#10B981" },
+    { "file": "catalog_list",       "label": "Catalog List",        "icon": "product",    "accent_color": "#10B981" },
     { "file": "hourly_chart",       "label": "Hourly Throughput",   "icon": "chart",      "accent_color": "#0284C7" },
     { "file": "sdui_chart",         "label": "Revenue by SKU",      "icon": "chart",      "accent_color": "#F43F5E" }
   ]

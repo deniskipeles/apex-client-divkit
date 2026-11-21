@@ -38,7 +38,7 @@
         "value": 3
       },
       {
-        "name": "user.inventory_count",
+        "name": "user.catalog_count",
         "type": "integer",
         "value": 4
       },
@@ -426,7 +426,7 @@
                         },
                         {
                           "type": "text",
-                          "text": "@{user.inventory_count}",
+                          "text": "@{user.catalog_count}",
                           "font_size": 18,
                           "font_weight": "bold",
                           "text_color": "#34D399"

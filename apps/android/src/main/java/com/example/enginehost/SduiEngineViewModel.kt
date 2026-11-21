@@ -245,7 +245,7 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
         val verifier = getVerifier(spec.tenantId)
         if (existingVersions.isEmpty()) {
             // Receive & verify v1.0 baseline schema
-            val v10Raw = SduiOnFlyBuilder.buildInventoryTerminalBlueprint(spec)
+            val v10Raw = SduiOnFlyBuilder.buildCatalogTerminalBlueprint(spec)
             val v10Jti = UUID.randomUUID().toString()
             val v10Env = PayloadVerifier.createSignedEnvelope(
                 tenant = spec.tenantId,
@@ -275,7 +275,7 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                     signedEnvelope = v10Env,
                     verifiedPayload = v10Verified,
                     receivedAt = currentTimeMillis() - 120_000L,
-                    summary = "v1.0 • Initial Stock & Inventory Donut Chart Schema"
+                    summary = "v1.0 • Initial Stock & Catalog Donut Chart Schema"
                 )
                 db.workspaceQueries.cacheAndActivateSchemaVersion(
                     schemaVersion = DEMO_CARD_REVISION,
@@ -546,7 +546,7 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                         "user.sync_status" to DivVariableValue.Str(verifiedConfig.mode.name.lowercase()),
                         "user.engine_error" to DivVariableValue.Str("None"),
                         "user.order_count" to DivVariableValue.IntVal(spec.defaultOrders.size.toLong()),
-                        "user.inventory_count" to DivVariableValue.IntVal(spec.defaultProducts.size.toLong()),
+                        "user.catalog_count" to DivVariableValue.IntVal(spec.defaultProducts.size.toLong()),
                         "user.last_order_id" to DivVariableValue.IntVal(spec.defaultOrders.size.toLong()),
                         "user.scanned_code" to DivVariableValue.Str("9780201633610"),
                         "user.scanned_format" to DivVariableValue.Str("EAN_13"),
@@ -595,11 +595,11 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                     )
                     router.handle(
                         "local-db://op/db.query",
-                        WorkspaceProvisioner.buildQueryInventoryAction()["payload"]?.jsonObject
+                        WorkspaceProvisioner.buildCatalogQueryAction()["payload"]?.jsonObject
                     )
                     router.handle(
                         "local-db://op/db.count",
-                        WorkspaceProvisioner.buildCountInventoryAction()["payload"]?.jsonObject
+                        WorkspaceProvisioner.buildCatalogCountAction()["payload"]?.jsonObject
                     )
                 }
 
@@ -659,11 +659,11 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
             )
             activeRouter?.handle(
                 "local-db://op/db.query",
-                WorkspaceProvisioner.buildQueryInventoryAction()["payload"]?.jsonObject
+                WorkspaceProvisioner.buildCatalogQueryAction()["payload"]?.jsonObject
             )
             activeRouter?.handle(
                 "local-db://op/db.count",
-                WorkspaceProvisioner.buildCountInventoryAction()["payload"]?.jsonObject
+                WorkspaceProvisioner.buildCatalogCountAction()["payload"]?.jsonObject
             )
 
             refreshDatabaseTelemetry(spec.tenantId)

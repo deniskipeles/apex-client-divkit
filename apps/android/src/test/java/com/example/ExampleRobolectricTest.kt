@@ -169,11 +169,11 @@ class ExampleRobolectricTest {
         }
         router.handle(
             "local-db://op/db.query",
-            WorkspaceProvisioner.buildQueryInventoryAction()["payload"]?.jsonObject
+            WorkspaceProvisioner.buildCatalogQueryAction()["payload"]?.jsonObject
         )
 
-        val jsonList = EngineStateBridge.state.value["user.inventory_json"]?.asDisplayString()
-        assertNotNull("user.inventory_json was not populated", jsonList)
+        val jsonList = EngineStateBridge.state.value["user.catalog_json"]?.asDisplayString()
+        assertNotNull("user.catalog_json was not populated", jsonList)
         val firstRow = Json.parseToJsonElement(jsonList!!).jsonArray.first().jsonObject
         assertEquals("Wagyu Smash Burger", firstRow["item_name"]?.jsonPrimitive?.contentOrNull)
         assertEquals("ACM-101", firstRow["sku"]?.jsonPrimitive?.contentOrNull)

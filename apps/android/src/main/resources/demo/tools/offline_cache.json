@@ -75,7 +75,7 @@
                             "id": "tool_offline-cache_get_stats",
                             "text": "Cache Stats",
                             "subtitle": "tools://offline-cache/get_stats",
-                            "icon": "inventory",
+                            "icon": "stock",
                             "background_color": "#44403C",
                             "text_color": "#FFFFFF",
                             "corner_radius": 10,

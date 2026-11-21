@@ -5,15 +5,15 @@
     "items": [
         {
             "type": "text",
-            "text": "ON-THE-FLY INVENTORY JSON_LIST (user.inventory_json)",
+            "text": "ON-THE-FLY CATALOG JSON_LIST (user.catalog_json)",
             "font_size": 11,
             "font_weight": "bold",
             "text_color": "#34D399"
         },
         {
             "type": "json_list",
-            "data_var": "user.inventory_json",
-            "empty_text": "No SKUs in ${tenantId}_inventory",
+            "data_var": "user.catalog_json",
+            "empty_text": "No SKUs in ${tenantId}_catalog",
             "row_card": {
                 "type": "container",
                 "orientation": "horizontal",
