@@ -28,10 +28,30 @@ import java.util.UUID
  * Universal Hardware Camera Capability ("hardware.camera@1" / "vision.capture_photo@1").
  * Unopinionated image capture sensor supporting lens selection, format transcoding,
  * base64 data URLs, tenant-isolated media storage, and flashlight control.
+ *
+ * Frame acquisition is delegated to a platform sink because only the host owns a
+ * CameraX lifecycle and a `PreviewView` surface. When no sink is installed (unit tests,
+ * headless environments) the tool reports `UNSUPPORTED` rather than inventing a frame:
+ * a fabricated bitmap looks like a successful capture and silently ships a black photo.
  */
 class CameraTool : ToolHandler {
     override val capability: String = "hardware.camera@1"
     override val requiredPermissions: Set<String> = setOf("android.permission.CAMERA")
+
+    /**
+     * A real camera request. Returns the JPEG bytes written by the platform, or null when the
+     * capture could not be completed (permission denied, no camera, user cancelled).
+     */
+    data class CaptureRequest(
+        val facing: String,
+        val maxDimension: Int,
+        val showPreview: Boolean
+    )
+
+    companion object {
+        /** Installed by the Android host; null in unit tests. */
+        var captureSink: (suspend (CaptureRequest) -> ByteArray?)? = null
+    }
 
     override suspend fun invoke(args: ToolArgs, ctx: ToolContext): ToolResult {
         val op = args["op"] ?: args["action"] ?: args["operation"] ?: "capture"
@@ -49,7 +69,7 @@ class CameraTool : ToolHandler {
         }
     }
 
-    private fun executeCapture(args: ToolArgs, tenantId: String): ToolResult {
+    private suspend fun executeCapture(args: ToolArgs, tenantId: String): ToolResult {
         val facing = args["facing"] ?: args["lens"] ?: "back"
         val quality = args.getInt("quality", 85).coerceIn(10, 100)
         val format = (args["format"] ?: args["mime_type"] ?: "image/jpeg").lowercase()
@@ -73,16 +93,24 @@ class CameraTool : ToolHandler {
 
         val outputFile = File(mediaDir, "$imageId.$extension")
 
-        val (width, height, bytes) = if (simulatedBase64 != null) {
-            val decodedBytes = Base64.getDecoder().decode(simulatedBase64)
-            outputFile.writeBytes(decodedBytes)
-            val (w, h) = decodeDimensions(decodedBytes, maxDim)
-            Triple(w, h, decodedBytes)
+        val captured: ByteArray = if (simulatedBase64 != null) {
+            Base64.getDecoder().decode(simulatedBase64)
         } else {
-            val generated = generateTestImageBytes(format, quality, maxDim)
-            outputFile.writeBytes(generated.first)
-            Triple(generated.second, generated.third, generated.first)
+            val sink = captureSink
+                ?: return ToolResult.Unsupported(
+                    capability,
+                    "No camera host installed: capture requires an Activity with a camera preview"
+                )
+            sink(CaptureRequest(facing = facing, maxDimension = maxDim, showPreview = true))
+                ?: return ToolResult.Failed(
+                    capability,
+                    "Camera capture was cancelled or returned no frame"
+                )
         }
+
+        val bytes = transcode(captured, extension, quality, maxDim)
+        outputFile.writeBytes(bytes)
+        val (width, height) = decodeDimensions(bytes, maxDim)
 
         val base64Str = if (encoding in setOf("base64", "data_url", "both")) {
             Base64.getEncoder().encodeToString(bytes)
@@ -110,6 +138,30 @@ class CameraTool : ToolHandler {
         dataUrl?.let { resultData["data_url"] = it }
 
         return ToolResult.Success(resultData)
+    }
+
+    /** Re-encodes the captured frame to the requested container and bounded dimension. */
+    private fun transcode(raw: ByteArray, extension: String, quality: Int, maxDim: Int): ByteArray {
+        if (extension == "jpg" && maxDim <= 0) return raw
+        val decoded = BitmapFactory.decodeByteArray(raw, 0, raw.size) ?: return raw
+        val scaled = scaleDown(decoded, maxDim)
+        val target = if (extension == "png") Bitmap.CompressFormat.PNG else Bitmap.CompressFormat.JPEG
+        val stream = ByteArrayOutputStream()
+        scaled.compress(target, quality, stream)
+        if (scaled !== decoded) decoded.recycle()
+        scaled.recycle()
+        return stream.toByteArray()
+    }
+
+    private fun scaleDown(bitmap: Bitmap, maxDim: Int): Bitmap {
+        if (maxDim <= 0) return bitmap
+        val longest = maxOf(bitmap.width, bitmap.height)
+        if (longest <= maxDim) return bitmap
+        val scale = maxDim.toFloat() / longest
+        val w = (bitmap.width * scale).toInt().coerceAtLeast(1)
+        val h = (bitmap.height * scale).toInt().coerceAtLeast(1)
+        val scaled = Bitmap.createScaledBitmap(bitmap, w, h, true)
+        return if (scaled === bitmap) bitmap else scaled
     }
 
     private fun executeTorch(args: ToolArgs): ToolResult {
@@ -165,17 +217,6 @@ class CameraTool : ToolHandler {
                 "status" to "READY"
             )
         )
-    }
-
-    private fun generateTestImageBytes(format: String, quality: Int, maxDim: Int): Triple<ByteArray, Int, Int> {
-        val w = minOf(maxDim, 1280)
-        val h = (w * 3) / 4
-        val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-        val stream = ByteArrayOutputStream()
-        val compressFormat = if (format.contains("png")) Bitmap.CompressFormat.PNG else Bitmap.CompressFormat.JPEG
-        bitmap.compress(compressFormat, quality, stream)
-        bitmap.recycle()
-        return Triple(stream.toByteArray(), w, h)
     }
 
     private fun decodeDimensions(bytes: ByteArray, maxDim: Int): Pair<Int, Int> {

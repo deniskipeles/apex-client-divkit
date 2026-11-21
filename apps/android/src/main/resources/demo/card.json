@@ -113,9 +113,9 @@
         "value": "SUCCESS"
       },
       {
-        "name": "user.code_matrix",
-        "type": "string",
-        "value": "111111100101011111111\n100000101101001000001\n101110101001101011101"
+        "name": "user.code_matrix_rows",
+        "type": "integer",
+        "value": 39
       },
       {
         "name": "user.ai_prediction_label",

@@ -32,10 +32,22 @@ import com.example.ui.AppSettingsBottomSheet
 import com.example.ui.FileManagerTab
 import com.example.ui.NotificationTrayOverlay
 import com.example.ui.NotificationsTab
+import com.example.camera.CameraHost
+import com.example.auth.CredentialGate
+import com.example.auth.CredentialGateOverlay
+import com.example.camera.CameraHostOverlay
+import com.example.camera.CameraMode
+import com.example.camera.CameraOutcome
 import com.example.ui.PosTerminalTab
 import com.example.ui.TenantLauncherScreen
 import com.example.ui.theme.MyApplicationTheme
+import com.google.zxing.BarcodeFormat
+import engine.tools.NativeToolsSuite
+import engine.tools.impl.BiometricsTool
+import engine.tools.impl.CameraTool
 import engine.tools.impl.KeepAwakeTool
+import engine.tools.scan.BarcodeDecoder
+import engine.tools.scan.ScanResult
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -52,6 +64,43 @@ class MainActivity : ComponentActivity() {
                 }
             }
             true
+        }
+        // Platform bridge for tools://camera/capture: the tool has no Activity or surface, so it
+        // parks a request on CameraHost and the host composable runs a real CameraX capture.
+        CameraTool.captureSink = { request ->
+            when (val outcome = CameraHost.run(
+                mode = CameraMode.Capture,
+                facing = request.facing,
+                maxDimension = request.maxDimension
+            )) {
+                is CameraOutcome.Photo -> outcome.bytes
+                else -> null
+            }
+        }
+        // Platform bridge for tools://scan/scan: opens the same viewfinder in analysis mode and
+        // returns the first symbology decoded from live frames.
+        NativeToolsSuite.liveScanSink = {
+            when (val outcome = CameraHost.run(
+                mode = CameraMode.Scan,
+                facing = "back",
+                maxDimension = 1280
+            )) {
+                is CameraOutcome.Scanned -> ScanResult(
+                    rawValue = outcome.value,
+                    format = outcome.format,
+                    type = BarcodeDecoder.classify(
+                        runCatching { BarcodeFormat.valueOf(outcome.format) }
+                            .getOrDefault(BarcodeFormat.QR_CODE)
+                    )
+                )
+                else -> null
+            }
+        }
+        // Platform bridge for tools://biometrics/authenticate: the tool has no Activity, so it
+        // parks a request on CredentialGate and the overlay shows the OS device-credential
+        // prompt. Without a lock screen the gate fails closed instead of approving everyone.
+        BiometricsTool.sink = { request ->
+            CredentialGate.verify(request.prompt, request.requiredRole)
         }
         setContent {
             SduiPosEngineRoot()
@@ -327,4 +376,9 @@ fun SduiPosEngineApp(viewModel: SduiEngineViewModel) {
             onDismiss = { showNotifications = false }
         )
     }
+
+    // Live camera surface. Renders only while a tool has parked a capture/scan request, and sits
+    // above every other layer so the viewfinder is never hidden behind a card.
+    CameraHostOverlay()
+    CredentialGateOverlay()
 }

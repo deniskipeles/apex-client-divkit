@@ -66,6 +66,19 @@ object CodeGeneratorEngine {
         else -> "1D"
     }
 
+    /**
+     * Minimum quiet zone for a linear symbology. A 1D code needs a light margin of at least
+     * 10 modules on each side to be readable; with the default margin of 4 ZXing still renders
+     * the bars but no scanner can locate them, so generated barcodes decoded to nothing.
+     */
+    private const val MIN_LINEAR_MARGIN = 10
+
+    /** Applies the quiet-zone floor that linear symbologies need to stay scannable. */
+    fun effectiveMargin(format: BarcodeFormat, requested: Int): Int {
+        val clamped = requested.coerceIn(0, 16)
+        return if (kindOf(format) == "1D") maxOf(clamped, MIN_LINEAR_MARGIN) else clamped
+    }
+
     fun generate(
         tenantId: String,
         content: String,
@@ -86,7 +99,7 @@ object CodeGeneratorEngine {
         val barHeight = if (kind == "1D") height.coerceIn(32, 2048) else size
 
         val hints = mutableMapOf<EncodeHintType, Any>(
-            EncodeHintType.MARGIN to margin.coerceIn(0, 16),
+            EncodeHintType.MARGIN to effectiveMargin(format, margin),
             EncodeHintType.CHARACTER_SET to "UTF-8"
         )
         if (format == BarcodeFormat.QR_CODE || format == BarcodeFormat.AZTEC) {

@@ -19,24 +19,104 @@
     "items": [
         {
             "type": "text",
-            "text": "📷 UNIFIED OPTICAL SCANNER + OCR (tools://scan)",
+            "text": "📷 SCANNER — LIVE CAMERA & SAMPLE DECODE (tools://scan)",
             "font_size": 11,
-            "font_weight": "bold",
-            "text_color": "#6EE7B7"
+            "text_color": "#6EE7B7",
+            "font_weight": "bold"
         },
         {
             "type": "text",
-            "text": "Decoded: @{user.scanned_code} (@{user.scanned_format} • @{user.scanned_type}) → @{user.scan_status}",
+            "text": "Last result: @{user.scanned_code} (@{user.scanned_format} • @{user.scanned_type}) → @{user.scan_status}",
             "font_size": 12,
             "text_color": "#D1FAE5",
             "font_family": "monospace"
         },
         {
             "type": "text",
-            "text": "OCR: @{user.ocr_text} (conf @{user.ocr_confidence})",
-            "font_size": 12,
+            "text": "LIVE — opens the viewfinder and decodes what you point at",
+            "font_size": 11,
             "text_color": "#A7F3D0",
-            "font_family": "monospace"
+            "font_weight": "bold"
+        },
+        {
+            "type": "container",
+            "orientation": "horizontal",
+            "item_spacing": 8,
+            "items": [
+                {
+                    "type": "container",
+                    "weight": 1.0,
+                    "items": [
+                        {
+                            "type": "button",
+                            "id": "tool_scan_live_barcode",
+                            "text": "Scan Barcode with Camera",
+                            "subtitle": "Opens the rear camera viewfinder",
+                            "icon": "scanner",
+                            "background_color": "#047857",
+                            "text_color": "#FFFFFF",
+                            "corner_radius": 10,
+                            "action": {
+                                "log_id": "exec_tool_scan_live_barcode",
+                                "url": "tools://scan/scan",
+                                "payload": {
+                                    "operation": "scan",
+                                    "options": {
+                                        "target_format": "barcode",
+                                        "camera": "true"
+                                    },
+                                    "output": {
+                                        "raw_value": "user.scanned_code",
+                                        "format": "user.scanned_format",
+                                        "type": "user.scanned_type",
+                                        "status": "user.scan_status"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "container",
+                    "weight": 1.0,
+                    "items": [
+                        {
+                            "type": "button",
+                            "id": "tool_scan_live_qr",
+                            "text": "Scan QR with Camera",
+                            "subtitle": "Opens the rear camera viewfinder",
+                            "icon": "qr_code",
+                            "background_color": "#0D9488",
+                            "text_color": "#FFFFFF",
+                            "corner_radius": 10,
+                            "action": {
+                                "log_id": "exec_tool_scan_live_qr",
+                                "url": "tools://scan/scan",
+                                "payload": {
+                                    "operation": "scan",
+                                    "options": {
+                                        "target_format": "qr",
+                                        "camera": "true"
+                                    },
+                                    "output": {
+                                        "raw_value": "user.scanned_code",
+                                        "format": "user.scanned_format",
+                                        "type": "user.scanned_type",
+                                        "status": "user.scan_status"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "text",
+            "text": "SAMPLE — decodes a bundled test image, no camera needed",
+            "font_size": 11,
+            "text_color": "#A7F3D0",
+            "font_weight": "bold"
         },
         {
             "type": "container",
@@ -50,9 +130,9 @@
                         {
                             "type": "button",
                             "id": "tool_scan_scan",
-                            "text": "Scan 1D Barcode",
-                            "subtitle": "tools://scan/scan (EAN-13 / UPC)",
-                            "icon": "scanner",
+                            "text": "Decode Sample Barcode",
+                            "subtitle": "EAN-13 test image",
+                            "icon": "barcode",
                             "background_color": "#059669",
                             "text_color": "#FFFFFF",
                             "corner_radius": 10,
@@ -82,15 +162,15 @@
                     "items": [
                         {
                             "type": "button",
-                            "id": "tool_scan_scan",
-                            "text": "Scan 2D QR Code",
-                            "subtitle": "tools://scan/scan (DeepLink / Pay)",
+                            "id": "tool_scan_scan_qr",
+                            "text": "Decode Sample QR",
+                            "subtitle": "QR test image",
                             "icon": "qr_code",
-                            "background_color": "#0D9488",
+                            "background_color": "#10B981",
                             "text_color": "#FFFFFF",
                             "corner_radius": 10,
                             "action": {
-                                "log_id": "exec_tool_scan_scan",
+                                "log_id": "exec_tool_scan_scan_qr",
                                 "url": "tools://scan/scan",
                                 "payload": {
                                     "operation": "scan",
@@ -112,29 +192,42 @@
             ]
         },
         {
-            "type": "button",
-            "id": "tool_scan_ocr",
-            "text": "Read Text from Image (OCR)",
-            "subtitle": "tools://scan/ocr • ML Kit Text Recognition v2 (Latin)",
-            "icon": "search",
-            "background_color": "#047857",
-            "text_color": "#FFFFFF",
-            "corner_radius": 10,
-            "action": {
-                "log_id": "exec_tool_scan_ocr",
-                "url": "tools://scan/ocr",
-                "payload": {
-                    "operation": "ocr",
-                    "options": {
-                        "uri": "${demoImageUri}"
-                    },
-                    "output": {
-                        "text": "user.ocr_text",
-                        "confidence": "user.ocr_confidence",
-                        "block_count": "user.ocr_block_count"
+            "type": "text",
+            "text": "OCR: @{user.ocr_text} (conf @{user.ocr_confidence})",
+            "font_size": 12,
+            "text_color": "#A7F3D0",
+            "font_family": "monospace"
+        },
+        {
+            "type": "container",
+            "weight": 1.0,
+            "items": [
+                {
+                    "type": "button",
+                    "id": "tool_scan_ocr",
+                    "text": "Read Text from Sample",
+                    "subtitle": "ML Kit text recognition",
+                    "icon": "search",
+                    "background_color": "#34D399",
+                    "text_color": "#FFFFFF",
+                    "corner_radius": 10,
+                    "action": {
+                        "log_id": "exec_tool_scan_ocr",
+                        "url": "tools://scan/ocr",
+                        "payload": {
+                            "operation": "ocr",
+                            "options": {
+                                "uri": "${demoImageUri}"
+                            },
+                            "output": {
+                                "text": "user.ocr_text",
+                                "confidence": "user.ocr_confidence",
+                                "block_count": "user.ocr_block_count"
+                            }
+                        }
                     }
                 }
-            }
+            ]
         }
     ]
 }

@@ -386,3 +386,62 @@ pnpm check:desktop           # cargo check
   the **full** tool inventory. `ExampleUnitTest.demoCard_surfacesEveryRegisteredNativeTool`
   asserts every `NativeToolsSuite.registeredSchemas` toolId appears as a `tools://<id>/` trigger.
   Adding a tool to the registry without a demo block fails that test.
+
+## Camera and hardware capabilities
+
+- Tools cannot own hardware. `CameraTool` and `NativeToolsSuite.executeScan` run without an
+  Activity, lifecycle, or surface, so frame acquisition is delegated through `captureSink` /
+  `liveScanSink`. `MainActivity` installs both, backed by `com.example.camera.CameraHost`, and
+  `CameraHostOverlay()` renders the real CameraX preview at the root of the composition.
+  Both sinks are null in unit tests; tests that need a frame install a stand-in.
+- Never synthesise a hardware result. `CameraTool.executeCapture` previously returned a
+  solid-colour bitmap, which looked like a successful capture and shipped a blank photo. It now
+  returns `UNSUPPORTED` with no host and `FAILED` when the user cancels. `handleHardwareCapability`
+  likewise no longer invents scanner hits, NFC tokens, or cash-drawer pulses.
+- `InternalToolResult.success` is derived from `FAILURE_STATUSES` (a denylist), not an allowlist,
+  because tool statuses are domain-specific (`ENCRYPTED`, `ALREADY_PAIRED`, `CANCELLED` for a
+  successful `haptics/stop`). Add new failure statuses there rather than enumerating successes.
+- Generated 1D symbologies need a quiet zone: `CodeGeneratorEngine.effectiveMargin` raises the
+  ZXing margin to at least 10 modules for linear formats. At the old default of 4, generated
+  EAN-13 images did not decode back. `codeGenerateTool_barcodeIsScannableBackByTheDecoder`
+  guards this with a real encode/decode round trip.
+- Do not publish the raw module matrix to DivKit. A 512px QR matrix serialises to ~262k
+  characters and bloats every state push; only `user.code_matrix_rows` is bound.
+
+## No fabricated ML, auth, or fallback results
+
+- `mobilenetv4_small_int8.tflite` is a real **ImageNet-1k** classifier (UINT8 `1x224x224x3` in,
+  UINT8 `1x1000` out), not a POS SKU model. `ImageClassifier` runs the graph and maps outputs to
+  `assets/imagenet_labels.txt` (1000 lines, index-aligned). The card must not claim SKU detection.
+  When no image is supplied the tool opens the real camera via `CameraTool.captureSink`; with no
+  sink and no image it returns `UNSUPPORTED` rather than a canned prediction.
+- The MobileNetV4 output tensor holds **logits**, not probabilities: quantization is
+  `(scale=0.0807, zero_point=213)`, giving a dequantized range of about -17..+6. Run a softmax
+  before reporting a confidence, or the card shows negative scores and values above 1. Verified
+  end-to-end with a real image (Samoyed at 92%): the `imagenet_labels.txt` order is TF/ImageNet
+  (index 0 `tench`), matching this graph.
+- `ImageVectorizer` had a latent crash: it declared a `FloatArray(1024)` output while the graph
+  emits 1000 `UINT8` scores, so `Interpreter.run` threw on every call. Both the output type and
+  the dimension must match the graph; read `getOutputTensor(0).quantizationParams()` for
+  dequantization instead of assuming float logits.
+- U-2-Net is **not** bundled (smallest public weights are ~176MB ONNX, and there is no ONNX
+  runtime here). `executeU2Net` returns `UNSUPPORTED` with a reason and no `mask_uri`. Point users
+  at `image-manipulation/remove_background`, which is a real implementation.
+- `auth.biometrics@1` must be able to refuse. It previously authorised everyone via
+  `pin == null || pin == "1234" || pin.isNotBlank()`, so every refund and void was "supervisor
+  approved". Verification now goes through `BiometricsTool.sink`, installed by `MainActivity` and
+  backed by `com.example.auth.CredentialGate` (OS `createConfirmDeviceCredentialIntent`). With no
+  sink or no lock screen it fails closed. `handleHardwareCapability("biometrics")` routes through
+  the same tool instead of asserting success.
+- `executeGenericFallback` returns `UNSUPPORTED`: an unknown tool id previously reported `SUCCESS`,
+  which made typos and unimplemented capabilities look like they had run. Same for
+  `vision.embed_image@1`, which returned `SecureRandom` floats unrelated to the image.
+- JVM unit tests cannot load `tflite_jni`, so `ImageClassifier.classify` is exercised only on
+  device. The pure scoring path is `ImageClassifier.rank(scores, scale, zeroPoint, ...)` and is
+  unit-tested directly. Inference failures are caught as `Throwable`, because
+  `UnsatisfiedLinkError` is an `Error` and would otherwise crash the terminal.
+- Demo cards must describe what the tool really does. Tests previously asserted the fabrications
+  (`nativeTools_u2NetProducesAlphaMatte`, `biometricsTool_authorizesSupervisorRole`,
+  `nativeTools_mobileNetV4DetectsSkuInLowLatency`); they now assert `UNSUPPORTED`/denial and real
+  ranking instead. `DEMO_CARD_REVISION` is not the refresh trigger - `needsDemoCardRefresh` compares
+  card content - so edited cards re-seed on the next launch.

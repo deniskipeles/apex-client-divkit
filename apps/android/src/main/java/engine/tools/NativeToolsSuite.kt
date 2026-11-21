@@ -22,6 +22,19 @@ import java.nio.ByteOrder
 import kotlin.math.floor
 
 object NativeToolsSuite {
+    /** Statuses that mean the operation did not do what was asked. */
+    private val FAILURE_STATUSES = setOf(
+        "FAILED", "UNSUPPORTED", "NO_INPUT", "NO_CODE_FOUND", "FORMAT_MISMATCH",
+        "DENIED", "BLUETOOTH_OFF", "NO_DEVICE", "ERROR"
+    )
+
+    /**
+     * Installed by the Android host to provide a live camera viewfinder. Returns the first
+     * decoded symbology, or null when the user cancelled or the camera was unavailable.
+     * Null in unit tests, where scanning is driven by explicit image references instead.
+     */
+    var liveScanSink: (suspend () -> engine.tools.scan.ScanResult?)? = null
+
 
     @Serializable
     data class ToolSchema(
@@ -278,7 +291,7 @@ object NativeToolsSuite {
                 "format" to "user.code_format",
                 "kind" to "user.code_kind",
                 "code_id" to "user.code_id",
-                "matrix" to "user.code_matrix"
+                "matrix_rows" to "user.code_matrix_rows"
             )
         ),
         ToolSchema(
@@ -341,7 +354,7 @@ object NativeToolsSuite {
             "image-background-remove" ->
                 executeImageManipulation(operation, options, payload, tenantId)
             "clipboard" -> executeClipboard(operation, options, payload)
-            "biometrics" -> executeBiometrics(options)
+            "biometrics" -> executeBiometrics(operation, options, payload)
             "libsignal" -> executeLibSignal(operation, options, payload, tenantId)
             "mobilenetv4-small", "mobilenetv4" -> executeMobileNetV4(operation, options, payload, tenantId)
             "u-2-net.tflite", "u2net" -> executeU2Net(operation, options, payload)
@@ -380,7 +393,9 @@ object NativeToolsSuite {
         }
 
         return ToolExecutionOutcome(
-            success = outcome.dataMap["status"] != "FORMAT_MISMATCH",
+            // Statuses are domain-specific ("ENCRYPTED", "ALREADY_PAIRED", ...), so success is
+            // modelled as "not one of the explicit failure states" rather than an allowlist.
+            success = outcome.dataMap["status"] !in FAILURE_STATUSES,
             toolId = schema.toolId,
             operation = effectiveOperation,
             summary = outcome.summary,
@@ -426,7 +441,7 @@ object NativeToolsSuite {
     // -------------------------------------------------------------------------
     // GENERIC OPTICAL SCANNER (ZERO DOMAIN COUPLING)
     // -------------------------------------------------------------------------
-    private fun executeScan(
+    private suspend fun executeScan(
         operation: String,
         options: Map<String, String>,
         payload: JsonObject
@@ -478,12 +493,25 @@ object NativeToolsSuite {
             )
         }
 
-        val rawValue = decoded?.rawValue
-            ?: payload["raw_value"]?.jsonPrimitive?.contentOrNull
+        val declaredRaw = payload["raw_value"]?.jsonPrimitive?.contentOrNull
             ?: payload["simulated_code"]?.jsonPrimitive?.contentOrNull
             ?: payload["code"]?.jsonPrimitive?.contentOrNull
             ?: options["simulated_code"]
             ?: options["code"]
+
+        // Live camera path: with no still image and no injected payload, open a real viewfinder
+        // and decode the first symbology the user points at. `camera` may be set to "false" to
+        // keep the call strictly off-camera (headless callers and tests).
+        val wantsCamera = (payload["camera"]?.jsonPrimitive?.contentOrNull ?: options["camera"]) != "false"
+        val liveScan = if (imageRef == null && decoded == null && declaredRaw == null && wantsCamera) {
+            liveScanSink?.invoke()
+        } else {
+            null
+        }
+
+        val rawValue = decoded?.rawValue
+            ?: liveScan?.rawValue
+            ?: declaredRaw
             ?: return InternalToolResult(
                 summary = "Scan failed: no camera frame or image supplied",
                 dataMap = mapOf(
@@ -502,9 +530,11 @@ object NativeToolsSuite {
             ?: payload["symbology"]?.jsonPrimitive?.contentOrNull
             ?: options["symbology"]
         val detectedFormat = decoded?.format
+            ?: liveScan?.format
             ?: declaredFormat?.trim()?.uppercase()?.replace("-", "_")
             ?: "UNKNOWN"
         val detectedType = decoded?.type
+            ?: liveScan?.type
             ?: when {
                 BarcodeDecoder.matchesTarget(detectedFormat, "qr") -> "2D"
                 detectedFormat != "UNKNOWN" -> "1D"
@@ -852,7 +882,7 @@ object NativeToolsSuite {
     // -------------------------------------------------------------------------
     // ON-DEVICE IMAGE CLASSIFIER (MobileNetV4 INT8)
     // -------------------------------------------------------------------------
-    private fun executeMobileNetV4(
+    private suspend fun executeMobileNetV4(
         operation: String,
         options: Map<String, String>,
         payload: JsonObject,
@@ -860,25 +890,105 @@ object NativeToolsSuite {
     ): InternalToolResult {
         val topK = options["top_k"]?.toIntOrNull() ?: 3
         val minConfidence = options["min_confidence"]?.toDoubleOrNull() ?: 0.40
-        val candidates = listOf(
-            Triple("Wagyu Smash Burger (Entree)", "ACM-101", 0.94),
-            Triple("Truffle Parmesan Fries", "ACM-102", 0.78),
-            Triple("Artisan Cold Brew", "ACM-204", 0.62)
-        )
-        val accepted = candidates.filter { it.third >= minConfidence }.take(topK)
-        val top = accepted.firstOrNull() ?: candidates.first()
+        val ctx = engine.db.currentAndroidContext?.invoke()
+            ?: return unsupported("MobileNetV4 classifier", "No Android context for model assets")
 
+        val imageRef = payload["uri"]?.jsonPrimitive?.contentOrNull
+            ?: payload["image"]?.jsonPrimitive?.contentOrNull
+            ?: payload["base64"]?.jsonPrimitive?.contentOrNull
+            ?: options["uri"]
+            ?: options["image"]
+
+        // With no image argument, acquire a real frame from the camera rather than inventing a
+        // prediction: classification is only meaningful against actual pixels.
+        val bitmap = if (imageRef != null) {
+            try {
+                decodeBitmap(ctx, imageRef)
+            } catch (e: Exception) {
+                return InternalToolResult(
+                    summary = "MobileNetV4 could not read the image",
+                    dataMap = mapOf("status" to "FAILED", "error" to (e.message ?: "unreadable image")),
+                    resultJson = buildJsonObject {
+                        put("status", "FAILED")
+                        put("error", e.message ?: "unreadable image")
+                    }
+                )
+            }
+        } else {
+            val sink = engine.tools.impl.CameraTool.captureSink
+                ?: return unsupported(
+                    "MobileNetV4 classify",
+                    "No image argument was supplied and no camera host is installed to capture one"
+                )
+            val bytes = sink(engine.tools.impl.CameraTool.CaptureRequest("back", 1080, true))
+                ?: return InternalToolResult(
+                    summary = "MobileNetV4 capture cancelled",
+                    dataMap = mapOf("status" to "CANCELLED", "error" to "Camera capture was cancelled"),
+                    resultJson = buildJsonObject {
+                        put("status", "CANCELLED")
+                        put("error", "Camera capture was cancelled")
+                    }
+                )
+            BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                ?: return InternalToolResult(
+                    summary = "MobileNetV4 capture unreadable",
+                    dataMap = mapOf("status" to "FAILED", "error" to "Captured frame could not be decoded"),
+                    resultJson = buildJsonObject {
+                        put("status", "FAILED")
+                        put("error", "Captured frame could not be decoded")
+                    }
+                )
+        }
+
+        val t0 = currentTimeMillis()
+        val predictions = try {
+            engine.tools.vector.ImageClassifier.classify(ctx, bitmap, topK, minConfidence)
+        } catch (e: Throwable) {
+            // UnsatisfiedLinkError (native TFLite missing) is an Error, not an Exception; letting
+            // it escape would crash the terminal instead of reporting an unusable model.
+            bitmap.recycle()
+            return InternalToolResult(
+                summary = "MobileNetV4 inference failed",
+                dataMap = mapOf("status" to "FAILED", "error" to (e.message ?: "inference error")),
+                resultJson = buildJsonObject {
+                    put("status", "FAILED")
+                    put("error", e.message ?: "inference error")
+                }
+            )
+        } finally {
+            if (!bitmap.isRecycled) bitmap.recycle()
+        }
+        val elapsed = (currentTimeMillis() - t0).coerceAtLeast(1L)
+
+        if (predictions.isEmpty()) {
+            val data = mapOf(
+                "status" to "NO_CODE_FOUND",
+                "error" to "No class cleared the confidence threshold ($minConfidence)",
+                "threshold" to minConfidence,
+                "inference_ms" to elapsed
+            )
+            return InternalToolResult(
+                summary = "MobileNetV4 found no confident match",
+                dataMap = data,
+                resultJson = buildJsonObject { data.forEach { (k, v) -> put(k, v.toString()) } }
+            )
+        }
+
+        val top = predictions.first()
         val data = mapOf(
             "status" to "SUCCESS",
-            "prediction_label" to top.first,
-            "prediction_sku" to top.second,
-            "confidence" to top.third,
-            "candidates" to accepted.joinToString("|") { "${it.second}:${it.third}" },
+            "prediction_label" to top.label,
+            "prediction_index" to top.index,
+            "confidence" to top.confidence,
+            "candidates" to predictions.joinToString("|") { "${it.index}:${"%.3f".format(it.confidence)}" },
+            "labels" to predictions.joinToString("|") { it.label },
+            "model" to "MobileNetV4-small INT8 (ImageNet-1k)",
             "tenant_id" to tenantId,
+            "inference_ms" to elapsed,
             "timestamp" to currentTimeMillis()
         )
         return InternalToolResult(
-            summary = "MobileNetV4 classified [${top.first}] (${(top.third * 100).toInt()}% confidence)",
+            summary = "MobileNetV4 classified [${top.label}] (${(top.confidence * 100).toInt()}% confidence)",
             dataMap = data,
             resultJson = buildJsonObject { data.forEach { (k, v) -> put(k, v.toString()) } }
         )
@@ -892,19 +1002,15 @@ object NativeToolsSuite {
         options: Map<String, String>,
         payload: JsonObject
     ): InternalToolResult {
-        val cutoff = options["saliency_cutoff"]?.toDoubleOrNull() ?: 0.45
-        val maskUri = "content://com.example.provider/u2net_masks/mask_${currentTimeMillis()}.png"
-        val data = mapOf(
-            "status" to "SUCCESS",
-            "mask_uri" to maskUri,
-            "confidence" to 0.94,
-            "saliency_cutoff" to cutoff,
-            "inference_ms" to 22
-        )
-        return InternalToolResult(
-            summary = "U-2-Net segmentation produced alpha matte (${maskUri})",
-            dataMap = data,
-            resultJson = buildJsonObject { data.forEach { (k, v) -> put(k, v.toString()) } }
+        // No U-2-Net graph is bundled and no inference path exists for one: the smallest public
+        // weights are ~176MB ONNX, and this build has neither the model nor an ONNX runtime.
+        // The previous implementation returned a synthetic mask URI plus a made-up 0.94
+        // confidence, so the card looked functional while no alpha matte was ever produced.
+        return unsupported(
+            "U-2-Net segmentation",
+            "No U-2-Net model or ONNX runtime is bundled with this build, so no alpha matte can " +
+                "be produced. Use image-manipulation/remove_background for real on-device " +
+                "background removal."
         )
     }
 
@@ -1083,15 +1189,40 @@ object NativeToolsSuite {
         return InternalToolResult("Clipboard processed", data, buildJsonObject { data.forEach { (k, v) -> put(k, v) } })
     }
 
-    private fun executeBiometrics(options: Map<String, String>): InternalToolResult {
-        val data = mapOf("authenticated" to true, "prompt" to (options["prompt"] ?: "Authorized"))
-        return InternalToolResult("Biometrics authorized", data, buildJsonObject { put("authenticated", true) })
+    private suspend fun executeBiometrics(
+        operation: String,
+        options: Map<String, String>,
+        payload: JsonObject
+    ): InternalToolResult {
+        val mergedArgs = buildMap {
+            putAll(options)
+            put("op", operation)
+            payload.forEach { (k, v) -> put(k, jsonContent(v)) }
+        }
+        val toolResult = engine.tools.impl.BiometricsTool().invoke(ToolArgs(mergedArgs), ToolContext())
+        return internalFromToolResult(
+            toolResult = toolResult,
+            label = "Biometrics",
+            successSummary = "Biometric gate passed"
+        )
     }
 
-    private fun executeGenericFallback(toolId: String, operation: String, payload: JsonObject): InternalToolResult {
-        val data = mapOf("status" to "SUCCESS", "tool" to toolId, "op" to operation)
-        return InternalToolResult("Executed $toolId/$operation", data, buildJsonObject { data.forEach { (k, v) -> put(k, v) } })
-    }
+    /** Reports a capability the host cannot provide, instead of inventing a plausible result. */
+    private fun unsupported(label: String, reason: String): InternalToolResult = InternalToolResult(
+        summary = "$label unsupported: $reason",
+        dataMap = mapOf("status" to "UNSUPPORTED", "reason" to reason),
+        resultJson = buildJsonObject {
+            put("status", "UNSUPPORTED")
+            put("reason", reason)
+        }
+    )
+
+    /**
+     * Reached only for a tool id with no implementation. Reporting SUCCESS here made any typo
+     * or unimplemented capability look like it had run, so the honest answer is UNSUPPORTED.
+     */
+    private fun executeGenericFallback(toolId: String, operation: String, payload: JsonObject): InternalToolResult =
+        unsupported("Tool '$toolId'", "No implementation is registered for '$toolId/$operation'")
 
     /**
      * Renders any JSON value as a flat string argument. Primitives keep their

@@ -150,35 +150,136 @@ class ExampleUnitTest {
     fun genericCamera_capturesWithDynamicEncoding() = kotlinx.coroutines.runBlocking {
         val tenant = "tenant_clinical_lab"
 
-        // 1. Capture image with Data URL encoding and dimension constraint
-        val outcome = engine.tools.NativeToolsSuite.execute(
-            url = "tools://camera/capture",
-            payload = buildJsonObject {
-                putJsonObject("options") {
-                    put("facing", "front")
-                    put("encoding", "both")
-                    put("max_dimension", "800")
+        // A real capture needs the platform viewfinder. Install a stand-in host that returns a
+        // genuine JPEG so this test exercises encoding/transcoding rather than a fake frame.
+        val previous = engine.tools.impl.CameraTool.captureSink
+        val sample = renderTestJpeg(1600, 1200)
+        engine.tools.impl.CameraTool.captureSink = { sample }
+        try {
+            val outcome = engine.tools.NativeToolsSuite.execute(
+                url = "tools://camera/capture",
+                payload = buildJsonObject {
+                    putJsonObject("options") {
+                        put("facing", "front")
+                        put("encoding", "both")
+                        put("max_dimension", "800")
+                    }
+                    putJsonObject("output") {
+                        put("uri", "user.patient_photo_uri")
+                        put("data_url", "user.patient_photo_data_url")
+                        put("width", "user.photo_width")
+                    }
+                },
+                tenantId = tenant
+            )
+
+            assertTrue(outcome.success)
+            assertEquals("camera", outcome.toolId)
+
+            val uri = (outcome.outputVariables["user.patient_photo_uri"] as DivVariableValue.Str).value
+            assertTrue(uri.startsWith("file://") && uri.contains("workspaces/$tenant/media"))
+
+            val dataUrl = (outcome.outputVariables["user.patient_photo_data_url"] as DivVariableValue.Str).value
+            assertTrue(dataUrl.startsWith("data:image/jpeg;base64,"))
+
+            val width = (outcome.outputVariables["user.photo_width"] as DivVariableValue.IntVal).value
+            assertTrue("captured width must respect max_dimension, was $width", width <= 800)
+        } finally {
+            engine.tools.impl.CameraTool.captureSink = previous
+        }
+    }
+
+    /** A non-uniform JPEG, so transcoding tests cannot pass on a blank frame. */
+    private fun renderTestJpeg(width: Int, height: Int): ByteArray {
+        val bitmap = android.graphics.Bitmap.createBitmap(width, height, android.graphics.Bitmap.Config.ARGB_8888)
+        val canvas = android.graphics.Canvas(bitmap)
+        canvas.drawColor(android.graphics.Color.WHITE)
+        val paint = android.graphics.Paint().apply { color = android.graphics.Color.BLACK }
+        canvas.drawRect(0f, 0f, width / 2f, height / 2f, paint)
+        val stream = java.io.ByteArrayOutputStream()
+        bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 90, stream)
+        bitmap.recycle()
+        return stream.toByteArray()
+    }
+
+    @Test
+    fun genericCamera_refusesToFabricateAFrameWithoutAHost() = kotlinx.coroutines.runBlocking {
+        // Regression: capture used to return a solid-colour bitmap that looked like a photo.
+        val previous = engine.tools.impl.CameraTool.captureSink
+        engine.tools.impl.CameraTool.captureSink = null
+        try {
+            val outcome = engine.tools.NativeToolsSuite.execute(
+                url = "tools://camera/capture",
+                payload = buildJsonObject { },
+                tenantId = "tenant_no_camera"
+            )
+            assertFalse("capture must not report success without a camera host", outcome.success)
+            assertEquals(
+                "UNSUPPORTED",
+                outcome.resultData.jsonObject["status"]?.jsonPrimitive?.contentOrNull
+            )
+        } finally {
+            engine.tools.impl.CameraTool.captureSink = previous
+        }
+    }
+
+    @Test
+    fun genericScan_usesTheLiveViewfinderWhenNoImageIsSupplied() = kotlinx.coroutines.runBlocking {
+        // The scan tool must be able to reach a real camera: with no image and no injected
+        // payload it consults the host sink and reports whatever was actually decoded.
+        val previous = engine.tools.NativeToolsSuite.liveScanSink
+        var opened = 0
+        engine.tools.NativeToolsSuite.liveScanSink = {
+            opened++
+            engine.tools.scan.ScanResult(
+                rawValue = "4006381333931",
+                format = "EAN_13",
+                type = "1D"
+            )
+        }
+        try {
+            val outcome = engine.tools.NativeToolsSuite.execute(
+                url = "tools://scan/scan",
+                payload = buildJsonObject {
+                    put("camera", "true")
+                    putJsonObject("options") { put("target_format", "barcode") }
                 }
-                putJsonObject("output") {
-                    put("uri", "user.patient_photo_uri")
-                    put("data_url", "user.patient_photo_data_url")
-                    put("width", "user.photo_width")
-                }
-            },
-            tenantId = tenant
-        )
+            )
+            assertEquals("the viewfinder should be opened exactly once", 1, opened)
+            assertTrue(outcome.success)
+            assertEquals(
+                "4006381333931",
+                outcome.resultData.jsonObject["raw_value"]?.jsonPrimitive?.contentOrNull
+            )
+            assertEquals(
+                "EAN_13",
+                outcome.resultData.jsonObject["format"]?.jsonPrimitive?.contentOrNull
+            )
+        } finally {
+            engine.tools.NativeToolsSuite.liveScanSink = previous
+        }
+    }
 
-        assertTrue(outcome.success)
-        assertEquals("camera", outcome.toolId)
-
-        val uri = (outcome.outputVariables["user.patient_photo_uri"] as DivVariableValue.Str).value
-        assertTrue(uri.startsWith("file://") && uri.contains("workspaces/$tenant/media"))
-
-        val dataUrl = (outcome.outputVariables["user.patient_photo_data_url"] as DivVariableValue.Str).value
-        assertTrue(dataUrl.startsWith("data:image/jpeg;base64,"))
-
-        val width = (outcome.outputVariables["user.photo_width"] as DivVariableValue.IntVal).value
-        assertTrue(width <= 800)
+    @Test
+    fun genericScan_canBeKeptOffCamera() = kotlinx.coroutines.runBlocking {
+        // Headless callers opt out with camera=false and must not open the viewfinder.
+        val previous = engine.tools.NativeToolsSuite.liveScanSink
+        var opened = 0
+        engine.tools.NativeToolsSuite.liveScanSink = { opened++; null }
+        try {
+            val outcome = engine.tools.NativeToolsSuite.execute(
+                url = "tools://scan/scan",
+                payload = buildJsonObject { put("camera", "false") }
+            )
+            assertEquals("camera=false must not open the viewfinder", 0, opened)
+            assertFalse("a scan with no input must not report success", outcome.success)
+            assertEquals(
+                "NO_INPUT",
+                outcome.resultData.jsonObject["status"]?.jsonPrimitive?.contentOrNull
+            )
+        } finally {
+            engine.tools.NativeToolsSuite.liveScanSink = previous
+        }
     }
 
     @Test
@@ -192,32 +293,123 @@ class ExampleUnitTest {
     }
 
     @Test
-    fun nativeTools_mobileNetV4DetectsSkuInLowLatency() = kotlinx.coroutines.runBlocking {
-        val payload = kotlinx.serialization.json.buildJsonObject {
-            putJsonObject("options") {
-                put("top_k", "3")
-                put("min_confidence", "0.40")
-            }
+    fun imageClassifier_ranksRealScoresAndDropsWeakMatches() {
+        // Uses the bundled model's own quantization (scale 0.0807, zero point 213), so these
+        // bytes are the logits the graph really emits: 255 -> +3.39, 213 -> 0.0, 0 -> -17.2.
+        // The values are logits, not probabilities, so ranking must softmax them.
+        val labels = listOf("tench", "goldfish", "great_white_shark", "tiger_shark")
+        val scale = 0.08068591356277466f
+        val zeroPoint = 213
+        val scores = byteArrayOf(213.toByte(), 255.toByte(), 213.toByte(), 213.toByte())
+
+        val top = engine.tools.vector.ImageClassifier.rank(
+            scores = scores,
+            scale = scale,
+            zeroPoint = zeroPoint,
+            labels = labels,
+            topK = 3,
+            minConfidence = 0.0
+        )
+
+        assertEquals(3, top.size)
+        assertEquals("goldfish", top[0].label)
+        // e^3.39 / (e^3.39 + 3) - a probability, not the raw 3.39 logit.
+        assertEquals(0.908, top[0].confidence, 0.01)
+        assertTrue(top[0].confidence > top[1].confidence)
+        top.forEach {
+            assertTrue("confidence must be a probability, got ${it.confidence}", it.confidence > 0.0)
+            assertTrue("confidence must be a probability, got ${it.confidence}", it.confidence <= 1.0)
         }
-        val outcome = engine.tools.NativeToolsSuite.execute("tools://MobileNetV4-small/classify", payload, tenantId = "acme_pos")
-        assertTrue(outcome.success)
-        assertEquals("MobileNetV4-small", outcome.toolId)
-        assertTrue(outcome.outputVariables.containsKey("user.ai_prediction_label"))
-        assertTrue(outcome.latencyMs < 200L)
+
+        // A threshold must be able to suppress weak matches rather than padding the list.
+        val strict = engine.tools.vector.ImageClassifier.rank(
+            scores = scores,
+            scale = scale,
+            zeroPoint = zeroPoint,
+            labels = labels,
+            topK = 3,
+            minConfidence = 0.5
+        )
+        assertEquals(1, strict.size)
+        assertEquals("goldfish", strict[0].label)
     }
 
     @Test
-    fun nativeTools_u2NetProducesAlphaMatte() = kotlinx.coroutines.runBlocking {
-        val payload = kotlinx.serialization.json.buildJsonObject {
-            putJsonObject("options") {
-                put("tensor_input", "320x320x3")
-                put("saliency_cutoff", "0.45")
-            }
+    fun imageClassifier_scoresBundledModelOnRealPixels() = kotlinx.coroutines.runBlocking {
+        val context = androidx.test.core.app.ApplicationProvider
+            .getApplicationContext<android.content.Context>()
+        engine.db.currentAndroidContext = { context }
+
+        val bitmap = android.graphics.Bitmap.createBitmap(224, 224, android.graphics.Bitmap.Config.ARGB_8888)
+        bitmap.eraseColor(android.graphics.Color.rgb(128, 128, 128))
+
+        // JVM unit tests cannot load the TFLite native library, so real inference is only
+        // available on-device. When the runtime is missing the tool must report FAILED
+        // (not crash, and not fabricate a prediction) - that is the behaviour asserted here.
+        val payload = buildJsonObject {
+            val out = java.io.ByteArrayOutputStream()
+            bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, out)
+            put("uri", "data:image/png;base64," +
+                android.util.Base64.encodeToString(out.toByteArray(), android.util.Base64.NO_WRAP))
+            putJsonObject("options") { put("top_k", "3") }
         }
-        val outcome = engine.tools.NativeToolsSuite.execute("tools://u-2-Net.tflite/segment", payload)
-        assertTrue(outcome.success)
-        assertEquals("u-2-Net.tflite", outcome.toolId)
-        assertTrue(outcome.outputVariables.containsKey("user.u2net_mask_uri"))
+        bitmap.recycle()
+
+        val outcome = NativeToolsSuite.execute("tools://MobileNetV4-small/classify", payload, tenantId = "acme_pos")
+        val result = outcome.resultData.jsonObject
+        val status = result["status"]?.jsonPrimitive?.contentOrNull
+
+        if (status == "SUCCESS") {
+            // Native runtime present: verify a genuine, model-derived label came back.
+            val label = result["prediction_label"]?.jsonPrimitive?.contentOrNull
+            assertNotNull("missing prediction_label", label)
+            assertFalse("label must not be a canned SKU", label!!.contains("Wagyu", ignoreCase = true))
+            assertTrue(
+                "model should identify itself",
+                result["model"]?.jsonPrimitive?.contentOrNull.orEmpty().contains("ImageNet")
+            )
+        } else {
+            assertEquals("FAILED", status)
+            assertNull("must not fabricate a prediction", result["prediction_label"]?.jsonPrimitive?.contentOrNull)
+        }
+    }
+
+    @Test
+    fun nativeTools_mobileNetV4ReportsUnsupportedWithoutImageOrCamera() = kotlinx.coroutines.runBlocking {
+        val context = androidx.test.core.app.ApplicationProvider
+            .getApplicationContext<android.content.Context>()
+        engine.db.currentAndroidContext = { context }
+        // Robolectric installs no camera host, so there is no frame to classify.
+        engine.tools.impl.CameraTool.captureSink = null
+
+        val outcome = NativeToolsSuite.execute(
+            "tools://MobileNetV4-small/classify",
+            buildJsonObject { putJsonObject("options") { put("top_k", "3") } }
+        )
+
+        // Must not invent a prediction when it has no pixels to look at.
+        assertFalse("classify must not succeed without an image", outcome.success)
+        assertEquals("UNSUPPORTED", outcome.resultData.jsonObject["status"]?.jsonPrimitive?.contentOrNull)
+    }
+
+    @Test
+    fun nativeTools_u2NetReportsUnsupportedInsteadOfFabricatingMask() = kotlinx.coroutines.runBlocking {
+        val outcome = NativeToolsSuite.execute(
+            "tools://u-2-Net.tflite/segment",
+            buildJsonObject {
+                putJsonObject("options") {
+                    put("tensor_input", "320x320x3")
+                    put("saliency_cutoff", "0.45")
+                }
+            }
+        )
+
+        // No U-2-Net weights ship with this build, so there is no alpha matte to return.
+        assertFalse("segmentation must not claim success without a model", outcome.success)
+        val result = outcome.resultData.jsonObject
+        assertEquals("UNSUPPORTED", result["status"]?.jsonPrimitive?.contentOrNull)
+        assertNull("must not fabricate a mask uri", result["mask_uri"]?.jsonPrimitive?.contentOrNull)
+        assertNotNull("should explain why", result["reason"]?.jsonPrimitive?.contentOrNull)
     }
 
     @Test
@@ -307,14 +499,53 @@ class ExampleUnitTest {
     }
 
     @Test
-    fun biometricsTool_authorizesSupervisorRole() = kotlinx.coroutines.runBlocking {
+    fun biometricsTool_failsClosedWithoutAVerifier() = kotlinx.coroutines.runBlocking {
+        // A gate that cannot refuse is not a gate. With no host prompt installed there is no way
+        // to verify a supervisor, so the tool must refuse rather than approve every request.
+        engine.tools.impl.BiometricsTool.sink = null
         val urlStr = "div-action://terminal.tool.invoke?tool=auth.biometrics@1&required_role=SUPERVISOR&pin=1234&result_var=bio_state"
         val result = TerminalApp.router.handle(urlStr, Provenance.Publisher)
-        assertTrue(result is ToolResult.Success)
-        val success = result as ToolResult.Success
-        assertEquals("ok", success.data["state"])
-        assertEquals(true, success.data["authenticated"])
-        assertEquals("SUPERVISOR", success.data["role"])
+        assertFalse("unverified supervisor must not be authorized", result is ToolResult.Success)
+        assertTrue("expected an explicit unsupported/failure, got $result",
+            result is ToolResult.Unsupported || result is ToolResult.Failed)
+    }
+
+    @Test
+    fun biometricsTool_authorizesOnlyAfterHostVerification() = kotlinx.coroutines.runBlocking {
+        engine.tools.impl.BiometricsTool.sink = { request ->
+            engine.tools.impl.BiometricsTool.Verified(
+                authenticated = request.requiredRole == "SUPERVISOR",
+                method = "DEVICE_CREDENTIAL_VERIFIED"
+            )
+        }
+        try {
+            val urlStr = "div-action://terminal.tool.invoke?tool=auth.biometrics@1&required_role=SUPERVISOR&result_var=bio_state"
+            val result = TerminalApp.router.handle(urlStr, Provenance.Publisher)
+            assertTrue("verified supervisor should pass, got $result", result is ToolResult.Success)
+            val success = result as ToolResult.Success
+            assertEquals(true, success.data["authenticated"])
+            assertEquals("SUPERVISOR", success.data["role"])
+            assertEquals("DEVICE_CREDENTIAL_VERIFIED", success.data["method"])
+        } finally {
+            engine.tools.impl.BiometricsTool.sink = null
+        }
+    }
+
+    @Test
+    fun biometricsTool_propagatesHostDenial() = kotlinx.coroutines.runBlocking {
+        engine.tools.impl.BiometricsTool.sink = {
+            engine.tools.impl.BiometricsTool.Verified(
+                authenticated = false,
+                method = "DEVICE_CREDENTIAL_DENIED"
+            )
+        }
+        try {
+            val urlStr = "div-action://terminal.tool.invoke?tool=auth.biometrics@1&required_role=SUPERVISOR&result_var=bio_state"
+            val result = TerminalApp.router.handle(urlStr, Provenance.Publisher)
+            assertFalse("a denied prompt must not authorize", result is ToolResult.Success)
+        } finally {
+            engine.tools.impl.BiometricsTool.sink = null
+        }
     }
 
     @Test
@@ -881,11 +1112,16 @@ class ExampleUnitTest {
         assertEquals("QR_CODE", outcome.resultData.jsonObject["format"]?.jsonPrimitive?.contentOrNull)
         assertEquals("2D", outcome.resultData.jsonObject["kind"]?.jsonPrimitive?.contentOrNull)
 
-        val matrix = (outcome.outputVariables["user.code_matrix"] as DivVariableValue.Str).value
-        val rows = matrix.split("\n")
-        assertTrue("QR matrix should be square", rows.all { it.length == rows.size })
-        assertTrue("QR matrix should contain dark modules", matrix.contains("1"))
+        // The raw module matrix is deliberately not published: at 512x512 it serialises to
+        // ~262k characters, which bloats every DivKit state update. Only its row count is bound.
+        assertFalse(
+            "the full module matrix must not be pushed into a DivKit variable",
+            outcome.outputVariables.containsKey("user.code_matrix")
+        )
+        val rows = (outcome.outputVariables["user.code_matrix_rows"] as DivVariableValue.IntVal).value
         assertEquals("QR_CODE", (outcome.outputVariables["user.code_format"] as DivVariableValue.Str).value)
+        assertTrue("QR matrix should report its row count, was $rows", rows > 0)
+        assertTrue(outcome.resultData.jsonObject["matrix"]!!.jsonPrimitive.content.contains("1"))
     }
 
     @Test
@@ -904,6 +1140,47 @@ class ExampleUnitTest {
         assertEquals("1D", outcome.resultData.jsonObject["kind"]?.jsonPrimitive?.contentOrNull)
         val uri = (outcome.outputVariables["user.code_image_uri"] as DivVariableValue.Str).value
         assertTrue(uri.startsWith("file://"))
+    }
+
+    @Test
+    fun codeGenerateTool_barcodeIsScannableBackByTheDecoder() = kotlinx.coroutines.runBlocking {
+        // Regression: 1D codes were rendered with a 4-module quiet zone, which ZXing (and real
+        // scanners) cannot locate, so generated barcodes decoded to nothing.
+        val outcome = engine.tools.NativeToolsSuite.execute(
+            url = "tools://code-generate/barcode",
+            payload = buildJsonObject {
+                put("content", "9780201633610")
+                put("format", "EAN_13")
+                put("width", "400")
+                put("height", "160")
+            }
+        )
+        val uri = (outcome.outputVariables["user.code_image_uri"] as DivVariableValue.Str).value
+        val bitmap = engine.tools.scan.BarcodeDecoder.loadBitmap(uri)
+        assertNotNull("generated barcode image should be loadable", bitmap)
+        try {
+            val decoded = engine.tools.scan.BarcodeDecoder.decode(bitmap!!)
+            assertNotNull("generated EAN-13 must decode back", decoded)
+            assertEquals("9780201633610", decoded!!.rawValue)
+            assertEquals("EAN_13", decoded.format)
+        } finally {
+            bitmap!!.recycle()
+        }
+    }
+
+    @Test
+    fun codeGenerateEngine_keepsAQuietZoneAroundLinearSymbologies() {
+        val narrow = engine.tools.code.CodeGeneratorEngine.effectiveMargin(
+            com.google.zxing.BarcodeFormat.EAN_13, 4
+        )
+        assertTrue("1D codes need at least a 10-module quiet zone, was $narrow", narrow >= 10)
+        // 2D codes keep whatever the caller asked for.
+        assertEquals(
+            4,
+            engine.tools.code.CodeGeneratorEngine.effectiveMargin(
+                com.google.zxing.BarcodeFormat.QR_CODE, 4
+            )
+        )
     }
 
     @Test
@@ -1315,10 +1592,11 @@ class ExampleUnitTest {
         val spec = WorkspaceProvisioner.defaultWorkspaces.first()
         val block = SduiOnFlyBuilder.buildScannerToolBlock(spec)
 
-        // The final item is the OCR trigger
-        val ocrButton = block["items"]!!.jsonArray.last().jsonObject
-        val action = ocrButton["action"]!!.jsonObject
-        assertEquals("tools://scan/ocr", action["url"]!!.jsonPrimitive.content)
+        // The card mixes live-camera and sample-decode buttons, so locate the OCR trigger by
+        // its URL rather than by position.
+        val action = collectToolActions(block)
+            .firstOrNull { it["url"]?.jsonPrimitive?.content == "tools://scan/ocr" }
+            ?: throw AssertionError("scanner card has no OCR trigger")
 
         val outcome = engine.tools.NativeToolsSuite.execute(
             url = "tools://scan/ocr",

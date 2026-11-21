@@ -823,18 +823,48 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                     )
                     return false
                 }
-                val randomProd = spec.defaultProducts.random()
+                // Real scan: open the viewfinder and decode whatever the operator points at.
+                // A random product is never invented — an unrecognised code is reported as such.
+                val outcome = engine.tools.NativeToolsSuite.execute(
+                    url = "tools://scan/scan",
+                    payload = buildJsonObject { put("camera", "true") },
+                    tenantId = spec.tenantId
+                )
+                val scanned = outcome.resultData.jsonObject["raw_value"]?.jsonPrimitive?.contentOrNull
+                if (scanned.isNullOrBlank()) {
+                    val reason = outcome.resultData.jsonObject["error"]?.jsonPrimitive?.contentOrNull
+                        ?: "no code detected"
+                    EngineStateBridge.pushUpdate(
+                        "user.last_hardware_event",
+                        DivVariableValue.Str("SCAN CANCELLED: $reason")
+                    )
+                    return false
+                }
+
+                val product = spec.defaultProducts.firstOrNull {
+                    it.sku.equals(scanned, ignoreCase = true) || it.name.equals(scanned, ignoreCase = true)
+                }
+                if (product == null) {
+                    EngineStateBridge.pushUpdate(
+                        "user.last_hardware_event",
+                        DivVariableValue.Str("SCANNED $scanned — not in this catalog")
+                    )
+                    EngineStateBridge.pushUpdate("user.scanned_code", DivVariableValue.Str(scanned))
+                    return true
+                }
+
+                EngineStateBridge.pushUpdate("user.scanned_code", DivVariableValue.Str(scanned))
                 EngineStateBridge.pushUpdate(
                     "user.last_hardware_event",
-                    DivVariableValue.Str("SCANNER OK: ${randomProd.sku} (${randomProd.name})")
+                    DivVariableValue.Str("SCANNER OK: ${product.sku} (${product.name})")
                 )
                 activeRouter?.handle(
                     "local-db://op/db.insert",
                     WorkspaceProvisioner.buildInsertOrderAction(
                         spec,
-                        randomProd.name,
-                        randomProd.sku,
-                        randomProd.price.toString()
+                        product.name,
+                        product.sku,
+                        product.price.toString()
                     )["payload"]?.jsonObject
                 )
                 activeRouter?.handle(
@@ -848,26 +878,44 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                 true
             }
             "printer" -> {
+                // Routes through the real Bluetooth/ESC-POS bridge, which reports NO_DEVICE or a
+                // transport error instead of claiming a receipt was printed.
                 val count = EngineStateBridge.state.value["user.order_count"]?.asDisplayString() ?: "0"
+                val outcome = engine.tools.NativeToolsSuite.execute(
+                    url = "tools://print/print",
+                    payload = buildJsonObject {
+                        put("text", "Receipt — $count order(s) @ ${spec.terminalCode}")
+                    },
+                    tenantId = spec.tenantId
+                )
+                val status = outcome.resultData.jsonObject["status"]?.jsonPrimitive?.contentOrNull
+                    ?: "UNKNOWN"
+                val detail = outcome.resultData.jsonObject["error"]?.jsonPrimitive?.contentOrNull
+                    ?: outcome.resultData.jsonObject["device_name"]?.jsonPrimitive?.contentOrNull
                 EngineStateBridge.pushUpdate(
                     "user.last_hardware_event",
-                    DivVariableValue.Str("THERMAL PRINT OK: Receipt for $count order(s) @ ${spec.terminalCode}")
+                    DivVariableValue.Str(
+                        if (status == "SUCCESS") "THERMAL PRINT OK: $count order(s) @ ${spec.terminalCode}"
+                        else "THERMAL PRINT $status: ${detail ?: "no printer connected"}"
+                    )
                 )
-                true
+                status == "SUCCESS"
             }
+            // No NFC reader or cash-drawer solenoid is wired on this platform. Reporting a
+            // fabricated EMV token or drawer pulse hides that, so these say so plainly.
             "nfc" -> {
                 EngineStateBridge.pushUpdate(
                     "user.last_hardware_event",
-                    DivVariableValue.Str("NFC EMV AUTHORIZED: Token 0x9F26 (${spec.terminalCode})")
+                    DivVariableValue.Str("NFC UNAVAILABLE: no reader on this device (${spec.terminalCode})")
                 )
-                true
+                false
             }
             "cash_drawer" -> {
                 EngineStateBridge.pushUpdate(
                     "user.last_hardware_event",
-                    DivVariableValue.Str("CASH DRAWER SOLENOID OPENED (${spec.terminalCode})")
+                    DivVariableValue.Str("CASH DRAWER UNAVAILABLE: no solenoid attached (${spec.terminalCode})")
                 )
-                true
+                false
             }
             "beeper" -> {
                 if (!perms.hardwareBeeperAudio) {
@@ -907,12 +955,31 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                     )
                     return false
                 }
-                EngineStateBridge.pushUpdate("user.supervisor_authenticated", DivVariableValue.Bool(true))
+                // Route through the real gate so the OS prompt actually runs and a denial is
+                // reported as a denial. Asserting success here approved every supervisor action.
+                val outcome = engine.tools.NativeToolsSuite.execute(
+                    url = "tools://biometrics/authenticate",
+                    payload = buildJsonObject { put("required_role", "SUPERVISOR") },
+                    tenantId = spec.tenantId
+                )
+                val status = outcome.resultData.jsonObject["status"]?.jsonPrimitive?.contentOrNull
+                    ?: "UNKNOWN"
+                val reason = outcome.resultData.jsonObject["reason"]?.jsonPrimitive?.contentOrNull
+                    ?: outcome.resultData.jsonObject["error"]?.jsonPrimitive?.contentOrNull
+                val authenticated = status == "SUCCESS" &&
+                    outcome.resultData.jsonObject["authenticated"]?.jsonPrimitive?.contentOrNull == "true"
+                EngineStateBridge.pushUpdate(
+                    "user.supervisor_authenticated",
+                    DivVariableValue.Bool(authenticated)
+                )
                 EngineStateBridge.pushUpdate(
                     "user.last_hardware_event",
-                    DivVariableValue.Str("BIOMETRICS OK: Supervisor identity authorized")
+                    DivVariableValue.Str(
+                        if (authenticated) "SUPERVISOR VERIFIED: device credential accepted"
+                        else "SUPERVISOR $status: ${reason ?: "identity not verified"}"
+                    )
                 )
-                true
+                authenticated
             }
             "clipboard" -> {
                 if (!perms.clipboardAccess) {

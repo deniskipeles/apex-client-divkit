@@ -19,14 +19,14 @@
     "items": [
         {
             "type": "text",
-            "text": "🪄 U-2-Net.tflite SALIENT OBJECT SEGMENTATION (tools://u-2-Net.tflite)",
+            "text": "🪄 U-2-Net.tflite SALIENT SEGMENTATION — MODEL NOT BUNDLED (tools://u-2-Net.tflite)",
             "font_size": 11,
             "font_weight": "bold",
             "text_color": "#67E8F9"
         },
         {
             "type": "text",
-            "text": "Matte Status: @{user.bg_remove_status} • Mask: @{user.u2net_mask_uri}",
+            "text": "Status: @{user.bg_remove_status} • No alpha matte is produced; the U-2-Net weights are not shipped in this build",
             "font_size": 12,
             "text_color": "#E0F2FE",
             "font_family": "monospace"
@@ -34,8 +34,8 @@
         {
             "type": "button",
             "id": "tool_u-2-Net_tflite_segment",
-            "text": "Extract Foreground Alpha Matte (u-2-Net.tflite)",
-            "subtitle": "tools://u-2-Net.tflite/segment • 320x320 INT8 Saliency Map",
+            "text": "Check U-2-Net Availability (reports UNSUPPORTED)",
+            "subtitle": "tools://u-2-Net.tflite/segment • Use image-manipulation/remove_background instead",
             "icon": "crop",
             "background_color": "#0891B2",
             "text_color": "#FFFFFF",
@@ -50,8 +50,8 @@
                         "quantization": "INT8"
                     },
                     "output": {
-                        "mask_uri": "user.u2net_mask_uri",
-                        "status": "user.bg_remove_status"
+                        "status": "user.bg_remove_status",
+                        "reason": "user.u2net_unavailable_reason"
                     }
                 }
             }

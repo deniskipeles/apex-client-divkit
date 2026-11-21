@@ -19,7 +19,7 @@
     "items": [
         {
             "type": "text",
-            "text": "🛡️ SUPERVISOR BIOMETRIC AUTH (auth.biometrics@1 • tools://biometrics)",
+            "text": "🛡️ SUPERVISOR CREDENTIAL GATE (auth.biometrics@1 • tools://biometrics)",
             "font_size": 11,
             "font_weight": "bold",
             "text_color": "#E4E4E7"
@@ -35,7 +35,7 @@
             "type": "button",
             "id": "tool_biometrics_authenticate",
             "text": "Request Supervisor Authorization (Biometric / PIN)",
-            "subtitle": "tools://biometrics/authenticate • Gates Manager Refunds & Voids",
+            "subtitle": "tools://biometrics/authenticate • Real OS device-credential prompt; denies when unverified",
             "icon": "lock",
             "background_color": "#3F3F46",
             "text_color": "#FFFFFF",
@@ -51,7 +51,7 @@
                     "output": {
                         "authenticated": "user.supervisor_authenticated",
                         "role": "user.supervisor_role",
-                        "auth_token": "user.supervisor_auth_token"
+                        "method": "user.supervisor_auth_method"
                     }
                 }
             }

@@ -91,17 +91,31 @@ class EmbedImageTool : ToolHandler {
         val imageId = args["image"] ?: args["image_id"]
             ?: return ToolResult.Failed(capability, "missing image argument")
 
-        // Generates 512-dimension vector embedding (e.g. from sekokuva_int8.tflite)
-        val random = SecureRandom()
-        val vector = List(8) { (random.nextFloat() * 2f - 1f) } // preview sample
-        return ToolResult.Success(
-            mapOf(
-                "state" to "ok",
-                "image_id" to imageId,
-                "dim" to 512,
-                "vector_sample" to vector.joinToString(",") { "%.4f".format(it) }
+        // A 512-dim embedding needs the actual pixels; there is no embedder for this model.
+        // Returning SecureRandom() floats produced a well-formed vector with zero relationship
+        // to the image, so similarity search over those vectors was meaningless.
+        val uri = args["uri"] ?: imageId
+        val androidContext = engine.db.currentAndroidContext?.invoke()
+            ?: return ToolResult.Unsupported(
+                capability,
+                "No Android context available to load image embeddings"
             )
-        )
+        val bitmap = runCatching { engine.tools.vector.VectorIO.decodeImage(androidContext, uri) }.getOrNull()
+            ?: return ToolResult.Failed(capability, "Unable to load image: $uri")
+        return try {
+            val vector = engine.tools.vector.ImageVectorizer.embed(androidContext, bitmap)
+            ToolResult.Success(
+                mapOf(
+                    "state" to "ok",
+                    "image_id" to imageId,
+                    "dim" to vector.size,
+                    "vector_b64" to engine.tools.vector.VectorIO.packFloats(vector),
+                    "model" to "MobileNetV4-small INT8"
+                )
+            )
+        } finally {
+            bitmap.recycle()
+        }
     }
 }
 
@@ -245,33 +259,59 @@ class SecureVerifyIdentityTool : ToolHandler {
 
 /**
  * 8.10 auth.biometrics@1 (Supervisor Biometric Authentication Gate)
+ *
+ * A gate is only a gate if it can refuse. The previous implementation computed
+ * `pin == null || pin == "1234" || pin == "0000" || pin.isNotBlank()`, which accepts every
+ * possible input including no PIN at all, so every refund or void was "supervisor approved".
+ * Verification now delegates to the platform credential/biometric prompt through [sink].
+ * Without a sink (unit tests, headless hosts) the gate fails closed with UNSUPPORTED rather
+ * than granting access it never verified.
  */
 class BiometricsTool : ToolHandler {
     override val capability = "auth.biometrics@1"
 
+    data class Request(val prompt: String, val requiredRole: String)
+
+    data class Verified(val authenticated: Boolean, val method: String)
+
     override suspend fun invoke(args: ToolArgs, ctx: ToolContext): ToolResult {
         val prompt = args["prompt"] ?: "Supervisor Authorization Required"
         val requiredRole = args["required_role"] ?: "SUPERVISOR"
-        val pin = args["pin"]
 
-        val authenticated = pin == null || pin == "1234" || pin == "0000" || pin.isNotBlank()
-        val token = "bio_tok_${UUID.randomUUID().toString().take(10)}"
+        val verifier = sink ?: return ToolResult.Unsupported(
+            capability,
+            "No biometric/credential host is installed, so supervisor identity cannot be verified"
+        )
 
-        return if (authenticated) {
-            ToolResult.Success(
-                mapOf(
-                    "state" to "ok",
-                    "authenticated" to true,
-                    "role" to requiredRole,
-                    "auth_token" to token,
-                    "prompt" to prompt,
-                    "method" to "BIOMETRIC_OR_PIN_VERIFIED",
-                    "timestamp" to currentTimeMillis()
-                )
-            )
-        } else {
-            ToolResult.Failed(capability, "Supervisor authentication failed")
+        val verified = try {
+            verifier(Request(prompt, requiredRole))
+        } catch (e: Exception) {
+            return ToolResult.Failed(capability, e.message ?: "Biometric prompt failed")
+        } ?: return ToolResult.Unsupported(
+            capability,
+            "Biometric prompt was not completed; supervisor identity unverified"
+        )
+
+        if (!verified.authenticated) {
+            return ToolResult.Failed(capability, "Supervisor authentication was cancelled or denied")
         }
+
+        return ToolResult.Success(
+            mapOf(
+                "state" to "ok",
+                "authenticated" to true,
+                "role" to requiredRole,
+                "auth_token" to "bio_tok_${UUID.randomUUID().toString().take(10)}",
+                "prompt" to prompt,
+                "method" to verified.method,
+                "timestamp" to currentTimeMillis()
+            )
+        )
+    }
+
+    companion object {
+        /** Installed by the host Activity; returns null when the prompt could not be shown. */
+        var sink: (suspend (Request) -> Verified?)? = null
     }
 }
 

@@ -19,14 +19,14 @@
     "items": [
         {
             "type": "text",
-            "text": "🧠 MobileNetV4-Small INT8 AI SKU DETECTOR (tools://MobileNetV4-small)",
+            "text": "🧠 MobileNetV4-Small INT8 IMAGE CLASSIFIER (tools://MobileNetV4-small)",
             "font_size": 11,
             "font_weight": "bold",
             "text_color": "#A5B4FC"
         },
         {
             "type": "text",
-            "text": "AI Prediction: @{user.ai_prediction_label} • Conf: @{user.ai_confidence_score} • Latency: @{user.tool_last_latency}ms",
+            "text": "Prediction: @{user.ai_prediction_label} • Conf: @{user.ai_confidence_score} • Latency: @{user.tool_last_latency}ms",
             "font_size": 12,
             "text_color": "#E0E7FF",
             "font_family": "monospace"
@@ -34,8 +34,8 @@
         {
             "type": "button",
             "id": "tool_MobileNetV4-small_classify",
-            "text": "⚡ Detect Item via MobileNetV4-Small INT8",
-            "subtitle": "tools://MobileNetV4-small/classify • 0.2ms latency, 3.8MB INT8",
+            "text": "📷 Classify What The Camera Sees",
+            "subtitle": "tools://MobileNetV4-small/classify • Captures a frame, runs real INT8 inference",
             "icon": "camera",
             "background_color": "#4F46E5",
             "text_color": "#FFFFFF",
@@ -51,7 +51,6 @@
                     },
                     "output": {
                         "prediction_label": "user.ai_prediction_label",
-                        "prediction_sku": "user.ai_prediction_sku",
                         "confidence": "user.ai_confidence_score"
                     }
                 }

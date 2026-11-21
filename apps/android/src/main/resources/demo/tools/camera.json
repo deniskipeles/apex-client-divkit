@@ -19,17 +19,31 @@
     "items": [
         {
             "type": "text",
-            "text": "📸 HARDWARE CAMERA CAPTURE & TORCH (tools://camera)",
+            "text": "📸 CAMERA — LIVE PREVIEW & CAPTURE (tools://camera)",
             "font_size": 11,
-            "font_weight": "bold",
-            "text_color": "#67E8F9"
+            "text_color": "#67E8F9",
+            "font_weight": "bold"
         },
         {
             "type": "text",
-            "text": "Capture: @{user.camera_capture_uri} • Torch: @{user.camera_torch_state}",
+            "text": "Last capture: @{user.camera_capture_uri}",
             "font_size": 12,
             "text_color": "#CFFAFE",
             "font_family": "monospace"
+        },
+        {
+            "type": "text",
+            "text": "Torch: @{user.camera_torch_state}",
+            "font_size": 12,
+            "text_color": "#CFFAFE",
+            "font_family": "monospace"
+        },
+        {
+            "type": "text",
+            "text": "Capture opens the viewfinder; press the shutter to take the photo",
+            "font_size": 11,
+            "text_color": "#A5F3FC",
+            "font_weight": "bold"
         },
         {
             "type": "container",
@@ -43,8 +57,8 @@
                         {
                             "type": "button",
                             "id": "tool_camera_capture",
-                            "text": "Capture Frame",
-                            "subtitle": "tools://camera/capture • 1080p back camera",
+                            "text": "Capture Photo (Back)",
+                            "subtitle": "Rear camera, opens preview",
                             "icon": "camera",
                             "background_color": "#0891B2",
                             "text_color": "#FFFFFF",
@@ -56,7 +70,8 @@
                                     "operation": "capture",
                                     "options": {
                                         "facing": "back",
-                                        "resolution": "1080p"
+                                        "max_dimension": "1920",
+                                        "encoding": "uri"
                                     },
                                     "output": {
                                         "uri": "user.camera_capture_uri"
@@ -72,20 +87,87 @@
                     "items": [
                         {
                             "type": "button",
-                            "id": "tool_camera_torch_toggle",
-                            "text": "Toggle Torch",
-                            "subtitle": "tools://camera/torch_toggle",
-                            "icon": "search",
+                            "id": "tool_camera_capture_front",
+                            "text": "Capture Photo (Front)",
+                            "subtitle": "Front camera, opens preview",
+                            "icon": "camera",
                             "background_color": "#0E7490",
                             "text_color": "#FFFFFF",
                             "corner_radius": 10,
                             "action": {
-                                "log_id": "exec_tool_camera_torch_toggle",
+                                "log_id": "exec_tool_camera_capture_front",
+                                "url": "tools://camera/capture",
+                                "payload": {
+                                    "operation": "capture",
+                                    "options": {
+                                        "facing": "front",
+                                        "max_dimension": "1920",
+                                        "encoding": "uri"
+                                    },
+                                    "output": {
+                                        "uri": "user.camera_capture_uri"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "container",
+            "orientation": "horizontal",
+            "item_spacing": 8,
+            "items": [
+                {
+                    "type": "container",
+                    "weight": 1.0,
+                    "items": [
+                        {
+                            "type": "button",
+                            "id": "tool_camera_torch_on",
+                            "text": "Torch On",
+                            "subtitle": "Rear flash LED",
+                            "icon": "camera",
+                            "background_color": "#B45309",
+                            "text_color": "#FFFFFF",
+                            "corner_radius": 10,
+                            "action": {
+                                "log_id": "exec_tool_camera_torch_on",
                                 "url": "tools://camera/torch_toggle",
                                 "payload": {
                                     "operation": "torch_toggle",
                                     "options": {
                                         "state": "on"
+                                    },
+                                    "output": {
+                                        "torch_state": "user.camera_torch_state"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "container",
+                    "weight": 1.0,
+                    "items": [
+                        {
+                            "type": "button",
+                            "id": "tool_camera_torch_off",
+                            "text": "Torch Off",
+                            "subtitle": "Rear flash LED",
+                            "icon": "camera",
+                            "background_color": "#78350F",
+                            "text_color": "#FFFFFF",
+                            "corner_radius": 10,
+                            "action": {
+                                "log_id": "exec_tool_camera_torch_off",
+                                "url": "tools://camera/torch_toggle",
+                                "payload": {
+                                    "operation": "torch_toggle",
+                                    "options": {
+                                        "state": "off"
                                     },
                                     "output": {
                                         "torch_state": "user.camera_torch_state"
