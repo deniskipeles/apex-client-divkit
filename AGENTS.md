@@ -145,6 +145,16 @@ showcase of the SDUI surface. When a tool gains a user-facing operation, surface
 - `DivKitMultiplatform.resolveIcon(name)` — map any new `icon` names to a Material icon; the
   demo also showcases the `icons://native/<name>` scheme via `buildNativeIconSchemeBlock`.
 
+Demo cards are data (`src/main/resources/demo/tools/*.json`), so nothing type-checks their
+action payloads. A handler reads `payload["options"]` as flat string args — a button that omits
+one fails at runtime with e.g. `missing url argument` instead of failing the build.
+`demoCards_supplyTheArgumentsTheirToolsRequire` dispatches every `tools://` action in every
+card and fails on those errors, so add the required argument when you add a button.
+
+Naming: `inventory` is the ApexKit **collection/table** name in `WorkspaceProvisioner` and the
+SQL payloads — it is schema and must not be renamed. User-visible demo content (card labels,
+`user.*` variables, resource file names, icon refs) uses `catalog`.
+
 `local-db://op/<name>` is the SQLite data plane (insert/query/count/delete), dispatched by
 `EngineRouter` and documented in `docs/tools/local-db.md`.
 
