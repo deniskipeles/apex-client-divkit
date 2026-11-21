@@ -364,6 +364,12 @@ pnpm check:desktop           # cargo check
   emulator must run with `-accel off` (`ANDROID_I_WANT_MY_TCG=yes`); the android-30 image's
   `system_server` crashes, android-28 boots.
 
+- Verifying native-tool demos headlessly: swipe to scroll (tapping buttons never scrolls), then
+  `uiautomator dump`. Async tools such as ML Kit OCR finish tens of seconds after the tap that
+  starts them, so an immediate dump still shows the seed variable values - re-dump before
+  concluding a tool failed. `PipelineManager: OCR process succeeded` in logcat is the real
+  signal that recognition ran.
+
 ## Demo showcase contract
 
 - `WorkspaceProvisioner.buildDefaultDivKitCardJson` is the built-in showcase and must exercise
