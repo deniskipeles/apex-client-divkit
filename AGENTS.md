@@ -323,6 +323,46 @@ pnpm check:desktop           # cargo check
   `com.google.mediapipe.proto.GraphTemplateProto$CalculatorGraphTemplate`, which is not on the
   classpath, and `minifyReleaseWithR8` failed. MediaPipe/TFLite/CameraX already ship consumer
   ProGuard rules, so they need no project-side keeps.
+- **A `-keep` rule does not preserve constructors.** This caused the long-lived "release APK
+  crashes instantly on open" bug. Library rules such as Room's
+  `-keep class * extends androidx.room.RoomDatabase` keep the *class* but let R8 drop the
+  implicit no-arg `<init>`; the class is then instantiated by reflection with
+  `getDeclaredConstructor(new Class[0])` and dies with `NoSuchMethodException: <init> []`.
+  The startup chain was `WorkManagerInitializer` → `WorkManager.initialize` →
+  `WorkDatabase_Impl`. The same shape broke ML Kit's component registrars (silently disabling
+  OCR/barcode/text recognition) and `androidx.startup` initializers. Rules that are easy to
+  get wrong:
+
+  ```proguard
+  -keep class * extends androidx.room.RoomDatabase { *; }
+  -keepclassmembers class * extends androidx.room.RoomDatabase { <init>(...); }
+  ```
+
+  Always use `{ *; }` or an explicit `<init>(...);` member list. Plain `-keep class X` keeps
+  only the class, not members.
+- **How to debug a release-only crash properly.** Static reading of `mapping.txt` is not
+  enough — R8 vertical class merging makes obfuscated frames ambiguous, and a name that looks
+  present can belong to a merged sibling. Reproduce instead: run an x86_64 emulator, install
+  the release APK, and read `adb logcat -b crash`. To confirm a specific class kept its
+  constructor, parse the APK's dex directly:
+
+  ```bash
+  python3 -c "
+  import zipfile, logging; logging.disable(logging.CRITICAL)
+  from androguard.core.dex import DEX
+  z = zipfile.ZipFile('app-release.apk')
+  for n in z.namelist():
+      if n.endswith('.dex'):
+          for c in DEX(z.read(n)).get_classes():
+              if c.get_name() == 'Landroidx/work/impl/WorkDatabase_Impl;':
+                  print([m.get_descriptor() for m in c.get_methods() if m.get_name() == '<init>'])
+  "
+  ```
+
+  An empty list means the constructor was stripped. Absence of a `<init>` in
+  `mapping.txt` is the same signal. There is no `/dev/kvm` in this environment, so the
+  emulator must run with `-accel off` (`ANDROID_I_WANT_MY_TCG=yes`); the android-30 image's
+  `system_server` crashes, android-28 boots.
 
 ## Demo showcase contract
 

@@ -38,23 +38,51 @@
 # time an E2EE session is opened.
 -keep class org.whispersystems.curve25519.** { *; }
 
-# 4. DivKit & UI Engine Components
+# 4. Room & androidx.startup: reflectively instantiated components
+# Room's generated `<Database>_Impl` classes are created by
+# `Room.getGeneratedImplementation` via `Class.forName(...).getDeclaredConstructor(new Class[0])`.
+# Room ships only `-keep class * extends androidx.room.RoomDatabase`, which preserves the class
+# but lets R8 strip the implicit no-arg constructor, so the reflective lookup throws
+# NoSuchMethodException: <init> [] at startup (WorkManager -> WorkDatabase -> WorkDatabase_Impl).
+-keep class * extends androidx.room.RoomDatabase { *; }
+-keepclassmembers class * extends androidx.room.RoomDatabase { <init>(...); }
+
+# androidx.startup instantiates each Initializer listed in AndroidManifest meta-data by name.
+-keep class * implements androidx.startup.Initializer { <init>(); }
+-keepclassmembers class * implements androidx.startup.Initializer { <init>(...); }
+-keep class androidx.startup.** { *; }
+
+# WorkManager resolves InputMerger / Worker subclasses from string class names.
+-keep class * extends androidx.work.InputMerger { <init>(); }
+-keep class * extends androidx.work.ListenableWorker { <init>(...); }
+-keep class * extends androidx.work.WorkerFactory { *; }
+
+# ML Kit and Firebase discover component registrars by name from manifest/asset metadata and
+# instantiate them with a no-arg constructor (`ComponentDiscovery` / `ComponentRegistrar`).
+# Without the constructor R8 leaves the classes in place but drops `<init>`, so OCR, barcode
+# scanning and text recognition fail at runtime with a "Invalid component registrar" warning.
+-keep class * implements com.google.firebase.components.ComponentRegistrar { <init>(); }
+-keepclassmembers class * implements com.google.firebase.components.ComponentRegistrar { <init>(...); }
+-keep class com.google.mlkit.** { *; }
+-dontwarn com.google.mlkit.**
+
+# 5. DivKit & UI Engine Components
 -keep class com.yandex.divkit.** { *; }
 -keep class com.yandex.div.** { *; }
 -keep class com.patrykandpatrick.vico.** { *; }
 
-# 5. Fast Execution Tuning: prevent aggressive micro-optimizations that degrade JIT warmup
+# 6. Fast Execution Tuning: prevent aggressive micro-optimizations that degrade JIT warmup
 -optimizations !code/simplification/arithmetic,!code/simplification/cast,!field/*,!class/merging/*
 -repackageclasses
 -allowaccessmodification
 
-# 6. Optional TLS platform providers in OkHttp (not required on Android)
+# 7. Optional TLS platform providers in OkHttp (not required on Android)
 -dontwarn org.bouncycastle.jsse.**
 -dontwarn org.conscrypt.**
 -dontwarn org.openjsse.**
 -dontwarn okhttp3.internal.platform.**
 
-# 7. Ktor's debugger detector references JVM-only java.lang.management types that do not
+# 8. Ktor's debugger detector references JVM-only java.lang.management types that do not
 # exist on Android (surfaced by tools://net's Ktor CIO client/server).
 -dontwarn java.lang.management.ManagementFactory
 -dontwarn java.lang.management.RuntimeMXBean
