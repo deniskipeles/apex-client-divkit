@@ -1,61 +1,124 @@
 {
     "type": "container",
     "orientation": "vertical",
-    "background_color": "#2A1F0B",
-    "corner_radius": 12,
+    "background_color": "#1A1200",
+    "corner_radius": 14,
     "paddings": {
-        "left": 12,
-        "right": 12,
-        "top": 10,
-        "bottom": 10
+        "left": 14,
+        "right": 14,
+        "top": 12,
+        "bottom": 12
     },
     "border": {
-        "corner_radius": 12,
+        "corner_radius": 14,
         "stroke": {
             "color": "#F59E0B",
-            "width": 1
+            "width": 2
         }
     },
     "items": [
         {
             "type": "text",
-            "text": "🔳 BARCODE & QR CODE GENERATOR (tools://code-generate)",
-            "font_size": 11,
-            "font_weight": "bold",
-            "text_color": "#FCD34D"
-        },
-        {
-            "type": "text",
-            "text": "Generated: @{user.code_format} (@{user.code_kind}) • @{user.code_id}",
+            "text": "🔳 CODE GENERATOR — ZXing QR & 1D Barcodes (tools://code-generate)",
             "font_size": 12,
+            "font_weight": "bold",
+            "text_color": "#FCD34D",
+            "margins": {
+                "bottom": 4
+            }
+        },
+        {
+            "type": "text",
+            "text": "Generates scannable PNGs saved to the tenant media sandbox. Generated codes can be scanned immediately with the Scanner card.",
+            "font_size": 11,
             "text_color": "#FEF3C7",
-            "font_family": "monospace"
+            "margins": {
+                "bottom": 10
+            }
         },
         {
-            "type": "text",
-            "text": "Content: @{user.code_content}",
-            "font_size": 11,
-            "text_color": "#FDE68A",
-            "font_family": "monospace"
+            "type": "container",
+            "orientation": "vertical",
+            "background_color": "#0D0900",
+            "corner_radius": 8,
+            "paddings": {
+                "left": 10,
+                "right": 10,
+                "top": 8,
+                "bottom": 8
+            },
+            "margins": {
+                "bottom": 10
+            },
+            "items": [
+                {
+                    "type": "text",
+                    "text": "Format: @{user.code_format}",
+                    "font_size": 11,
+                    "text_color": "#FDE68A",
+                    "font_family": "monospace"
+                },
+                {
+                    "type": "text",
+                    "text": "Kind:   @{user.code_kind}",
+                    "font_size": 11,
+                    "text_color": "#FDE68A",
+                    "font_family": "monospace"
+                },
+                {
+                    "type": "text",
+                    "text": "Content: @{user.code_content}",
+                    "font_size": 11,
+                    "text_color": "#FDE68A",
+                    "font_family": "monospace"
+                },
+                {
+                    "type": "text",
+                    "text": "Matrix rows: @{user.code_id}",
+                    "font_size": 11,
+                    "text_color": "#FDE68A",
+                    "font_family": "monospace"
+                },
+                {
+                    "type": "text",
+                    "text": "Image URI: @{user.code_image_uri}",
+                    "font_size": 10,
+                    "text_color": "#A87E20",
+                    "font_family": "monospace"
+                }
+            ]
         },
         {
-            "type": "image",
-            "image_url": "@{user.code_image_uri}",
-            "preview_height": 220,
+            "type": "container",
+            "orientation": "vertical",
+            "background_color": "#FAFAFA",
             "corner_radius": 10,
-            "content_description": "Generated code"
-        },
-        {
-            "type": "text",
-            "text": "PNG: @{user.code_image_uri}",
-            "font_size": 11,
-            "text_color": "#FDE68A",
-            "font_family": "monospace"
+            "paddings": {
+                "left": 6,
+                "right": 6,
+                "top": 6,
+                "bottom": 6
+            },
+            "margins": {
+                "bottom": 10
+            },
+            "items": [
+                {
+                    "type": "image",
+                    "image_url": "@{user.code_image_uri}",
+                    "preview_height": 240,
+                    "corner_radius": 10,
+                    "content_description": "Generated code image"
+                }
+            ]
         },
         {
             "type": "container",
             "orientation": "horizontal",
             "item_spacing": 8,
+            "margins": {
+                "bottom": 8
+            },
             "items": [
                 {
                     "type": "container",
@@ -129,6 +192,115 @@
                             }
                         }
                     ]
+                }
+            ]
+        },
+        {
+            "type": "container",
+            "orientation": "horizontal",
+            "item_spacing": 8,
+            "margins": {
+                "bottom": 12
+            },
+            "items": [
+                {
+                    "type": "container",
+                    "weight": 1.0,
+                    "items": [
+                        {
+                            "type": "button",
+                            "id": "tool_code-generate_table_qr",
+                            "text": "Generate Table QR",
+                            "subtitle": "APEX://table/T12 • ec_level H",
+                            "icon": "qr_code",
+                            "background_color": "#92400E",
+                            "text_color": "#FFFFFF",
+                            "corner_radius": 10,
+                            "action": {
+                                "log_id": "exec_tool_code-generate_table_qr",
+                                "url": "tools://code-generate/generate",
+                                "payload": {
+                                    "operation": "generate",
+                                    "options": {
+                                        "content": "APEX://table/T12?guests=4&server=Maria",
+                                        "format": "qr",
+                                        "width": "512",
+                                        "ec_level": "H"
+                                    },
+                                    "output": {
+                                        "uri": "user.code_image_uri",
+                                        "format": "user.code_format",
+                                        "kind": "user.code_kind",
+                                        "content": "user.code_content",
+                                        "code_id": "user.code_id"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "container",
+                    "weight": 1.0,
+                    "items": [
+                        {
+                            "type": "button",
+                            "id": "tool_code-generate_receipt_barcode",
+                            "text": "Receipt Barcode",
+                            "subtitle": "CODE_128 • 600×180",
+                            "icon": "barcode",
+                            "background_color": "#78350F",
+                            "text_color": "#FFFFFF",
+                            "corner_radius": 10,
+                            "action": {
+                                "log_id": "exec_tool_code-generate_receipt_barcode",
+                                "url": "tools://code-generate/barcode",
+                                "payload": {
+                                    "operation": "barcode",
+                                    "options": {
+                                        "content": "REC-20261122-${terminalCode}",
+                                        "format": "CODE_128",
+                                        "width": "600",
+                                        "height": "180"
+                                    },
+                                    "output": {
+                                        "uri": "user.code_image_uri",
+                                        "format": "user.code_format",
+                                        "kind": "user.code_kind",
+                                        "content": "user.code_content",
+                                        "code_id": "user.code_id"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "container",
+            "orientation": "vertical",
+            "background_color": "#002020",
+            "corner_radius": 8,
+            "paddings": {
+                "left": 10,
+                "right": 10,
+                "top": 8,
+                "bottom": 8
+            },
+            "items": [
+                {
+                    "type": "text",
+                    "text": "▶  SCAN YOUR GENERATED CODE",
+                    "font_size": 11,
+                    "font_weight": "bold",
+                    "text_color": "#22D3EE"
+                },
+                {
+                    "type": "text",
+                    "text": "Switch to Scanner card and point the camera at the code above",
+                    "font_size": 11,
+                    "text_color": "#67E8F9"
                 }
             ]
         }

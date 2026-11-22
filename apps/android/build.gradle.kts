@@ -147,6 +147,7 @@ dependencies {
   debugImplementation(libs.androidx.compose.ui.tooling)
 
   implementation(libs.mlkit.text.recognition)
+  implementation(libs.mlkit.barcode.scanning)
   implementation(libs.mediapipe.tasks.text)
   implementation(libs.tensorflow.lite)
   implementation(libs.tensorflow.lite.support.api)

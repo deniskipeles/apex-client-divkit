@@ -464,7 +464,7 @@
                 },
                 {
                   "type": "text",
-                  "text": "SQLite: workspace_${tenantId}.db • Sync: @{user.sync_status}",
+                  "text": "SQLite: workspace_${tenantId}.db • Sync: @{user.sync_status} • @{user.engine_error}",
                   "font_size": 12,
                   "text_color": "#94A3B8",
                   "font_family": "monospace"
@@ -541,7 +541,7 @@
                       "items": [
                         {
                           "type": "text",
-                          "text": "LAST ROW ID",
+                          "text": "LAST ROW #",
                           "font_size": 10,
                           "font_weight": "bold",
                           "text_color": "#64748B"
@@ -560,11 +560,44 @@
               ]
             },
             {
-              "type": "text",
-              "text": "QUICK-TAP POS CATALOG (local-db://op/db.insert)",
-              "font_size": 11,
-              "font_weight": "bold",
-              "text_color": "#94A3B8"
+              "type": "button",
+              "id": "nav_local_db_shortcut",
+              "text": "→ Open SQLite Database",
+              "icon": "stock",
+              "background_color": "#0284C7",
+              "text_color": "#F8FAFC",
+              "corner_radius": 12,
+              "action": {
+                "log_id": "nav_push_local_db",
+                "url": "nav://push?id=tool_local_db"
+              }
+            },
+            {
+              "type": "container",
+              "orientation": "vertical",
+              "background_color": "#0F172A",
+              "corner_radius": 12,
+              "paddings": {
+                "left": 12,
+                "right": 12,
+                "top": 10,
+                "bottom": 10
+              },
+              "items": [
+                {
+                  "type": "text",
+                  "text": "⚡ ACTIVE TERMINAL CAPABILITIES",
+                  "font_size": 12,
+                  "font_weight": "bold",
+                  "text_color": "#F8FAFC"
+                },
+                {
+                  "type": "text",
+                  "text": "Quick-launch common tool cards",
+                  "font_size": 11,
+                  "text_color": "#64748B"
+                }
+              ]
             },
             {
               "type": "grid",
@@ -573,512 +606,64 @@
               "items": [
                 {
                   "type": "button",
-                  "id": "catalog_ACM-101",
-                  "text": "Wagyu Smash Burger",
-                  "subtitle": "$16.50 • ACM-101",
-                  "icon": "cart_add",
+                  "id": "nav_quick_scanner",
+                  "text": "Scanner",
+                  "icon": "scanner",
+                  "background_color": "#10B981",
+                  "text_color": "#F8FAFC",
+                  "corner_radius": 10,
+                  "action": {
+                    "log_id": "nav_push_scanner",
+                    "url": "nav://push?id=tool_scanner"
+                  }
+                },
+                {
+                  "type": "button",
+                  "id": "nav_quick_camera",
+                  "text": "Camera",
+                  "icon": "camera",
+                  "background_color": "#6366F1",
+                  "text_color": "#F8FAFC",
+                  "corner_radius": 10,
+                  "action": {
+                    "log_id": "nav_push_camera",
+                    "url": "nav://push?id=tool_camera"
+                  }
+                },
+                {
+                  "type": "button",
+                  "id": "nav_quick_local_db",
+                  "text": "Local DB",
+                  "icon": "stock",
                   "background_color": "#0284C7",
                   "text_color": "#F8FAFC",
-                  "corner_radius": 12,
-                  "actions": [
-                    {
-                      "log_id": "insert_order",
-                      "url": "local-db://op/db.insert",
-                      "payload": {
-                        "table": "orders",
-                        "values": {
-                          "item_name": "Wagyu Smash Burger",
-                          "sku": "ACM-101",
-                          "price": 16.5,
-                          "qty": 1,
-                          "terminal_id": "${terminalCode}",
-                          "status": "OPEN"
-                        },
-                        "output": {
-                          "id": "user.last_order_id"
-                        }
-                      }
-                    },
-                    {
-                      "log_id": "refresh_orders_list",
-                      "url": "local-db://op/db.query",
-                      "payload": {
-                        "table": "orders",
-                        "order_by": "id",
-                        "limit": 50,
-                        "json_list_var": "user.orders_json",
-                        "output": {
-                          "_json": "user.orders_json"
-                        }
-                      }
-                    },
-                    {
-                      "log_id": "count_orders",
-                      "url": "local-db://op/db.count",
-                      "payload": {
-                        "table": "orders",
-                        "output": {
-                          "count": "user.order_count"
-                        }
-                      }
-                    }
-                  ]
-                },
-                {
-                  "type": "button",
-                  "id": "catalog_ACM-102",
-                  "text": "Truffle Parmesan Fries",
-                  "subtitle": "$8.00 • ACM-102",
-                  "icon": "cart_add",
-                  "background_color": "#0D9488",
-                  "text_color": "#F8FAFC",
-                  "corner_radius": 12,
-                  "actions": [
-                    {
-                      "log_id": "insert_order",
-                      "url": "local-db://op/db.insert",
-                      "payload": {
-                        "table": "orders",
-                        "values": {
-                          "item_name": "Truffle Parmesan Fries",
-                          "sku": "ACM-102",
-                          "price": 8.0,
-                          "qty": 1,
-                          "terminal_id": "${terminalCode}",
-                          "status": "OPEN"
-                        },
-                        "output": {
-                          "id": "user.last_order_id"
-                        }
-                      }
-                    },
-                    {
-                      "log_id": "refresh_orders_list",
-                      "url": "local-db://op/db.query",
-                      "payload": {
-                        "table": "orders",
-                        "order_by": "id",
-                        "limit": 50,
-                        "json_list_var": "user.orders_json",
-                        "output": {
-                          "_json": "user.orders_json"
-                        }
-                      }
-                    },
-                    {
-                      "log_id": "count_orders",
-                      "url": "local-db://op/db.count",
-                      "payload": {
-                        "table": "orders",
-                        "output": {
-                          "count": "user.order_count"
-                        }
-                      }
-                    }
-                  ]
-                },
-                {
-                  "type": "button",
-                  "id": "catalog_ACM-204",
-                  "text": "Artisan Cold Brew",
-                  "subtitle": "$5.50 • ACM-204",
-                  "icon": "cart_add",
-                  "background_color": "#4F46E5",
-                  "text_color": "#F8FAFC",
-                  "corner_radius": 12,
-                  "actions": [
-                    {
-                      "log_id": "insert_order",
-                      "url": "local-db://op/db.insert",
-                      "payload": {
-                        "table": "orders",
-                        "values": {
-                          "item_name": "Artisan Cold Brew",
-                          "sku": "ACM-204",
-                          "price": 5.5,
-                          "qty": 1,
-                          "terminal_id": "${terminalCode}",
-                          "status": "OPEN"
-                        },
-                        "output": {
-                          "id": "user.last_order_id"
-                        }
-                      }
-                    },
-                    {
-                      "log_id": "refresh_orders_list",
-                      "url": "local-db://op/db.query",
-                      "payload": {
-                        "table": "orders",
-                        "order_by": "id",
-                        "limit": 50,
-                        "json_list_var": "user.orders_json",
-                        "output": {
-                          "_json": "user.orders_json"
-                        }
-                      }
-                    },
-                    {
-                      "log_id": "count_orders",
-                      "url": "local-db://op/db.count",
-                      "payload": {
-                        "table": "orders",
-                        "output": {
-                          "count": "user.order_count"
-                        }
-                      }
-                    }
-                  ]
-                },
-                {
-                  "type": "button",
-                  "id": "catalog_ACM-109",
-                  "text": "Wood-Fired Margherita",
-                  "subtitle": "$18.00 • ACM-109",
-                  "icon": "cart_add",
-                  "background_color": "#D97706",
-                  "text_color": "#F8FAFC",
-                  "corner_radius": 12,
-                  "actions": [
-                    {
-                      "log_id": "insert_order",
-                      "url": "local-db://op/db.insert",
-                      "payload": {
-                        "table": "orders",
-                        "values": {
-                          "item_name": "Wood-Fired Margherita",
-                          "sku": "ACM-109",
-                          "price": 18.0,
-                          "qty": 1,
-                          "terminal_id": "${terminalCode}",
-                          "status": "OPEN"
-                        },
-                        "output": {
-                          "id": "user.last_order_id"
-                        }
-                      }
-                    },
-                    {
-                      "log_id": "refresh_orders_list",
-                      "url": "local-db://op/db.query",
-                      "payload": {
-                        "table": "orders",
-                        "order_by": "id",
-                        "limit": 50,
-                        "json_list_var": "user.orders_json",
-                        "output": {
-                          "_json": "user.orders_json"
-                        }
-                      }
-                    },
-                    {
-                      "log_id": "count_orders",
-                      "url": "local-db://op/db.count",
-                      "payload": {
-                        "table": "orders",
-                        "output": {
-                          "count": "user.order_count"
-                        }
-                      }
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "type": "container",
-              "orientation": "vertical",
-              "background_color": "#1E293B",
-              "corner_radius": 12,
-              "paddings": {
-                "left": 12,
-                "right": 12,
-                "top": 10,
-                "bottom": 10
-              },
-              "items": [
-                {
-                  "type": "text",
-                  "text": "DYNAMIC SDUI LINE-ITEM ENTRY (user.* Variable Binding)",
-                  "font_size": 11,
-                  "font_weight": "bold",
-                  "text_color": "#94A3B8"
-                },
-                {
-                  "type": "container",
-                  "orientation": "horizontal",
-                  "item_spacing": 8,
-                  "items": [
-                    {
-                      "type": "input",
-                      "weight": 1.6,
-                      "hint_text": "Item Name (user.custom_item_name)",
-                      "text_variable": "user.custom_item_name"
-                    },
-                    {
-                      "type": "input",
-                      "weight": 1.0,
-                      "hint_text": "Price ($)",
-                      "text_variable": "user.custom_item_price"
-                    }
-                  ]
-                },
-                {
-                  "type": "button",
-                  "id": "add_custom_line_item",
-                  "text": "Insert @{user.custom_item_name} ($@{user.custom_item_price})",
-                  "icon": "add",
-                  "background_color": "#0EA5E9",
-                  "text_color": "#0F172A",
                   "corner_radius": 10,
-                  "actions": [
-                    {
-                      "log_id": "insert_order",
-                      "url": "local-db://op/db.insert",
-                      "payload": {
-                        "table": "orders",
-                        "values": {
-                          "item_name": "@{user.custom_item_name}",
-                          "sku": "CUSTOM-SKU",
-                          "price": "@{user.custom_item_price}",
-                          "qty": 1,
-                          "terminal_id": "${terminalCode}",
-                          "status": "OPEN"
-                        },
-                        "output": {
-                          "id": "user.last_order_id"
-                        }
-                      }
-                    },
-                    {
-                      "log_id": "refresh_orders_list",
-                      "url": "local-db://op/db.query",
-                      "payload": {
-                        "table": "orders",
-                        "order_by": "id",
-                        "limit": 50,
-                        "json_list_var": "user.orders_json",
-                        "output": {
-                          "_json": "user.orders_json"
-                        }
-                      }
-                    },
-                    {
-                      "log_id": "count_orders",
-                      "url": "local-db://op/db.count",
-                      "payload": {
-                        "table": "orders",
-                        "output": {
-                          "count": "user.order_count"
-                        }
-                      }
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "type": "container",
-              "orientation": "vertical",
-              "background_color": "#1E293B",
-              "corner_radius": 12,
-              "paddings": {
-                "left": 12,
-                "right": 12,
-                "top": 10,
-                "bottom": 10
-              },
-              "items": [
-                {
-                  "type": "text",
-                  "text": "POS HARDWARE CAPABILITY BRIDGE (hardware://*)",
-                  "font_size": 11,
-                  "font_weight": "bold",
-                  "text_color": "#94A3B8"
-                },
-                {
-                  "type": "grid",
-                  "column_count": 3,
-                  "item_spacing": 8,
-                  "items": [
-                    {
-                      "type": "button",
-                      "id": "hw_scanner",
-                      "text": "Scan Barcode",
-                      "icon": "scanner",
-                      "background_color": "#334155",
-                      "text_color": "#38BDF8",
-                      "corner_radius": 10,
-                      "action": {
-                        "log_id": "hw_scan",
-                        "url": "hardware://scanner/read_ean13",
-                        "payload": {
-                          "terminal": "${terminalCode}"
-                        }
-                      }
-                    },
-                    {
-                      "type": "button",
-                      "id": "hw_printer",
-                      "text": "Print Receipt",
-                      "icon": "printer",
-                      "background_color": "#334155",
-                      "text_color": "#A78BFA",
-                      "corner_radius": 10,
-                      "action": {
-                        "log_id": "hw_print",
-                        "url": "hardware://printer/thermal_receipt",
-                        "payload": {
-                          "terminal": "${terminalCode}"
-                        }
-                      }
-                    },
-                    {
-                      "type": "button",
-                      "id": "hw_nfc",
-                      "text": "NFC Tap Pay",
-                      "icon": "nfc",
-                      "background_color": "#334155",
-                      "text_color": "#34D399",
-                      "corner_radius": 10,
-                      "action": {
-                        "log_id": "hw_nfc",
-                        "url": "hardware://nfc/contactless_authorize",
-                        "payload": {
-                          "terminal": "${terminalCode}"
-                        }
-                      }
-                    }
-                  ]
-                },
-                {
-                  "type": "text",
-                  "text": "Hardware Telemetry: @{user.last_hardware_event}",
-                  "font_size": 12,
-                  "text_color": "#E2E8F0",
-                  "font_family": "monospace"
-                },
-                {
-                  "type": "text",
-                  "text": "Last Engine Guard: @{user.engine_error}",
-                  "font_size": 11,
-                  "text_color": "#F87171",
-                  "font_family": "monospace"
-                }
-              ]
-            },
-            {
-              "type": "container",
-              "orientation": "horizontal",
-              "items": [
-                {
-                  "type": "text",
-                  "weight": 1.0,
-                  "text": "LIVE POS ORDER LEDGER (DivKit json_list → user.orders_json)",
-                  "font_size": 11,
-                  "font_weight": "bold",
-                  "text_color": "#94A3B8"
-                }
-              ]
-            },
-            {
-              "type": "json_list",
-              "data_var": "user.orders_json",
-              "empty_text": "No active orders in ${tenantId}_orders table. Tap a catalog item above!",
-              "row_card": {
-                "type": "container",
-                "orientation": "horizontal",
-                "background_color": "#1E293B",
-                "corner_radius": 10,
-                "paddings": {
-                  "left": 12,
-                  "right": 12,
-                  "top": 10,
-                  "bottom": 10
-                },
-                "border": {
-                  "corner_radius": 10,
-                  "stroke": {
-                    "color": "#334155",
-                    "width": 1
+                  "action": {
+                    "log_id": "nav_push_local_db_grid",
+                    "url": "nav://push?id=tool_local_db"
                   }
                 },
-                "items": [
-                  {
-                    "type": "container",
-                    "orientation": "vertical",
-                    "weight": 1.0,
-                    "item_spacing": 2,
-                    "items": [
-                      {
-                        "type": "text",
-                        "text": "#@{item.id} • @{item.item_name}",
-                        "font_size": 14,
-                        "font_weight": "bold",
-                        "text_color": "#F8FAFC"
-                      },
-                      {
-                        "type": "text",
-                        "text": "SKU: @{item.sku} • $@{item.price} x @{item.qty} • @{item.status}",
-                        "font_size": 12,
-                        "text_color": "#94A3B8",
-                        "font_family": "monospace"
-                      }
-                    ]
-                  },
-                  {
-                    "type": "button",
-                    "weight": 0.42,
-                    "text": "Void #@{item.id}",
-                    "icon": "delete",
-                    "background_color": "#3F1D24",
-                    "text_color": "#FCA5A5",
-                    "corner_radius": 8,
-                    "actions": [
-                      {
-                        "log_id": "delete_order_row",
-                        "url": "local-db://op/db.delete",
-                        "payload": {
-                          "table": "orders",
-                          "where": [
-                            {
-                              "column": "id",
-                              "op": "=",
-                              "value": "@{item.id}"
-                            }
-                          ],
-                          "output": {
-                            "count": "user.last_deleted_count"
-                          }
-                        }
-                      },
-                      {
-                        "log_id": "refresh_orders_list",
-                        "url": "local-db://op/db.query",
-                        "payload": {
-                          "table": "orders",
-                          "order_by": "id",
-                          "limit": 50,
-                          "json_list_var": "user.orders_json",
-                          "output": {
-                            "_json": "user.orders_json"
-                          }
-                        }
-                      },
-                      {
-                        "log_id": "count_orders",
-                        "url": "local-db://op/db.count",
-                        "payload": {
-                          "table": "orders",
-                          "output": {
-                            "count": "user.order_count"
-                          }
-                        }
-                      }
-                    ]
+                {
+                  "type": "button",
+                  "id": "nav_quick_biometrics",
+                  "text": "Biometrics",
+                  "icon": "shield",
+                  "background_color": "#EF4444",
+                  "text_color": "#F8FAFC",
+                  "corner_radius": 10,
+                  "action": {
+                    "log_id": "nav_push_biometrics",
+                    "url": "nav://push?id=tool_biometrics"
                   }
-                ]
-              }
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "🔽 All native tool cards below — tap to open",
+              "font_size": 11,
+              "text_color": "#64748B",
+              "text_alignment_horizontal": "center"
             }
           ]
         }

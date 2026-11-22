@@ -46,15 +46,40 @@ object BarcodeDecoder {
         BarcodeFormat.CODABAR
     )
 
-    private fun hints() = mapOf(
+    private val liveHints = mapOf(
+        DecodeHintType.POSSIBLE_FORMATS to formats,
+        DecodeHintType.CHARACTER_SET to "UTF-8"
+    )
+
+    private val stillHints = mapOf(
         DecodeHintType.POSSIBLE_FORMATS to formats,
         DecodeHintType.TRY_HARDER to true,
         DecodeHintType.CHARACTER_SET to "UTF-8"
     )
 
+    private val threadLocalReader = ThreadLocal.withInitial { MultiFormatReader() }
+
+    fun formatName(mlKitFormat: Int): String = when (mlKitFormat) {
+        1 -> "CODE_128"
+        2 -> "CODE_39"
+        4 -> "CODE_93"
+        8 -> "CODABAR"
+        16 -> "DATA_MATRIX"
+        32 -> "EAN_13"
+        64 -> "EAN_8"
+        128 -> "ITF"
+        256 -> "QR_CODE"
+        512 -> "UPC_A"
+        1024 -> "UPC_E"
+        2048 -> "PDF_417"
+        4096 -> "AZTEC"
+        else -> "UNKNOWN"
+    }
+
     /** Decodes [bitmap], trying the full frame first and then cropped quadrants. */
     fun decode(bitmap: Bitmap): ScanResult? {
-        decodeBitmapOnce(bitmap)?.let { return it }
+        decodeBitmapOnce(bitmap, tryHarder = false)?.let { return it }
+        decodeBitmapOnce(bitmap, tryHarder = true)?.let { return it }
         // Small or off-centre codes often fail on the full frame; retry on crops.
         val halfW = bitmap.width / 2
         val halfH = bitmap.height / 2
@@ -65,21 +90,21 @@ object BarcodeDecoder {
             val h = minOf(halfH, bitmap.height - y)
             if (w <= 0 || h <= 0) continue
             val crop = Bitmap.createBitmap(bitmap, x, y, w, h)
-            val hit = decodeBitmapOnce(crop)
+            val hit = decodeBitmapOnce(crop, tryHarder = true)
             crop.recycle()
             if (hit != null) return hit
         }
         return null
     }
 
-    private fun decodeBitmapOnce(bitmap: Bitmap): ScanResult? {
+    private fun decodeBitmapOnce(bitmap: Bitmap, tryHarder: Boolean = false): ScanResult? {
         val width = bitmap.width
         val height = bitmap.height
         if (width <= 0 || height <= 0) return null
         val pixels = IntArray(width * height)
         bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
         val source = RGBLuminanceSource(width, height, pixels)
-        return runReader(BinaryBitmap(HybridBinarizer(source)))
+        return runReader(BinaryBitmap(HybridBinarizer(source)), tryHarder)
     }
 
     /**
@@ -98,17 +123,21 @@ object BarcodeDecoder {
         rotationDegrees: Int = 0
     ): ScanResult? {
         if (width <= 0 || height <= 0 || data.size < width * height) return null
-        val source = PlanarYUVLuminanceSource(data, width, height, 0, 0, width, height, false)
-        runReader(BinaryBitmap(HybridBinarizer(source)))?.let { return it }
-        if (rotationDegrees % 360 == 0) return null
+        val d = ((rotationDegrees % 360) + 360) % 360
 
-        // Rotate the luminance plane by hand: PlanarYUVLuminanceSource has no rotation support,
-        // and rotating the source is cheaper than building a Bitmap per frame.
-        val rotated = rotateLuminance(data, width, height, rotationDegrees)
-        val rotatedSource = PlanarYUVLuminanceSource(
-            rotated.data, rotated.width, rotated.height, 0, 0, rotated.width, rotated.height, false
-        )
-        return runReader(BinaryBitmap(HybridBinarizer(rotatedSource)))
+        // If sensor orientation is non-zero (typical on handheld phones), try rotated first
+        if (d != 0) {
+            val rotated = rotateLuminance(data, width, height, d)
+            val rotatedSource = PlanarYUVLuminanceSource(
+                rotated.data, rotated.width, rotated.height, 0, 0, rotated.width, rotated.height, false
+            )
+            val hit = runReader(BinaryBitmap(HybridBinarizer(rotatedSource)), tryHarder = false)
+            if (hit != null) return hit
+        }
+
+        // Unrotated pass (for 0 degrees or if rotated didn't match)
+        val source = PlanarYUVLuminanceSource(data, width, height, 0, 0, width, height, false)
+        return runReader(BinaryBitmap(HybridBinarizer(source)), tryHarder = false)
     }
 
     internal class RotatedLuminance(val data: ByteArray, val width: Int, val height: Int)
@@ -152,8 +181,12 @@ object BarcodeDecoder {
         return RotatedLuminance(out, height, width)
     }
 
-    private fun runReader(image: BinaryBitmap): ScanResult? = try {
-        val result = MultiFormatReader().apply { setHints(hints()) }.decodeWithState(image)
+    private fun runReader(image: BinaryBitmap, tryHarder: Boolean = false): ScanResult? = try {
+        val reader = threadLocalReader.get().apply {
+            setHints(if (tryHarder) stillHints else liveHints)
+            reset()
+        }
+        val result = reader.decodeWithState(image)
         result?.let { ScanResult(it.text, it.barcodeFormat.name, classify(it.barcodeFormat)) }
     } catch (_: NotFoundException) {
         null

@@ -7,8 +7,10 @@ import android.os.Handler
 import android.os.Looper
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.OptIn
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
@@ -17,6 +19,10 @@ import androidx.camera.core.Preview
 import androidx.camera.core.UseCase
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import com.google.mlkit.vision.barcode.BarcodeScannerOptions
+import com.google.mlkit.vision.barcode.BarcodeScanning
+import com.google.mlkit.vision.barcode.common.Barcode
+import com.google.mlkit.vision.common.InputImage
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -325,8 +331,8 @@ private fun takePhoto(
 }
 
 /**
- * Decodes the Y plane of each camera frame. Only luminance is needed for ZXing, which keeps the
- * per-frame cost low enough to run at camera frame rates.
+ * Decodes barcode / QR codes using Google ML Kit Barcode Scanning with hardware acceleration,
+ * falling back to the optimized pure-Kotlin/ZXing luminance analyzer when ML Kit is unavailable.
  */
 private class BarcodeAnalyzer(
     private val onDecoded: (value: String, format: String) -> Unit
@@ -334,12 +340,60 @@ private class BarcodeAnalyzer(
 
     private var delivered = false
 
+    private val mlKitScanner by lazy {
+        runCatching {
+            val options = BarcodeScannerOptions.Builder()
+                .setBarcodeFormats(Barcode.FORMAT_ALL_FORMATS)
+                .build()
+            BarcodeScanning.getClient(options)
+        }.getOrNull()
+    }
+
+    @OptIn(ExperimentalGetImage::class)
     override fun analyze(image: ImageProxy) {
+        if (delivered) {
+            image.close()
+            return
+        }
+
+        val scanner = mlKitScanner
+        val mediaImage = runCatching { image.image }.getOrNull()
+
+        if (scanner != null && mediaImage != null) {
+            val inputImage = InputImage.fromMediaImage(mediaImage, image.imageInfo.rotationDegrees)
+            scanner.process(inputImage)
+                .addOnSuccessListener { barcodes ->
+                    if (!delivered) {
+                        val first = barcodes.firstOrNull()
+                        if (first != null) {
+                            val raw = first.rawValue ?: first.displayValue
+                            if (raw != null) {
+                                delivered = true
+                                onDecoded(raw, BarcodeDecoder.formatName(first.format))
+                            }
+                        }
+                    }
+                }
+                .addOnCompleteListener {
+                    image.close()
+                }
+                .addOnFailureListener {
+                    tryFallback(image)
+                }
+        } else {
+            tryFallback(image)
+        }
+    }
+
+    private fun tryFallback(image: ImageProxy) {
         try {
-            if (delivered) return
-            val decoded: ScanResult = decodeYPlane(image) ?: return
-            delivered = true
-            onDecoded(decoded.rawValue, decoded.format)
+            if (!delivered) {
+                val decoded: ScanResult? = decodeYPlane(image)
+                if (decoded != null) {
+                    delivered = true
+                    onDecoded(decoded.rawValue, decoded.format)
+                }
+            }
         } finally {
             image.close()
         }

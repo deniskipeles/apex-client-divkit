@@ -1,8 +1,9 @@
 {
     "type": "container",
     "orientation": "vertical",
-    "background_color": "#0F291E",
+    "background_color": "#0C1F14",
     "corner_radius": 12,
+    "item_spacing": 10,
     "paddings": {
         "left": 12,
         "right": 12,
@@ -13,23 +14,84 @@
         "corner_radius": 12,
         "stroke": {
             "color": "#10B981",
-            "width": 1
+            "width": 2
         }
     },
     "items": [
         {
-            "type": "text",
-            "text": "📷 SCANNER — LIVE CAMERA & SAMPLE DECODE (tools://scan)",
-            "font_size": 11,
-            "text_color": "#6EE7B7",
-            "font_weight": "bold"
+            "type": "container",
+            "background_color": "#0C1F14",
+            "corner_radius": 10,
+            "paddings": {"left": 12, "right": 12, "top": 10, "bottom": 10},
+            "border": {
+                "corner_radius": 10,
+                "stroke": {"color": "#10B981", "width": 1}
+            },
+            "items": [
+                {
+                    "type": "text",
+                    "text": "📷 SCANNER — ML Kit + ZXing Live Camera (tools://scan)",
+                    "font_size": 13,
+                    "font_weight": "bold",
+                    "text_color": "#10B981"
+                },
+                {
+                    "type": "text",
+                    "text": "Live viewfinder (barcode • QR • both) + file decode + ML Kit OCR. All results flow into user.* variables.",
+                    "font_size": 11,
+                    "text_color": "#6EE7B7",
+                    "margins": {"top": 4}
+                }
+            ]
         },
         {
-            "type": "text",
-            "text": "Last result: @{user.scanned_code} (@{user.scanned_format} • @{user.scanned_type}) → @{user.scan_status}",
-            "font_size": 12,
-            "text_color": "#D1FAE5",
-            "font_family": "monospace"
+            "type": "container",
+            "background_color": "#0A1A0F",
+            "corner_radius": 10,
+            "paddings": {"left": 12, "right": 12, "top": 10, "bottom": 10},
+            "border": {
+                "corner_radius": 10,
+                "stroke": {"color": "#064E3B", "width": 1}
+            },
+            "item_spacing": 4,
+            "items": [
+                {
+                    "type": "text",
+                    "text": "CODE  @{user.scanned_code}",
+                    "font_size": 14,
+                    "font_weight": "bold",
+                    "text_color": "#34D399",
+                    "font_family": "monospace"
+                },
+                {
+                    "type": "text",
+                    "text": "FORMAT  @{user.scanned_format}  •  TYPE  @{user.scanned_type}",
+                    "font_size": 12,
+                    "text_color": "#6EE7B7",
+                    "font_family": "monospace"
+                },
+                {
+                    "type": "text",
+                    "text": "STATUS  @{user.scan_status}",
+                    "font_size": 11,
+                    "text_color": "#A7F3D0",
+                    "font_family": "monospace"
+                },
+                {
+                    "type": "text",
+                    "text": "OCR  @{user.ocr_text}",
+                    "font_size": 11,
+                    "text_color": "#A7F3D0",
+                    "font_family": "monospace"
+                },
+                {
+                    "type": "text",
+                    "text": "CONF  @{user.ocr_confidence}  •  BLOCKS  @{user.ocr_block_count}",
+                    "font_size": 11,
+                    "text_color": "#6EE7B7",
+                    "font_family": "monospace"
+                }
+            ]
         },
         {
             "type": "image",
@@ -40,10 +102,10 @@
         },
         {
             "type": "text",
-            "text": "LIVE — opens the viewfinder and decodes what you point at",
+            "text": "LIVE — opens viewfinder and decodes what you point at",
             "font_size": 11,
-            "text_color": "#A7F3D0",
-            "font_weight": "bold"
+            "font_weight": "bold",
+            "text_color": "#A7F3D0"
         },
         {
             "type": "container",
@@ -57,8 +119,8 @@
                         {
                             "type": "button",
                             "id": "tool_scan_live_barcode",
-                            "text": "Scan Barcode with Camera",
-                            "subtitle": "Opens the rear camera viewfinder",
+                            "text": "Scan Barcode",
+                            "subtitle": "Opens rear camera viewfinder",
                             "icon": "scanner",
                             "background_color": "#047857",
                             "text_color": "#FFFFFF",
@@ -90,8 +152,8 @@
                         {
                             "type": "button",
                             "id": "tool_scan_live_qr",
-                            "text": "Scan QR with Camera",
-                            "subtitle": "Opens the rear camera viewfinder",
+                            "text": "Scan QR",
+                            "subtitle": "Opens rear camera viewfinder",
                             "icon": "qr_code",
                             "background_color": "#0D9488",
                             "text_color": "#FFFFFF",
@@ -115,15 +177,48 @@
                             }
                         }
                     ]
+                },
+                {
+                    "type": "container",
+                    "weight": 1.0,
+                    "items": [
+                        {
+                            "type": "button",
+                            "id": "tool_scan_live_both",
+                            "text": "Scan Both",
+                            "subtitle": "Barcode or QR — auto-detect",
+                            "icon": "scanner",
+                            "background_color": "#065F46",
+                            "text_color": "#FFFFFF",
+                            "corner_radius": 10,
+                            "action": {
+                                "log_id": "exec_tool_scan_live_both",
+                                "url": "tools://scan/scan",
+                                "payload": {
+                                    "operation": "scan",
+                                    "options": {
+                                        "target_format": "any",
+                                        "camera": "true"
+                                    },
+                                    "output": {
+                                        "raw_value": "user.scanned_code",
+                                        "format": "user.scanned_format",
+                                        "type": "user.scanned_type",
+                                        "status": "user.scan_status"
+                                    }
+                                }
+                            }
+                        }
+                    ]
                 }
             ]
         },
         {
             "type": "text",
-            "text": "SAMPLE — decodes a bundled test image, no camera needed",
+            "text": "OCR — ML Kit text recognition",
             "font_size": 11,
-            "text_color": "#A7F3D0",
-            "font_weight": "bold"
+            "font_weight": "bold",
+            "text_color": "#A7F3D0"
         },
         {
             "type": "container",
@@ -136,27 +231,26 @@
                     "items": [
                         {
                             "type": "button",
-                            "id": "tool_scan_scan",
-                            "text": "Decode Sample Barcode",
-                            "subtitle": "EAN-13 test image",
-                            "icon": "barcode",
-                            "background_color": "#059669",
+                            "id": "tool_scan_ocr_camera",
+                            "text": "Camera OCR",
+                            "subtitle": "Live ML Kit text scan",
+                            "icon": "search",
+                            "background_color": "#0369A1",
                             "text_color": "#FFFFFF",
                             "corner_radius": 10,
                             "action": {
-                                "log_id": "exec_tool_scan_scan",
-                                "url": "tools://scan/scan",
+                                "log_id": "exec_tool_scan_ocr_camera",
+                                "url": "tools://scan/ocr",
                                 "payload": {
-                                    "operation": "scan",
+                                    "operation": "ocr",
                                     "options": {
-                                        "target_format": "barcode",
-                                        "uri": "${demoBarcodeUri}"
+                                        "camera": "true"
                                     },
                                     "output": {
-                                        "raw_value": "user.scanned_code",
-                                        "format": "user.scanned_format",
-                                        "type": "user.scanned_type",
-                                        "status": "user.scan_status"
+                                        "text": "user.ocr_text",
+                                        "confidence": "user.ocr_confidence",
+                                        "block_count": "user.ocr_block_count",
+                                        "source_image": "user.scan_image_uri"
                                     }
                                 }
                             }
@@ -169,27 +263,26 @@
                     "items": [
                         {
                             "type": "button",
-                            "id": "tool_scan_scan_qr",
-                            "text": "Decode Sample QR",
-                            "subtitle": "QR test image",
-                            "icon": "qr_code",
-                            "background_color": "#10B981",
+                            "id": "tool_scan_ocr_photo",
+                            "text": "Photo OCR",
+                            "subtitle": "Pick from gallery",
+                            "icon": "search",
+                            "background_color": "#1D4ED8",
                             "text_color": "#FFFFFF",
                             "corner_radius": 10,
                             "action": {
-                                "log_id": "exec_tool_scan_scan_qr",
-                                "url": "tools://scan/scan",
+                                "log_id": "exec_tool_scan_ocr_photo",
+                                "url": "tools://scan/ocr",
                                 "payload": {
-                                    "operation": "scan",
+                                    "operation": "ocr",
                                     "options": {
-                                        "target_format": "qr",
-                                        "uri": "${demoQrUri}"
+                                        "camera": "false"
                                     },
                                     "output": {
-                                        "raw_value": "user.scanned_code",
-                                        "format": "user.scanned_format",
-                                        "type": "user.scanned_type",
-                                        "status": "user.scan_status"
+                                        "text": "user.ocr_text",
+                                        "confidence": "user.ocr_confidence",
+                                        "block_count": "user.ocr_block_count",
+                                        "source_image": "user.scan_image_uri"
                                     }
                                 }
                             }
@@ -199,39 +292,95 @@
             ]
         },
         {
-            "type": "text",
-            "text": "OCR: @{user.ocr_text} (conf @{user.ocr_confidence})",
-            "font_size": 12,
-            "text_color": "#A7F3D0",
-            "font_family": "monospace"
-        },
-        {
             "type": "container",
-            "weight": 1.0,
+            "background_color": "#071B10",
+            "corner_radius": 10,
+            "paddings": {"left": 12, "right": 12, "top": 10, "bottom": 10},
+            "item_spacing": 8,
+            "border": {
+                "corner_radius": 10,
+                "stroke": {"color": "#064E3B", "width": 1}
+            },
             "items": [
                 {
-                    "type": "button",
-                    "id": "tool_scan_ocr",
-                    "text": "Read Text (camera or file)",
-                    "subtitle": "ML Kit text recognition",
-                    "icon": "search",
-                    "background_color": "#34D399",
-                    "text_color": "#FFFFFF",
-                    "corner_radius": 10,
-                    "action": {
-                        "log_id": "exec_tool_scan_ocr",
-                        "url": "tools://scan/ocr",
-                        "payload": {
-                            "operation": "ocr",
-                            "options": {},
-                            "output": {
-                                "text": "user.ocr_text",
-                                "confidence": "user.ocr_confidence",
-                                "block_count": "user.ocr_block_count",
-                                "source_image": "user.scan_image_uri"
-                            }
+                    "type": "text",
+                    "text": "DECODE FROM FILE (no camera needed)",
+                    "font_size": 11,
+                    "font_weight": "bold",
+                    "text_color": "#6EE7B7"
+                },
+                {
+                    "type": "container",
+                    "orientation": "horizontal",
+                    "item_spacing": 8,
+                    "items": [
+                        {
+                            "type": "container",
+                            "weight": 1.0,
+                            "items": [
+                                {
+                                    "type": "button",
+                                    "id": "tool_scan_scan",
+                                    "text": "Decode Sample Barcode File",
+                                    "subtitle": "EAN-13 test image — no camera",
+                                    "icon": "barcode",
+                                    "background_color": "#064E3B",
+                                    "text_color": "#FFFFFF",
+                                    "corner_radius": 10,
+                                    "action": {
+                                        "log_id": "exec_tool_scan_scan",
+                                        "url": "tools://scan/scan",
+                                        "payload": {
+                                            "operation": "scan",
+                                            "options": {
+                                                "target_format": "barcode",
+                                                "uri": "${demoBarcodeUri}"
+                                            },
+                                            "output": {
+                                                "raw_value": "user.scanned_code",
+                                                "format": "user.scanned_format",
+                                                "type": "user.scanned_type",
+                                                "status": "user.scan_status"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "container",
+                            "weight": 1.0,
+                            "items": [
+                                {
+                                    "type": "button",
+                                    "id": "tool_scan_scan_qr",
+                                    "text": "Decode Sample QR File",
+                                    "subtitle": "QR test image — no camera",
+                                    "icon": "qr_code",
+                                    "background_color": "#065F46",
+                                    "text_color": "#FFFFFF",
+                                    "corner_radius": 10,
+                                    "action": {
+                                        "log_id": "exec_tool_scan_scan_qr",
+                                        "url": "tools://scan/scan",
+                                        "payload": {
+                                            "operation": "scan",
+                                            "options": {
+                                                "target_format": "qr",
+                                                "uri": "${demoQrUri}"
+                                            },
+                                            "output": {
+                                                "raw_value": "user.scanned_code",
+                                                "format": "user.scanned_format",
+                                                "type": "user.scanned_type",
+                                                "status": "user.scan_status"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
                         }
-                    }
+                    ]
                 }
             ]
         }

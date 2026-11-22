@@ -35,7 +35,7 @@ import java.util.UUID
  * a fabricated bitmap looks like a successful capture and silently ships a black photo.
  */
 class CameraTool : ToolHandler {
-    override val capability: String = "hardware.camera@1"
+    override val capability: String = "vision.capture_photo@1"
     override val requiredPermissions: Set<String> = setOf("android.permission.CAMERA")
 
     /**
@@ -123,6 +123,7 @@ class CameraTool : ToolHandler {
         val fileUri = "file://${outputFile.absolutePath}"
 
         val resultData = mutableMapOf<String, Any?>(
+            "state" to "ok",
             "uri" to fileUri,
             "image_id" to imageId,
             "mime_type" to format,
@@ -186,7 +187,7 @@ class CameraTool : ToolHandler {
         return try {
             cameraManager.setTorchMode(cameraId, enabled)
             ToolResult.Success(
-                mapOf("torch_state" to enabled, "status" to "SUCCESS", "camera_id" to cameraId)
+                mapOf("state" to "ok", "torch_state" to enabled, "status" to "SUCCESS", "camera_id" to cameraId)
             )
         } catch (e: Exception) {
             // setTorchMode throws when another app holds the camera; reporting SUCCESS here
@@ -218,6 +219,7 @@ class CameraTool : ToolHandler {
 
         return ToolResult.Success(
             mapOf(
+                "state" to "ok",
                 "available" to true,
                 "has_back_camera" to hasBack,
                 "has_front_camera" to hasFront,

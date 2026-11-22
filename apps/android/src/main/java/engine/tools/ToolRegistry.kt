@@ -57,7 +57,8 @@ class ProvenanceChecker {
         "device.printer@1",
         "vision.generate_code@1",
         "device.keep_awake@1",
-        "storage.files@1"
+        "storage.files@1",
+        "vision.image_manipulation@1"
     )
 
     fun allows(provenance: Provenance, capability: String): Boolean = when (provenance) {

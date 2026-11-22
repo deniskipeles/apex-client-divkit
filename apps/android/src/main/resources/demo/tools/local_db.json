@@ -1,0 +1,734 @@
+{
+  "type": "container",
+  "orientation": "vertical",
+  "background_color": "#071221",
+  "corner_radius": 14,
+  "paddings": {"left": 14, "right": 14, "top": 14, "bottom": 14},
+  "border": {"corner_radius": 14, "stroke": {"color": "#0284C7", "width": 2}},
+  "items": [
+
+    {
+      "type": "container",
+      "orientation": "vertical",
+      "background_color": "#0F2744",
+      "corner_radius": 12,
+      "paddings": {"left": 14, "right": 14, "top": 12, "bottom": 12},
+      "border": {"corner_radius": 12, "stroke": {"color": "#1E40AF", "width": 1}},
+      "items": [
+        {
+          "type": "container",
+          "orientation": "horizontal",
+          "content_alignment_vertical": "center",
+          "items": [
+            {
+              "type": "text",
+              "text": "🗄️  SQLITE DATA PLANE  —  local-db://op/*",
+              "font_size": 15,
+              "font_weight": "bold",
+              "text_color": "#38BDF8",
+              "weight": 1
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "Workspace: ${tenantId}  •  Schema v4  •  PRAGMA foreign_keys = ON",
+          "font_size": 11,
+          "text_color": "#64748B",
+          "font_family": "monospace",
+          "margins": {"top": 4}
+        },
+        {
+          "type": "text",
+          "text": "Orders: @{user.order_count}  •  Catalog: @{user.catalog_count}  •  Last Row: #@{user.last_order_id}",
+          "font_size": 12,
+          "text_color": "#94A3B8",
+          "font_family": "monospace",
+          "margins": {"top": 4}
+        }
+      ]
+    },
+
+    {
+      "type": "container",
+      "orientation": "horizontal",
+      "item_spacing": 8,
+      "margins": {"top": 10},
+      "items": [
+        {
+          "type": "container",
+          "orientation": "vertical",
+          "weight": 1,
+          "background_color": "#0C1F3A",
+          "corner_radius": 10,
+          "paddings": {"left": 10, "right": 10, "top": 10, "bottom": 10},
+          "border": {"corner_radius": 10, "stroke": {"color": "#1E3A5F", "width": 1}},
+          "content_alignment_horizontal": "center",
+          "items": [
+            {
+              "type": "text",
+              "text": "@{user.order_count}",
+              "font_size": 24,
+              "font_weight": "bold",
+              "text_color": "#38BDF8",
+              "text_alignment_horizontal": "center"
+            },
+            {
+              "type": "text",
+              "text": "ORDERS",
+              "font_size": 10,
+              "text_color": "#64748B",
+              "font_weight": "bold",
+              "text_alignment_horizontal": "center",
+              "margins": {"top": 2}
+            }
+          ]
+        },
+        {
+          "type": "container",
+          "orientation": "vertical",
+          "weight": 1,
+          "background_color": "#0C1F3A",
+          "corner_radius": 10,
+          "paddings": {"left": 10, "right": 10, "top": 10, "bottom": 10},
+          "border": {"corner_radius": 10, "stroke": {"color": "#064E3B", "width": 1}},
+          "content_alignment_horizontal": "center",
+          "items": [
+            {
+              "type": "text",
+              "text": "@{user.catalog_count}",
+              "font_size": 24,
+              "font_weight": "bold",
+              "text_color": "#34D399",
+              "text_alignment_horizontal": "center"
+            },
+            {
+              "type": "text",
+              "text": "SKUs IN DB",
+              "font_size": 10,
+              "text_color": "#64748B",
+              "font_weight": "bold",
+              "text_alignment_horizontal": "center",
+              "margins": {"top": 2}
+            }
+          ]
+        },
+        {
+          "type": "container",
+          "orientation": "vertical",
+          "weight": 1,
+          "background_color": "#0C1F3A",
+          "corner_radius": 10,
+          "paddings": {"left": 10, "right": 10, "top": 10, "bottom": 10},
+          "border": {"corner_radius": 10, "stroke": {"color": "#78350F", "width": 1}},
+          "content_alignment_horizontal": "center",
+          "items": [
+            {
+              "type": "text",
+              "text": "#@{user.last_order_id}",
+              "font_size": 24,
+              "font_weight": "bold",
+              "text_color": "#FBBF24",
+              "text_alignment_horizontal": "center"
+            },
+            {
+              "type": "text",
+              "text": "LAST ROW #",
+              "font_size": 10,
+              "text_color": "#64748B",
+              "font_weight": "bold",
+              "text_alignment_horizontal": "center",
+              "margins": {"top": 2}
+            }
+          ]
+        }
+      ]
+    },
+
+    {
+      "type": "text",
+      "text": "🛒  QUICK-SALE CATALOG  (db.insert → orders)",
+      "font_size": 11,
+      "font_weight": "bold",
+      "text_color": "#94A3B8",
+      "margins": {"top": 14, "bottom": 6}
+    },
+    {
+      "type": "grid",
+      "column_count": 2,
+      "item_spacing": 8,
+      "line_spacing": 8,
+      "items": [
+        {
+          "type": "button",
+          "text": "Wagyu Smash Burger\n$16.50  •  ACM-101",
+          "font_size": 13,
+          "font_weight": "bold",
+          "text_color": "#F0F9FF",
+          "background_color": "#0C4A6E",
+          "corner_radius": 10,
+          "paddings": {"left": 12, "right": 12, "top": 12, "bottom": 12},
+          "actions": [
+            {
+              "type": "action",
+              "url": "local-db://op/db.insert",
+              "payload": {
+                "table": "orders",
+                "values": {
+                  "item_name": "Wagyu Smash Burger",
+                  "sku": "ACM-101",
+                  "price": "16.50",
+                  "qty": "1",
+                  "terminal_id": "${terminalCode}",
+                  "status": "OPEN"
+                },
+                "output": {
+                  "id": "user.last_order_id"
+                }
+              }
+            },
+            {
+              "type": "action",
+              "url": "local-db://op/db.query",
+              "payload": {
+                "table": "orders",
+                "order_by": "id",
+                "limit": 50,
+                "output": {
+                  "_json": "user.orders_json"
+                },
+                "json_list_var": "user.orders_json"
+              }
+            },
+            {
+              "type": "action",
+              "url": "local-db://op/db.count",
+              "payload": {
+                "table": "orders",
+                "output": {
+                  "count": "user.order_count"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "button",
+          "text": "Truffle Parmesan Fries\n$8.00  •  ACM-102",
+          "font_size": 13,
+          "font_weight": "bold",
+          "text_color": "#F0FFF4",
+          "background_color": "#064E3B",
+          "corner_radius": 10,
+          "paddings": {"left": 12, "right": 12, "top": 12, "bottom": 12},
+          "actions": [
+            {
+              "type": "action",
+              "url": "local-db://op/db.insert",
+              "payload": {
+                "table": "orders",
+                "values": {
+                  "item_name": "Truffle Parmesan Fries",
+                  "sku": "ACM-102",
+                  "price": "8.00",
+                  "qty": "1",
+                  "terminal_id": "${terminalCode}",
+                  "status": "OPEN"
+                },
+                "output": {
+                  "id": "user.last_order_id"
+                }
+              }
+            },
+            {
+              "type": "action",
+              "url": "local-db://op/db.query",
+              "payload": {
+                "table": "orders",
+                "order_by": "id",
+                "limit": 50,
+                "output": {
+                  "_json": "user.orders_json"
+                },
+                "json_list_var": "user.orders_json"
+              }
+            },
+            {
+              "type": "action",
+              "url": "local-db://op/db.count",
+              "payload": {
+                "table": "orders",
+                "output": {
+                  "count": "user.order_count"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "button",
+          "text": "Artisan Cold Brew\n$5.50  •  ACM-204",
+          "font_size": 13,
+          "font_weight": "bold",
+          "text_color": "#EEF2FF",
+          "background_color": "#312E81",
+          "corner_radius": 10,
+          "paddings": {"left": 12, "right": 12, "top": 12, "bottom": 12},
+          "actions": [
+            {
+              "type": "action",
+              "url": "local-db://op/db.insert",
+              "payload": {
+                "table": "orders",
+                "values": {
+                  "item_name": "Artisan Cold Brew",
+                  "sku": "ACM-204",
+                  "price": "5.50",
+                  "qty": "1",
+                  "terminal_id": "${terminalCode}",
+                  "status": "OPEN"
+                },
+                "output": {
+                  "id": "user.last_order_id"
+                }
+              }
+            },
+            {
+              "type": "action",
+              "url": "local-db://op/db.query",
+              "payload": {
+                "table": "orders",
+                "order_by": "id",
+                "limit": 50,
+                "output": {
+                  "_json": "user.orders_json"
+                },
+                "json_list_var": "user.orders_json"
+              }
+            },
+            {
+              "type": "action",
+              "url": "local-db://op/db.count",
+              "payload": {
+                "table": "orders",
+                "output": {
+                  "count": "user.order_count"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "button",
+          "text": "Wood-Fired Margherita\n$18.00  •  ACM-109",
+          "font_size": 13,
+          "font_weight": "bold",
+          "text_color": "#FFFBEB",
+          "background_color": "#78350F",
+          "corner_radius": 10,
+          "paddings": {"left": 12, "right": 12, "top": 12, "bottom": 12},
+          "actions": [
+            {
+              "type": "action",
+              "url": "local-db://op/db.insert",
+              "payload": {
+                "table": "orders",
+                "values": {
+                  "item_name": "Wood-Fired Margherita",
+                  "sku": "ACM-109",
+                  "price": "18.00",
+                  "qty": "1",
+                  "terminal_id": "${terminalCode}",
+                  "status": "OPEN"
+                },
+                "output": {
+                  "id": "user.last_order_id"
+                }
+              }
+            },
+            {
+              "type": "action",
+              "url": "local-db://op/db.query",
+              "payload": {
+                "table": "orders",
+                "order_by": "id",
+                "limit": 50,
+                "output": {
+                  "_json": "user.orders_json"
+                },
+                "json_list_var": "user.orders_json"
+              }
+            },
+            {
+              "type": "action",
+              "url": "local-db://op/db.count",
+              "payload": {
+                "table": "orders",
+                "output": {
+                  "count": "user.order_count"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+
+    {
+      "type": "text",
+      "text": "✏️  CUSTOM LINE ITEM  (user.* Variable Binding)",
+      "font_size": 11,
+      "font_weight": "bold",
+      "text_color": "#94A3B8",
+      "margins": {"top": 14, "bottom": 6}
+    },
+    {
+      "type": "container",
+      "orientation": "vertical",
+      "background_color": "#0F172A",
+      "corner_radius": 10,
+      "paddings": {"left": 12, "right": 12, "top": 12, "bottom": 12},
+      "border": {"corner_radius": 10, "stroke": {"color": "#1E293B", "width": 1}},
+      "item_spacing": 8,
+      "items": [
+        {
+          "type": "container",
+          "orientation": "horizontal",
+          "item_spacing": 8,
+          "items": [
+            {
+              "type": "input",
+              "weight": 1,
+              "text_variable": "user.custom_item_name",
+              "hint_text": "Item name…",
+              "hint_text_color": "#475569",
+              "text_color": "#F8FAFC",
+              "background_color": "#1E293B",
+              "corner_radius": 8,
+              "paddings": {"left": 10, "right": 10, "top": 10, "bottom": 10},
+              "font_size": 13
+            },
+            {
+              "type": "input",
+              "weight": 0.5,
+              "text_variable": "user.custom_item_price",
+              "hint_text": "Price ($)",
+              "hint_text_color": "#475569",
+              "text_color": "#F8FAFC",
+              "background_color": "#1E293B",
+              "corner_radius": 8,
+              "paddings": {"left": 10, "right": 10, "top": 10, "bottom": 10},
+              "font_size": 13,
+              "keyboard_type": "number"
+            }
+          ]
+        },
+        {
+          "type": "button",
+          "text": "+ Insert @{user.custom_item_name} at $@{user.custom_item_price}",
+          "icon": "add",
+          "font_size": 13,
+          "font_weight": "bold",
+          "text_color": "#F0F9FF",
+          "background_color": "#0369A1",
+          "corner_radius": 8,
+          "paddings": {"left": 12, "right": 12, "top": 10, "bottom": 10},
+          "actions": [
+            {
+              "type": "action",
+              "url": "local-db://op/db.insert",
+              "payload": {
+                "table": "orders",
+                "values": {
+                  "item_name": "@{user.custom_item_name}",
+                  "sku": "CUSTOM-SKU",
+                  "price": "@{user.custom_item_price}",
+                  "qty": "1",
+                  "terminal_id": "${terminalCode}",
+                  "status": "OPEN"
+                },
+                "output": {
+                  "id": "user.last_order_id"
+                }
+              }
+            },
+            {
+              "type": "action",
+              "url": "local-db://op/db.query",
+              "payload": {
+                "table": "orders",
+                "order_by": "id",
+                "limit": 50,
+                "output": {
+                  "_json": "user.orders_json"
+                },
+                "json_list_var": "user.orders_json"
+              }
+            },
+            {
+              "type": "action",
+              "url": "local-db://op/db.count",
+              "payload": {
+                "table": "orders",
+                "output": {
+                  "count": "user.order_count"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+
+    {
+      "type": "text",
+      "text": "📋  LIVE ORDER LEDGER  (db.query → user.orders_json)",
+      "font_size": 11,
+      "font_weight": "bold",
+      "text_color": "#94A3B8",
+      "margins": {"top": 14, "bottom": 6}
+    },
+    {
+      "type": "container",
+      "orientation": "horizontal",
+      "item_spacing": 8,
+      "margins": {"bottom": 8},
+      "items": [
+        {
+          "type": "button",
+          "weight": 1,
+          "text": "Refresh",
+          "icon": "refresh",
+          "font_size": 13,
+          "font_weight": "bold",
+          "text_color": "#BAE6FD",
+          "background_color": "#1E3A5F",
+          "corner_radius": 8,
+          "paddings": {"left": 12, "right": 12, "top": 10, "bottom": 10},
+          "actions": [
+            {
+              "type": "action",
+              "url": "local-db://op/db.query",
+              "payload": {
+                "table": "orders",
+                "order_by": "id",
+                "limit": 50,
+                "output": {
+                  "_json": "user.orders_json"
+                },
+                "json_list_var": "user.orders_json"
+              }
+            },
+            {
+              "type": "action",
+              "url": "local-db://op/db.count",
+              "payload": {
+                "table": "orders",
+                "output": {
+                  "count": "user.order_count"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "button",
+          "weight": 1,
+          "text": "Clear All",
+          "icon": "delete",
+          "font_size": 13,
+          "font_weight": "bold",
+          "text_color": "#FCA5A5",
+          "background_color": "#7F1D1D",
+          "corner_radius": 8,
+          "paddings": {"left": 12, "right": 12, "top": 10, "bottom": 10},
+          "actions": [
+            {
+              "type": "action",
+              "url": "local-db://op/db.delete",
+              "payload": {
+                "table": "orders",
+                "where": [],
+                "output": {
+                  "count": "user.order_count"
+                }
+              }
+            },
+            {
+              "type": "action",
+              "url": "local-db://op/db.query",
+              "payload": {
+                "table": "orders",
+                "order_by": "id",
+                "limit": 50,
+                "output": {
+                  "_json": "user.orders_json"
+                },
+                "json_list_var": "user.orders_json"
+              }
+            },
+            {
+              "type": "action",
+              "url": "local-db://op/db.count",
+              "payload": {
+                "table": "orders",
+                "output": {
+                  "count": "user.order_count"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+
+    {
+      "type": "json_list",
+      "data_var": "user.orders_json",
+      "empty_text": "No active orders — tap a catalog item above to insert one",
+      "item_spacing": 6,
+      "row_card": {
+        "type": "container",
+        "orientation": "horizontal",
+        "background_color": "#0F172A",
+        "corner_radius": 10,
+        "paddings": {"left": 12, "right": 8, "top": 10, "bottom": 10},
+        "border": {"corner_radius": 10, "stroke": {"color": "#1E3A5F", "width": 1}},
+        "content_alignment_vertical": "center",
+        "item_spacing": 8,
+        "items": [
+          {
+            "type": "container",
+            "orientation": "vertical",
+            "weight": 1,
+            "items": [
+              {
+                "type": "text",
+                "text": "#@{item.id}  @{item.item_name}",
+                "font_size": 14,
+                "font_weight": "bold",
+                "text_color": "#F8FAFC"
+              },
+              {
+                "type": "text",
+                "text": "SKU: @{item.sku}  •  $@{item.price} × @{item.qty}  •  @{item.status}",
+                "font_size": 12,
+                "text_color": "#94A3B8",
+                "font_family": "monospace",
+                "margins": {"top": 2}
+              }
+            ]
+          },
+          {
+            "type": "button",
+            "weight": 0.38,
+            "text": "Void",
+            "icon": "delete",
+            "font_size": 12,
+            "font_weight": "bold",
+            "text_color": "#FCA5A5",
+            "background_color": "#450A0A",
+            "corner_radius": 8,
+            "paddings": {"left": 10, "right": 10, "top": 8, "bottom": 8},
+            "actions": [
+              {
+                "type": "action",
+                "url": "local-db://op/db.delete",
+                "payload": {
+                  "table": "orders",
+                  "where": [{"field": "id", "op": "eq", "value": "@{item.id}"}],
+                  "output": {
+                    "count": "user.last_deleted_count"
+                  }
+                }
+              },
+              {
+                "type": "action",
+                "url": "local-db://op/db.query",
+                "payload": {
+                  "table": "orders",
+                  "order_by": "id",
+                  "limit": 50,
+                  "output": {
+                    "_json": "user.orders_json"
+                  },
+                  "json_list_var": "user.orders_json"
+                }
+              },
+              {
+                "type": "action",
+                "url": "local-db://op/db.count",
+                "payload": {
+                  "table": "orders",
+                  "output": {
+                    "count": "user.order_count"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+
+    {
+      "type": "text",
+      "text": "🔍  SCHEMA INTROSPECTION",
+      "font_size": 11,
+      "font_weight": "bold",
+      "text_color": "#94A3B8",
+      "margins": {"top": 14, "bottom": 6}
+    },
+    {
+      "type": "container",
+      "orientation": "horizontal",
+      "item_spacing": 8,
+      "items": [
+        {
+          "type": "button",
+          "weight": 1,
+          "text": "List Collections",
+          "icon": "stock",
+          "font_size": 13,
+          "font_weight": "bold",
+          "text_color": "#BAE6FD",
+          "background_color": "#1C3A5E",
+          "corner_radius": 8,
+          "paddings": {"left": 12, "right": 12, "top": 10, "bottom": 10},
+          "action": {
+            "type": "action",
+            "url": "local-db://op/db.list_collections",
+            "payload": {
+              "output": {
+                "_json": "user.orders_json"
+              }
+            }
+          }
+        },
+        {
+          "type": "button",
+          "weight": 1,
+          "text": "Count Orders",
+          "icon": "numbers",
+          "font_size": 13,
+          "font_weight": "bold",
+          "text_color": "#A5B4FC",
+          "background_color": "#1C2E5E",
+          "corner_radius": 8,
+          "paddings": {"left": 12, "right": 12, "top": 10, "bottom": 10},
+          "action": {
+            "type": "action",
+            "url": "local-db://op/db.count",
+            "payload": {
+              "table": "orders",
+              "output": {
+                "count": "user.order_count"
+              }
+            }
+          }
+        }
+      ]
+    }
+
+  ]
+}

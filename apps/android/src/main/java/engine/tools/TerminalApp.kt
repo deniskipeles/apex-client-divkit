@@ -16,7 +16,7 @@ object TerminalApp {
             HapticsTool(),
             BeeperTool(),
             ScanCodeTool(),
-            CapturePhotoTool(),
+            CameraTool(),
             EmbedImageTool(),
             RemoveBackgroundTool(),
             ProductClassifierTool(),
@@ -34,7 +34,8 @@ object TerminalApp {
             LibSignalTool(),
             VectorizeTool(),
             KeepAwakeTool(),
-            FilesTool()
+            FilesTool(),
+            ImageManipulationTool()
         )
         // Map canonical capabilities + common shorthand aliases
         val handlerMap = mutableMapOf<String, ToolHandler>()
@@ -64,6 +65,7 @@ object TerminalApp {
                 "vision.capture_photo@1" -> {
                     handlerMap["camera"] = h
                     handlerMap["capture_photo"] = h
+                    handlerMap["hardware.camera@1"] = h
                 }
                 "vision.identify_product@1" -> {
                     handlerMap["MobileNetV4-small"] = h
@@ -151,6 +153,11 @@ object TerminalApp {
                     handlerMap["keepawake"] = h
                     handlerMap["device.keep_awake"] = h
                     handlerMap["wakelock"] = h
+                }
+                "vision.image_manipulation@1" -> {
+                    handlerMap["image-manipulation"] = h
+                    handlerMap["image-process"] = h
+                    handlerMap["image-filter"] = h
                 }
             }
         }

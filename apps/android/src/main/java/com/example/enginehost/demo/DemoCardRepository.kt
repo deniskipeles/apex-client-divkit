@@ -35,6 +35,7 @@ object DemoCardRepository {
 
     /** Tool card files in render order — the on-screen showcase order. */
     val toolCardOrder: List<String> = listOf(
+        "local_db",
         "scanner",
         "code_generate",
         "camera",
