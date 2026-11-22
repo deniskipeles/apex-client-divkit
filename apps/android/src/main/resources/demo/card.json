@@ -411,6 +411,11 @@
         "name": "user.icon_category",
         "type": "string",
         "value": "Commerce"
+      },
+      {
+        "name": "user.nav_stack_depth",
+        "type": "integer",
+        "value": 0
       }
     ],
     "states": [

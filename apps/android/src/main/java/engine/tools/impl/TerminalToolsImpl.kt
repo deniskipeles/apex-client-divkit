@@ -63,18 +63,6 @@ class ScanCodeTool : ToolHandler {
 }
 
 /**
- * 8.2 vision.capture_photo@1
- */
-class CapturePhotoTool : ToolHandler {
-    override val capability = "vision.capture_photo@1"
-    override val requiredPermissions = setOf("android.permission.CAMERA")
-
-    override suspend fun invoke(args: ToolArgs, ctx: ToolContext): ToolResult {
-        return CameraTool().invoke(args, ctx)
-    }
-}
-
-/**
  * 8.3 vision.embed_image@1
  */
 class EmbedImageTool : ToolHandler {

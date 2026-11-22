@@ -743,6 +743,8 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
     private fun publishActiveCard() {
         val current = navigator?.current
         val json = current?.let { CardRegistry.card(it.id)?.let(DemoCardRepository::encode) }
+        val depth = navigator?.currentIndex?.toLong() ?: 0L
+        EngineStateBridge.pushUpdate("user.nav_stack_depth", DivVariableValue.IntVal(depth))
         _uiState.update {
             it.copy(
                 activeCardId = current?.id.orEmpty(),
