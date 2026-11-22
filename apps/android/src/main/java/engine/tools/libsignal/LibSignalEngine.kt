@@ -46,6 +46,18 @@ data class SignalSession(
 )
 
 /**
+ * Outcome of a safety-number comparison with a peer identity.
+ */
+data class SignalVerification(
+    val peerId: String,
+    val deviceId: Int,
+    val safetyNumber: String,
+    val verified: Boolean,
+    /** VERIFIED | MISMATCH | UNVERIFIED | KEY_CHANGED */
+    val status: String
+)
+
+/**
  * Universal E2EE Cryptographic Engine powered by the official Signal Foundation library.
  * Zero custom crypto. Operates directly on the official Double Ratchet and X3DH standards.
  *
@@ -281,25 +293,97 @@ object LibSignalEngine {
 
     /**
      * Marks a peer session as verified (or unverified) after a safety-number comparison.
-     * Verification state is persisted in the workspace's trusted-key table.
+     * Verification state is persisted with the safety number it was granted for, so a peer
+     * that later rotates its identity key stops being reported as verified.
      */
     fun setSessionVerified(workspaceId: String, peerId: String, verified: Boolean, deviceId: Int = 1) {
         val store = localStore(workspaceId)
         val addr = address(peerId, deviceId)
+        val safetyNumber = getSafetyNumber(workspaceId, peerId, deviceId)
         if (verified) {
-            store.getIdentity(addr)?.let { store.saveIdentity(addr, it) }
+            store.saveVerification(addr, safetyNumber, verified = true)
         } else {
-            store.deleteSession(addr)
+            store.deleteVerification(addr)
         }
     }
 
     fun isSessionVerified(workspaceId: String, peerId: String, deviceId: Int = 1): Boolean {
         val store = localStore(workspaceId)
-        val addr = address(peerId, deviceId)
-        return store.containsSession(addr) && store.getIdentity(addr) != null
+        val record = store.loadVerification(address(peerId, deviceId)) ?: return false
+        // A verification only covers the exact safety number it was granted for.
+        return record.verified && record.safetyNumber == getSafetyNumber(workspaceId, peerId, deviceId)
     }
 
+    /**
+     * Compares a user-supplied safety number against the peer's current one and records the
+     * outcome. Returns the stored verification snapshot.
+     */
+    fun verifyIdentity(
+        workspaceId: String,
+        peerId: String,
+        providedSafetyNumber: String,
+        deviceId: Int = 1
+    ): SignalVerification {
+        setupIdentity(workspaceId)
+        ensureLocalSession(workspaceId, peerId, deviceId)
+
+        val expected = getSafetyNumber(workspaceId, peerId, deviceId)
+        val matches = normalizeSafetyNumber(providedSafetyNumber) == normalizeSafetyNumber(expected)
+        val store = localStore(workspaceId)
+        val addr = address(peerId, deviceId)
+        val previous = store.loadVerification(addr)
+        store.saveVerification(addr, expected, matches)
+
+        // A peer that was verified before but now presents a different safety number is a
+        // key change, not a typo — surfacing it separately is what makes the warning useful.
+        val status = when {
+            matches -> "VERIFIED"
+            previous?.verified == true &&
+                normalizeSafetyNumber(previous.safetyNumber) != normalizeSafetyNumber(expected) -> "KEY_CHANGED"
+            else -> "MISMATCH"
+        }
+
+        return SignalVerification(
+            peerId = peerId,
+            deviceId = deviceId,
+            safetyNumber = expected,
+            verified = matches,
+            status = status
+        )
+    }
+
+    /** Current verification state without mutating it. */
+    fun verificationStatus(workspaceId: String, peerId: String, deviceId: Int = 1): SignalVerification {
+        val expected = getSafetyNumber(workspaceId, peerId, deviceId)
+        val record = localStore(workspaceId).loadVerification(address(peerId, deviceId))
+        val verified = record != null && record.verified &&
+            normalizeSafetyNumber(record.safetyNumber) == normalizeSafetyNumber(expected)
+        return SignalVerification(
+            peerId = peerId,
+            deviceId = deviceId,
+            safetyNumber = expected,
+            verified = verified,
+            status = when {
+                verified -> "VERIFIED"
+                record == null -> "UNVERIFIED"
+                record.verified -> "KEY_CHANGED"
+                else -> "MISMATCH"
+            }
+        )
+    }
+
+    /**
+     * Safety numbers are grouped and may be compared in either grouping or case, so separators
+     * and case are ignored. Letters are kept: Signal's numeric fingerprint contains none, but
+     * dropping them would let a hex-formatted input silently match a truncated prefix.
+     */
+    private fun normalizeSafetyNumber(value: String) =
+        value.filter { it.isLetterOrDigit() }.lowercase()
+
     fun resetSession(workspaceId: String, peerId: String, deviceId: Int = 1) {
-        localStore(workspaceId).deleteSession(address(peerId, deviceId))
+        val store = localStore(workspaceId)
+        val addr = address(peerId, deviceId)
+        store.deleteSession(addr)
+        store.deleteVerification(addr)
     }
 }

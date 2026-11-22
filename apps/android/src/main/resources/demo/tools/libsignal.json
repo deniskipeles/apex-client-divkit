@@ -26,36 +26,173 @@
         },
         {
             "type": "text",
-            "text": "Session: @{user.signal_session_id} • Fingerprint: @{user.signal_fingerprint} • Status: @{user.signal_status}",
+            "text": "Every button runs the real Signal Protocol on this device: a Double Ratchet session is established, a message is encrypted and then decrypted back, and the safety number is compared against the peer's.",
+            "font_size": 11,
+            "text_color": "#A5B4FC"
+        },
+        {
+            "type": "text",
+            "text": "Peer: @{user.signal_peer_id} • Session: @{user.signal_session_id} • Status: @{user.signal_status}",
             "font_size": 12,
             "text_color": "#EDE9FE",
             "font_family": "monospace"
         },
         {
-            "type": "button",
-            "id": "tool_libsignal_create_session",
-            "text": "Establish E2EE Signal Ratchet Session",
-            "subtitle": "tools://libsignal/create_session • Curve25519 Double Ratchet",
-            "icon": "lock",
-            "background_color": "#7C3AED",
-            "text_color": "#FFFFFF",
-            "corner_radius": 10,
-            "action": {
-                "log_id": "exec_tool_libsignal_create_session",
-                "url": "tools://libsignal/create_session",
-                "payload": {
-                    "operation": "create_session",
-                    "options": {
-                        "cipher": "AES-256-GCM"
-                    },
-                    "output": {
-                        "status": "user.signal_status",
-                        "session_id": "user.signal_session_id",
-                        "fingerprint": "user.signal_fingerprint",
-                        "ciphertext": "user.signal_ciphertext"
-                    }
+            "type": "text",
+            "text": "Safety number: @{user.signal_fingerprint}",
+            "font_size": 12,
+            "text_color": "#EDE9FE",
+            "font_family": "monospace"
+        },
+        {
+            "type": "text",
+            "text": "Verification: @{user.signal_verification}",
+            "font_size": 12,
+            "text_color": "#EDE9FE",
+            "font_family": "monospace"
+        },
+        {
+            "type": "container",
+            "orientation": "horizontal",
+            "item_spacing": 8,
+            "items": [
+                {
+                    "type": "container",
+                    "weight": 1.0,
+                    "items": [
+                        {
+                            "type": "button",
+                            "id": "tool_libsignal_create_session",
+                            "text": "1. Establish session",
+                            "subtitle": "tools://libsignal/create_session",
+                            "icon": "lock",
+                            "background_color": "#7C3AED",
+                            "text_color": "#FFFFFF",
+                            "corner_radius": 10,
+                            "action": {
+                                "log_id": "exec_tool_libsignal_create_session",
+                                "url": "tools://libsignal/create_session",
+                                "payload": {
+                                    "peer_id": "@{user.signal_peer_id}",
+                                    "output": {
+                                        "status": "user.signal_status",
+                                        "session_id": "user.signal_session_id",
+                                        "fingerprint": "user.signal_fingerprint"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "container",
+                    "weight": 1.0,
+                    "items": [
+                        {
+                            "type": "button",
+                            "id": "tool_libsignal_encrypt",
+                            "text": "2. Encrypt",
+                            "subtitle": "tools://libsignal/encrypt",
+                            "icon": "e2ee",
+                            "background_color": "#6D28D9",
+                            "text_color": "#FFFFFF",
+                            "corner_radius": 10,
+                            "action": {
+                                "log_id": "exec_tool_libsignal_encrypt",
+                                "url": "tools://libsignal/encrypt",
+                                "payload": {
+                                    "peer_id": "@{user.signal_peer_id}",
+                                    "data": "{\"order\":\"#1042\",\"total\":\"18.50\",\"terminal\":\"till-07\"}",
+                                    "output": {
+                                        "status": "user.signal_status",
+                                        "ciphertext": "user.signal_ciphertext",
+                                        "safety_number": "user.signal_fingerprint"
+                                    }
+                                }
+                            }
+                        }
+                    ]
                 }
-            }
+            ]
+        },
+        {
+            "type": "container",
+            "orientation": "horizontal",
+            "item_spacing": 8,
+            "items": [
+                {
+                    "type": "container",
+                    "weight": 1.0,
+                    "items": [
+                        {
+                            "type": "button",
+                            "id": "tool_libsignal_decrypt",
+                            "text": "3. Decrypt",
+                            "subtitle": "tools://libsignal/decrypt",
+                            "icon": "shield",
+                            "background_color": "#5B21B6",
+                            "text_color": "#FFFFFF",
+                            "corner_radius": 10,
+                            "action": {
+                                "log_id": "exec_tool_libsignal_decrypt",
+                                "url": "tools://libsignal/decrypt",
+                                "payload": {
+                                    "peer_id": "@{user.signal_peer_id}",
+                                    "ciphertext": "@{user.signal_ciphertext}",
+                                    "output": {
+                                        "status": "user.signal_status",
+                                        "plaintext": "user.signal_plaintext"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "container",
+                    "weight": 1.0,
+                    "items": [
+                        {
+                            "type": "button",
+                            "id": "tool_libsignal_verify_identity",
+                            "text": "4. Verify identity",
+                            "subtitle": "tools://libsignal/verify_identity",
+                            "icon": "verified",
+                            "background_color": "#4C1D95",
+                            "text_color": "#FFFFFF",
+                            "corner_radius": 10,
+                            "action": {
+                                "log_id": "exec_tool_libsignal_verify_identity",
+                                "url": "tools://libsignal/verify_identity",
+                                "payload": {
+                                    "peer_id": "@{user.signal_peer_id}",
+                                    "safety_number": "@{user.signal_fingerprint}",
+                                    "output": {
+                                        "status": "user.signal_verification",
+                                        "safety_number": "user.signal_fingerprint"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "text",
+            "text": "Ciphertext: @{user.signal_ciphertext}",
+            "font_size": 10,
+            "text_color": "#C4B5FD",
+            "font_family": "monospace",
+            "max_lines": 2
+        },
+        {
+            "type": "text",
+            "text": "Decrypted: @{user.signal_plaintext}",
+            "font_size": 10,
+            "text_color": "#C4B5FD",
+            "font_family": "monospace",
+            "max_lines": 2
         }
     ]
 }

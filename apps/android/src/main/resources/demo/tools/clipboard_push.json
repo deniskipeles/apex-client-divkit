@@ -57,7 +57,10 @@
                                     "options": {
                                         "text": "RECEIPT #8891 - Total $24.50 @ ${displayName}"
                                     },
-                                    "output": {}
+                                    "output": {
+                                      "text": "user.clipboard_content",
+                                      "length": "user.clipboard_length"
+                                    }
                                 }
                             }
                         }
@@ -85,7 +88,9 @@
                                         "channel": "kitchen_dispatch",
                                         "message": "Order #1042 Ready for Pickup"
                                     },
-                                    "output": {}
+                                    "output": {
+                                      "message": "user.last_push_alert"
+                                    }
                                 }
                             }
                         }

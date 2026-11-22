@@ -67,6 +67,17 @@ class SqliteSignalProtocolStore(
                 record_bytes BLOB NOT NULL,
                 PRIMARY KEY (tenant_id, address_name, device_id)
             )
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS signal_verifications (
+                tenant_id TEXT NOT NULL,
+                address_name TEXT NOT NULL,
+                device_id INTEGER NOT NULL,
+                safety_number TEXT NOT NULL,
+                verified INTEGER NOT NULL,
+                updated_at INTEGER NOT NULL,
+                PRIMARY KEY (tenant_id, address_name, device_id)
+            )
             """
         )
         statements.forEach { driver.executeUpdate(null, it.trimIndent(), 0) }
@@ -418,4 +429,81 @@ class SqliteSignalProtocolStore(
             bindLong(1, signedPreKeyId.toLong())
         }
     }
+
+    // -------------------------------------------------------------
+    // Safety-number verification state
+    // -------------------------------------------------------------
+
+    /**
+     * Persists the outcome of a safety-number comparison. Recording the number alongside the
+     * flag lets [loadVerification] detect that the peer's identity changed since it was
+     * verified, so a rotated key is never reported as still trusted.
+     */
+    fun saveVerification(
+        address: SignalProtocolAddress,
+        safetyNumber: String,
+        verified: Boolean,
+        timestamp: Long = System.currentTimeMillis()
+    ) {
+        driver.executeUpdate(
+            null,
+            """
+            INSERT OR REPLACE INTO signal_verifications
+                (tenant_id, address_name, device_id, safety_number, verified, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """.trimIndent(),
+            6
+        ) {
+            bindString(0, workspaceId)
+            bindString(1, address.name)
+            bindLong(2, address.deviceId.toLong())
+            bindString(3, safetyNumber)
+            bindLong(4, if (verified) 1L else 0L)
+            bindLong(5, timestamp)
+        }
+    }
+
+    /** The stored verification record, or null when the peer was never verified. */
+    fun loadVerification(address: SignalProtocolAddress): VerificationRecord? {
+        var record: VerificationRecord? = null
+        driver.executeQuery(
+            null,
+            """
+            SELECT safety_number, verified, updated_at FROM signal_verifications
+            WHERE tenant_id = ? AND address_name = ? AND device_id = ?
+            """.trimIndent(),
+            3
+        ) {
+            bindString(0, workspaceId)
+            bindString(1, address.name)
+            bindLong(2, address.deviceId.toLong())
+        }.use { c ->
+            if (c.next().value) {
+                record = VerificationRecord(
+                    safetyNumber = c.getString(0) ?: "",
+                    verified = c.getLong(1) == 1L,
+                    updatedAt = c.getLong(2) ?: 0L
+                )
+            }
+        }
+        return record
+    }
+
+    fun deleteVerification(address: SignalProtocolAddress) {
+        driver.executeUpdate(
+            null,
+            "DELETE FROM signal_verifications WHERE tenant_id = ? AND address_name = ? AND device_id = ?",
+            3
+        ) {
+            bindString(0, workspaceId)
+            bindString(1, address.name)
+            bindLong(2, address.deviceId.toLong())
+        }
+    }
+
+    data class VerificationRecord(
+        val safetyNumber: String,
+        val verified: Boolean,
+        val updatedAt: Long
+    )
 }

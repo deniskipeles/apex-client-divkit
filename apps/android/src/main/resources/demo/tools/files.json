@@ -80,7 +80,6 @@
                                     "output": {
                                         "status": "user.files_status",
                                         "listing": "user.files_listing",
-                                        "content": "user.files_content",
                                         "path": "user.files_path"
                                     }
                                 }
@@ -112,8 +111,6 @@
                                     },
                                     "output": {
                                         "status": "user.files_status",
-                                        "listing": "user.files_listing",
-                                        "content": "user.files_content",
                                         "path": "user.files_path"
                                     }
                                 }
@@ -160,8 +157,6 @@
                                     },
                                     "output": {
                                         "status": "user.files_status",
-                                        "listing": "user.files_listing",
-                                        "content": "user.files_content",
                                         "path": "user.files_path"
                                     }
                                 }
@@ -193,7 +188,6 @@
                                     },
                                     "output": {
                                         "status": "user.files_status",
-                                        "listing": "user.files_listing",
                                         "content": "user.files_content",
                                         "path": "user.files_path"
                                     }
@@ -241,8 +235,6 @@
                                     },
                                     "output": {
                                         "status": "user.files_status",
-                                        "listing": "user.files_listing",
-                                        "content": "user.files_content",
                                         "path": "user.files_path"
                                     }
                                 }
@@ -275,8 +267,6 @@
                                     },
                                     "output": {
                                         "status": "user.files_status",
-                                        "listing": "user.files_listing",
-                                        "content": "user.files_content",
                                         "path": "user.files_path"
                                     }
                                 }
@@ -315,8 +305,6 @@
                                     },
                                     "output": {
                                         "status": "user.files_status",
-                                        "listing": "user.files_listing",
-                                        "content": "user.files_content",
                                         "path": "user.files_path"
                                     }
                                 }
@@ -348,8 +336,6 @@
                                     },
                                     "output": {
                                         "status": "user.files_status",
-                                        "listing": "user.files_listing",
-                                        "content": "user.files_content",
                                         "path": "user.files_path"
                                     }
                                 }

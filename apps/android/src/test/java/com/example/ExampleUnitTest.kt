@@ -840,6 +840,59 @@ class ExampleUnitTest {
     }
 
     @Test
+    fun libSignalVerifyIdentity_recordsAndRevokesTrust() = kotlinx.coroutines.runBlocking {
+        val tenant = "tenant_verify_hub"
+        val peer = "till_07"
+
+        val establish = engine.tools.NativeToolsSuite.execute(
+            url = "tools://libsignal/create_session",
+            payload = buildJsonObject { put("peer_id", peer) },
+            tenantId = tenant
+        )
+        assertTrue(establish.success)
+        val safetyNumber =
+            (establish.outputVariables["user.signal_fingerprint"] as DivVariableValue.Str).value
+
+        suspend fun verify(provided: String) = engine.tools.NativeToolsSuite.execute(
+            url = "tools://libsignal/verify_identity",
+            payload = buildJsonObject {
+                put("peer_id", peer)
+                put("safety_number", provided)
+            },
+            tenantId = tenant
+        )
+
+        suspend fun status() = engine.tools.NativeToolsSuite.execute(
+            url = "tools://libsignal/status",
+            payload = buildJsonObject { put("peer_id", peer) },
+            tenantId = tenant
+        )
+
+        // Before any comparison the peer is explicitly unverified.
+        assertEquals("UNVERIFIED", status().resultData.jsonObject["verification_status"]?.jsonPrimitive?.content)
+
+        // Echoing the peer's own number is the positive case and must persist.
+        val matched = verify(safetyNumber)
+        assertTrue(matched.success)
+        assertEquals("VERIFIED", matched.resultData.jsonObject["status"]?.jsonPrimitive?.content)
+        assertEquals("VERIFIED", status().resultData.jsonObject["verification_status"]?.jsonPrimitive?.content)
+
+        // A different number is a mismatch and must withdraw trust.
+        val mismatched = verify("00-00-00-00-00-00")
+        assertFalse(mismatched.success)
+        assertEquals("MISMATCH", mismatched.resultData.jsonObject["status"]?.jsonPrimitive?.content)
+        assertEquals("MISMATCH", status().resultData.jsonObject["verification_status"]?.jsonPrimitive?.content)
+
+        // Resetting the session clears the record so the peer is unknown again.
+        engine.tools.NativeToolsSuite.execute(
+            url = "tools://libsignal/reset_session",
+            payload = buildJsonObject { put("peer_id", peer) },
+            tenantId = tenant
+        )
+        assertEquals("UNVERIFIED", status().resultData.jsonObject["verification_status"]?.jsonPrimitive?.content)
+    }
+
+    @Test
     fun genericImageManipulation_executesSmoothingAndAdjustment() = kotlinx.coroutines.runBlocking {
         val tenant = "tenant_inspection_hub"
 
@@ -1749,6 +1802,45 @@ class ExampleUnitTest {
         runCatching { NativeToolsSuite.execute(url = "tools://net/stop", payload = buildJsonObject { }) }
 
         assertTrue("Demo buttons dispatch tools without their required arguments: $deadEnds", deadEnds.isEmpty())
+    }
+
+    @Test
+    fun demoCards_bindOnlyFieldsTheirToolReturns() = kotlinx.coroutines.runBlocking {
+        // A card that maps `status` while the tool returns `state` leaves the bound
+        // variable permanently blank: the button appears to do nothing. Compare each
+        // action's `output` keys against the fields the handler actually produced.
+        val spec = WorkspaceProvisioner.defaultWorkspaces.first()
+        val unbound = mutableListOf<String>()
+
+        DemoCardRepository.toolCardOrder.forEach { name ->
+            val card = DemoCardRepository.toolCard(spec, name) ?: return@forEach
+            collectToolActions(card).forEach { action ->
+                val url = action["url"]!!.jsonPrimitive.content
+                val payload = action["payload"] as? JsonObject ?: return@forEach
+                val mapping = payload["output"] as? JsonObject ?: return@forEach
+                if (mapping.isEmpty()) return@forEach
+
+                // Tools needing device hardware report UNSUPPORTED here; those carry
+                // `status`/`reason` and are not this test's concern.
+                val data = runCatching {
+                    NativeToolsSuite.execute(url = url, payload = payload).resultData.jsonObject
+                }.getOrNull() ?: return@forEach
+                if (data["status"]?.jsonPrimitive?.contentOrNull == "UNSUPPORTED") return@forEach
+                // A failed run (no camera, no source image, no peer session) returns only
+                // `status`/`error`; there is no result to bind, so skip it.
+                if (data["error"] != null) return@forEach
+                // Permission-gated tools (Bluetooth printing) return `status`/`permission`
+                // when the host has not granted access; that is not a card bug.
+                if (data["status"]?.jsonPrimitive?.contentOrNull == "DENIED") return@forEach
+
+                mapping.keys.forEach { field ->
+                    if (data[field] == null) unbound.add("$name -> $url: no '$field' in ${data.keys}")
+                }
+            }
+        }
+        runCatching { NativeToolsSuite.execute(url = "tools://net/stop", payload = buildJsonObject { }) }
+
+        assertTrue("Demo cards bind fields their tools never return: $unbound", unbound.isEmpty())
     }
 
     /** Every `tools://` action object nested anywhere in [card]. */

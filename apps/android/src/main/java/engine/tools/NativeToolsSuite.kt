@@ -25,7 +25,9 @@ object NativeToolsSuite {
     /** Statuses that mean the operation did not do what was asked. */
     private val FAILURE_STATUSES = setOf(
         "FAILED", "UNSUPPORTED", "NO_INPUT", "NO_CODE_FOUND", "FORMAT_MISMATCH",
-        "DENIED", "BLUETOOTH_OFF", "NO_DEVICE", "ERROR"
+        "DENIED", "BLUETOOTH_OFF", "NO_DEVICE", "ERROR",
+        // A safety-number comparison that did not match must not read as a success.
+        "MISMATCH", "KEY_CHANGED"
     )
 
     /**
@@ -1367,10 +1369,22 @@ object NativeToolsSuite {
         )
     }
 
-    private fun executeClipboard(operation: String, options: Map<String, String>, payload: JsonObject): InternalToolResult {
-        val text = payload["text"]?.jsonPrimitive?.contentOrNull ?: ""
-        val data = mapOf("text" to text, "status" to "CLIPBOARD_OK")
-        return InternalToolResult("Clipboard processed", data, buildJsonObject { data.forEach { (k, v) -> put(k, v) } })
+    private suspend fun executeClipboard(
+        operation: String,
+        options: Map<String, String>,
+        payload: JsonObject
+    ): InternalToolResult {
+        val mergedArgs = buildMap {
+            putAll(options)
+            put("op", operation)
+            payload.forEach { (k, v) -> put(k, jsonContent(v)) }
+        }
+        val toolResult = engine.tools.impl.ClipboardTool().invoke(ToolArgs(mergedArgs), ToolContext())
+        return internalFromToolResult(
+            toolResult = toolResult,
+            label = "Clipboard",
+            successSummary = "Clipboard $operation completed"
+        )
     }
 
     private suspend fun executeBiometrics(

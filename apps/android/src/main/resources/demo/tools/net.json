@@ -26,7 +26,20 @@
         },
         {
             "type": "text",
-            "text": "Status: @{user.net_status} • HTTP: @{user.net_http_status} • Bytes: @{user.net_bytes} • Hub: @{user.net_hub_port}",
+            "text": "Start the hub, share a file into it, then fetch the hub's own /health endpoint over loopback. Nothing here is simulated: a real Ktor CIO server is listening while you press these buttons.",
+            "font_size": 11,
+            "text_color": "#BFDBFE"
+        },
+        {
+            "type": "text",
+            "text": "Status: @{user.net_status} • Port: @{user.net_hub_port} • Shares: @{user.net_share_count}",
+            "font_size": 12,
+            "text_color": "#DBEAFE",
+            "font_family": "monospace"
+        },
+        {
+            "type": "text",
+            "text": "HTTP: @{user.net_http_status} • Bytes: @{user.net_bytes}",
             "font_size": 12,
             "text_color": "#DBEAFE",
             "font_family": "monospace"
@@ -42,22 +55,83 @@
                     "items": [
                         {
                             "type": "button",
-                            "id": "tool_net_get",
-                            "text": "HTTP GET",
-                            "subtitle": "tools://net/get • Ktor CIO",
-                            "icon": "sync",
+                            "id": "tool_net_serve",
+                            "text": "1. Start LAN hub",
+                            "subtitle": "tools://net/serve • port 8899",
+                            "icon": "cloud",
                             "background_color": "#1D4ED8",
+                            "text_color": "#FFFFFF",
+                            "corner_radius": 10,
+                            "action": {
+                                "log_id": "exec_tool_net_serve",
+                                "url": "tools://net/serve",
+                                "payload": {
+                                    "port": "8899",
+                                    "label": "ApexClient Transfer Hub",
+                                    "output": {
+                                        "status": "user.net_status",
+                                        "port": "user.net_hub_port"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "container",
+                    "weight": 1.0,
+                    "items": [
+                        {
+                            "type": "button",
+                            "id": "tool_net_share",
+                            "text": "2. Share a file",
+                            "subtitle": "tools://net/share",
+                            "icon": "receipt",
+                            "background_color": "#1E40AF",
+                            "text_color": "#FFFFFF",
+                            "corner_radius": 10,
+                            "action": {
+                                "log_id": "exec_tool_net_share",
+                                "url": "tools://net/share",
+                                "payload": {
+                                    "name": "receipt-1042.txt",
+                                    "content_type": "text/plain",
+                                    "content_base64": "T3JkZXIgIzEwNDIgLSB0b3RhbCAxOC41MA==",
+                                    "output": {
+                                        "status": "user.net_status",
+                                        "bytes": "user.net_bytes"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "container",
+            "orientation": "horizontal",
+            "item_spacing": 8,
+            "items": [
+                {
+                    "type": "container",
+                    "weight": 1.0,
+                    "items": [
+                        {
+                            "type": "button",
+                            "id": "tool_net_get",
+                            "text": "3. HTTP GET /health",
+                            "subtitle": "tools://net/get • loopback",
+                            "icon": "sync",
+                            "background_color": "#2563EB",
                             "text_color": "#FFFFFF",
                             "corner_radius": 10,
                             "action": {
                                 "log_id": "exec_tool_net_get",
                                 "url": "tools://net/get",
                                 "payload": {
-                                    "operation": "get",
-                                    "options": {
-                                        "url": "https://api.apexpos.local/v1/health",
-                                        "timeout_ms": "30000"
-                                    },
+                                    "url": "http://127.0.0.1:8899/health",
+                                    "timeout_ms": "10000",
                                     "output": {
                                         "status": "user.net_status",
                                         "http_status": "user.net_http_status",
@@ -74,24 +148,20 @@
                     "items": [
                         {
                             "type": "button",
-                            "id": "tool_net_serve",
-                            "text": "Start LAN Hub",
-                            "subtitle": "tools://net/serve • peer-to-peer",
-                            "icon": "cloud",
-                            "background_color": "#1E40AF",
+                            "id": "tool_net_list",
+                            "text": "4. List shares",
+                            "subtitle": "tools://net/list",
+                            "icon": "search",
+                            "background_color": "#1E3A8A",
                             "text_color": "#FFFFFF",
                             "corner_radius": 10,
                             "action": {
-                                "log_id": "exec_tool_net_serve",
-                                "url": "tools://net/serve",
+                                "log_id": "exec_tool_net_list",
+                                "url": "tools://net/list",
                                 "payload": {
-                                    "operation": "serve",
-                                    "options": {
-                                        "port": "8899"
-                                    },
                                     "output": {
                                         "status": "user.net_status",
-                                        "port": "user.net_hub_port"
+                                        "count": "user.net_share_count"
                                     }
                                 }
                             }
@@ -99,6 +169,25 @@
                     ]
                 }
             ]
+        },
+        {
+            "type": "button",
+            "id": "tool_net_stop",
+            "text": "5. Stop LAN hub",
+            "subtitle": "tools://net/stop",
+            "icon": "clear",
+            "background_color": "#334155",
+            "text_color": "#FFFFFF",
+            "corner_radius": 10,
+            "action": {
+                "log_id": "exec_tool_net_stop",
+                "url": "tools://net/stop",
+                "payload": {
+                    "output": {
+                        "status": "user.net_status"
+                    }
+                }
+            }
         }
     ]
 }

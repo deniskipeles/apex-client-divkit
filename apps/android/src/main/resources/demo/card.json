@@ -150,17 +150,37 @@
       {
         "name": "user.signal_session_id",
         "type": "string",
-        "value": "sig_sess_acme_peer_01"
+        "value": ""
       },
       {
         "name": "user.signal_fingerprint",
         "type": "string",
-        "value": "4E-91-A2-5F-C0-83"
+        "value": ""
       },
       {
         "name": "user.signal_status",
         "type": "string",
-        "value": "ESTABLISHED"
+        "value": "NO_SESSION"
+      },
+      {
+        "name": "user.signal_peer_id",
+        "type": "string",
+        "value": "acme_peer_01"
+      },
+      {
+        "name": "user.signal_verification",
+        "type": "string",
+        "value": "UNVERIFIED"
+      },
+      {
+        "name": "user.signal_ciphertext",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.signal_plaintext",
+        "type": "string",
+        "value": ""
       },
       {
         "name": "user.tool_last_latency",
@@ -178,6 +198,11 @@
         "value": "click"
       },
       {
+        "name": "user.haptic_duration",
+        "type": "string",
+        "value": "0"
+      },
+      {
         "name": "user.beeper_status",
         "type": "string",
         "value": "idle"
@@ -188,9 +213,19 @@
         "value": "success"
       },
       {
+        "name": "user.beeper_frequency",
+        "type": "string",
+        "value": "0"
+      },
+      {
         "name": "user.clipboard_content",
         "type": "string",
         "value": "${terminalCode} • Order #1042"
+      },
+      {
+        "name": "user.clipboard_length",
+        "type": "string",
+        "value": "0"
       },
       {
         "name": "user.last_push_alert",
@@ -329,6 +364,11 @@
       },
       {
         "name": "user.net_hub_port",
+        "type": "string",
+        "value": "0"
+      },
+      {
+        "name": "user.net_share_count",
         "type": "string",
         "value": "0"
       },

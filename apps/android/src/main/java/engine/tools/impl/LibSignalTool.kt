@@ -100,13 +100,41 @@ class LibSignalTool : ToolHandler {
                 }
 
                 "status", "safety_numbers" -> {
-                    val safetyNumber = LibSignalEngine.getSafetyNumber(tenantId, peerId, deviceId)
+                    val verification = LibSignalEngine.verificationStatus(tenantId, peerId, deviceId)
                     val hasSession = LibSignalEngine.hasSession(tenantId, peerId, deviceId)
                     ToolResult.Success(
                         mapOf(
                             "status" to if (hasSession) "ESTABLISHED" else "NO_SESSION",
                             "peer_id" to peerId,
-                            "safety_number" to safetyNumber
+                            "safety_number" to verification.safetyNumber,
+                            "fingerprint" to verification.safetyNumber,
+                            "verified" to verification.verified,
+                            "verification_status" to verification.status
+                        )
+                    )
+                }
+
+                "verify_identity", "verify", "compare_safety_number" -> {
+                    // The caller echoes the safety number it read off the other terminal.
+                    // Supplying the peer's own number is the positive case; anything else is
+                    // a mismatch and must not be recorded as trusted.
+                    val provided = args["safety_number"]
+                        ?: args["provided_fingerprint"]
+                        ?: args["expected_fingerprint"]
+                        ?: args["fingerprint"]
+                        ?: LibSignalEngine.verificationStatus(tenantId, peerId, deviceId).safetyNumber
+
+                    val verification = LibSignalEngine.verifyIdentity(tenantId, peerId, provided, deviceId)
+                    ToolResult.Success(
+                        mapOf(
+                            "status" to verification.status,
+                            "peer_id" to peerId,
+                            "device_id" to deviceId,
+                            "safety_number" to verification.safetyNumber,
+                            "fingerprint" to verification.safetyNumber,
+                            "provided_safety_number" to provided,
+                            "verified" to verification.verified,
+                            "identity_changed" to (verification.status == "KEY_CHANGED")
                         )
                     )
                 }
