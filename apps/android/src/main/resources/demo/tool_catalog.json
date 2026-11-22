@@ -19,6 +19,7 @@
     { "file": "net",                "label": "Network Transfer",    "icon": "globe",      "accent_color": "#0891B2" },
     { "file": "print",              "label": "Thermal Printer",     "icon": "printer",    "accent_color": "#7C3AED" },
     { "file": "keep_awake",         "label": "Keep Awake",          "icon": "sun",        "accent_color": "#EAB308" },
+    { "file": "files",              "label": "Workspace Files",     "icon": "folder",     "accent_color": "#0EA5E9" },
     { "file": "native_icons",       "label": "Native Icon Scheme",  "icon": "palette",    "accent_color": "#D946EF" },
     { "file": "catalog_list",       "label": "Catalog List",        "icon": "product",    "accent_color": "#10B981" },
     { "file": "hourly_chart",       "label": "Hourly Throughput",   "icon": "chart",      "accent_color": "#0284C7" },

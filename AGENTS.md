@@ -303,6 +303,48 @@ pnpm check:desktop           # cargo check
 - `ShadowBluetoothAdapter` defaults to **disabled** — call `setEnabled(true)` when testing
   Bluetooth scan paths.
 
+### Verifying every platform from Linux
+
+The Android and desktop suites run natively; iOS needs a toolchain that is not preinstalled.
+
+```bash
+# Android (needs JDK 21 + the SDK)
+cd apps/android && ./gradlew :testDebugUnitTest :assembleDebug
+# iOS: install Swift 6.1.2 for Linux, then `swift build` / `swift test` in apps/ios
+# Desktop: rustup + Tauri Linux deps (libwebkit2gtk-4.1-dev, libgtk-3-dev, libsoup-3.0-dev)
+cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml --lib
+```
+
+A fresh sandbox may ship without a JDK or the Android SDK. `apps/android/local.properties`
+expects `sdk.dir=$HOME/.apex-toolchain/android-sdk`, so restore both there:
+
+```bash
+sudo apt-get update && sudo apt-get install -y --no-install-recommends openjdk-21-jdk-headless
+# then unpack commandlinetools into $HOME/.apex-toolchain/android-sdk/cmdline-tools/latest
+yes | sdkmanager --sdk_root=$HOME/.apex-toolchain/android-sdk --licenses
+sdkmanager --sdk_root=$HOME/.apex-toolchain/android-sdk \
+  "platforms;android-36" "build-tools;36.0.0" "platform-tools"
+export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 ANDROID_HOME=$HOME/.apex-toolchain/android-sdk
+```
+
+- The only expected compiler warnings are Compose `Icons.Filled.*` deprecation notices
+  ("Use the AutoMirrored version"). Anything else is new and should be fixed.
+- Stateful tools must be registered as one instance. `NativeToolsSuite` owns `netTool` and
+  `printTool` and `TerminalApp` registers those exact objects, so a hub started through
+  `tools://net/serve` is the one `div-action://…tool=network.transfer@1` reports on.
+
+- The desktop `storage.files@1` sandbox lives under the app-data dir
+  (`app_data_dir()/workspaces/<tenantId>`), not the temp dir, so written files survive a
+  restart. Tests call the operation helpers directly with a temp root, so they need no
+  `AppHandle`.
+- `storage.files@1` refuses to return a text body for non-UTF-8 or NUL-containing bytes on all
+  three native platforms; callers must pass `encoding=base64`. Android's
+  `ByteArray.toString(Charset)` substitutes U+FFFD instead of failing, so the Android tool
+  decodes through a strict `CharsetDecoder`.
+- iOS `ToolResult.success` only carries `AnyHashable`, so `files/list` returns `entries_json`
+  (a string) where Android and desktop return a structured `entries` array. Keep `listing`,
+  `count`, `total_bytes` and `truncated` identical across platforms so cards stay portable.
+
 ## Dependency notes
 
 - Ktor 3.3.1 powers `tools://net`. Use the **CIO** engine (pure Kotlin); the OkHttp engine

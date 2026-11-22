@@ -30,6 +30,7 @@ export const ALIASES: Record<string, string[]> = {
   'device.printer@1': ['print', 'printer', 'device.printer'],
   'vision.generate_code@1': ['code-generate', 'code_gen', 'generate-code', 'barcode-generate', 'qr-generate', 'vision.generate_code'],
   'device.keep_awake@1': ['keep-awake', 'keep_awake', 'keepawake', 'device.keep_awake', 'wakelock'],
+  'storage.files@1': ['files', 'file', 'storage.files', 'file-store', 'fs'],
 };
 
 export class TerminalRegistry {

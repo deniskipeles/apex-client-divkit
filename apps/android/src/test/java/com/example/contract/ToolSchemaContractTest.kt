@@ -11,7 +11,7 @@ import java.io.File
 class ToolSchemaContractTest {
 
     private fun repoRoot(): File =
-        System.getProperty("contract.dir")?.let { File(it).parentFile.parentFile }
+        System.getProperty("contract.dir")?.let { File(it).parentFile?.parentFile }
             ?: listOf(File(".."), File(".")).first()
 
     @Test

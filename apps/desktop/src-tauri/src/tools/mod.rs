@@ -1,6 +1,7 @@
 pub mod audio;
 pub mod beeper;
 pub mod camera;
+pub mod files;
 pub mod code_generate;
 pub mod haptics;
 pub mod libsignal;
@@ -46,6 +47,7 @@ pub enum Route {
     Print,
     CodeGenerate,
     KeepAwake,
+    Files,
     /// Not a capability in the contract.
     Unknown,
 }
@@ -69,7 +71,7 @@ fn required_permission(capability: &str) -> Option<&'static str> {
         Route::Beeper => Some("audio"),
         Route::Clipboard => Some("clipboard"),
         Route::Scanner | Route::Camera => Some("camera"),
-        Route::OfflineCache => Some("storage"),
+        Route::OfflineCache | Route::Files => Some("storage"),
         Route::Net | Route::Realtime | Route::Push => Some("network"),
         Route::Print => Some("bluetooth"),
         _ => None,
@@ -140,6 +142,8 @@ pub fn route(capability: &str) -> Route {
         // device.keep_awake@1
         "device.keep_awake@1" | "keep-awake" | "keep_awake" | "keepawake" | "device.keep_awake"
         | "wakelock" => Route::KeepAwake,
+        // storage.files@1
+        "storage.files@1" | "files" | "file" | "storage.files" | "file-store" | "fs" => Route::Files,
 
         _ => Route::Unknown,
     }
@@ -189,6 +193,7 @@ pub async fn dispatch(app: &AppHandle, capability: &str, args: Value) -> Result<
         Route::Print => print::invoke(app, args).await,
         Route::CodeGenerate => code_generate::invoke(app, args, &workspace).await,
         Route::KeepAwake => session::keep_awake(app, args).await,
+        Route::Files => files::invoke(app, args, &workspace).await,
         Route::Unknown => Err(ToolError::Failed {
             tool: capability.into(),
             message: "unknown capability".into(),
@@ -266,7 +271,7 @@ mod tests {
     fn desktop_mirrors_full_mobile_tool_inventory() {
         let tools: Value = serde_json::from_str(TOOLS_JSON).expect("tools.json parses");
         let capabilities = tools["capabilities"].as_array().expect("capabilities array");
-        assert_eq!(capabilities.len(), 21, "contract capability count changed");
+        assert_eq!(capabilities.len(), 22, "contract capability count changed");
 
         for capability in capabilities {
             let id = capability["id"].as_str().expect("id");

@@ -977,6 +977,15 @@ class ExampleUnitTest {
     }
 
     @Test
+    fun netTool_registryAndSuiteShareOneHubInstance() {
+        // Two invocation paths reach the hub: `tools://net/serve` (suite) and
+        // `div-action://...tool=network.transfer@1` (registry). They must observe the same
+        // stateful handler, otherwise a hub started through one path is invisible to the other.
+        assertSame(NativeToolsSuite.netTool, TerminalApp.registry.resolve("network.transfer@1"))
+        assertSame(NativeToolsSuite.printTool, TerminalApp.registry.resolve("device.printer@1"))
+    }
+
+    @Test
     fun netTool_statusReportsIdleHub() = kotlinx.coroutines.runBlocking {
         val result = engine.tools.impl.NetTool().invoke(
             args = ToolArgs(mapOf("op" to "status")),
@@ -1564,17 +1573,36 @@ class ExampleUnitTest {
         }
         collect(block)
 
-        assertEquals("expected a bg-remove and a smooth trigger", 2, buttons.size)
+        // Every operation the engine supports should be reachable from the card, and the two
+        // canonical triggers must always be there.
+        val ops = buttons.mapNotNull {
+            it["action"]?.jsonObject?.get("payload")?.jsonObject
+                ?.get("options")?.jsonObject?.get("op")?.jsonPrimitive?.contentOrNull
+        }.toSet()
+        assertTrue("card is missing the remove_background trigger", "remove_background" in ops)
+        assertTrue("card is missing the smooth trigger", "smooth" in ops)
+        assertTrue("card should expose the full op surface, got $ops", ops.size >= 8)
 
+        var sourceBacked = 0
         buttons.forEach { button ->
             val action = button["action"]!!.jsonObject
             val payload = action["payload"]!!.jsonObject
             val options = payload["options"]!!.jsonObject
             val source = options["uri"]?.jsonPrimitive?.contentOrNull
-            assertNotNull("demo card must pass a source image", source)
+
+            // One button intentionally omits a source: it prompts the user for a photo.
+            if (source == null) {
+                assertTrue(
+                    "only the photo-prompt trigger may omit a source",
+                    button["id"]?.jsonPrimitive?.contentOrNull?.contains("pick") == true
+                )
+                return@forEach
+            }
+            sourceBacked++
+
             assertTrue(
                 "source image must be decodable, was '$source'",
-                source!!.startsWith("file://") || source.startsWith("data:image")
+                source.startsWith("file://") || source.startsWith("data:image")
             )
 
             val outcome = NativeToolsSuite.execute(
@@ -1582,12 +1610,13 @@ class ExampleUnitTest {
                 payload = payload
             )
             assertEquals(
-                "image manipulation failed: ${outcome.resultData}",
+                "image manipulation failed for ${button["id"]}: ${outcome.resultData}",
                 "SUCCESS",
                 outcome.resultData.jsonObject["status"]?.jsonPrimitive?.contentOrNull
             )
             assertTrue(outcome.outputVariables.containsKey("user.processed_image_uri"))
         }
+        assertTrue("expected most triggers to carry a demo source", sourceBacked >= 8)
     }
 
     @Test

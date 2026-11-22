@@ -1,0 +1,391 @@
+{
+    "type": "container",
+    "orientation": "vertical",
+    "background_color": "#0B1220",
+    "corner_radius": 12,
+    "paddings": {
+        "left": 12,
+        "right": 12,
+        "top": 10,
+        "bottom": 10
+    },
+    "border": {
+        "corner_radius": 12,
+        "stroke": {
+            "color": "#38BDF8",
+            "width": 1
+        }
+    },
+    "items": [
+        {
+            "type": "text",
+            "text": "🗂️ WORKSPACE FILES (tools://files) — storage.files@1",
+            "font_size": 11,
+            "text_color": "#7DD3FC",
+            "font_weight": "bold"
+        },
+        {
+            "type": "text",
+            "text": "Bytes in, bytes out, scoped to this tenant's sandbox. Paths are relative to the workspace root and cannot escape it.",
+            "font_size": 11,
+            "text_color": "#94A3B8"
+        },
+        {
+            "type": "text",
+            "text": "Status: @{user.files_status}",
+            "font_size": 11,
+            "text_color": "#E0F2FE",
+            "font_family": "monospace"
+        },
+        {
+            "type": "text",
+            "text": "Path: @{user.files_path}",
+            "font_size": 11,
+            "text_color": "#E0F2FE",
+            "font_family": "monospace"
+        },
+        {
+            "type": "text",
+            "text": "Workspace root",
+            "font_size": 11,
+            "text_color": "#BAE6FD",
+            "font_weight": "bold"
+        },
+        {
+            "type": "container",
+            "orientation": "horizontal",
+            "item_spacing": 8,
+            "items": [
+                {
+                    "type": "container",
+                    "weight": 1.0,
+                    "items": [
+                        {
+                            "type": "button",
+                            "id": "tool_files_list",
+                            "text": "List Root",
+                            "subtitle": "Enumerate entries",
+                            "icon": "folder",
+                            "background_color": "#0369A1",
+                            "text_color": "#F8FAFC",
+                            "corner_radius": 10,
+                            "action": {
+                                "log_id": "exec_tool_files_list",
+                                "url": "tools://files/list",
+                                "payload": {
+                                    "operation": "list",
+                                    "options": {
+                                        "op": "list"
+                                    },
+                                    "output": {
+                                        "status": "user.files_status",
+                                        "listing": "user.files_listing",
+                                        "content": "user.files_content",
+                                        "path": "user.files_path"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "container",
+                    "weight": 1.0,
+                    "items": [
+                        {
+                            "type": "button",
+                            "id": "tool_files_mkdir",
+                            "text": "Create Folder",
+                            "subtitle": "mkdir notes",
+                            "icon": "folder",
+                            "background_color": "#075985",
+                            "text_color": "#F8FAFC",
+                            "corner_radius": 10,
+                            "action": {
+                                "log_id": "exec_tool_files_mkdir",
+                                "url": "tools://files/mkdir",
+                                "payload": {
+                                    "operation": "mkdir",
+                                    "options": {
+                                        "op": "mkdir",
+                                        "path": "notes"
+                                    },
+                                    "output": {
+                                        "status": "user.files_status",
+                                        "listing": "user.files_listing",
+                                        "content": "user.files_content",
+                                        "path": "user.files_path"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "text",
+            "text": "Write & read",
+            "font_size": 11,
+            "text_color": "#BAE6FD",
+            "font_weight": "bold"
+        },
+        {
+            "type": "container",
+            "orientation": "horizontal",
+            "item_spacing": 8,
+            "items": [
+                {
+                    "type": "container",
+                    "weight": 1.0,
+                    "items": [
+                        {
+                            "type": "button",
+                            "id": "tool_files_write",
+                            "text": "Write Text File",
+                            "subtitle": "Base64-encoded payload",
+                            "icon": "edit",
+                            "background_color": "#0F766E",
+                            "text_color": "#F8FAFC",
+                            "corner_radius": 10,
+                            "action": {
+                                "log_id": "exec_tool_files_write",
+                                "url": "tools://files/write",
+                                "payload": {
+                                    "operation": "write",
+                                    "options": {
+                                        "op": "write",
+                                        "path": "notes/hello.txt",
+                                        "content": "SGVsbG8gZnJvbSB0aGUgd29ya3NwYWNlIGZpbGUgc3RvcmUu"
+                                    },
+                                    "output": {
+                                        "status": "user.files_status",
+                                        "listing": "user.files_listing",
+                                        "content": "user.files_content",
+                                        "path": "user.files_path"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "container",
+                    "weight": 1.0,
+                    "items": [
+                        {
+                            "type": "button",
+                            "id": "tool_files_read",
+                            "text": "Read It Back",
+                            "subtitle": "Return decoded text",
+                            "icon": "scanner",
+                            "background_color": "#115E59",
+                            "text_color": "#F8FAFC",
+                            "corner_radius": 10,
+                            "action": {
+                                "log_id": "exec_tool_files_read",
+                                "url": "tools://files/read",
+                                "payload": {
+                                    "operation": "read",
+                                    "options": {
+                                        "op": "read",
+                                        "path": "notes/hello.txt"
+                                    },
+                                    "output": {
+                                        "status": "user.files_status",
+                                        "listing": "user.files_listing",
+                                        "content": "user.files_content",
+                                        "path": "user.files_path"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "text",
+            "text": "Copy, move, delete",
+            "font_size": 11,
+            "text_color": "#BAE6FD",
+            "font_weight": "bold"
+        },
+        {
+            "type": "container",
+            "orientation": "horizontal",
+            "item_spacing": 8,
+            "items": [
+                {
+                    "type": "container",
+                    "weight": 1.0,
+                    "items": [
+                        {
+                            "type": "button",
+                            "id": "tool_files_copy",
+                            "text": "Copy",
+                            "subtitle": "notes/hello.txt → notes/copy.txt",
+                            "icon": "clipboard",
+                            "background_color": "#7C3AED",
+                            "text_color": "#F8FAFC",
+                            "corner_radius": 10,
+                            "action": {
+                                "log_id": "exec_tool_files_copy",
+                                "url": "tools://files/copy",
+                                "payload": {
+                                    "operation": "copy",
+                                    "options": {
+                                        "op": "copy",
+                                        "from": "notes/hello.txt",
+                                        "to": "notes/copy.txt"
+                                    },
+                                    "output": {
+                                        "status": "user.files_status",
+                                        "listing": "user.files_listing",
+                                        "content": "user.files_content",
+                                        "path": "user.files_path"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "container",
+                    "weight": 1.0,
+                    "items": [
+                        {
+                            "type": "button",
+                            "id": "tool_files_move",
+                            "text": "Move",
+                            "subtitle": "notes/copy.txt → notes/moved.txt",
+                            "icon": "refresh",
+                            "background_color": "#6D28D9",
+                            "text_color": "#F8FAFC",
+                            "corner_radius": 10,
+                            "action": {
+                                "log_id": "exec_tool_files_move",
+                                "url": "tools://files/move",
+                                "payload": {
+                                    "operation": "move",
+                                    "options": {
+                                        "op": "move",
+                                        "from": "notes/copy.txt",
+                                        "to": "notes/moved.txt"
+                                    },
+                                    "output": {
+                                        "status": "user.files_status",
+                                        "listing": "user.files_listing",
+                                        "content": "user.files_content",
+                                        "path": "user.files_path"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "container",
+            "orientation": "horizontal",
+            "item_spacing": 8,
+            "items": [
+                {
+                    "type": "container",
+                    "weight": 1.0,
+                    "items": [
+                        {
+                            "type": "button",
+                            "id": "tool_files_stat",
+                            "text": "Stat",
+                            "subtitle": "Size and mtime",
+                            "icon": "database",
+                            "background_color": "#B45309",
+                            "text_color": "#F8FAFC",
+                            "corner_radius": 10,
+                            "action": {
+                                "log_id": "exec_tool_files_stat",
+                                "url": "tools://files/stat",
+                                "payload": {
+                                    "operation": "stat",
+                                    "options": {
+                                        "op": "stat",
+                                        "path": "notes/moved.txt"
+                                    },
+                                    "output": {
+                                        "status": "user.files_status",
+                                        "listing": "user.files_listing",
+                                        "content": "user.files_content",
+                                        "path": "user.files_path"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "container",
+                    "weight": 1.0,
+                    "items": [
+                        {
+                            "type": "button",
+                            "id": "tool_files_delete",
+                            "text": "Delete",
+                            "subtitle": "Remove notes/moved.txt",
+                            "icon": "close",
+                            "background_color": "#991B1B",
+                            "text_color": "#F8FAFC",
+                            "corner_radius": 10,
+                            "action": {
+                                "log_id": "exec_tool_files_delete",
+                                "url": "tools://files/delete",
+                                "payload": {
+                                    "operation": "delete",
+                                    "options": {
+                                        "op": "delete",
+                                        "path": "notes/moved.txt"
+                                    },
+                                    "output": {
+                                        "status": "user.files_status",
+                                        "listing": "user.files_listing",
+                                        "content": "user.files_content",
+                                        "path": "user.files_path"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "text",
+            "text": "Listing",
+            "font_size": 11,
+            "text_color": "#BAE6FD",
+            "font_weight": "bold"
+        },
+        {
+            "type": "text",
+            "text": "@{user.files_listing}",
+            "font_size": 11,
+            "text_color": "#E0F2FE",
+            "font_family": "monospace"
+        },
+        {
+            "type": "text",
+            "text": "Content",
+            "font_size": 11,
+            "text_color": "#BAE6FD",
+            "font_weight": "bold"
+        },
+        {
+            "type": "text",
+            "text": "@{user.files_content}",
+            "font_size": 11,
+            "text_color": "#E0F2FE",
+            "font_family": "monospace"
+        }
+    ]
+}

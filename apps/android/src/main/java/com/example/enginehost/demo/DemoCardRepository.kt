@@ -52,6 +52,7 @@ object DemoCardRepository {
         "net",
         "print",
         "keep_awake",
+        "files",
         "native_icons",
         "catalog_list",
         "hourly_chart",

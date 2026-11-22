@@ -136,6 +136,20 @@ object NativeToolsSuite {
         // UNIFIED IMAGE MANIPULATION ENGINE (OS Models / <4MB footprint)
         // -------------------------------------------------------------
         ToolSchema(
+            toolId = "files",
+            displayName = "Workspace File Store",
+            description = "Tenant-scoped file storage for bytes of any kind: list, stat, read, write, copy, move, delete, mkdir. Paths are workspace-relative and sandboxed; content is never parsed or rewritten.",
+            supportedOperations = listOf(
+                "list", "info", "read", "write", "append", "copy", "move", "delete", "mkdir", "exists", "uri"
+            ),
+            defaultOptions = mapOf("op" to "list", "path" to "."),
+            defaultOutputMapping = mapOf(
+                "uri" to "user.files_last_uri",
+                "path" to "user.files_last_path",
+                "status" to "user.files_status"
+            )
+        ),
+        ToolSchema(
             toolId = "image-manipulation",
             displayName = "Universal Image Manipulation & Background Removal",
             description = "High-performance on-device image processing using OS models (<4MB footprint). Supports neural/chroma background removal, edge-preserving smoothing, color adjustment, and cropping.",
@@ -374,6 +388,7 @@ object NativeToolsSuite {
             "print" -> executePrint(operation, options, payload, tenantId)
             "code-generate" -> executeCodeGenerate(operation, options, payload, tenantId)
             "keep-awake" -> executeKeepAwake(operation, options, payload)
+            "files" -> executeFiles(operation, options, payload, tenantId)
             else -> executeGenericFallback(toolId, operation, payload)
         }
 
@@ -433,6 +448,7 @@ object NativeToolsSuite {
         "code-generate", "code_gen", "codegen", "generate-code", "generate_code", "barcode-generate",
         "qr-generate", "vision.generate_code@1", "vision.generate_code" -> "code-generate"
         "keep-awake", "keep_awake", "keepawake", "device.keep_awake", "device.keep_awake@1", "wakelock" -> "keep-awake"
+        "files", "file", "storage.files", "storage.files@1", "file-store", "fs" -> "files"
         else -> raw
     }
 
@@ -444,8 +460,10 @@ object NativeToolsSuite {
 
     // Stateful handlers (LAN hub sockets / Bluetooth connections) are shared across
     // invocations so that serve→share→list and connect→print→disconnect stay coherent.
-    private val netTool = engine.tools.impl.NetTool()
-    private val printTool = engine.tools.impl.PrintTool()
+    // `TerminalApp` registers these same instances: a hub started through `tools://net/serve`
+    // must be the one `div-action://...tool=network.transfer@1&op=status` reports on.
+    internal val netTool = engine.tools.impl.NetTool()
+    internal val printTool = engine.tools.impl.PrintTool()
 
     // -------------------------------------------------------------------------
     // GENERIC OPTICAL SCANNER (ZERO DOMAIN COUPLING)
@@ -863,7 +881,10 @@ object NativeToolsSuite {
         return FloatArray(bytes.size / Float.SIZE_BYTES) { buf.getFloat() }
     }
 
-    private suspend fun executeImageManipulation(
+    // -------------------------------------------------------------------------
+    // WORKSPACE FILE STORE (BYTES IN, BYTES OUT)
+    // -------------------------------------------------------------------------
+    private suspend fun executeFiles(
         operation: String,
         options: Map<String, String>,
         payload: JsonObject,
@@ -874,11 +895,70 @@ object NativeToolsSuite {
             if (operation !in setOf("default", "invoke")) {
                 put("op", operation)
             }
-            payload.forEach { (k, v) -> put(k, jsonContent(v)) }
+            payload.forEach { (k, v) ->
+                // Nested objects (e.g. an `output` map) are not tool arguments.
+                if (k != "output" && k != "options") put(k, jsonContent(v))
+            }
+        }
+
+        val toolResult = engine.tools.impl.FilesTool().invoke(
+            args = ToolArgs(mergedArgs),
+            ctx = ToolContext(workspaceId = tenantId)
+        )
+        return internalFromToolResult(
+            toolResult = toolResult,
+            label = "Files",
+            successSummary = "Files [$operation] completed"
+        )
+    }
+
+    private suspend fun executeImageManipulation(
+        operation: String,
+        options: Map<String, String>,
+        payload: JsonObject,
+        tenantId: String
+    ): InternalToolResult {
+        val mergedArgs = buildMap {
+            putAll(options)
+            if (operation !in setOf("default", "invoke", "process")) {
+                put("op", operation)
+            }
+            payload.forEach { (k, v) ->
+                // Nested objects (`output`, `pipeline`) keep their own shape below.
+                if (k != "output") put(k, jsonContent(v))
+            }
+        }
+
+        // No source reference means the caller wants to supply one, so ask for a photo.
+        // `camera=false` only forbids the camera; the file picker stays available.
+        var sourceUri = mergedArgs["uri"] ?: mergedArgs["image"]
+        if (sourceUri.isNullOrBlank()) {
+            val allowCamera = mergedArgs["camera"]?.equals("false", ignoreCase = true) != true
+            sourceUri = imageSourceSink?.invoke(allowCamera)
+            if (sourceUri.isNullOrBlank()) {
+                return InternalToolResult(
+                    summary = "Image manipulation cancelled: no image supplied",
+                    dataMap = mapOf(
+                        "status" to "NO_INPUT",
+                        "error" to "No image was captured or selected"
+                    ),
+                    resultJson = buildJsonObject {
+                        put("status", "NO_INPUT")
+                        put("error", "No image was captured or selected")
+                    }
+                )
+            }
+        }
+
+        val args = buildMap {
+            putAll(mergedArgs)
+            put("uri", sourceUri)
+            // The pipeline arrives as JSON text from the card; ToolArgs is a flat string map.
+            payload["pipeline"]?.let { put("pipeline", it.toString()) }
         }
 
         val toolResult = engine.tools.impl.ImageManipulationTool().invoke(
-            args = ToolArgs(mergedArgs),
+            args = ToolArgs(args),
             ctx = ToolContext(workspaceId = tenantId)
         )
         return internalFromToolResult(
@@ -1080,7 +1160,9 @@ object NativeToolsSuite {
                     buildJsonObject {
                         put("op", "remove_background")
                         // Older cards sent `saliency_cutoff`; accept both so the control works.
-                        put("threshold", options["threshold"] ?: options["saliency_cutoff"] ?: "0.45")
+                        val cutoff = (options["threshold"] ?: options["saliency_cutoff"])
+                            ?.toDoubleOrNull() ?: 0.45
+                        put("threshold", cutoff)
                     }
                 ),
                 encoding = "uri"
@@ -1099,11 +1181,15 @@ object NativeToolsSuite {
         val data = mapOf(
             "status" to "SUCCESS",
             "uri" to result.uri,
+            // `mask_uri` matches this tool's declared output mapping.
+            "mask_uri" to result.uri,
             "image_id" to result.imageId,
             "width" to result.width,
             "height" to result.height,
             "algorithm" to "on-device colour-distance matte (not U-2-Net)",
-            "note" to "U-2-Net weights are not bundled; this is the native background remover"
+            "note" to "U-2-Net weights are not bundled; this is the native background remover",
+            // Echo the segmented source so the card can show what was cut out.
+            "source_image" to uri
         )
         return InternalToolResult(
             summary = "Background removed with the on-device matte (U-2-Net weights not bundled)",

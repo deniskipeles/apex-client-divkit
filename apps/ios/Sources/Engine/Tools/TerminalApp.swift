@@ -33,7 +33,8 @@ public enum TerminalApp {
             CodeGenerateTool(),
             LibSignalTool(),
             VectorizeTool(),
-            KeepAwakeTool()
+            KeepAwakeTool(),
+            FilesTool()
         ]
 
         var handlerMap: [String: ToolHandler] = [:]
@@ -53,8 +54,9 @@ public enum TerminalApp {
         "hardware.beeper@1": ["device.beeper@1", "beeper", "device.beeper", "tone"],
         "vision.scan_code@1": ["scan-code", "scan_barcode", "scan-qr"],
         "vision.capture_photo@1": ["camera", "capture_photo"],
-        "vision.identify_product@1": ["MobileNetV4-small", "identify_product"],
+        "vision.embed_image@1": [],
         "vision.remove_background@1": ["image-background-remove", "u-2-Net.tflite"],
+        "vision.identify_product@1": ["MobileNetV4-small", "identify_product"],
         "secure.send@1": ["libsignal", "secure_send"],
         "secure.status@1": ["secure_status", "signal_status"],
         "secure.verify_identity@1": ["secure_verify", "verify_identity"],
@@ -68,6 +70,7 @@ public enum TerminalApp {
         "vision.generate_code@1": ["code-generate", "code_gen", "generate-code", "barcode-generate", "qr-generate", "vision.generate_code"],
         "crypto.signal@1": ["signal", "crypto.signal"],
         "vectorize": ["vector", "embed", "embed-text", "embed-image"],
-        "device.keep_awake@1": ["keep-awake", "keep_awake", "keepawake", "device.keep_awake", "wakelock"]
+        "device.keep_awake@1": ["keep-awake", "keep_awake", "keepawake", "device.keep_awake", "wakelock"],
+        "storage.files@1": ["files", "file", "storage.files", "file-store", "fs"]
     ]
 }

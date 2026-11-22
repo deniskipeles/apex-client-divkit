@@ -32,6 +32,7 @@ dispatch contract and the provenance gate.
 | [print.md](print.md) | `tools://print` | `device.printer@1` | Bluetooth printer discovery & ESC/POS printing. |
 | [code-generate.md](code-generate.md) | `tools://code-generate` | `vision.generate_code@1` | Barcode & QR / matrix code generation (ZXing). |
 | [keep-awake.md](keep-awake.md) | `tools://keep-awake` | `device.keep_awake@1` | Screen / wake-lock controller for long-running tasks. |
+| [files.md](files.md) | `tools://files` | `storage.files@1` | Tenant-scoped workspace file store (bytes in, bytes out). |
 | [local-db.md](local-db.md) | `local-db://op/<name>` | `db.*` / `records.*` | Tenant SQLite bridge — insert/query/count/delete via DivKit actions. |
 | [icons.md](icons.md) | `icons://native/<name>` | — | Bundled native POS icon catalog (285 icons) + Compose vector resolver. |
 

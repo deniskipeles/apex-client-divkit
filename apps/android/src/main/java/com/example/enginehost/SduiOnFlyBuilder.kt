@@ -203,6 +203,7 @@ object SduiOnFlyBuilder {
     fun buildNetToolBlock(spec: TenantWorkspaceSpec): JsonObject = buildToolCard(spec, "net")
     fun buildPrintToolBlock(spec: TenantWorkspaceSpec): JsonObject = buildToolCard(spec, "print")
     fun buildKeepAwakeToolBlock(spec: TenantWorkspaceSpec): JsonObject = buildToolCard(spec, "keep_awake")
+    fun buildFilesToolBlock(spec: TenantWorkspaceSpec): JsonObject = buildToolCard(spec, "files")
     fun buildNativeIconSchemeBlock(spec: TenantWorkspaceSpec): JsonObject = buildToolCard(spec, "native_icons")
     fun buildCatalogJsonListBlock(spec: TenantWorkspaceSpec): JsonObject = buildToolCard(spec, "catalog_list")
 

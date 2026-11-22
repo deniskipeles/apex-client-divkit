@@ -227,6 +227,51 @@
         "type": "string",
         "value": "idle"
       },
+        {
+            "name": "user.processed_source_uri",
+            "type": "string",
+            "value": "${demoImageUri}"
+        },
+        {
+            "name": "user.processed_width",
+            "type": "integer",
+            "value": 0
+        },
+        {
+            "name": "user.processed_height",
+            "type": "integer",
+            "value": 0
+        },
+        {
+            "name": "user.files_status",
+            "type": "string",
+            "value": "idle"
+        },
+        {
+            "name": "user.files_listing",
+            "type": "string",
+            "value": "No listing yet"
+        },
+        {
+            "name": "user.files_content",
+            "type": "string",
+            "value": "No content yet"
+        },
+        {
+            "name": "user.files_path",
+            "type": "string",
+            "value": "."
+        },
+        {
+            "name": "user.files_last_uri",
+            "type": "string",
+            "value": ""
+        },
+        {
+            "name": "user.files_last_path",
+            "type": "string",
+            "value": "."
+        },
       {
         "name": "user.vector_source",
         "type": "string",

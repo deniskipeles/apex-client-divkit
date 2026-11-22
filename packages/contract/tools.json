@@ -22,6 +22,7 @@
     { "id": "network.transfer@1",        "aliases": ["net", "network.transfer", "tools.net"] },
     { "id": "device.printer@1",          "aliases": ["print", "printer", "device.printer"] },
     { "id": "vision.generate_code@1",    "aliases": ["code-generate", "code_gen", "generate-code", "barcode-generate", "qr-generate", "vision.generate_code"] },
-    { "id": "device.keep_awake@1",       "aliases": ["keep-awake", "keep_awake", "keepawake", "device.keep_awake", "wakelock"] }
+    { "id": "device.keep_awake@1",       "aliases": ["keep-awake", "keep_awake", "keepawake", "device.keep_awake", "wakelock"] },
+    { "id": "storage.files@1",           "aliases": ["files", "file", "storage.files", "file-store", "fs"] }
   ]
 }

@@ -192,6 +192,18 @@ public enum NativeToolsSuite {
             defaultOutputMapping: [
                 "status": "user.keep_awake_status", "enabled": "user.keep_awake_enabled"
             ]
+        ),
+        ToolSchema(
+            toolId: "files",
+            displayName: "Workspace File Store",
+            description: "Tenant-scoped file storage for bytes of any kind: list, stat, read, write, copy, move, delete, mkdir. Paths are workspace-relative and sandboxed; content is never parsed or rewritten.",
+            supportedOperations: [
+                "list", "info", "read", "write", "append", "copy", "move", "delete", "mkdir", "exists", "uri"
+            ],
+            defaultOptions: ["op": "list", "path": "."],
+            defaultOutputMapping: [
+                "uri": "user.files_last_uri", "path": "user.files_last_path", "status": "user.files_status"
+            ]
         )
     ]
 
@@ -267,6 +279,8 @@ public enum NativeToolsSuite {
             outcome = await executeCodeGenerate(operation: operation, options: options, payload: payload, tenantId: tenantId)
         case "keep-awake":
             outcome = await executeKeepAwake(operation: operation, options: options, payload: payload)
+        case "files":
+            outcome = await executeFiles(operation: operation, options: options, payload: payload, tenantId: tenantId)
         default:
             outcome = executeGenericFallback(toolId: toolId, operation: operation, payload: payload)
         }
@@ -311,6 +325,7 @@ public enum NativeToolsSuite {
         case "print", "printer", "device.printer", "device.printer@1", "bluetooth.print", "pos.print": return "print"
         case "code-generate", "code_gen", "codegen", "generate-code", "generate_code", "barcode-generate", "qr-generate", "vision.generate_code@1", "vision.generate_code": return "code-generate"
         case "keep-awake", "keep_awake", "keepawake", "device.keep_awake", "device.keep_awake@1", "wakelock": return "keep-awake"
+        case "files", "file", "storage.files", "storage.files@1", "file-store", "fs": return "files"
         default: return raw
         }
     }
@@ -524,6 +539,24 @@ public enum NativeToolsSuite {
         for (k, v) in payload.asDictionary { merged[k] = v.contentOrNull ?? v.serialized }
         let result = await KeepAwakeTool().invoke(args: ToolArgs(merged), ctx: ToolContext())
         return internalFromToolResult(result, label: "Keep-awake", successSummary: "Keep-awake \(merged["op"] ?? operation) executed")
+    }
+
+    private static func executeFiles(
+        operation: String,
+        options: [String: String],
+        payload: JsonValue,
+        tenantId: String
+    ) async -> InternalToolResult {
+        var merged = options
+        if !["default", "invoke"].contains(operation) { merged["op"] = operation }
+        for (k, v) in payload.asDictionary where k != "output" && k != "options" {
+            merged[k] = v.contentOrNull ?? v.serialized
+        }
+        let result = await FilesTool().invoke(
+            args: ToolArgs(merged),
+            ctx: ToolContext(workspaceId: tenantId)
+        )
+        return internalFromToolResult(result, label: "Files", successSummary: "Files [\(merged["op"] ?? operation)] completed")
     }
 
     private static func executeGenericFallback(toolId: String, operation: String, payload: JsonValue) -> InternalToolResult {

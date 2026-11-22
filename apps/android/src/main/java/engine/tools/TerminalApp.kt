@@ -28,12 +28,13 @@ object TerminalApp {
             PushAlertTool(),
             OfflineCacheTool(),
             RealtimeWsTool(),
-            NetTool(),
-            PrintTool(),
+            NativeToolsSuite.netTool,
+            NativeToolsSuite.printTool,
             CodeGenerateTool(),
             LibSignalTool(),
             VectorizeTool(),
-            KeepAwakeTool()
+            KeepAwakeTool(),
+            FilesTool()
         )
         // Map canonical capabilities + common shorthand aliases
         val handlerMap = mutableMapOf<String, ToolHandler>()
@@ -136,6 +137,13 @@ object TerminalApp {
                     handlerMap["embed"] = h
                     handlerMap["embed-text"] = h
                     handlerMap["embed-image"] = h
+                }
+                "storage.files@1" -> {
+                    handlerMap["files"] = h
+                    handlerMap["file"] = h
+                    handlerMap["storage.files"] = h
+                    handlerMap["file-store"] = h
+                    handlerMap["fs"] = h
                 }
                 "device.keep_awake@1" -> {
                     handlerMap["keep-awake"] = h

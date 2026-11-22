@@ -17,6 +17,8 @@ final class NativeToolsSuiteTests: XCTestCase {
         XCTAssertEqual(NativeToolsSuite.normalizeToolId("vision.scan_code@1"), "scan")
         XCTAssertEqual(NativeToolsSuite.normalizeToolId("network.transfer"), "net")
         XCTAssertEqual(NativeToolsSuite.normalizeToolId("vision.generate_code@1"), "code-generate")
+        XCTAssertEqual(NativeToolsSuite.normalizeToolId("storage.files@1"), "files")
+        XCTAssertEqual(NativeToolsSuite.normalizeToolId("fs"), "files")
         XCTAssertEqual(NativeToolsSuite.normalizeToolId("unknown-tool"), "unknown-tool")
     }
 
@@ -157,5 +159,55 @@ final class NativeToolsSuiteTests: XCTestCase {
         XCTAssertTrue(manifest.has("vision.scan_code@1"))
         XCTAssertTrue(manifest.has("network.transfer@1"))
         XCTAssertTrue(manifest.has("vectorize"))
+        XCTAssertTrue(manifest.has("storage.files@1"))
+    }
+
+    func testFilesToolRoundTripsBytesInsideItsSandbox() async throws {
+        let root = NSTemporaryDirectory() + "files-tool-test-" + UUID().uuidString
+        defer { try? FileManager.default.removeItem(atPath: root) }
+        let tool = FilesTool(rootOverride: root)
+
+        let written = await tool.invoke(
+            args: ToolArgs(["op": "write", "path": "notes/hello.txt", "content": "hello"]),
+            ctx: ToolContext(workspaceId: "tenant_a")
+        )
+        guard case let .success(writeData) = written else {
+            return XCTFail("write failed: \(written)")
+        }
+        XCTAssertEqual(writeData["status"] as? String, "SUCCESS")
+
+        let read = await tool.invoke(
+            args: ToolArgs(["op": "read", "path": "notes/hello.txt"]),
+            ctx: ToolContext(workspaceId: "tenant_a")
+        )
+        guard case let .success(readData) = read else {
+            return XCTFail("read failed: \(read)")
+        }
+        XCTAssertEqual(readData["content"] as? String, "hello")
+
+        // Another tenant resolves the same relative path to its own sandbox.
+        let otherTenant = await tool.invoke(
+            args: ToolArgs(["op": "exists", "path": "notes/hello.txt"]),
+            ctx: ToolContext(workspaceId: "tenant_b")
+        )
+        guard case let .success(otherData) = otherTenant else {
+            return XCTFail("exists failed: \(otherTenant)")
+        }
+        XCTAssertEqual(otherData["exists"] as? Bool, false)
+    }
+
+    func testFilesToolRejectsPathTraversal() async {
+        let root = NSTemporaryDirectory() + "files-tool-escape-" + UUID().uuidString
+        defer { try? FileManager.default.removeItem(atPath: root) }
+        let tool = FilesTool(rootOverride: root)
+
+        let escaped = await tool.invoke(
+            args: ToolArgs(["op": "write", "path": "../../etc/passwd", "content": "x"]),
+            ctx: ToolContext(workspaceId: "tenant_a")
+        )
+        guard case let .failed(_, message) = escaped else {
+            return XCTFail("traversal should be rejected, got \(escaped)")
+        }
+        XCTAssertTrue(message.contains("escapes"), "unexpected message: \(message)")
     }
 }
