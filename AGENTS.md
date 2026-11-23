@@ -132,8 +132,11 @@ scheme adds roughly **64 KB** to the release APK (measured by building with and 
 
 ## Demo workspace showcase
 
-The single built-in demo tenant (`WorkspaceProvisioner.defaultWorkspaces`) is the live
-showcase of the SDUI surface. When a tool gains a user-facing operation, surface it there too:
+The built-in demo tenants (`WorkspaceProvisioner.defaultWorkspaces`) are the live showcase
+of the SDUI surface. `acme_pos` renders `demo/apex`; `apex_kiosk` renders
+`demo/apex-kiosk` (`demoRoot` + `toolCardOrder` on the spec) and exercises the SQLite data
+plane end to end. When a tool gains a user-facing operation, surface it in the appropriate
+tenant too:
 
 - `SduiOnFlyBuilder.build<Name>ToolBlock(spec)` — a DivKit container with live `user.*` readouts
   and `buildNativeToolTriggerBlock(...)` trigger buttons.

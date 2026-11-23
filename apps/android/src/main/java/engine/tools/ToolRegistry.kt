@@ -58,6 +58,7 @@ class ProvenanceChecker {
         "network.transfer@1",
         "device.printer@1",
         "vision.generate_code@1",
+        "data.codec@1",
         "device.keep_awake@1",
         "device.screen@1",
         "storage.files@1",

@@ -33,6 +33,10 @@ import engine.icons.NativeIconCatalog
 import engine.icons.NativeIconVectors
 import engine.state.DivVariableValue
 import engine.state.EngineStateBridge
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.*
 
@@ -45,6 +49,67 @@ class DivKitEnvironment private constructor(val dependencies: DivKitDependencies
 }
 
 private val LocalDivKitDependencies = staticCompositionLocalOf<DivKitDependencies?> { null }
+
+/**
+ * Runs the card's `_timers` declarations. DivKit timers are addressed by
+ * `div-action://timer?id=<timer>&action=start|stop`; each tick re-reads the bridge so a
+ * timer observes variables produced by the actions it dispatched.
+ */
+private class DivTimerController(private val scope: CoroutineScope) {
+    private val jobs = mutableMapOf<String, Job>()
+
+    fun handle(
+        url: String,
+        card: JsonObject,
+        dispatch: suspend (String, String?) -> Unit
+    ) {
+        val params = url.substringAfter('?', "")
+            .split('&')
+            .mapNotNull { part ->
+                val key = part.substringBefore('=', "")
+                if (key.isBlank()) null else key to part.substringAfter('=', "")
+            }
+            .toMap()
+        val id = params["id"] ?: return
+        if (params["action"] != "start") {
+            jobs.remove(id)?.cancel()
+            return
+        }
+        val timers = card["_timers"]?.jsonArray
+            ?: card["card"]?.jsonObject?.get("_timers")?.jsonArray
+        val timer = timers
+            ?.mapNotNull { it as? JsonObject }
+            ?.firstOrNull { it["id"]?.jsonPrimitive?.contentOrNull == id }
+            ?: return
+        val interval = timer["tick_interval"]?.jsonPrimitive?.longOrNull?.coerceAtLeast(50L) ?: 500L
+        val actions = timer["tick_actions"]?.jsonArray?.mapNotNull { it as? JsonObject }.orEmpty()
+        if (actions.isEmpty()) return
+
+        jobs.remove(id)?.cancel()
+        jobs[id] = scope.launch {
+            while (isActive) {
+                delay(interval)
+                dispatchAllActions(actions, EngineStateBridge.state.value, emptyMap(), dispatch)
+            }
+        }
+    }
+
+    fun stopAll() {
+        jobs.values.forEach { it.cancel() }
+        jobs.clear()
+    }
+}
+
+private fun divValueFromJson(element: JsonElement): DivVariableValue = when (element) {
+    is JsonPrimitive -> when {
+        element.booleanOrNull != null -> DivVariableValue.Bool(element.boolean)
+        element.longOrNull != null -> DivVariableValue.IntVal(element.long)
+        element.doubleOrNull != null -> DivVariableValue.DoubleVal(element.double)
+        else -> DivVariableValue.Str(element.content)
+    }
+    is JsonArray -> DivVariableValue.ArrayVal(element.map { divValueFromJson(it) })
+    else -> DivVariableValue.Str(element.toString())
+}
 
 @Composable
 fun DivKit(
@@ -74,7 +139,12 @@ fun DivView(
 ) {
     val bridgeState by EngineStateBridge.state.collectAsState()
     val scope = rememberCoroutineScope()
+    val timerController = remember(scope) { DivTimerController(scope) }
     val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+
+    DisposableEffect(timerController) {
+        onDispose { timerController.stopAll() }
+    }
 
     val parsedRoot = remember(jsonData) {
         try {
@@ -100,6 +170,9 @@ fun DivView(
                 "integer" -> DivVariableValue.IntVal(valueEl?.jsonPrimitive?.longOrNull ?: 0L)
                 "number" -> DivVariableValue.DoubleVal(valueEl?.jsonPrimitive?.doubleOrNull ?: 0.0)
                 "boolean" -> DivVariableValue.Bool(valueEl?.jsonPrimitive?.booleanOrNull ?: false)
+                "array" -> DivVariableValue.ArrayVal(
+                    valueEl?.jsonArray?.map { divValueFromJson(it) } ?: emptyList()
+                )
                 else -> DivVariableValue.Str(valueEl?.jsonPrimitive?.contentOrNull ?: "")
             }
             batch[name] = dv
@@ -154,13 +227,12 @@ fun DivView(
                     variables = bridgeState,
                     rowContext = emptyMap(),
                     isDark = isDark,
+                    scope = scope,
                     onDispatchAction = { url, payloadStr ->
-                        scope.launch {
-                            if (url.startsWith("div-action://set_variable")) {
-                                handleDivSetVariable(url)
-                            } else {
-                                onAction(url, payloadStr)
-                            }
+                        when {
+                            url.startsWith("div-action://set_variable") -> handleDivSetVariable(url)
+                            url.startsWith("div-action://timer") -> timerController.handle(url, parsedRoot, onAction)
+                            else -> onAction(url, payloadStr)
                         }
                     }
                 )
@@ -189,7 +261,9 @@ private fun RenderDivNode(
     variables: Map<String, DivVariableValue>,
     rowContext: Map<String, Any?>,
     isDark: Boolean,
-    onDispatchAction: (url: String, payload: String?) -> Unit
+    scope: CoroutineScope,
+    onDispatchAction: suspend (url: String, payload: String?) -> Unit,
+    fillWidth: Boolean = true
 ) {
     val type = node["type"]?.jsonPrimitive?.contentOrNull ?: "container"
     val paddings = node["paddings"]?.jsonObject
@@ -256,7 +330,10 @@ private fun RenderDivNode(
                         val childObj = child.jsonObject
                         val weight = childObj["weight"]?.jsonPrimitive?.floatOrNull
                         Box(modifier = if (weight != null && weight > 0f) Modifier.weight(weight) else Modifier) {
-                            RenderDivNode(childObj, variables, rowContext, isDark, onDispatchAction)
+                            RenderDivNode(
+                                childObj, variables, rowContext, isDark, scope, onDispatchAction,
+                                fillWidth = false
+                            )
                         }
                     }
                 }
@@ -266,7 +343,7 @@ private fun RenderDivNode(
                     verticalArrangement = Arrangement.spacedBy(spacing)
                 ) {
                     for (child in items) {
-                        RenderDivNode(child.jsonObject, variables, rowContext, isDark, onDispatchAction)
+                        RenderDivNode(child.jsonObject, variables, rowContext, isDark, scope, onDispatchAction)
                     }
                 }
             }
@@ -283,7 +360,7 @@ private fun RenderDivNode(
                 horizontalArrangement = Arrangement.spacedBy(spacing)
             ) {
                 for (child in items) {
-                    RenderDivNode(child.jsonObject, variables, rowContext, isDark, onDispatchAction)
+                    RenderDivNode(child.jsonObject, variables, rowContext, isDark, scope, onDispatchAction)
                 }
             }
         }
@@ -304,7 +381,7 @@ private fun RenderDivNode(
                     ) {
                         for (child in rowItems) {
                             Box(modifier = Modifier.weight(1f)) {
-                                RenderDivNode(child.jsonObject, variables, rowContext, isDark, onDispatchAction)
+                                RenderDivNode(child.jsonObject, variables, rowContext, isDark, scope, onDispatchAction)
                             }
                         }
                         repeat(columnCount - rowItems.size) {
@@ -338,7 +415,7 @@ private fun RenderDivNode(
 
             val clickableMod = if (actions.isNotEmpty()) {
                 Modifier.clickable {
-                    dispatchAllActions(actions, variables, rowContext, onDispatchAction)
+                    scope.launch { dispatchAllActions(actions, variables, rowContext, onDispatchAction) }
                 }
             } else Modifier
 
@@ -386,11 +463,11 @@ private fun RenderDivNode(
                     BorderStroke(1.dp, Color(0xFFCBD5E1))
                 } else null,
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .then(if (fillWidth) Modifier.fillMaxWidth() else Modifier)
                     .defaultMinSize(minHeight = 48.dp)
                     .clip(RoundedCornerShape(radius.dp))
                     .clickable {
-                        dispatchAllActions(actions, variables, rowContext, onDispatchAction)
+                        scope.launch { dispatchAllActions(actions, variables, rowContext, onDispatchAction) }
                     }
                     .testTag("div_btn_$logId")
             ) {
@@ -524,7 +601,7 @@ private fun RenderDivNode(
                                 "label" to pt.label,
                                 "value" to pt.value
                             )
-                            dispatchAllActions(actions, variables, ptContext, onDispatchAction)
+                            scope.launch { dispatchAllActions(actions, variables, ptContext, onDispatchAction) }
                         }
                     }
                 )
@@ -579,6 +656,7 @@ private fun RenderDivNode(
                                         variables = variables,
                                         rowContext = itemMap,
                                         isDark = isDark,
+                                        scope = scope,
                                         onDispatchAction = onDispatchAction
                                     )
                                 }
@@ -688,19 +766,132 @@ private fun extractActions(node: JsonObject): List<JsonObject> {
     return list
 }
 
-private fun dispatchAllActions(
+private suspend fun dispatchAllActions(
     actions: List<JsonObject>,
     variables: Map<String, DivVariableValue>,
     rowContext: Map<String, Any?>,
-    onDispatchAction: (url: String, payload: String?) -> Unit
+    onDispatchAction: suspend (url: String, payload: String?) -> Unit
 ) {
+    var current = variables
     for (act in actions) {
+        val type = act["type"]?.jsonPrimitive?.contentOrNull
+        val variableName = act["variable_name"]?.jsonPrimitive?.contentOrNull
+        if (type == "set_variable" && variableName != null) {
+            current = current + (variableName to variableValueFromAction(act["value"], current, rowContext))
+            EngineStateBridge.pushUpdate(variableName, current.getValue(variableName))
+            continue
+        }
+        if (type != null && type in ARRAY_ACTION_TYPES && variableName != null) {
+            val updated = applyArrayAction(type, act, current[variableName], current, rowContext)
+            current = current + (variableName to updated)
+            EngineStateBridge.pushUpdate(variableName, updated)
+            continue
+        }
         val rawUrl = act["url"]?.jsonPrimitive?.contentOrNull ?: continue
-        val resolvedUrl = evalExpr(rawUrl, variables, rowContext)
+        val resolvedUrl = evalExpr(rawUrl, current, rowContext)
         val payloadObj = act["payload"]?.jsonObject
-        val resolvedPayload = payloadObj?.let { resolveJsonExpressions(it, variables, rowContext).toString() }
+        val resolvedPayload = payloadObj?.let { resolveJsonExpressions(it, current, rowContext).toString() }
         onDispatchAction(resolvedUrl, resolvedPayload)
+        // Actions run sequentially: a later action may reference a variable an earlier
+        // one produced (e.g. an inserted record id), so fold in the bridge's latest state.
+        current = current + EngineStateBridge.state.value
     }
+}
+
+private val ARRAY_ACTION_TYPES = setOf(
+    "array_insert_value",
+    "array_remove_value",
+    "array_set_value",
+    "array_delete_value"
+)
+
+private fun applyArrayAction(
+    type: String,
+    action: JsonObject,
+    currentValue: DivVariableValue?,
+    variables: Map<String, DivVariableValue>,
+    rowContext: Map<String, Any?>
+): DivVariableValue {
+    val values = (currentValue as? DivVariableValue.ArrayVal)?.values?.toMutableList() ?: mutableListOf()
+    fun index(): Int? = action["index"]?.jsonPrimitive?.contentOrNull
+        ?.let { evalExpr(it, variables, rowContext) }
+        ?.toIntOrNull()
+
+    when (type) {
+        "array_insert_value" -> {
+            val item = variableValueFromAction(action["value"], variables, rowContext)
+            val atStart = action["position"]?.jsonPrimitive?.contentOrNull == "start"
+            if (atStart) values.add(0, item) else values.add(item)
+        }
+        "array_remove_value" -> {
+            val target = variableValueFromAction(action["value"], variables, rowContext).asDisplayString()
+            values.removeAll { it.asDisplayString() == target }
+        }
+        "array_set_value" -> {
+            val position = index() ?: return DivVariableValue.ArrayVal(values)
+            if (position < 0) return DivVariableValue.ArrayVal(values)
+            val item = variableValueFromAction(action["value"], variables, rowContext)
+            while (values.size <= position) values.add(DivVariableValue.Str(""))
+            values[position] = item
+        }
+        "array_delete_value" -> {
+            val position = index() ?: return DivVariableValue.ArrayVal(values)
+            if (position in values.indices) values.removeAt(position)
+        }
+    }
+    return DivVariableValue.ArrayVal(values)
+}
+
+private fun variableValueFromAction(
+    value: JsonElement?,
+    variables: Map<String, DivVariableValue>,
+    rowContext: Map<String, Any?>
+): DivVariableValue {
+    val obj = value as? JsonObject
+    if (obj == null) {
+        return when (value) {
+            is JsonPrimitive -> when {
+                value.isString -> DivVariableValue.Str(evalExpr(value.content, variables, rowContext))
+                value.booleanOrNull != null -> DivVariableValue.Bool(value.boolean)
+                value.longOrNull != null -> DivVariableValue.IntVal(value.long)
+                value.doubleOrNull != null -> DivVariableValue.DoubleVal(value.double)
+                else -> DivVariableValue.Str(value.content)
+            }
+            is JsonArray -> DivVariableValue.ArrayVal(value.map { actionArrayValue(it, variables, rowContext) })
+            else -> DivVariableValue.Str(value?.toString() ?: "")
+        }
+    }
+    val type = obj["type"]?.jsonPrimitive?.contentOrNull ?: "string"
+    val raw = obj["value"]
+    return when (type) {
+        "integer" -> DivVariableValue.IntVal(
+            evalExpr(raw?.jsonPrimitive?.contentOrNull ?: "0", variables, rowContext).toLongOrNull() ?: 0L
+        )
+        "number" -> DivVariableValue.DoubleVal(
+            evalExpr(raw?.jsonPrimitive?.contentOrNull ?: "0", variables, rowContext).toDoubleOrNull() ?: 0.0
+        )
+        "boolean" -> DivVariableValue.Bool(
+            evalExpr(raw?.jsonPrimitive?.contentOrNull ?: "false", variables, rowContext).toBoolean()
+        )
+        "array" -> DivVariableValue.ArrayVal(
+            raw?.jsonArray?.map { actionArrayValue(it, variables, rowContext) } ?: emptyList()
+        )
+        else -> DivVariableValue.Str(
+            evalExpr(raw?.jsonPrimitive?.contentOrNull ?: "", variables, rowContext)
+        )
+    }
+}
+
+private fun actionArrayValue(
+    element: JsonElement,
+    variables: Map<String, DivVariableValue>,
+    rowContext: Map<String, Any?>
+): DivVariableValue = when (element) {
+    is JsonPrimitive ->
+        if (element.isString) DivVariableValue.Str(evalExpr(element.content, variables, rowContext))
+        else divValueFromJson(element)
+    is JsonArray -> DivVariableValue.ArrayVal(element.map { actionArrayValue(it, variables, rowContext) })
+    else -> divValueFromJson(element)
 }
 
 private fun resolveJsonExpressions(
@@ -713,6 +904,12 @@ private fun resolveJsonExpressions(
         is JsonPrimitive -> {
             if (el.isString) {
                 val raw = el.content
+                if (raw.startsWith("@{") && raw.endsWith("}") && !raw.drop(2).dropLast(1).contains("@{")) {
+                    val expressionValue = evaluateDivExpression(raw.drop(2).dropLast(1), variables, rowContext)
+                    if (expressionValue is List<*>) {
+                        return JsonArray(expressionValue.map { expressionValueToJson(it) })
+                    }
+                }
                 val evaluated = evalExpr(raw, variables, rowContext)
                 if (raw.startsWith("@{") && raw.endsWith("}") && !raw.drop(2).dropLast(1).contains("@{")) {
                     // Only coerce short, unambiguous literals. A 60-digit Signal safety number
@@ -729,6 +926,21 @@ private fun resolveJsonExpressions(
         is JsonArray -> JsonArray(el.map { resolveJsonExpressions(it, variables, rowContext) })
         is JsonObject -> JsonObject(el.mapValues { (_, v) -> resolveJsonExpressions(v, variables, rowContext) })
     }
+}
+
+private fun expressionValueToJson(value: Any?): JsonElement = when (value) {
+    null -> JsonNull
+    is Boolean -> JsonPrimitive(value)
+    is Int -> JsonPrimitive(value)
+    is Long -> JsonPrimitive(value)
+    is Double -> JsonPrimitive(value)
+    is Float -> JsonPrimitive(value)
+    is Number -> JsonPrimitive(value)
+    is List<*> -> JsonArray(value.map { expressionValueToJson(it) })
+    is Map<*, *> -> JsonObject(
+        value.entries.associate { (k, v) -> k.toString() to expressionValueToJson(v) }
+    )
+    else -> JsonPrimitive(value.toString())
 }
 
 /**
@@ -751,20 +963,7 @@ internal fun evalExpr(
 ): String {
     if (!input.contains("@{")) return input
     return EXPR_REGEX.replace(input) { match ->
-        val token = match.groupValues[1].trim()
-        when {
-            token.startsWith("item.") -> {
-                val field = token.removePrefix("item.")
-                rowContext[field]?.toString() ?: ""
-            }
-            token.startsWith("user.item.") -> {
-                val field = token.removePrefix("user.item.")
-                rowContext[field]?.toString() ?: ""
-            }
-            else -> {
-                variables[token]?.asDisplayString() ?: ""
-            }
-        }
+        divExpressionDisplay(evaluateDivExpression(match.groupValues[1], variables, rowContext))
     }
 }
 

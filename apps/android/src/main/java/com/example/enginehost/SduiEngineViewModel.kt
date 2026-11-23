@@ -10,6 +10,7 @@ import engine.crypto.Ed25519
 import engine.crypto.PayloadVerifier
 import engine.crypto.SigningKeyPair
 import engine.crypto.currentTimeMillis
+import engine.db.ApexKitDatabaseEngine
 import engine.db.CachedSchemaVersion
 import engine.db.EngineRegistry
 import engine.db.OpLogEntry
@@ -517,12 +518,29 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                 // 2. Ensure tenant DB & cached DivKit schema versions exist in `workspace_<tenant>.db`
                 var cachedActive: CachedSchemaVersion? = null
                 var allCachedVersions: List<CachedSchemaVersion> = emptyList()
+                var catalogJson = "[]"
+                var catalogCount = spec.defaultProducts.size.toLong()
                 withContext(Dispatchers.IO) {
                     ensureTenantInitiatedWithCachedSchema(spec)
                     workspaceManager.useDatabase(spec.tenantId) { db ->
                         allCachedVersions = db.workspaceQueries.selectAllSchemaVersions()
                         cachedActive = db.workspaceQueries.selectActiveSchemaVersion()
                             ?: allCachedVersions.firstOrNull()
+                        val products = ApexKitDatabaseEngine(db.driver).queryRecords(
+                            "inventory",
+                            orderBy = "id",
+                            ascending = true,
+                            limit = 50
+                        )
+                        catalogCount = products.size.toLong()
+                        catalogJson = buildJsonArray {
+                            products.forEach { record ->
+                                addJsonObject {
+                                    put("id", record.id)
+                                    record.data.forEach { (key, value) -> put(key, value) }
+                                }
+                            }
+                        }.toString()
                     }
                 }
 
@@ -561,7 +579,8 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                         "user.sync_status" to DivVariableValue.Str(verifiedConfig.mode.name.lowercase()),
                         "user.engine_error" to DivVariableValue.Str("None"),
                         "user.order_count" to DivVariableValue.IntVal(spec.defaultOrders.size.toLong()),
-                        "user.catalog_count" to DivVariableValue.IntVal(spec.defaultProducts.size.toLong()),
+                        "user.catalog_count" to DivVariableValue.IntVal(catalogCount),
+                        "user.catalog_json" to DivVariableValue.Str(catalogJson),
                         "user.last_order_id" to DivVariableValue.IntVal(spec.defaultOrders.size.toLong()),
                         "user.scanned_code" to DivVariableValue.Str("9780201633610"),
                         "user.scanned_format" to DivVariableValue.Str("EAN_13"),
@@ -594,6 +613,7 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                         "user.bg_remove_status" to DivVariableValue.Str("Not run yet"),
                         // Nothing has been handshaked yet. Seeding ESTABLISHED plus a made-up
                         // safety number made an untouched peer look verified.
+                        "user.signal_peer_id" to DivVariableValue.Str("acme_peer_01"),
                         "user.signal_session_id" to DivVariableValue.Str(""),
                         "user.signal_fingerprint" to DivVariableValue.Str(""),
                         "user.signal_status" to DivVariableValue.Str("NO_SESSION"),
@@ -727,30 +747,38 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
     }
 
     fun dispatchDivKitAction(url: String, payloadJsonStr: String?) {
+        viewModelScope.launch {
+            dispatchDivKitActionAwait(url, payloadJsonStr)
+        }
+    }
+
+    /**
+     * Suspending variant used by [DivView] so a multi-action button can read variables
+     * produced by the previous action (for example an inserted record id).
+     */
+    suspend fun dispatchDivKitActionAwait(url: String, payloadJsonStr: String?) {
         val router = activeRouter ?: return
         val spec = _uiState.value.activeWorkspace
-        viewModelScope.launch {
-            val payloadObj = payloadJsonStr?.let {
-                try {
-                    Json.parseToJsonElement(it).jsonObject
-                } catch (_: Exception) {
-                    null
-                }
+        val payloadObj = payloadJsonStr?.let {
+            try {
+                Json.parseToJsonElement(it).jsonObject
+            } catch (_: Exception) {
+                null
             }
-            val outcome = withContext(Dispatchers.IO) {
-                router.handle(url, payloadObj)
-            }
-            // Card navigation touches no database state, so it neither reports a DB banner
-            // nor forces a telemetry refresh.
-            if (url.startsWith("nav://") || url.startsWith("sheet://")) return@launch
-            val banner = when (outcome) {
-                is EngineRouter.ActionOutcome.Handled -> "Executed $url on workspace_${spec.tenantId}.db"
-                is EngineRouter.ActionOutcome.Error -> "Blocked ($url): ${outcome.message}"
-                is EngineRouter.ActionOutcome.Unhandled -> "Unhandled scheme: $url"
-            }
-            _uiState.update { it.copy(statusBannerMessage = banner) }
-            refreshDatabaseTelemetry(spec.tenantId)
         }
+        val outcome = withContext(Dispatchers.IO) {
+            router.handle(url, payloadObj)
+        }
+        // Card navigation touches no database state, so it neither reports a DB banner
+        // nor forces a telemetry refresh.
+        if (url.startsWith("nav://") || url.startsWith("sheet://")) return
+        val banner = when (outcome) {
+            is EngineRouter.ActionOutcome.Handled -> "Executed $url on workspace_${spec.tenantId}.db"
+            is EngineRouter.ActionOutcome.Error -> "Blocked ($url): ${outcome.message}"
+            is EngineRouter.ActionOutcome.Unhandled -> "Unhandled scheme: $url"
+        }
+        _uiState.update { it.copy(statusBannerMessage = banner) }
+        refreshDatabaseTelemetry(spec.tenantId)
     }
 
     /**

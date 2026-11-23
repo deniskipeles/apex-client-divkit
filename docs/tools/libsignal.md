@@ -53,14 +53,18 @@ simulated peer ratchet before processing a fresh PreKeyBundle, so pressing the d
 "Establish session" button after an app restart never reuses a stale session.
 
 One-time prekeys are consumed by the receiving side, exactly as the Signal protocol
-requires. The bundle advertises the lowest **unused** prekey and the store replenishes a
-batch when fewer than 20 remain; assuming prekey `#1` always exists caused the second
-handshake to fail with `PreKey #1 not found`.
+requires. The bundle advertises the lowest **unused** prekey and the store replenishes up
+to 10 when fewer remain; assuming prekey `#1` always exists caused the second handshake to
+fail with `PreKey #1 not found`.
 
 `decrypt` accepts an optional `type` (`2` = `SignalMessage`, `3` = `PreKeySignalMessage`).
 When it is omitted the envelope is inspected: a PreKey message carries the sender identity
 and base key, a plain session message does not. The previous default of `3` rejected the
 second half of a conversation.
+
+The bundled demo card declares `user.signal_peer_id` (default `acme_peer_01`) itself, and
+`SduiEngineViewModel` seeds the same value. A tool card opened directly from the tool
+gallery therefore has a real peer id instead of resolving `peer_id` to an empty string.
 
 ---
 

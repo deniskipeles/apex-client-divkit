@@ -1,0 +1,1205 @@
+{
+  "type": "container",
+  "orientation": "vertical",
+  "item_spacing": 10,
+  "paddings": {
+    "left": 12,
+    "right": 12,
+    "top": 12,
+    "bottom": 12
+  },
+  "items": [
+    {
+      "type": "text",
+      "text": "QR TRANSFER",
+      "font_size": 18,
+      "text_color": "#6EE7B7",
+      "font_weight": "bold"
+    },
+    {
+      "type": "text",
+      "text": "Full JSON • base45 • ≤500 bytes/QR • max 32 • DivKit 400 ms animation",
+      "font_size": 11,
+      "text_color": "#94A3B8",
+      "font_family": "monospace"
+    },
+    {
+      "type": "text",
+      "text": "Order @{user.kiosk_order_id} • @{user.kiosk_direction} • @{user.kiosk_status} • $@{user.kiosk_total}",
+      "font_size": 11,
+      "text_color": "#A7F3D0",
+      "font_family": "monospace"
+    },
+    {
+      "type": "container",
+      "orientation": "horizontal",
+      "item_spacing": 8,
+      "items": [
+        {
+          "type": "button",
+          "text": "Create QR set",
+          "background_color": "#059669",
+          "text_color": "#ECFDF5",
+          "corner_radius": 10,
+          "font_size": 12,
+          "font_weight": "bold",
+          "actions": [
+            {
+              "type": "set_variable",
+              "variable_name": "user.qr_json",
+              "value": {
+                "type": "string",
+                "value": "{\"direction\":\"@{user.kiosk_direction}\",\"order_id\":\"@{user.kiosk_order_id}\",\"status\":\"@{user.kiosk_status}\",\"total\":@{user.kiosk_total},\"item_count\":@{user.kiosk_item_count},\"lines\":@{user.kiosk_lines_json}}"
+              }
+            },
+            {
+              "log_id": "chunk_json",
+              "url": "tools://codec/json/chunk",
+              "payload": {
+                "json": "@{user.qr_json}",
+                "encoding": "base45",
+                "max_bytes": 500,
+                "max_chunks": 32,
+                "output": {
+                  "chunks": "user.qr_chunks",
+                  "count": "user.qr_count",
+                  "transfer_id": "user.qr_transfer_id",
+                  "checksum": "user.qr_checksum"
+                }
+              }
+            },
+            {
+              "log_id": "qr_gen_0",
+              "url": "tools://code-generate/generate",
+              "payload": {
+                "content": "@{user.qr_count > 0 ? getArrayString(user.qr_chunks, 0) : 'EMPTY'}",
+                "format": "qr",
+                "width": 512,
+                "height": 512,
+                "ec_level": "M",
+                "margin": 4,
+                "output": {
+                  "uri": "user.qr_img_0",
+                  "code_id": "user.qr_code_id_0"
+                }
+              }
+            },
+            {
+              "log_id": "qr_move_0",
+              "url": "tools://files/move",
+              "payload": {
+                "from": "media/@{user.qr_code_id_0}.png",
+                "to": "cache/qr/${tenantId}/@{user.qr_code_id_0}.png",
+                "overwrite": true
+              }
+            },
+            {
+              "log_id": "qr_gen_1",
+              "url": "tools://code-generate/generate",
+              "payload": {
+                "content": "@{user.qr_count > 1 ? getArrayString(user.qr_chunks, 1) : 'EMPTY'}",
+                "format": "qr",
+                "width": 512,
+                "height": 512,
+                "ec_level": "M",
+                "margin": 4,
+                "output": {
+                  "uri": "user.qr_img_1",
+                  "code_id": "user.qr_code_id_1"
+                }
+              }
+            },
+            {
+              "log_id": "qr_move_1",
+              "url": "tools://files/move",
+              "payload": {
+                "from": "media/@{user.qr_code_id_1}.png",
+                "to": "cache/qr/${tenantId}/@{user.qr_code_id_1}.png",
+                "overwrite": true
+              }
+            },
+            {
+              "log_id": "qr_gen_2",
+              "url": "tools://code-generate/generate",
+              "payload": {
+                "content": "@{user.qr_count > 2 ? getArrayString(user.qr_chunks, 2) : 'EMPTY'}",
+                "format": "qr",
+                "width": 512,
+                "height": 512,
+                "ec_level": "M",
+                "margin": 4,
+                "output": {
+                  "uri": "user.qr_img_2",
+                  "code_id": "user.qr_code_id_2"
+                }
+              }
+            },
+            {
+              "log_id": "qr_move_2",
+              "url": "tools://files/move",
+              "payload": {
+                "from": "media/@{user.qr_code_id_2}.png",
+                "to": "cache/qr/${tenantId}/@{user.qr_code_id_2}.png",
+                "overwrite": true
+              }
+            },
+            {
+              "log_id": "qr_gen_3",
+              "url": "tools://code-generate/generate",
+              "payload": {
+                "content": "@{user.qr_count > 3 ? getArrayString(user.qr_chunks, 3) : 'EMPTY'}",
+                "format": "qr",
+                "width": 512,
+                "height": 512,
+                "ec_level": "M",
+                "margin": 4,
+                "output": {
+                  "uri": "user.qr_img_3",
+                  "code_id": "user.qr_code_id_3"
+                }
+              }
+            },
+            {
+              "log_id": "qr_move_3",
+              "url": "tools://files/move",
+              "payload": {
+                "from": "media/@{user.qr_code_id_3}.png",
+                "to": "cache/qr/${tenantId}/@{user.qr_code_id_3}.png",
+                "overwrite": true
+              }
+            },
+            {
+              "log_id": "qr_gen_4",
+              "url": "tools://code-generate/generate",
+              "payload": {
+                "content": "@{user.qr_count > 4 ? getArrayString(user.qr_chunks, 4) : 'EMPTY'}",
+                "format": "qr",
+                "width": 512,
+                "height": 512,
+                "ec_level": "M",
+                "margin": 4,
+                "output": {
+                  "uri": "user.qr_img_4",
+                  "code_id": "user.qr_code_id_4"
+                }
+              }
+            },
+            {
+              "log_id": "qr_move_4",
+              "url": "tools://files/move",
+              "payload": {
+                "from": "media/@{user.qr_code_id_4}.png",
+                "to": "cache/qr/${tenantId}/@{user.qr_code_id_4}.png",
+                "overwrite": true
+              }
+            },
+            {
+              "log_id": "qr_gen_5",
+              "url": "tools://code-generate/generate",
+              "payload": {
+                "content": "@{user.qr_count > 5 ? getArrayString(user.qr_chunks, 5) : 'EMPTY'}",
+                "format": "qr",
+                "width": 512,
+                "height": 512,
+                "ec_level": "M",
+                "margin": 4,
+                "output": {
+                  "uri": "user.qr_img_5",
+                  "code_id": "user.qr_code_id_5"
+                }
+              }
+            },
+            {
+              "log_id": "qr_move_5",
+              "url": "tools://files/move",
+              "payload": {
+                "from": "media/@{user.qr_code_id_5}.png",
+                "to": "cache/qr/${tenantId}/@{user.qr_code_id_5}.png",
+                "overwrite": true
+              }
+            },
+            {
+              "log_id": "qr_gen_6",
+              "url": "tools://code-generate/generate",
+              "payload": {
+                "content": "@{user.qr_count > 6 ? getArrayString(user.qr_chunks, 6) : 'EMPTY'}",
+                "format": "qr",
+                "width": 512,
+                "height": 512,
+                "ec_level": "M",
+                "margin": 4,
+                "output": {
+                  "uri": "user.qr_img_6",
+                  "code_id": "user.qr_code_id_6"
+                }
+              }
+            },
+            {
+              "log_id": "qr_move_6",
+              "url": "tools://files/move",
+              "payload": {
+                "from": "media/@{user.qr_code_id_6}.png",
+                "to": "cache/qr/${tenantId}/@{user.qr_code_id_6}.png",
+                "overwrite": true
+              }
+            },
+            {
+              "log_id": "qr_gen_7",
+              "url": "tools://code-generate/generate",
+              "payload": {
+                "content": "@{user.qr_count > 7 ? getArrayString(user.qr_chunks, 7) : 'EMPTY'}",
+                "format": "qr",
+                "width": 512,
+                "height": 512,
+                "ec_level": "M",
+                "margin": 4,
+                "output": {
+                  "uri": "user.qr_img_7",
+                  "code_id": "user.qr_code_id_7"
+                }
+              }
+            },
+            {
+              "log_id": "qr_move_7",
+              "url": "tools://files/move",
+              "payload": {
+                "from": "media/@{user.qr_code_id_7}.png",
+                "to": "cache/qr/${tenantId}/@{user.qr_code_id_7}.png",
+                "overwrite": true
+              }
+            },
+            {
+              "log_id": "qr_gen_8",
+              "url": "tools://code-generate/generate",
+              "payload": {
+                "content": "@{user.qr_count > 8 ? getArrayString(user.qr_chunks, 8) : 'EMPTY'}",
+                "format": "qr",
+                "width": 512,
+                "height": 512,
+                "ec_level": "M",
+                "margin": 4,
+                "output": {
+                  "uri": "user.qr_img_8",
+                  "code_id": "user.qr_code_id_8"
+                }
+              }
+            },
+            {
+              "log_id": "qr_move_8",
+              "url": "tools://files/move",
+              "payload": {
+                "from": "media/@{user.qr_code_id_8}.png",
+                "to": "cache/qr/${tenantId}/@{user.qr_code_id_8}.png",
+                "overwrite": true
+              }
+            },
+            {
+              "log_id": "qr_gen_9",
+              "url": "tools://code-generate/generate",
+              "payload": {
+                "content": "@{user.qr_count > 9 ? getArrayString(user.qr_chunks, 9) : 'EMPTY'}",
+                "format": "qr",
+                "width": 512,
+                "height": 512,
+                "ec_level": "M",
+                "margin": 4,
+                "output": {
+                  "uri": "user.qr_img_9",
+                  "code_id": "user.qr_code_id_9"
+                }
+              }
+            },
+            {
+              "log_id": "qr_move_9",
+              "url": "tools://files/move",
+              "payload": {
+                "from": "media/@{user.qr_code_id_9}.png",
+                "to": "cache/qr/${tenantId}/@{user.qr_code_id_9}.png",
+                "overwrite": true
+              }
+            },
+            {
+              "log_id": "qr_gen_10",
+              "url": "tools://code-generate/generate",
+              "payload": {
+                "content": "@{user.qr_count > 10 ? getArrayString(user.qr_chunks, 10) : 'EMPTY'}",
+                "format": "qr",
+                "width": 512,
+                "height": 512,
+                "ec_level": "M",
+                "margin": 4,
+                "output": {
+                  "uri": "user.qr_img_10",
+                  "code_id": "user.qr_code_id_10"
+                }
+              }
+            },
+            {
+              "log_id": "qr_move_10",
+              "url": "tools://files/move",
+              "payload": {
+                "from": "media/@{user.qr_code_id_10}.png",
+                "to": "cache/qr/${tenantId}/@{user.qr_code_id_10}.png",
+                "overwrite": true
+              }
+            },
+            {
+              "log_id": "qr_gen_11",
+              "url": "tools://code-generate/generate",
+              "payload": {
+                "content": "@{user.qr_count > 11 ? getArrayString(user.qr_chunks, 11) : 'EMPTY'}",
+                "format": "qr",
+                "width": 512,
+                "height": 512,
+                "ec_level": "M",
+                "margin": 4,
+                "output": {
+                  "uri": "user.qr_img_11",
+                  "code_id": "user.qr_code_id_11"
+                }
+              }
+            },
+            {
+              "log_id": "qr_move_11",
+              "url": "tools://files/move",
+              "payload": {
+                "from": "media/@{user.qr_code_id_11}.png",
+                "to": "cache/qr/${tenantId}/@{user.qr_code_id_11}.png",
+                "overwrite": true
+              }
+            },
+            {
+              "log_id": "qr_gen_12",
+              "url": "tools://code-generate/generate",
+              "payload": {
+                "content": "@{user.qr_count > 12 ? getArrayString(user.qr_chunks, 12) : 'EMPTY'}",
+                "format": "qr",
+                "width": 512,
+                "height": 512,
+                "ec_level": "M",
+                "margin": 4,
+                "output": {
+                  "uri": "user.qr_img_12",
+                  "code_id": "user.qr_code_id_12"
+                }
+              }
+            },
+            {
+              "log_id": "qr_move_12",
+              "url": "tools://files/move",
+              "payload": {
+                "from": "media/@{user.qr_code_id_12}.png",
+                "to": "cache/qr/${tenantId}/@{user.qr_code_id_12}.png",
+                "overwrite": true
+              }
+            },
+            {
+              "log_id": "qr_gen_13",
+              "url": "tools://code-generate/generate",
+              "payload": {
+                "content": "@{user.qr_count > 13 ? getArrayString(user.qr_chunks, 13) : 'EMPTY'}",
+                "format": "qr",
+                "width": 512,
+                "height": 512,
+                "ec_level": "M",
+                "margin": 4,
+                "output": {
+                  "uri": "user.qr_img_13",
+                  "code_id": "user.qr_code_id_13"
+                }
+              }
+            },
+            {
+              "log_id": "qr_move_13",
+              "url": "tools://files/move",
+              "payload": {
+                "from": "media/@{user.qr_code_id_13}.png",
+                "to": "cache/qr/${tenantId}/@{user.qr_code_id_13}.png",
+                "overwrite": true
+              }
+            },
+            {
+              "log_id": "qr_gen_14",
+              "url": "tools://code-generate/generate",
+              "payload": {
+                "content": "@{user.qr_count > 14 ? getArrayString(user.qr_chunks, 14) : 'EMPTY'}",
+                "format": "qr",
+                "width": 512,
+                "height": 512,
+                "ec_level": "M",
+                "margin": 4,
+                "output": {
+                  "uri": "user.qr_img_14",
+                  "code_id": "user.qr_code_id_14"
+                }
+              }
+            },
+            {
+              "log_id": "qr_move_14",
+              "url": "tools://files/move",
+              "payload": {
+                "from": "media/@{user.qr_code_id_14}.png",
+                "to": "cache/qr/${tenantId}/@{user.qr_code_id_14}.png",
+                "overwrite": true
+              }
+            },
+            {
+              "log_id": "qr_gen_15",
+              "url": "tools://code-generate/generate",
+              "payload": {
+                "content": "@{user.qr_count > 15 ? getArrayString(user.qr_chunks, 15) : 'EMPTY'}",
+                "format": "qr",
+                "width": 512,
+                "height": 512,
+                "ec_level": "M",
+                "margin": 4,
+                "output": {
+                  "uri": "user.qr_img_15",
+                  "code_id": "user.qr_code_id_15"
+                }
+              }
+            },
+            {
+              "log_id": "qr_move_15",
+              "url": "tools://files/move",
+              "payload": {
+                "from": "media/@{user.qr_code_id_15}.png",
+                "to": "cache/qr/${tenantId}/@{user.qr_code_id_15}.png",
+                "overwrite": true
+              }
+            },
+            {
+              "log_id": "qr_gen_16",
+              "url": "tools://code-generate/generate",
+              "payload": {
+                "content": "@{user.qr_count > 16 ? getArrayString(user.qr_chunks, 16) : 'EMPTY'}",
+                "format": "qr",
+                "width": 512,
+                "height": 512,
+                "ec_level": "M",
+                "margin": 4,
+                "output": {
+                  "uri": "user.qr_img_16",
+                  "code_id": "user.qr_code_id_16"
+                }
+              }
+            },
+            {
+              "log_id": "qr_move_16",
+              "url": "tools://files/move",
+              "payload": {
+                "from": "media/@{user.qr_code_id_16}.png",
+                "to": "cache/qr/${tenantId}/@{user.qr_code_id_16}.png",
+                "overwrite": true
+              }
+            },
+            {
+              "log_id": "qr_gen_17",
+              "url": "tools://code-generate/generate",
+              "payload": {
+                "content": "@{user.qr_count > 17 ? getArrayString(user.qr_chunks, 17) : 'EMPTY'}",
+                "format": "qr",
+                "width": 512,
+                "height": 512,
+                "ec_level": "M",
+                "margin": 4,
+                "output": {
+                  "uri": "user.qr_img_17",
+                  "code_id": "user.qr_code_id_17"
+                }
+              }
+            },
+            {
+              "log_id": "qr_move_17",
+              "url": "tools://files/move",
+              "payload": {
+                "from": "media/@{user.qr_code_id_17}.png",
+                "to": "cache/qr/${tenantId}/@{user.qr_code_id_17}.png",
+                "overwrite": true
+              }
+            },
+            {
+              "log_id": "qr_gen_18",
+              "url": "tools://code-generate/generate",
+              "payload": {
+                "content": "@{user.qr_count > 18 ? getArrayString(user.qr_chunks, 18) : 'EMPTY'}",
+                "format": "qr",
+                "width": 512,
+                "height": 512,
+                "ec_level": "M",
+                "margin": 4,
+                "output": {
+                  "uri": "user.qr_img_18",
+                  "code_id": "user.qr_code_id_18"
+                }
+              }
+            },
+            {
+              "log_id": "qr_move_18",
+              "url": "tools://files/move",
+              "payload": {
+                "from": "media/@{user.qr_code_id_18}.png",
+                "to": "cache/qr/${tenantId}/@{user.qr_code_id_18}.png",
+                "overwrite": true
+              }
+            },
+            {
+              "log_id": "qr_gen_19",
+              "url": "tools://code-generate/generate",
+              "payload": {
+                "content": "@{user.qr_count > 19 ? getArrayString(user.qr_chunks, 19) : 'EMPTY'}",
+                "format": "qr",
+                "width": 512,
+                "height": 512,
+                "ec_level": "M",
+                "margin": 4,
+                "output": {
+                  "uri": "user.qr_img_19",
+                  "code_id": "user.qr_code_id_19"
+                }
+              }
+            },
+            {
+              "log_id": "qr_move_19",
+              "url": "tools://files/move",
+              "payload": {
+                "from": "media/@{user.qr_code_id_19}.png",
+                "to": "cache/qr/${tenantId}/@{user.qr_code_id_19}.png",
+                "overwrite": true
+              }
+            },
+            {
+              "log_id": "qr_gen_20",
+              "url": "tools://code-generate/generate",
+              "payload": {
+                "content": "@{user.qr_count > 20 ? getArrayString(user.qr_chunks, 20) : 'EMPTY'}",
+                "format": "qr",
+                "width": 512,
+                "height": 512,
+                "ec_level": "M",
+                "margin": 4,
+                "output": {
+                  "uri": "user.qr_img_20",
+                  "code_id": "user.qr_code_id_20"
+                }
+              }
+            },
+            {
+              "log_id": "qr_move_20",
+              "url": "tools://files/move",
+              "payload": {
+                "from": "media/@{user.qr_code_id_20}.png",
+                "to": "cache/qr/${tenantId}/@{user.qr_code_id_20}.png",
+                "overwrite": true
+              }
+            },
+            {
+              "log_id": "qr_gen_21",
+              "url": "tools://code-generate/generate",
+              "payload": {
+                "content": "@{user.qr_count > 21 ? getArrayString(user.qr_chunks, 21) : 'EMPTY'}",
+                "format": "qr",
+                "width": 512,
+                "height": 512,
+                "ec_level": "M",
+                "margin": 4,
+                "output": {
+                  "uri": "user.qr_img_21",
+                  "code_id": "user.qr_code_id_21"
+                }
+              }
+            },
+            {
+              "log_id": "qr_move_21",
+              "url": "tools://files/move",
+              "payload": {
+                "from": "media/@{user.qr_code_id_21}.png",
+                "to": "cache/qr/${tenantId}/@{user.qr_code_id_21}.png",
+                "overwrite": true
+              }
+            },
+            {
+              "log_id": "qr_gen_22",
+              "url": "tools://code-generate/generate",
+              "payload": {
+                "content": "@{user.qr_count > 22 ? getArrayString(user.qr_chunks, 22) : 'EMPTY'}",
+                "format": "qr",
+                "width": 512,
+                "height": 512,
+                "ec_level": "M",
+                "margin": 4,
+                "output": {
+                  "uri": "user.qr_img_22",
+                  "code_id": "user.qr_code_id_22"
+                }
+              }
+            },
+            {
+              "log_id": "qr_move_22",
+              "url": "tools://files/move",
+              "payload": {
+                "from": "media/@{user.qr_code_id_22}.png",
+                "to": "cache/qr/${tenantId}/@{user.qr_code_id_22}.png",
+                "overwrite": true
+              }
+            },
+            {
+              "log_id": "qr_gen_23",
+              "url": "tools://code-generate/generate",
+              "payload": {
+                "content": "@{user.qr_count > 23 ? getArrayString(user.qr_chunks, 23) : 'EMPTY'}",
+                "format": "qr",
+                "width": 512,
+                "height": 512,
+                "ec_level": "M",
+                "margin": 4,
+                "output": {
+                  "uri": "user.qr_img_23",
+                  "code_id": "user.qr_code_id_23"
+                }
+              }
+            },
+            {
+              "log_id": "qr_move_23",
+              "url": "tools://files/move",
+              "payload": {
+                "from": "media/@{user.qr_code_id_23}.png",
+                "to": "cache/qr/${tenantId}/@{user.qr_code_id_23}.png",
+                "overwrite": true
+              }
+            },
+            {
+              "log_id": "qr_gen_24",
+              "url": "tools://code-generate/generate",
+              "payload": {
+                "content": "@{user.qr_count > 24 ? getArrayString(user.qr_chunks, 24) : 'EMPTY'}",
+                "format": "qr",
+                "width": 512,
+                "height": 512,
+                "ec_level": "M",
+                "margin": 4,
+                "output": {
+                  "uri": "user.qr_img_24",
+                  "code_id": "user.qr_code_id_24"
+                }
+              }
+            },
+            {
+              "log_id": "qr_move_24",
+              "url": "tools://files/move",
+              "payload": {
+                "from": "media/@{user.qr_code_id_24}.png",
+                "to": "cache/qr/${tenantId}/@{user.qr_code_id_24}.png",
+                "overwrite": true
+              }
+            },
+            {
+              "log_id": "qr_gen_25",
+              "url": "tools://code-generate/generate",
+              "payload": {
+                "content": "@{user.qr_count > 25 ? getArrayString(user.qr_chunks, 25) : 'EMPTY'}",
+                "format": "qr",
+                "width": 512,
+                "height": 512,
+                "ec_level": "M",
+                "margin": 4,
+                "output": {
+                  "uri": "user.qr_img_25",
+                  "code_id": "user.qr_code_id_25"
+                }
+              }
+            },
+            {
+              "log_id": "qr_move_25",
+              "url": "tools://files/move",
+              "payload": {
+                "from": "media/@{user.qr_code_id_25}.png",
+                "to": "cache/qr/${tenantId}/@{user.qr_code_id_25}.png",
+                "overwrite": true
+              }
+            },
+            {
+              "log_id": "qr_gen_26",
+              "url": "tools://code-generate/generate",
+              "payload": {
+                "content": "@{user.qr_count > 26 ? getArrayString(user.qr_chunks, 26) : 'EMPTY'}",
+                "format": "qr",
+                "width": 512,
+                "height": 512,
+                "ec_level": "M",
+                "margin": 4,
+                "output": {
+                  "uri": "user.qr_img_26",
+                  "code_id": "user.qr_code_id_26"
+                }
+              }
+            },
+            {
+              "log_id": "qr_move_26",
+              "url": "tools://files/move",
+              "payload": {
+                "from": "media/@{user.qr_code_id_26}.png",
+                "to": "cache/qr/${tenantId}/@{user.qr_code_id_26}.png",
+                "overwrite": true
+              }
+            },
+            {
+              "log_id": "qr_gen_27",
+              "url": "tools://code-generate/generate",
+              "payload": {
+                "content": "@{user.qr_count > 27 ? getArrayString(user.qr_chunks, 27) : 'EMPTY'}",
+                "format": "qr",
+                "width": 512,
+                "height": 512,
+                "ec_level": "M",
+                "margin": 4,
+                "output": {
+                  "uri": "user.qr_img_27",
+                  "code_id": "user.qr_code_id_27"
+                }
+              }
+            },
+            {
+              "log_id": "qr_move_27",
+              "url": "tools://files/move",
+              "payload": {
+                "from": "media/@{user.qr_code_id_27}.png",
+                "to": "cache/qr/${tenantId}/@{user.qr_code_id_27}.png",
+                "overwrite": true
+              }
+            },
+            {
+              "log_id": "qr_gen_28",
+              "url": "tools://code-generate/generate",
+              "payload": {
+                "content": "@{user.qr_count > 28 ? getArrayString(user.qr_chunks, 28) : 'EMPTY'}",
+                "format": "qr",
+                "width": 512,
+                "height": 512,
+                "ec_level": "M",
+                "margin": 4,
+                "output": {
+                  "uri": "user.qr_img_28",
+                  "code_id": "user.qr_code_id_28"
+                }
+              }
+            },
+            {
+              "log_id": "qr_move_28",
+              "url": "tools://files/move",
+              "payload": {
+                "from": "media/@{user.qr_code_id_28}.png",
+                "to": "cache/qr/${tenantId}/@{user.qr_code_id_28}.png",
+                "overwrite": true
+              }
+            },
+            {
+              "log_id": "qr_gen_29",
+              "url": "tools://code-generate/generate",
+              "payload": {
+                "content": "@{user.qr_count > 29 ? getArrayString(user.qr_chunks, 29) : 'EMPTY'}",
+                "format": "qr",
+                "width": 512,
+                "height": 512,
+                "ec_level": "M",
+                "margin": 4,
+                "output": {
+                  "uri": "user.qr_img_29",
+                  "code_id": "user.qr_code_id_29"
+                }
+              }
+            },
+            {
+              "log_id": "qr_move_29",
+              "url": "tools://files/move",
+              "payload": {
+                "from": "media/@{user.qr_code_id_29}.png",
+                "to": "cache/qr/${tenantId}/@{user.qr_code_id_29}.png",
+                "overwrite": true
+              }
+            },
+            {
+              "log_id": "qr_gen_30",
+              "url": "tools://code-generate/generate",
+              "payload": {
+                "content": "@{user.qr_count > 30 ? getArrayString(user.qr_chunks, 30) : 'EMPTY'}",
+                "format": "qr",
+                "width": 512,
+                "height": 512,
+                "ec_level": "M",
+                "margin": 4,
+                "output": {
+                  "uri": "user.qr_img_30",
+                  "code_id": "user.qr_code_id_30"
+                }
+              }
+            },
+            {
+              "log_id": "qr_move_30",
+              "url": "tools://files/move",
+              "payload": {
+                "from": "media/@{user.qr_code_id_30}.png",
+                "to": "cache/qr/${tenantId}/@{user.qr_code_id_30}.png",
+                "overwrite": true
+              }
+            },
+            {
+              "log_id": "qr_gen_31",
+              "url": "tools://code-generate/generate",
+              "payload": {
+                "content": "@{user.qr_count > 31 ? getArrayString(user.qr_chunks, 31) : 'EMPTY'}",
+                "format": "qr",
+                "width": 512,
+                "height": 512,
+                "ec_level": "M",
+                "margin": 4,
+                "output": {
+                  "uri": "user.qr_img_31",
+                  "code_id": "user.qr_code_id_31"
+                }
+              }
+            },
+            {
+              "log_id": "qr_move_31",
+              "url": "tools://files/move",
+              "payload": {
+                "from": "media/@{user.qr_code_id_31}.png",
+                "to": "cache/qr/${tenantId}/@{user.qr_code_id_31}.png",
+                "overwrite": true
+              }
+            },
+            {
+              "log_id": "start_qr_timer",
+              "url": "div-action://timer?id=qr_cycle&action=start"
+            },
+            {
+              "log_id": "mark_transfer",
+              "url": "local-db://op/db.update",
+              "payload": {
+                "table": "kiosk_orders",
+                "id": "@{user.kiosk_order_id}",
+                "values": {
+                  "status": "@{user.kiosk_direction == 'CUSTOMER_REQUEST' ? 'REQUESTED' : 'PAID'}",
+                  "payload_json": "@{user.qr_json}",
+                  "transfer_id": "@{user.qr_transfer_id}",
+                  "checksum": "@{user.qr_checksum}",
+                  "updated_at": "@{formatDateAsLocal(nowLocal(), 'yyyy-MM-dd HH:mm:ss')}"
+                }
+              }
+            }
+          ],
+          "icon": "qr_code",
+          "weight": 1
+        },
+        {
+          "type": "button",
+          "text": "Scan next QR",
+          "background_color": "#0EA5E9",
+          "text_color": "#E0F2FE",
+          "corner_radius": 10,
+          "font_size": 12,
+          "font_weight": "bold",
+          "actions": [
+            {
+              "log_id": "scan_next",
+              "url": "tools://scan/scan",
+              "payload": {
+                "target_format": "qr"
+              }
+            },
+            {
+              "type": "array_insert_value",
+              "variable_name": "user.scanned_chunks",
+              "value": {
+                "type": "string",
+                "value": "@{user.scanned_code}"
+              }
+            }
+          ],
+          "icon": "scanner",
+          "weight": 1
+        }
+      ]
+    },
+    {
+      "type": "container",
+      "orientation": "horizontal",
+      "item_spacing": 8,
+      "items": [
+        {
+          "type": "button",
+          "text": "Assemble scanned",
+          "background_color": "#7C3AED",
+          "text_color": "#F5F3FF",
+          "corner_radius": 10,
+          "font_size": 12,
+          "font_weight": "bold",
+          "actions": [
+            {
+              "log_id": "assemble_chunks",
+              "url": "tools://codec/json/assemble",
+              "payload": {
+                "chunks": "@{user.scanned_chunks}",
+                "encoding": "base45",
+                "output": {
+                  "json": "user.receipt_json",
+                  "status": "user.receipt_status",
+                  "missing": "user.receipt_missing",
+                  "checksum_ok": "user.receipt_checksum_ok"
+                }
+              }
+            },
+            {
+              "log_id": "validate_receipt",
+              "url": "tools://codec/json/validate",
+              "payload": {
+                "json": "@{user.receipt_json}",
+                "output": {
+                  "valid": "user.receipt_valid",
+                  "error": "user.receipt_error"
+                }
+              }
+            },
+            {
+              "log_id": "extract_receipt",
+              "url": "tools://codec/json/extract",
+              "payload": {
+                "json": "@{user.receipt_json}",
+                "paths": [
+                  "order_id",
+                  "direction",
+                  "status",
+                  "total"
+                ],
+                "subtree_path": "lines",
+                "output": {
+                  "values": "user.receipt_values",
+                  "subtree_json": "user.receipt_lines_json"
+                }
+              }
+            }
+          ],
+          "icon": "refresh",
+          "weight": 1
+        },
+        {
+          "type": "button",
+          "text": "LAN host share",
+          "background_color": "#F59E0B",
+          "text_color": "#FFFBEB",
+          "corner_radius": 10,
+          "font_size": 12,
+          "font_weight": "bold",
+          "actions": [
+            {
+              "log_id": "start_hub",
+              "url": "tools://net/serve",
+              "payload": {
+                "port": 8089,
+                "label": "APEX Kiosk LAN",
+                "output": {
+                  "local_ip": "user.net_local_ip",
+                  "lan_url": "user.net_lan_url",
+                  "port": "user.net_hub_port",
+                  "status": "user.net_status"
+                }
+              }
+            },
+            {
+              "log_id": "share_transfer",
+              "url": "tools://net/share",
+              "payload": {
+                "content": "@{user.qr_json}",
+                "name": "transfer.json",
+                "content_type": "application/json",
+                "output": {
+                  "id": "user.net_share_id",
+                  "path": "user.net_share_path",
+                  "status": "user.net_status"
+                }
+              }
+            },
+            {
+              "type": "set_variable",
+              "variable_name": "user.lan_download_url",
+              "value": {
+                "type": "string",
+                "value": "@{user.net_lan_url}@{user.net_share_path}"
+              }
+            }
+          ],
+          "icon": "globe",
+          "weight": 1
+        }
+      ]
+    },
+    {
+      "type": "button",
+      "text": "Complete + clean cache",
+      "background_color": "#B91C1C",
+      "text_color": "#FEF2F2",
+      "corner_radius": 10,
+      "font_size": 12,
+      "font_weight": "bold",
+      "actions": [
+        {
+          "log_id": "stop_qr_timer",
+          "url": "div-action://timer?id=qr_cycle&action=stop"
+        },
+        {
+          "log_id": "delete_qr_cache",
+          "url": "tools://files/delete",
+          "payload": {
+            "path": "@{user.qr_cache_dir}",
+            "recursive": true
+          }
+        },
+        {
+          "log_id": "complete_order",
+          "url": "local-db://op/db.update",
+          "payload": {
+            "table": "kiosk_orders",
+            "id": "@{user.kiosk_order_id}",
+            "values": {
+              "status": "COMPLETED",
+              "updated_at": "@{formatDateAsLocal(nowLocal(), 'yyyy-MM-dd HH:mm:ss')}"
+            }
+          }
+        },
+        {
+          "type": "set_variable",
+          "variable_name": "user.qr_count",
+          "value": {
+            "type": "integer",
+            "value": 0
+          }
+        },
+        {
+          "type": "set_variable",
+          "variable_name": "user.qr_index",
+          "value": {
+            "type": "integer",
+            "value": 0
+          }
+        },
+        {
+          "type": "set_variable",
+          "variable_name": "user.qr_json",
+          "value": {
+            "type": "string",
+            "value": ""
+          }
+        },
+        {
+          "type": "set_variable",
+          "variable_name": "user.scanned_chunks",
+          "value": {
+            "type": "array",
+            "value": []
+          }
+        }
+      ],
+      "icon": "delete"
+    },
+    {
+      "type": "text",
+      "text": "QR @{user.qr_index + 1} / @{user.qr_count} • transfer @{user.qr_transfer_id}",
+      "font_size": 11,
+      "text_color": "#FDE68A",
+      "font_family": "monospace"
+    },
+    {
+      "type": "image",
+      "image_url": "@{user.qr_index == 0 ? user.qr_img_0 : user.qr_index == 1 ? user.qr_img_1 : user.qr_index == 2 ? user.qr_img_2 : user.qr_index == 3 ? user.qr_img_3 : user.qr_index == 4 ? user.qr_img_4 : user.qr_index == 5 ? user.qr_img_5 : user.qr_index == 6 ? user.qr_img_6 : user.qr_index == 7 ? user.qr_img_7 : user.qr_index == 8 ? user.qr_img_8 : user.qr_index == 9 ? user.qr_img_9 : user.qr_index == 10 ? user.qr_img_10 : user.qr_index == 11 ? user.qr_img_11 : user.qr_index == 12 ? user.qr_img_12 : user.qr_index == 13 ? user.qr_img_13 : user.qr_index == 14 ? user.qr_img_14 : user.qr_index == 15 ? user.qr_img_15 : user.qr_index == 16 ? user.qr_img_16 : user.qr_index == 17 ? user.qr_img_17 : user.qr_index == 18 ? user.qr_img_18 : user.qr_index == 19 ? user.qr_img_19 : user.qr_index == 20 ? user.qr_img_20 : user.qr_index == 21 ? user.qr_img_21 : user.qr_index == 22 ? user.qr_img_22 : user.qr_index == 23 ? user.qr_img_23 : user.qr_index == 24 ? user.qr_img_24 : user.qr_index == 25 ? user.qr_img_25 : user.qr_index == 26 ? user.qr_img_26 : user.qr_index == 27 ? user.qr_img_27 : user.qr_index == 28 ? user.qr_img_28 : user.qr_index == 29 ? user.qr_img_29 : user.qr_index == 30 ? user.qr_img_30 : user.qr_index == 31 ? user.qr_img_31 : ''}",
+      "preview_height": 260,
+      "corner_radius": 10,
+      "content_description": "Animated transfer QR"
+    },
+    {
+      "type": "text",
+      "text": "LAN URL: @{user.net_lan_url}@{user.net_share_path}",
+      "font_size": 10,
+      "text_color": "#FCD34D",
+      "font_family": "monospace"
+    },
+    {
+      "type": "text",
+      "text": "Scanned chunks: @{len(user.scanned_chunks)} • assemble status: @{user.receipt_status} • checksum: @{user.receipt_checksum_ok}",
+      "font_size": 10,
+      "text_color": "#94A3B8",
+      "font_family": "monospace"
+    },
+    {
+      "type": "text",
+      "text": "Receipt order @{getArrayOptString(user.receipt_values, 0, '')} • direction @{getArrayOptString(user.receipt_values, 1, '')} • status @{getArrayOptString(user.receipt_values, 2, '')} • total @{getArrayOptString(user.receipt_values, 3, '')}",
+      "font_size": 10,
+      "text_color": "#C4B5FD",
+      "font_family": "monospace"
+    },
+    {
+      "type": "text",
+      "text": "RECEIPT LINES",
+      "font_size": 11,
+      "text_color": "#93C5FD",
+      "font_weight": "bold"
+    },
+    {
+      "type": "json_list",
+      "data_var": "user.receipt_lines_json",
+      "empty_text": "No lines yet.",
+      "row_card": {
+        "type": "container",
+        "orientation": "horizontal",
+        "item_spacing": 8,
+        "background_color": "#0F172A",
+        "corner_radius": 10,
+        "paddings": {
+          "left": 10,
+          "right": 10,
+          "top": 8,
+          "bottom": 8
+        },
+        "items": [
+          {
+            "type": "container",
+            "orientation": "vertical",
+            "weight": 1,
+            "items": [
+              {
+                "type": "text",
+                "text": "@{item.item_name}",
+                "font_size": 13,
+                "text_color": "#F8FAFC",
+                "font_weight": "bold"
+              },
+              {
+                "type": "text",
+                "text": "SKU @{item.sku} • qty @{item.quantity} • $@{item.line_total}",
+                "font_size": 10,
+                "text_color": "#93C5FD",
+                "font_family": "monospace"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "background_color": "#071221",
+  "_timers": [
+    {
+      "id": "qr_cycle",
+      "tick_interval": 400,
+      "tick_actions": [
+        {
+          "type": "set_variable",
+          "variable_name": "user.qr_index",
+          "value": {
+            "type": "integer",
+            "value": "@{mod(user.qr_index + 1, user.qr_count > 0 ? user.qr_count : 1)}"
+          }
+        }
+      ]
+    }
+  ]
+}

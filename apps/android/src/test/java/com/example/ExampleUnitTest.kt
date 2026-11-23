@@ -2064,6 +2064,33 @@ class ExampleUnitTest {
     }
 
     @Test
+    fun kioskDemoCards_supplyTheArgumentsTheirToolsRequire() = kotlinx.coroutines.runBlocking {
+        val spec = WorkspaceProvisioner.defaultWorkspaces.first { it.demoRoot.contains("kiosk") }
+        val missingArgument = Regex("""(missing \S+ argument|requires a \S+)""", RegexOption.IGNORE_CASE)
+        val deadEnds = mutableListOf<String>()
+
+        (spec.toolCardOrder ?: DemoCardRepository.toolCardOrder).forEach { name ->
+            val card = DemoCardRepository.toolCard(spec, name) ?: return@forEach
+            collectToolActions(card).forEach { action ->
+                val url = action["url"]!!.jsonPrimitive.content
+                val payload = action["payload"] as? JsonObject ?: buildJsonObject { }
+                val error = runCatching {
+                    NativeToolsSuite.execute(url = url, payload = payload, tenantId = spec.tenantId)
+                        .resultData.jsonObject["error"]?.jsonPrimitive?.contentOrNull
+                }.getOrElse { it.message }
+                if (error != null && missingArgument.containsMatchIn(error)) {
+                    deadEnds.add("$name -> $url: $error")
+                }
+            }
+        }
+        runCatching {
+            NativeToolsSuite.execute(url = "tools://net/stop", payload = buildJsonObject { }, tenantId = spec.tenantId)
+        }
+
+        assertTrue("Kiosk buttons dispatch tools without their required arguments: $deadEnds", deadEnds.isEmpty())
+    }
+
+    @Test
     fun demoCards_bindOnlyFieldsTheirToolReturns() = kotlinx.coroutines.runBlocking {
         // A card that maps `status` while the tool returns `state` leaves the bound
         // variable permanently blank: the button appears to do nothing. Compare each
@@ -2111,6 +2138,11 @@ class ExampleUnitTest {
                     val action = node["action"] as? JsonObject
                     val url = action?.get("url")?.jsonPrimitive?.contentOrNull
                     if (url != null && url.startsWith("tools://")) found.add(action)
+                    (node["actions"] as? JsonArray)?.forEach { element ->
+                        val step = element as? JsonObject
+                        val stepUrl = step?.get("url")?.jsonPrimitive?.contentOrNull
+                        if (stepUrl != null && stepUrl.startsWith("tools://")) found.add(step)
+                    }
                     node.values.forEach(::walk)
                 }
                 is JsonArray -> node.forEach(::walk)

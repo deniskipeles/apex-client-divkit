@@ -31,6 +31,7 @@ dispatch contract and the provenance gate.
 | [net.md](net.md) | `tools://net` | `network.transfer@1` | Ktor HTTP client + embedded LAN transfer hub. |
 | [print.md](print.md) | `tools://print` | `device.printer@1` | Bluetooth printer discovery & ESC/POS printing. |
 | [code-generate.md](code-generate.md) | `tools://code-generate` | `vision.generate_code@1` | Barcode & QR / matrix code generation (ZXing). |
+| [codec.md](codec.md) | `tools://codec` | `data.codec@1` | Base64/Base45 and JSON validate/extract/stringify/chunk/assemble. |
 | [screen.md](screen.md) | `tools://screen/{keep-awake,screenshot,recording}` | `device.screen@1` | Wake-lock, screenshot and MP4 screen recording. |
 | [files.md](files.md) | `tools://files` | `storage.files@1` | Tenant-scoped workspace file store (bytes in, bytes out). |
 | [local-db.md](local-db.md) | `local-db://op/<name>` | `db.*` / `records.*` | Tenant SQLite bridge — insert/query/count/delete via DivKit actions. |

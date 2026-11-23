@@ -297,6 +297,34 @@ object NativeToolsSuite {
             )
         ),
         ToolSchema(
+            toolId = "codec",
+            displayName = "Generic Text & JSON Codec",
+            description = "Unopinionated text codec: Base64, Base45, and JSON validate/extract/stringify/chunk/assemble. Chunk envelopes are generic and enforce caller-supplied byte and chunk limits.",
+            supportedOperations = listOf(
+                "base64", "base45",
+                "json/validate", "json/extract", "json/stringify", "json/chunk", "json/assemble"
+            ),
+            defaultOptions = mapOf("encoding" to "base45", "max_bytes" to "500", "max_chunks" to "32"),
+            defaultOutputMapping = mapOf(
+                "status" to "user.codec_status",
+                "text" to "user.codec_text",
+                "encoding" to "user.codec_encoding",
+                "length" to "user.codec_length",
+                "valid" to "user.codec_valid",
+                "error" to "user.codec_error",
+                "values" to "user.codec_values",
+                "count" to "user.codec_count",
+                "missing" to "user.codec_missing",
+                "json" to "user.codec_json",
+                "subtree_json" to "user.codec_subtree_json",
+                "chunks" to "user.codec_chunks",
+                "transfer_id" to "user.codec_transfer_id",
+                "checksum" to "user.codec_checksum",
+                "checksum_ok" to "user.codec_checksum_ok",
+                "raw_bytes" to "user.codec_raw_bytes"
+            )
+        ),
+        ToolSchema(
             toolId = "code-generate",
             displayName = "Barcode & QR Code Generator",
             description = "Encodes arbitrary content into a 1D barcode or 2D matrix symbology (QR, DataMatrix, Aztec, PDF417) and renders it to an image plus an inspectable module matrix.",
@@ -401,6 +429,7 @@ object NativeToolsSuite {
             "realtime-ws" -> executeRealtimeWs(operation, options, payload, tenantId)
             "net" -> executeNet(operation, options, payload, tenantId)
             "print" -> executePrint(operation, options, payload, tenantId)
+            "codec" -> executeCodec(operation, options, payload)
             "code-generate" -> executeCodeGenerate(operation, options, payload, tenantId)
             "screen" -> executeScreen(operation, options, payload, tenantId)
             "files" -> executeFiles(operation, options, payload, tenantId)
@@ -424,6 +453,7 @@ object NativeToolsSuite {
                         DivVariableValue.DoubleVal(value)
                     }
                     is Float -> DivVariableValue.DoubleVal(value.toDouble())
+                    is List<*> -> DivVariableValue.ArrayVal(value.map { item -> divValueOf(item) })
                     else -> DivVariableValue.Str(value.toString())
                 }
                 finalVariables[stateVarName] = divVal
@@ -444,6 +474,17 @@ object NativeToolsSuite {
         )
     }
 
+    private fun divValueOf(value: Any?): DivVariableValue = when (value) {
+        null -> DivVariableValue.Str("")
+        is Boolean -> DivVariableValue.Bool(value)
+        is Int -> DivVariableValue.IntVal(value.toLong())
+        is Long -> DivVariableValue.IntVal(value)
+        is Double -> DivVariableValue.DoubleVal(value)
+        is Float -> DivVariableValue.DoubleVal(value.toDouble())
+        is List<*> -> DivVariableValue.ArrayVal(value.map { divValueOf(it) })
+        else -> DivVariableValue.Str(value.toString())
+    }
+
     private fun normalizeToolId(raw: String): String = when (raw.lowercase()) {
         "scan", "scanner", "scan-code", "vision.scan_code@1", "vision.scan_code", "scan-barcode", "scan-qr", "barcode", "qr", "ocr", "read-text", "text-recognition" -> "scan"
         "haptics", "device.haptics", "device.haptics@1", "vibrate" -> "haptics"
@@ -460,6 +501,7 @@ object NativeToolsSuite {
         "realtime-ws", "realtime_ws", "network.realtime", "realtime", "ws" -> "realtime-ws"
         "net", "network.transfer", "network.transfer@1", "network", "http", "transfer" -> "net"
         "print", "printer", "device.printer", "device.printer@1", "bluetooth.print", "pos.print" -> "print"
+        "codec", "codecs", "encoding", "data.codec", "data.codec@1", "text.codec", "text.codec@1" -> "codec"
         "code-generate", "code_gen", "codegen", "generate-code", "generate_code", "barcode-generate",
         "qr-generate", "vision.generate_code@1", "vision.generate_code" -> "code-generate"
         "screen", "device.screen", "device.screen@1", "screen-capture", "screen-recording",
@@ -1444,6 +1486,29 @@ object NativeToolsSuite {
     // -------------------------------------------------------------------------
     // BARCODE / QR CODE GENERATOR (ZXing)
     // -------------------------------------------------------------------------
+    private suspend fun executeCodec(
+        operation: String,
+        options: Map<String, String>,
+        payload: JsonObject
+    ): InternalToolResult {
+        val mergedArgs = buildMap {
+            putAll(options)
+            put("codec", operation)
+            payload.forEach { (k, v) ->
+                if (k != "output" && k != "options") put(k, jsonContent(v))
+            }
+        }
+        val toolResult = engine.tools.impl.CodecTool().invoke(
+            args = ToolArgs(mergedArgs),
+            ctx = ToolContext(workspaceId = "codec")
+        )
+        return internalFromToolResult(
+            toolResult = toolResult,
+            label = "Codec",
+            successSummary = "Codec $operation completed"
+        )
+    }
+
     private suspend fun executeCodeGenerate(
         operation: String,
         options: Map<String, String>,
@@ -1589,6 +1654,20 @@ object NativeToolsSuite {
         )
     }
 
+    private fun kotlinx.serialization.json.JsonArrayBuilder.addJsonValue(value: Any?) {
+        when (value) {
+            null -> add(JsonNull)
+            is Boolean -> add(JsonPrimitive(value))
+            is Int -> add(JsonPrimitive(value))
+            is Long -> add(JsonPrimitive(value))
+            is Double -> add(JsonPrimitive(value))
+            is Float -> add(JsonPrimitive(value))
+            is JsonElement -> add(value)
+            is List<*> -> add(buildJsonArray { value.forEach { addJsonValue(it) } })
+            else -> add(JsonPrimitive(value.toString()))
+        }
+    }
+
     private fun JsonObjectBuilder.putJsonValue(key: String, value: Any?) {
         when (value) {
             null -> put(key, JsonNull)
@@ -1598,6 +1677,7 @@ object NativeToolsSuite {
             is Double -> put(key, value)
             is Float -> put(key, value.toDouble())
             is JsonElement -> put(key, value)
+            is List<*> -> put(key, buildJsonArray { value.forEach { item -> addJsonValue(item) } })
             else -> put(key, value.toString())
         }
     }

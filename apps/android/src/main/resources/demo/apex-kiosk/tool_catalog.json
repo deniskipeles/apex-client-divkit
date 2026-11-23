@@ -1,0 +1,30 @@
+{
+  "title": "\ud83e\uddfe KIOSK WORKFLOWS",
+  "subtitle": "Customer request \u2194 owner receipt, QR or LAN",
+  "entries": [
+    {
+      "file": "kiosk_customer",
+      "label": "Customer Order",
+      "icon": "product",
+      "accent_color": "#7C3AED"
+    },
+    {
+      "file": "kiosk_owner",
+      "label": "Owner Receipt",
+      "icon": "printer",
+      "accent_color": "#0891B2"
+    },
+    {
+      "file": "kiosk_transfer",
+      "label": "QR Transfer",
+      "icon": "qr_code",
+      "accent_color": "#10B981"
+    },
+    {
+      "file": "kiosk_lan",
+      "label": "LAN Heavy Share",
+      "icon": "globe",
+      "accent_color": "#F59E0B"
+    }
+  ]
+}

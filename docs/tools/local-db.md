@@ -57,7 +57,17 @@ Operations are resolved by the registry's `when (opName)` whitelist. Several ope
   (default `100`), and `offset`.
 - **`db.query_one`** — returns the first matching record (with its `id`) or an empty row.
 - **`db.count`** — returns the number of records matching the `where` filter.
-- **`db.delete`** — deletes one record by numeric `id`; returns `1` when a row was removed.
+- **`db.delete`** — deletes one record by its `id`. Record ids are `TEXT`, so both
+  caller-supplied values (`"customer_abc"`) and generated numeric strings (`"42"`) work;
+  returns `1` when a row was removed.
+
+### Demo schemas
+
+The built-in demo tenants load their collection definitions from
+`apps/android/src/main/resources/demo/workspace/collections/*.json`; `index.json` is the
+manifest. Adding a collection is a data change, not a Kotlin change. The APEX KIOSK card
+seeds `user.catalog_json` from the `inventory` collection at workspace startup, so its
+catalog `json_list` renders before the first `db.query` action.
 
 ### Filters
 

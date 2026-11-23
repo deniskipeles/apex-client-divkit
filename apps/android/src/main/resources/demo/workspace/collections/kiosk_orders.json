@@ -1,0 +1,22 @@
+{
+  "id": 3,
+  "name": "kiosk_orders",
+  "schema": {
+    "fields": {
+      "direction": { "type": "string", "required": false, "uid": "kiosk_orders_direction" },
+      "status": { "type": "string", "required": false, "uid": "kiosk_orders_status" },
+      "subtotal": { "type": "number", "required": false, "uid": "kiosk_orders_subtotal" },
+      "total": { "type": "number", "required": false, "uid": "kiosk_orders_total" },
+      "item_count": { "type": "number", "required": false, "uid": "kiosk_orders_item_count" },
+      "payload_json": { "type": "string", "required": false, "uid": "kiosk_orders_payload_json" },
+      "lines_json": { "type": "string", "required": false, "uid": "kiosk_orders_lines_json" },
+      "transfer_id": { "type": "string", "required": false, "uid": "kiosk_orders_transfer_id" },
+      "checksum": { "type": "string", "required": false, "uid": "kiosk_orders_checksum" },
+      "customer_name": { "type": "string", "required": false, "uid": "kiosk_orders_customer_name" },
+      "terminal_id": { "type": "string", "required": false, "uid": "kiosk_orders_terminal_id" },
+      "created_at": { "type": "string", "required": false, "uid": "kiosk_orders_created_at" },
+      "updated_at": { "type": "string", "required": false, "uid": "kiosk_orders_updated_at" }
+    },
+    "policies": { "read": "public", "create": "public", "update": "public", "delete": "public" }
+  }
+}

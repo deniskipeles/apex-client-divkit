@@ -181,7 +181,7 @@ fun PosTerminalTab(
                             "pos_card_${spec.tenantId}_$activeSchemaTag"
                         },
                         onAction = { url, payload ->
-                            viewModel.dispatchDivKitAction(url, payload)
+                            viewModel.dispatchDivKitActionAwait(url, payload)
                         }
                     )
                 }

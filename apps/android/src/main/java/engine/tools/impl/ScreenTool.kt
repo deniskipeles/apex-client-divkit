@@ -5,6 +5,11 @@ import engine.tools.ToolArgs
 import engine.tools.ToolContext
 import engine.tools.ToolHandler
 import engine.tools.ToolResult
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /**
  * Screen capability ("device.screen@1" / "tools://screen/{keep-awake,recording,screenshot}").
@@ -82,6 +87,16 @@ class ScreenTool : ToolHandler {
 
         val applied = keepAwakeSink?.invoke(enabled) ?: true
         if (applied) enabledState = enabled
+
+        keepAwakeTimeoutJob?.cancel()
+        keepAwakeTimeoutJob = null
+        if (enabled && timeoutMs > 0) {
+            keepAwakeTimeoutJob = toolScope.launch {
+                delay(timeoutMs)
+                keepAwakeSink?.invoke(false)
+                enabledState = false
+            }
+        }
 
         return ToolResult.Success(
             mapOf(
@@ -223,6 +238,8 @@ class ScreenTool : ToolHandler {
         /** Stops the active recording and returns the persisted MP4 metadata. */
         var recordingStopSink: (suspend () -> RecordingStop?)? = null
 
+        private val toolScope = CoroutineScope(Dispatchers.Default)
+        @Volatile private var keepAwakeTimeoutJob: Job? = null
         @Volatile private var enabledState: Boolean = false
         @Volatile private var recordingState: Boolean = false
         @Volatile private var recordingId: String? = null

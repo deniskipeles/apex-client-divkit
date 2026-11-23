@@ -123,6 +123,8 @@ class ApexKitDatabaseEngine(val driver: SqlDriver) {
             0
         )
 
+        if (!driver.supportsJson1) return
+
         val desired = computeDesiredIndexes(collections)
         val applied = loadAppliedIndexes()
 
@@ -319,6 +321,91 @@ class ApexKitDatabaseEngine(val driver: SqlDriver) {
     }
 
     /**
+     * Applies a shallow JSON merge to an existing record. Unspecified fields are preserved;
+     * the record id is immutable. Returns the record id so callers can chain another action.
+     */
+    fun updateRecord(
+        collectionName: String,
+        recordId: String,
+        patch: JsonObject,
+        user: Claims? = null
+    ): String {
+        val col = getCollection(collectionName) ?: error("Collection '$collectionName' not found in schema.")
+        val schema = col.schema ?: CollectionSchema()
+
+        val policySql = PolicyEngine.compileToSql(schema.policies.update, user)
+        if (policySql == "1=0") error("Access Denied: Record update rejected by policy on collection '$collectionName'.")
+
+        val existing = loadRecordForCollection(col.id, recordId)
+            ?: error("Record '$recordId' not found in collection '$collectionName'.")
+
+        val mergedFields = LinkedHashMap<String, JsonElement>()
+        existing.data.forEach { (k, v) -> mergedFields[k] = v }
+        patch.forEach { (k, v) -> if (k != "id") mergedFields[k] = v }
+        val merged = JsonObject(mergedFields)
+
+        for ((fieldName, fieldDef) in schema.fields) {
+            if (fieldDef.required && !fieldDef.auto && !merged.containsKey(fieldName)) {
+                error("Validation Error: Field '$fieldName' is required in collection '$collectionName'.")
+            }
+        }
+
+        val dataStr = json.encodeToString(JsonObject.serializer(), merged)
+        val now = System.currentTimeMillis().toString()
+
+        driver.beginTransaction()
+        try {
+            val updated = driver.executeUpdate(
+                null,
+                "UPDATE records SET data = ?, updated = ? WHERE id = ? AND collection_id = ?",
+                4
+            ) {
+                bindString(0, dataStr)
+                bindString(1, now)
+                bindString(2, recordId)
+                bindLong(3, col.id)
+            }
+            if (updated == 0L) error("Record '$recordId' not found in collection '$collectionName'.")
+
+            driver.executeUpdate(null, "DELETE FROM _relations WHERE origin_rec_id = ?", 1) {
+                bindString(0, recordId)
+            }
+            insertRelationRows(schema, recordId, merged)
+            driver.setTransactionSuccessful()
+        } finally {
+            driver.endTransaction()
+        }
+
+        return recordId
+    }
+
+    private fun loadRecordForCollection(collectionId: Long, recordId: String): LoadedRecord? {
+        var result: LoadedRecord? = null
+        driver.executeQuery(
+            null,
+            "SELECT id, collection_id, data FROM records WHERE id = ? AND collection_id = ? LIMIT 1",
+            2
+        ) {
+            bindString(0, recordId)
+            bindLong(1, collectionId)
+        }.use { c ->
+            if (c.next().value) {
+                val dataObj = try {
+                    json.decodeFromString(JsonObject.serializer(), c.getString(2) ?: "{}")
+                } catch (_: Exception) {
+                    JsonObject(emptyMap())
+                }
+                result = LoadedRecord(
+                    id = c.getString(0) ?: recordId,
+                    collectionId = c.getLong(1) ?: collectionId,
+                    data = dataObj
+                )
+            }
+        }
+        return result
+    }
+
+    /**
      * Resolves a record id: a supplied non-empty value is preserved as text, otherwise a
      * value is drawn from the `_record_id_sequence` AUTOINCREMENT sequence and stored as text.
      */
@@ -442,14 +529,75 @@ class ApexKitDatabaseEngine(val driver: SqlDriver) {
             LIMIT $limit OFFSET $offset
         """.trimIndent()
 
+        if (!driver.supportsJson1 && sql.contains("json_extract", ignoreCase = true)) {
+            return queryRecordsInMemory(col, filters, orderBy, ascending, limit, offset)
+        }
+
+        return try {
+            val records = mutableListOf<Record>()
+            driver.executeQuery(null, sql, args.size) {
+                args.forEachIndexed { i, v -> bindString(i, v) }
+            }.use { c ->
+                while (c.next().value) {
+                    val rawData = c.getString(2) ?: "{}"
+                    val dataObj = try {
+                        json.decodeFromString(JsonObject.serializer(), rawData)
+                    } catch (_: Exception) {
+                        JsonObject(emptyMap())
+                    }
+                    records.add(
+                        Record(
+                            id = c.getString(0) ?: "",
+                            collectionId = c.getLong(1) ?: col.id,
+                            data = dataObj,
+                            created = c.getString(3) ?: "",
+                            updated = c.getString(4) ?: ""
+                        )
+                    )
+                }
+            }
+            records
+        } catch (e: Exception) {
+            if (!isMissingJson1(e)) throw e
+            queryRecordsInMemory(col, filters, orderBy, ascending, limit, offset)
+        }
+    }
+
+    private fun queryRecordsInMemory(
+        col: Collection,
+        filters: List<QueryFilter>,
+        orderBy: String?,
+        ascending: Boolean,
+        limit: Int,
+        offset: Int
+    ): List<Record> {
+        val all = loadAllRecords(col)
+        val filtered = all.filter { record ->
+            val flat = record.data.toMutableMap()
+            flat["id"] = JsonPrimitive(record.id)
+            filters.all { matchesFilter(it, flat) }
+        }
+        val sorted = if (orderBy.isNullOrBlank() || orderBy == "id") {
+            filtered.sortedBy { it.id }
+        } else {
+            filtered.sortedWith { left, right ->
+                compareJson(left.data[orderBy], right.data[orderBy])
+            }
+        }
+        val ordered = if (ascending) sorted else sorted.reversed()
+        return ordered.drop(offset).take(limit)
+    }
+
+    private fun loadAllRecords(col: Collection): List<Record> {
         val records = mutableListOf<Record>()
-        driver.executeQuery(null, sql, args.size) {
-            args.forEachIndexed { i, v -> bindString(i, v) }
-        }.use { c ->
+        driver.executeQuery(
+            null,
+            "SELECT id, collection_id, data, created, updated FROM records WHERE collection_id = ?",
+            1
+        ) { bindLong(0, col.id) }.use { c ->
             while (c.next().value) {
-                val rawData = c.getString(2) ?: "{}"
                 val dataObj = try {
-                    json.decodeFromString(JsonObject.serializer(), rawData)
+                    json.decodeFromString(JsonObject.serializer(), c.getString(2) ?: "{}")
                 } catch (_: Exception) {
                     JsonObject(emptyMap())
                 }
@@ -467,6 +615,56 @@ class ApexKitDatabaseEngine(val driver: SqlDriver) {
         return records
     }
 
+    private fun matchesFilter(filter: QueryFilter, record: Map<String, JsonElement>): Boolean {
+        val actual = record[filter.field]
+        val actualText = when (actual) {
+            null, is JsonNull -> null
+            is JsonPrimitive -> actual.contentOrNull
+            else -> actual.toString()
+        }
+        val expected = filter.value
+        val actualNumber = actualText?.toDoubleOrNull()
+        val expectedNumber = expected.toDoubleOrNull()
+        return when (filter.op.uppercase()) {
+            "=", "EQ" -> if (actualNumber != null && expectedNumber != null) actualNumber == expectedNumber else actualText == expected
+            "!=", "NEQ" -> if (actualNumber != null && expectedNumber != null) actualNumber != expectedNumber else actualText != expected
+            ">", "GT" -> compareNumbers(actualText, expected) > 0
+            ">=", "GTE" -> compareNumbers(actualText, expected) >= 0
+            "<", "LT" -> compareNumbers(actualText, expected) < 0
+            "<=", "LTE" -> compareNumbers(actualText, expected) <= 0
+            "LIKE" -> actualText?.let { Regex("^" + Regex.escape(expected).replace("%", ".*") + "$", RegexOption.IGNORE_CASE).matches(it) } == true
+            "IN" -> expected.split(",").map { it.trim() }.any { it == actualText }
+            else -> false
+        }
+    }
+
+    private fun compareNumbers(actual: String?, expected: String): Int {
+        val actualNumber = actual?.toDoubleOrNull()
+        val expectedNumber = expected.toDoubleOrNull()
+        return if (actualNumber != null && expectedNumber != null) {
+            actualNumber.compareTo(expectedNumber)
+        } else {
+            actual.orEmpty().compareTo(expected)
+        }
+    }
+
+    private fun compareJson(left: JsonElement?, right: JsonElement?): Int {
+        val leftText = (left as? JsonPrimitive)?.contentOrNull
+        val rightText = (right as? JsonPrimitive)?.contentOrNull
+        val leftNumber = leftText?.toDoubleOrNull()
+        val rightNumber = rightText?.toDoubleOrNull()
+        return if (leftNumber != null && rightNumber != null) {
+            leftNumber.compareTo(rightNumber)
+        } else {
+            leftText.orEmpty().compareTo(rightText.orEmpty())
+        }
+    }
+
+    private fun isMissingJson1(error: Throwable): Boolean =
+        generateSequence(error) { it.cause }.any {
+            it.message?.contains("no such function: json_extract", ignoreCase = true) == true
+        }
+
     fun countRecords(collectionName: String, filters: List<QueryFilter> = emptyList(), user: Claims? = null): Long {
         val col = getCollection(collectionName) ?: return 0L
         val schema = col.schema ?: CollectionSchema()
@@ -483,13 +681,29 @@ class ApexKitDatabaseEngine(val driver: SqlDriver) {
         }
 
         val sql = "SELECT COUNT(*) FROM records WHERE ${whereClauses.joinToString(" AND ")}"
-        var count = 0L
-        driver.executeQuery(null, sql, args.size) {
-            args.forEachIndexed { i, v -> bindString(i, v) }
-        }.use { c ->
-            if (c.next().value) count = c.getLong(0) ?: 0L
+        if (!driver.supportsJson1 && sql.contains("json_extract", ignoreCase = true)) {
+            return loadAllRecords(col).count { record ->
+                val flat = record.data.toMutableMap()
+                flat["id"] = JsonPrimitive(record.id)
+                filters.all { matchesFilter(it, flat) }
+            }.toLong()
         }
-        return count
+        return try {
+            var count = 0L
+            driver.executeQuery(null, sql, args.size) {
+                args.forEachIndexed { i, v -> bindString(i, v) }
+            }.use { c ->
+                if (c.next().value) count = c.getLong(0) ?: 0L
+            }
+            count
+        } catch (e: Exception) {
+            if (!isMissingJson1(e)) throw e
+            loadAllRecords(col).count { record ->
+                val flat = record.data.toMutableMap()
+                flat["id"] = JsonPrimitive(record.id)
+                filters.all { matchesFilter(it, flat) }
+            }.toLong()
+        }
     }
 
     // =========================================================================

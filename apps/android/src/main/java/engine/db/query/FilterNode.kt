@@ -111,6 +111,77 @@ sealed class FilterNode {
         }
     }
 
+    /**
+     * In-memory equivalent of [toSql], used on Android builds whose SQLite lacks JSON1.
+     * [record] contains the flat record fields plus `id`, `created` and `updated`.
+     */
+    fun matches(record: Map<String, JsonElement>): Boolean = when (this) {
+        is Empty -> true
+        is Group -> if (op == LogicOp.AND) children.all { it.matches(record) } else children.any { it.matches(record) }
+        is Condition -> matchesCondition(record[normalizeField(field)], op, value)
+    }
+
+    private fun matchesCondition(actual: JsonElement?, op: FilterOp, value: JsonElement): Boolean {
+        val actualText = when (actual) {
+            null, is JsonNull -> null
+            is JsonPrimitive -> actual.contentOrNull ?: actual.toString()
+            else -> actual.toString()
+        }
+        return when (op) {
+            FilterOp.EQ -> valuesEqual(actualText, value)
+            FilterOp.NEQ -> !valuesEqual(actualText, value)
+            FilterOp.GT -> compareValues(actualText, value) > 0
+            FilterOp.GTE -> compareValues(actualText, value) >= 0
+            FilterOp.LT -> compareValues(actualText, value) < 0
+            FilterOp.LTE -> compareValues(actualText, value) <= 0
+            FilterOp.IN -> (value as? JsonArray)?.any { valuesEqual(actualText, it) } ?: false
+            FilterOp.NIN -> (value as? JsonArray)?.none { valuesEqual(actualText, it) } ?: true
+            FilterOp.LIKE -> likeMatch(actualText, value)
+            FilterOp.CONTAINS -> actualText?.contains((value as? JsonPrimitive)?.contentOrNull ?: value.toString()) ?: false
+        }
+    }
+
+    private fun valuesEqual(actual: String?, expected: JsonElement): Boolean {
+        if (actual == null) return expected is JsonNull
+        val expectedText = when (expected) {
+            is JsonNull -> return false
+            is JsonPrimitive -> expected.contentOrNull ?: expected.toString()
+            else -> expected.toString()
+        }
+        val actualNumber = actual.toDoubleOrNull()
+        val expectedNumber = expectedText.toDoubleOrNull()
+        return if (actualNumber != null && expectedNumber != null) actualNumber == expectedNumber else actual == expectedText
+    }
+
+    private fun compareValues(actual: String?, expected: JsonElement): Int {
+        if (actual == null) return -1
+        val expectedText = when (expected) {
+            is JsonNull -> ""
+            is JsonPrimitive -> expected.contentOrNull ?: expected.toString()
+            else -> expected.toString()
+        }
+        val actualNumber = actual.toDoubleOrNull()
+        val expectedNumber = expectedText.toDoubleOrNull()
+        return if (actualNumber != null && expectedNumber != null) {
+            actualNumber.compareTo(expectedNumber)
+        } else {
+            actual.compareTo(expectedText)
+        }
+    }
+
+    private fun likeMatch(actual: String?, expected: JsonElement): Boolean {
+        if (actual == null) return false
+        val pattern = (expected as? JsonPrimitive)?.contentOrNull ?: expected.toString()
+        val regex = Regex("^" + Regex.escape(pattern).replace("%", ".*").replace("_", ".") + "$", RegexOption.IGNORE_CASE)
+        return regex.matches(actual)
+    }
+
+    private fun normalizeField(key: String): String = when {
+        key.startsWith("@record.data.") -> key.removePrefix("@record.data.")
+        key.startsWith("@record.") -> key.removePrefix("@record.")
+        else -> key
+    }
+
     private fun formatJsonColumn(key: String): String {
         val cleanKey = when {
             key.startsWith("@record.data.") -> key.removePrefix("@record.data.")

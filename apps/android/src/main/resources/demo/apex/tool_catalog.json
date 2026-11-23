@@ -5,6 +5,7 @@
     { "file": "local_db",          "label": "SQLite Database",     "icon": "stock",       "accent_color": "#0284C7" },
     { "file": "scanner",            "label": "Scanner + OCR",       "icon": "scanner",    "accent_color": "#10B981" },
     { "file": "code_generate",      "label": "Barcode / QR",        "icon": "qr_code",    "accent_color": "#0EA5E9" },
+    { "file": "codec",              "label": "Generic Codec",       "icon": "lock",       "accent_color": "#0284C7" },
     { "file": "camera",             "label": "Camera Capture",      "icon": "camera",     "accent_color": "#6366F1" },
     { "file": "mobilenet",          "label": "MobileNetV4 AI",      "icon": "brain",      "accent_color": "#A855F7" },
     { "file": "u2net",              "label": "U-2-Net Matting",     "icon": "wand",       "accent_color": "#EC4899" },

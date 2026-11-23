@@ -166,6 +166,216 @@ class DemoCardRenderTest {
     }
 
     @Test
+    fun kioskCustomerCardRendersCatalogAndOrderLines() {
+        val raw = javaClass.classLoader!!
+            .getResourceAsStream("demo/apex-kiosk/tools/kiosk_customer.json")!!
+            .bufferedReader()
+            .use { it.readText() }
+        val card = Json.parseToJsonElement(raw).jsonObject
+        EngineStateBridge.pushBatch(
+            mapOf(
+                "user.kiosk_order_id" to DivVariableValue.Str("9"),
+                "user.kiosk_status" to DivVariableValue.Str("DRAFT"),
+                "user.kiosk_total" to DivVariableValue.Str("2.75"),
+                "user.kiosk_item_count" to DivVariableValue.Str("1"),
+                "user.kiosk_direction" to DivVariableValue.Str("CUSTOMER_REQUEST"),
+                "user.catalog_json" to DivVariableValue.Str(
+                    """[{"id":"6","item_name":"Croissant","sku":"P1024","price":2.75,"stock":25}]"""
+                ),
+                "user.kiosk_lines_json" to DivVariableValue.Str(
+                    """[{"id":"11","item_name":"Coffee","sku":"P1012","quantity":1,"line_total":2.5}]"""
+                )
+            )
+        )
+        try {
+            render(card, "kiosk_customer") { _, _ -> }
+            composeRule.onNodeWithText("Croissant").assertExists()
+            composeRule.onNodeWithText("SKU P1024 • $2.75 • stock 25").assertExists()
+            composeRule.onNodeWithText("Coffee").assertExists()
+            composeRule.onNodeWithText("SKU P1012 • qty 1 • $2.5").assertExists()
+        } finally {
+            EngineStateBridge.clear()
+        }
+    }
+
+    @Test
+    fun setVariableActionResolvesNestedExpressions() {
+        val card = Json.parseToJsonElement(
+            """
+            {
+              "type": "container",
+              "items": [
+                {
+                  "type": "button",
+                  "id": "compose_payload",
+                  "text": "Compose",
+                  "actions": [
+                    {
+                      "type": "set_variable",
+                      "variable_name": "user.composed",
+                      "value": {
+                        "type": "string",
+                        "value": "{\"order\":\"@{user.order_id}\",\"total\":@{user.total}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+            """.trimIndent()
+        ).jsonObject
+        EngineStateBridge.pushBatch(
+            mapOf(
+                "user.order_id" to DivVariableValue.Str("42"),
+                "user.total" to DivVariableValue.Str("18.5")
+            )
+        )
+        try {
+            render(card, "set_variable") { _, _ -> }
+            composeRule.onNodeWithTag("div_btn_compose_payload").performClick()
+            composeRule.waitForIdle()
+            assertEquals(
+                DivVariableValue.Str("""{"order":"42","total":18.5}"""),
+                EngineStateBridge.state.value["user.composed"]
+            )
+        } finally {
+            EngineStateBridge.clear()
+        }
+    }
+
+    @Test
+    fun kioskTransferComposesTransferJsonFromLiveVariables() {
+        val raw = javaClass.classLoader!!
+            .getResourceAsStream("demo/apex-kiosk/tools/kiosk_transfer.json")!!
+            .bufferedReader()
+            .use { it.readText() }
+        val card = Json.parseToJsonElement(raw).jsonObject
+        EngineStateBridge.pushBatch(
+            mapOf(
+                "user.kiosk_direction" to DivVariableValue.Str("CUSTOMER_REQUEST"),
+                "user.kiosk_order_id" to DivVariableValue.Str("9"),
+                "user.kiosk_status" to DivVariableValue.Str("DRAFT"),
+                "user.kiosk_total" to DivVariableValue.Str("2.75"),
+                "user.kiosk_item_count" to DivVariableValue.Str("1"),
+                "user.kiosk_lines_json" to DivVariableValue.Str(
+                    """[{"sku":"P1024","quantity":1,"line_total":2.75}]"""
+                )
+            )
+        )
+        try {
+            render(card, "kiosk_transfer") { _, _ -> }
+            composeRule.onNodeWithTag("div_btn_create_qr_set").performClick()
+            composeRule.waitForIdle()
+
+            val composed = (EngineStateBridge.state.value["user.qr_json"] as DivVariableValue.Str).value
+            val parsed = Json.parseToJsonElement(composed).jsonObject
+            assertEquals("CUSTOMER_REQUEST", parsed["direction"]?.jsonPrimitive?.contentOrNull)
+            assertEquals("9", parsed["order_id"]?.jsonPrimitive?.contentOrNull)
+            assertEquals(2.75, parsed["total"]?.jsonPrimitive?.contentOrNull?.toDouble())
+            assertEquals(1, parsed["lines"]?.let { it as JsonArray }?.size)
+        } finally {
+            EngineStateBridge.clear()
+        }
+    }
+
+    @Test
+    fun kioskScanNextQrAppendsTheScannedChunk() {
+        val raw = javaClass.classLoader!!
+            .getResourceAsStream("demo/apex-kiosk/tools/kiosk_transfer.json")!!
+            .bufferedReader()
+            .use { it.readText() }
+        val card = Json.parseToJsonElement(raw).jsonObject
+        val chunk = "C1|abcd1234|00|01|deadbeef1234|BB8"
+        EngineStateBridge.pushBatch(
+            mapOf(
+                "user.scanned_code" to DivVariableValue.Str(chunk),
+                "user.scanned_chunks" to DivVariableValue.ArrayVal(emptyList())
+            )
+        )
+        try {
+            render(card, "kiosk_transfer_scan") { _, _ -> }
+            composeRule.onNodeWithTag("div_btn_scan_next_qr").performClick()
+            composeRule.waitForIdle()
+
+            assertEquals(
+                DivVariableValue.ArrayVal(listOf(DivVariableValue.Str(chunk))),
+                EngineStateBridge.state.value["user.scanned_chunks"]
+            )
+        } finally {
+            EngineStateBridge.clear()
+        }
+    }
+
+    @Test
+    fun kioskAssembleScannedPassesChunksAsAJsonArray() {
+        val raw = javaClass.classLoader!!
+            .getResourceAsStream("demo/apex-kiosk/tools/kiosk_transfer.json")!!
+            .bufferedReader()
+            .use { it.readText() }
+        val card = Json.parseToJsonElement(raw).jsonObject
+        val chunk = "C1|abcd1234|00|01|deadbeef1234|BB8"
+        EngineStateBridge.pushBatch(
+            mapOf("user.scanned_chunks" to DivVariableValue.ArrayVal(listOf(DivVariableValue.Str(chunk))))
+        )
+        val payloads = mutableListOf<String?>()
+        try {
+            render(card, "kiosk_transfer_assemble") { _, payload -> payloads.add(payload) }
+            composeRule.onNodeWithTag("div_btn_assemble_scanned").performClick()
+            composeRule.waitForIdle()
+
+            val assemblePayload = payloads.firstOrNull { it?.contains("chunks") == true }
+            assertTrue("assemble action did not dispatch", assemblePayload != null)
+            val chunks = Json.parseToJsonElement(assemblePayload!!).jsonObject["chunks"] as JsonArray
+            assertEquals(1, chunks.size)
+            assertEquals(chunk, chunks[0].jsonPrimitive.content)
+        } finally {
+            EngineStateBridge.clear()
+        }
+    }
+
+    @Test
+    fun divTimerStartsAndMutatesVariables() {
+        val card = Json.parseToJsonElement(
+            """
+            {
+              "type": "container",
+              "items": [
+                {
+                  "type": "button",
+                  "id": "start_timer",
+                  "text": "Start",
+                  "actions": [{ "url": "div-action://timer?id=t&action=start" }]
+                }
+              ],
+              "_timers": [
+                {
+                  "id": "t",
+                  "tick_interval": 50,
+                  "tick_actions": [
+                    {
+                      "type": "set_variable",
+                      "variable_name": "user.ticks",
+                      "value": { "type": "integer", "value": "@{user.ticks + 1}" }
+                    }
+                  ]
+                }
+              ]
+            }
+            """.trimIndent()
+        ).jsonObject
+        EngineStateBridge.pushBatch(mapOf("user.ticks" to DivVariableValue.IntVal(0)))
+        try {
+            render(card, "timer") { _, _ -> }
+            composeRule.onNodeWithTag("div_btn_start_timer").performClick()
+            composeRule.waitUntil(2_000) {
+                ((EngineStateBridge.state.value["user.ticks"] as? DivVariableValue.IntVal)?.value ?: 0) > 0
+            }
+        } finally {
+            EngineStateBridge.clear()
+        }
+    }
+
+    @Test
     fun everyToolCardRendersWithoutRenderError() {
         val cards = DemoCardRepository.toolCards(spec)
         assertTrue("no tool cards loaded from resources", cards.isNotEmpty())

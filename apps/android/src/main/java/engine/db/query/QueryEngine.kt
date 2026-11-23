@@ -115,13 +115,28 @@ object QueryEngine {
      */
     fun execute(driver: SqlDriver, query: ApexQuery, collectionId: Long?): JsonArray {
         val (sql, params) = buildSql(query, collectionId)
-        val rows = mutableListOf<JsonObject>()
+        val rows = if (!driver.supportsJson1 && sql.contains("json_extract", ignoreCase = true)) {
+            executeInMemory(driver, query, collectionId)
+        } else {
+            try {
+                executeSql(driver, sql, params)
+            } catch (e: Exception) {
+                if (!isMissingJson1(e)) throw e
+                executeInMemory(driver, query, collectionId)
+            }
+        }
 
-        driver.executeQuery(
-            null,
-            sql,
-            params.size
-        ) {
+        var processed = rows.toList()
+        if (query.pipeline.isNotEmpty()) {
+            processed = processPipeline(processed, query.pipeline)
+        }
+
+        return JsonArray(processed)
+    }
+
+    private fun executeSql(driver: SqlDriver, sql: String, params: List<Any?>): List<JsonObject> {
+        val rows = mutableListOf<JsonObject>()
+        driver.executeQuery(null, sql, params.size) {
             params.forEachIndexed { index, param ->
                 when (param) {
                     null -> bindNull(index)
@@ -159,14 +174,103 @@ object QueryEngine {
                 rows.add(JsonObject(map))
             }
         }
+        return rows
+    }
 
-        var processed = rows.toList()
-        if (query.pipeline.isNotEmpty()) {
-            processed = processPipeline(processed, query.pipeline)
+    /**
+     * Android's bundled SQLite has no JSON1 extension on some API levels (notably API 28),
+     * so `json_extract` fails at runtime. Records are small enough to filter/sort in memory,
+     * and doing so keeps the same result shape as the SQL path.
+     */
+    private fun executeInMemory(driver: SqlDriver, query: ApexQuery, collectionId: Long?): List<JsonObject> {
+        if (query.system || collectionId == null) return emptyList()
+
+        val records = mutableListOf<Pair<JsonObject, Map<String, JsonElement>>>()
+        driver.executeQuery(
+            null,
+            "SELECT id, data, created, updated FROM records WHERE collection_id = ?",
+            1
+        ) { bindLong(0, collectionId) }.use { cursor ->
+            while (cursor.next().value) {
+                val id = cursor.getString(0) ?: ""
+                val rawData = cursor.getString(1) ?: "{}"
+                val data = try {
+                    Json.parseToJsonElement(rawData) as? JsonObject ?: JsonObject(emptyMap())
+                } catch (_: Exception) {
+                    JsonObject(emptyMap())
+                }
+                val flat = LinkedHashMap<String, JsonElement>()
+                data.forEach { (k, v) -> flat[k] = v }
+                flat["id"] = JsonPrimitive(id)
+                flat["created"] = JsonPrimitive(cursor.getString(2) ?: "")
+                flat["updated"] = JsonPrimitive(cursor.getString(3) ?: "")
+                records.add(data to flat)
+            }
         }
 
-        return JsonArray(processed)
+        val predicate = FilterNode.parse(query.where)
+        val filtered = records.filter { predicate.matches(it.second) }
+
+        val sorted = if (query.sort.isNullOrBlank()) {
+            filtered
+        } else {
+            val parts = query.sort.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+            filtered.sortedWith { left, right ->
+                var result = 0
+                for (part in parts) {
+                    val desc = part.startsWith("-")
+                    val field = part.removePrefix("-")
+                    result = compareJson(left.second[field], right.second[field])
+                    if (result != 0) return@sortedWith if (desc) -result else result
+                }
+                result
+            }
+        }
+
+        val offset = (query.offset ?: 0L).coerceAtLeast(0L).toInt()
+        val limit = (query.limit ?: 100L).coerceAtLeast(0L).toInt()
+        val page = sorted.drop(offset).take(limit)
+
+        return page.map { (data, flat) ->
+            if (query.select.isEmpty()) {
+                JsonObject(
+                    linkedMapOf(
+                        "id" to (flat["id"] ?: JsonNull),
+                        "data" to data,
+                        "created" to (flat["created"] ?: JsonNull),
+                        "updated" to (flat["updated"] ?: JsonNull)
+                    )
+                )
+            } else {
+                JsonObject(query.select.mapNotNull { field ->
+                    when (field) {
+                        is SelectField.Simple -> field.value to (flat[field.value] ?: JsonNull)
+                        is SelectField.Complex -> {
+                            val name = field.`as` ?: field.field ?: field.expr ?: "*"
+                            name to (flat[field.field ?: ""] ?: JsonNull)
+                        }
+                    }
+                }.toMap())
+            }
+        }
     }
+
+    private fun compareJson(left: JsonElement?, right: JsonElement?): Int {
+        if (left == null || left is JsonNull) return if (right == null || right is JsonNull) 0 else -1
+        if (right == null || right is JsonNull) return 1
+        val leftNumber = left.jsonPrimitive.contentOrNull?.toDoubleOrNull()
+        val rightNumber = right.jsonPrimitive.contentOrNull?.toDoubleOrNull()
+        return if (leftNumber != null && rightNumber != null) {
+            leftNumber.compareTo(rightNumber)
+        } else {
+            left.jsonPrimitive.contentOrNull.orEmpty().compareTo(right.jsonPrimitive.contentOrNull.orEmpty())
+        }
+    }
+
+    private fun isMissingJson1(error: Throwable): Boolean =
+        generateSequence(error) { it.cause }.any {
+            it.message?.contains("no such function: json_extract", ignoreCase = true) == true
+        }
 
     private fun processPipeline(data: List<JsonObject>, pipeline: List<PipelineStep>): List<JsonObject> {
         var current = data

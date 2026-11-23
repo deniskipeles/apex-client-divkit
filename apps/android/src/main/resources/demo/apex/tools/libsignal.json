@@ -1,5 +1,14 @@
 {
     "type": "container",
+    "variables": [
+        { "name": "user.signal_peer_id", "type": "string", "value": "acme_peer_01" },
+        { "name": "user.signal_session_id", "type": "string", "value": "" },
+        { "name": "user.signal_fingerprint", "type": "string", "value": "" },
+        { "name": "user.signal_status", "type": "string", "value": "NO_SESSION" },
+        { "name": "user.signal_verification", "type": "string", "value": "UNVERIFIED" },
+        { "name": "user.signal_ciphertext", "type": "string", "value": "" },
+        { "name": "user.signal_plaintext", "type": "string", "value": "" }
+    ],
     "orientation": "vertical",
     "background_color": "#2E1065",
     "corner_radius": 12,
