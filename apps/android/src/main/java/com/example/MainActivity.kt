@@ -6,6 +6,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -18,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -41,6 +43,7 @@ import com.example.camera.CameraOutcome
 import com.example.camera.ImageSourceChoice
 import com.example.camera.ImageSourceHost
 import com.example.camera.ImageSourceOverlay
+import com.example.screen.ScreenCaptureHost
 import com.example.ui.PosTerminalTab
 import com.example.ui.TenantLauncherScreen
 import com.example.ui.theme.MyApplicationTheme
@@ -49,6 +52,7 @@ import engine.tools.NativeToolsSuite
 import engine.tools.impl.BiometricsTool
 import engine.tools.impl.CameraTool
 import engine.tools.impl.KeepAwakeTool
+import engine.tools.impl.ScreenTool
 import engine.tools.scan.BarcodeDecoder
 import engine.tools.scan.ScanResult
 
@@ -56,9 +60,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        // Platform bridge for the tools://keep-awake capability: toggle the window's
+        // Platform bridge for tools://screen/keep-awake: toggle the window's
         // FLAG_KEEP_SCREEN_ON so a card can hold the terminal awake during long tasks.
-        KeepAwakeTool.sink = { enabled ->
+        val keepAwake: (Boolean) -> Boolean = { enabled ->
             runOnUiThread {
                 if (enabled) {
                     window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -67,6 +71,22 @@ class MainActivity : ComponentActivity() {
                 }
             }
             true
+        }
+        ScreenTool.keepAwakeSink = keepAwake
+        KeepAwakeTool.sink = keepAwake
+
+        // MediaProjection bridge for tools://screen/{screenshot,recording}. The tool runs with
+        // no Activity, so it parks the request on ScreenCaptureHost; the host owns the
+        // permission prompt, the foreground service and the ImageReader/MediaRecorder pipeline.
+        ScreenCaptureHost.attach(this)
+        ScreenTool.screenshotSink = { tenantId, format, quality ->
+            ScreenCaptureHost.screenshot(tenantId, format, quality)
+        }
+        ScreenTool.recordingStartSink = { tenantId ->
+            ScreenCaptureHost.startRecording(tenantId)
+        }
+        ScreenTool.recordingStopSink = {
+            ScreenCaptureHost.stopRecording()
         }
         // Platform bridge for tools://camera/capture: the tool has no Activity or surface, so it
         // parks a request on CameraHost and the host composable runs a real CameraX capture.
@@ -173,6 +193,13 @@ fun SduiPosEngineApp(viewModel: SduiEngineViewModel) {
     var showConnectWorkspaceSheet by remember { mutableStateOf(false) }
     var showNotifications by remember { mutableStateOf(false) }
     val colorScheme = MaterialTheme.colorScheme
+
+    // Keep the branded splash up while a remembered workspace is restored. Rendering the
+    // launcher first makes the hub flash between the system splash and the workspace.
+    if (uiState.isRestoringSession) {
+        WorkspaceRestoreSplash()
+        return
+    }
 
     // System Back handling.
     // - Inside an opened tenant, the tenant screen owns back for in-tenant popups; once those
@@ -408,4 +435,53 @@ fun SduiPosEngineApp(viewModel: SduiEngineViewModel) {
     ImageSourceOverlay()
     CredentialGateOverlay()
 
+}
+
+@Composable
+private fun WorkspaceRestoreSplash() {
+    val colorScheme = MaterialTheme.colorScheme
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(colorResource(R.color.splash_background))
+            .testTag("app_restore_splash"),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(18.dp)
+        ) {
+            Surface(
+                color = colorScheme.primary,
+                shape = RoundedCornerShape(20.dp),
+                modifier = Modifier.size(76.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Default.Terminal,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(42.dp)
+                    )
+                }
+            }
+            Text(
+                text = "ApexClient Terminal",
+                fontWeight = FontWeight.Bold,
+                fontSize = 22.sp,
+                color = colorScheme.onBackground
+            )
+            Text(
+                text = "Restoring your workspace…",
+                fontSize = 13.sp,
+                color = colorScheme.onSurfaceVariant
+            )
+            CircularProgressIndicator(
+                modifier = Modifier
+                    .size(26.dp)
+                    .testTag("app_restore_progress"),
+                strokeWidth = 2.5.dp
+            )
+        }
+    }
 }

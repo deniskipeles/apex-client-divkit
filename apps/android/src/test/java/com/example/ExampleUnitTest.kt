@@ -16,10 +16,15 @@ import engine.ui.DivChartType
 import engine.tools.DivActionUrl
 import engine.tools.NativeToolsSuite
 import engine.tools.Provenance
+import engine.tools.vector.HashedTextEmbedding
+import engine.tools.vector.VectorMath
+import engine.tools.ProvenanceChecker
 import engine.tools.TerminalApp
 import engine.tools.ToolArgs
 import engine.tools.ToolContext
 import engine.tools.ToolResult
+import engine.tools.impl.SecureStatusTool
+import engine.tools.impl.SecureVerifyIdentityTool
 import kotlinx.serialization.json.*
 import org.junit.Assert.*
 import org.junit.Test
@@ -222,6 +227,42 @@ class ExampleUnitTest {
             engine.tools.impl.CameraTool.captureSink = previous
         }
     }
+
+    @Test
+    fun genericCamera_fallsBackToTheSharedImageSourceWithCameraAllowed() =
+        kotlinx.coroutines.runBlocking {
+            val context = androidx.test.core.app.ApplicationProvider
+                .getApplicationContext<android.content.Context>()
+            engine.db.currentAndroidContext = { context }
+            val file = java.io.File(context.cacheDir, "cam_${System.currentTimeMillis()}.jpg")
+            file.writeBytes(renderTestJpeg(64, 64))
+
+            val previousCapture = engine.tools.impl.CameraTool.captureSink
+            val previousSource = engine.tools.NativeToolsSuite.imageSourceSink
+            var allowCamera: Boolean? = null
+            engine.tools.impl.CameraTool.captureSink = null
+            engine.tools.NativeToolsSuite.imageSourceSink = { allowed ->
+                allowCamera = allowed
+                file.absolutePath
+            }
+            try {
+                val outcome = engine.tools.NativeToolsSuite.execute(
+                    url = "tools://camera/capture",
+                    payload = buildJsonObject { },
+                    tenantId = "tenant_camera_fallback"
+                )
+                assertTrue("fallback capture must succeed", outcome.success)
+                assertTrue("fallback must offer the camera, not only files", allowCamera == true)
+                assertEquals(
+                    "image_source",
+                    outcome.resultData.jsonObject["source"]?.jsonPrimitive?.contentOrNull ?: ""
+                )
+            } finally {
+                engine.tools.impl.CameraTool.captureSink = previousCapture
+                engine.tools.NativeToolsSuite.imageSourceSink = previousSource
+                file.delete()
+            }
+        }
 
     @Test
     fun genericScan_usesTheLiveViewfinderWhenNoImageIsSupplied() = kotlinx.coroutines.runBlocking {
@@ -448,7 +489,7 @@ class ExampleUnitTest {
     }
 
     @Test
-    fun nativeTools_u2NetRemovesBackgroundFromARealImageAndSaysItIsNotU2Net() =
+    fun nativeTools_u2NetSegmentsARealImageOrFallsBackCleanly() =
         kotlinx.coroutines.runBlocking {
             val context = androidx.test.core.app.ApplicationProvider.getApplicationContext<android.content.Context>()
             engine.db.currentAndroidContext = { context }
@@ -470,9 +511,13 @@ class ExampleUnitTest {
             assertNotNull("must return the processed image", uri)
             assertTrue("must be a file uri, was $uri", uri!!.startsWith("file://"))
             assertTrue("processed file must exist", java.io.File(uri.removePrefix("file://")).exists())
-            // And it must not pretend to be U-2-Net.
+            // On-device this is the bundled U-2-Netp graph; plain JVM tests cannot load
+            // tensorflowlite_jni, so the engine must report the honest fallback instead.
             val algorithm = result["algorithm"]?.jsonPrimitive?.contentOrNull ?: ""
-            assertTrue("must disclose the real algorithm, was $algorithm", algorithm.contains("not U-2-Net"))
+            assertTrue(
+                "must identify U-2-Net or its fallback, was $algorithm",
+                algorithm.contains("U-2-Net")
+            )
             file.delete()
             Unit
         }
@@ -807,6 +852,46 @@ class ExampleUnitTest {
     }
 
     @Test
+    fun genericLibSignal_reestablishingSessionRepeatsRoundTrip() = kotlinx.coroutines.runBlocking {
+        // The demo runs create → encrypt → decrypt. Re-running it after the process
+        // restarted must not reuse the previous ratchet and fail on the second decrypt.
+        val tenant = "tenant_signal_restart"
+        val peer = "till_42"
+        val payload = "{\"order\":\"#1042\",\"total\":\"18.50\"}"
+
+        repeat(3) { round ->
+            val create = engine.tools.NativeToolsSuite.execute(
+                url = "tools://libsignal/create_session",
+                payload = buildJsonObject { put("peer_id", peer) },
+                tenantId = tenant
+            )
+            assertTrue("create round $round: ${create.summary}", create.success)
+
+            val encrypt = engine.tools.NativeToolsSuite.execute(
+                url = "tools://libsignal/encrypt",
+                payload = buildJsonObject {
+                    put("peer_id", peer)
+                    put("data", payload)
+                },
+                tenantId = tenant
+            )
+            assertTrue("encrypt round $round: ${encrypt.summary}", encrypt.success)
+            val ciphertext = (encrypt.outputVariables["user.signal_ciphertext"] as DivVariableValue.Str).value
+
+            val decrypt = engine.tools.NativeToolsSuite.execute(
+                url = "tools://libsignal/decrypt",
+                payload = buildJsonObject {
+                    put("peer_id", peer)
+                    put("ciphertext", ciphertext)
+                },
+                tenantId = tenant
+            )
+            assertTrue("decrypt round $round: ${decrypt.summary}", decrypt.success)
+            assertEquals(payload, (decrypt.outputVariables["user.signal_plaintext"] as DivVariableValue.Str).value)
+        }
+    }
+
+    @Test
     fun officialSignalLibrary_endToEndDoubleRatchetEncryption() = kotlinx.coroutines.runBlocking {
         val tenant = "tenant_secure_hub"
         val peer = "client_device_01"
@@ -890,6 +975,71 @@ class ExampleUnitTest {
             tenantId = tenant
         )
         assertEquals("UNVERIFIED", status().resultData.jsonObject["verification_status"]?.jsonPrimitive?.content)
+    }
+
+    @Test
+    fun libSignalStatus_doesNotInventASession() = kotlinx.coroutines.runBlocking {
+        val tenant = "tenant_status_without_session"
+        val outcome = engine.tools.NativeToolsSuite.execute(
+            url = "tools://libsignal/status",
+            payload = buildJsonObject { put("peer_id", "ghost") },
+            tenantId = tenant
+        )
+        assertTrue(outcome.success)
+        assertEquals("NO_SESSION", outcome.resultData.jsonObject["status"]?.jsonPrimitive?.contentOrNull)
+        assertFalse(engine.tools.libsignal.LibSignalEngine.hasSession(tenant, "ghost"))
+    }
+
+    @Test
+    fun libSignalVerifyIdentity_withoutFingerprintFailsClosed() = kotlinx.coroutines.runBlocking {
+        val tenant = "tenant_verify_without_fingerprint"
+        val peer = "peer_no_proof"
+        engine.tools.NativeToolsSuite.execute(
+            url = "tools://libsignal/create_session",
+            payload = buildJsonObject { put("peer_id", peer) },
+            tenantId = tenant
+        )
+        val outcome = engine.tools.NativeToolsSuite.execute(
+            url = "tools://libsignal/verify_identity",
+            payload = buildJsonObject { put("peer_id", peer) },
+            tenantId = tenant
+        )
+        assertFalse(outcome.success)
+        assertTrue(outcome.resultData.toString().contains("missing safety_number"))
+    }
+
+    @Test
+    fun secureStatus_reportsSessionStateWithoutCreatingOne() = kotlinx.coroutines.runBlocking {
+        val tenant = "tenant_secure_status"
+        val peer = "peer_status"
+        val empty = SecureStatusTool().invoke(
+            ToolArgs(mapOf("peer_id" to peer)),
+            ToolContext(tenant)
+        )
+        assertTrue(empty is ToolResult.Success)
+        assertEquals("NO_SESSION", (empty as ToolResult.Success).data["status"])
+
+        engine.tools.NativeToolsSuite.execute(
+            url = "tools://libsignal/create_session",
+            payload = buildJsonObject { put("peer_id", peer) },
+            tenantId = tenant
+        )
+        val established = SecureStatusTool().invoke(
+            ToolArgs(mapOf("peer_id" to peer)),
+            ToolContext(tenant)
+        )
+        assertTrue(established is ToolResult.Success)
+        assertEquals("ESTABLISHED", (established as ToolResult.Success).data["status"])
+    }
+
+    @Test
+    fun secureVerifyIdentity_withoutFingerprintFailsClosed() = kotlinx.coroutines.runBlocking {
+        val result = SecureVerifyIdentityTool().invoke(
+            ToolArgs(mapOf("peer_id" to "peer_unproofed")),
+            ToolContext("tenant_secure_verify")
+        )
+        assertTrue(result is ToolResult.Failed)
+        assertTrue((result as ToolResult.Failed).message.contains("missing provided_fingerprint"))
     }
 
     @Test
@@ -1454,56 +1604,165 @@ class ExampleUnitTest {
     }
 
     @Test
-    fun keepAwakeTool_schemaIsRegisteredWithAllOperations() {
-        val schema = engine.tools.NativeToolsSuite.registeredSchemas.first { it.toolId == "keep-awake" }
+    fun screenTool_schemaIsRegisteredWithAllOperations() {
+        val schema = engine.tools.NativeToolsSuite.registeredSchemas.first { it.toolId == "screen" }
         assertEquals(
-            listOf("enable", "disable", "toggle", "status"),
+            listOf("keep-awake", "screenshot", "recording", "status"),
             schema.supportedOperations
         )
     }
 
     @Test
-    fun keepAwakeTool_enablesAndReportsStateThroughSink() = kotlinx.coroutines.runBlocking {
+    fun screenTool_keepAwakeEnablesAndReportsStateThroughSink() = kotlinx.coroutines.runBlocking {
         var sinkState: Boolean? = null
-        engine.tools.impl.KeepAwakeTool.sink = { enabled ->
+        engine.tools.impl.ScreenTool.keepAwakeSink = { enabled ->
             sinkState = enabled
             true
         }
         try {
             val enable = engine.tools.NativeToolsSuite.execute(
-                url = "tools://keep-awake/enable",
+                url = "tools://screen/keep-awake",
                 payload = buildJsonObject {
                     put("level", "screen")
                     put("timeout_ms", "300000")
+                    put("action", "enable")
                 }
             )
-            assertEquals("keep-awake", enable.toolId)
+            assertEquals("screen", enable.toolId)
             assertEquals("ENABLED", enable.resultData.jsonObject["status"]?.jsonPrimitive?.contentOrNull)
-            assertEquals("ENABLED", (enable.outputVariables["user.keep_awake_status"] as DivVariableValue.Str).value)
+            assertEquals("ENABLED", (enable.outputVariables["user.screen_status"] as DivVariableValue.Str).value)
             assertEquals(true, sinkState)
 
-            val disable = engine.tools.NativeToolsSuite.execute(url = "tools://keep-awake/disable", payload = buildJsonObject {})
+            val disable = engine.tools.NativeToolsSuite.execute(
+                url = "tools://screen/keep-awake",
+                payload = buildJsonObject { put("action", "disable") }
+            )
             assertEquals("DISABLED", disable.resultData.jsonObject["status"]?.jsonPrimitive?.contentOrNull)
             assertEquals(false, sinkState)
         } finally {
-            engine.tools.impl.KeepAwakeTool.sink = null
+            engine.tools.impl.ScreenTool.keepAwakeSink = null
         }
     }
 
     @Test
-    fun keepAwakeTool_statusReportsCapabilities() = kotlinx.coroutines.runBlocking {
-        val status = engine.tools.NativeToolsSuite.execute(url = "tools://keep-awake/status", payload = buildJsonObject {})
-        assertEquals("keep-awake", status.toolId)
-        assertTrue(status.resultData.jsonObject.containsKey("supported_levels"))
-        assertTrue(status.resultData.jsonObject.containsKey("supported_operations"))
+    fun screenTool_screenshotUsesTheHostSink() = kotlinx.coroutines.runBlocking {
+        engine.tools.impl.ScreenTool.screenshotSink = { tenantId, format, quality ->
+            assertEquals("tenant_screen", tenantId)
+            assertEquals("png", format)
+            assertEquals(95, quality)
+            engine.tools.impl.ScreenTool.Screenshot(
+                path = "/tmp/shot.png",
+                uri = "file:///tmp/shot.png",
+                width = 1080,
+                height = 2400,
+                bytes = 42_000,
+                imageId = "shot_1"
+            )
+        }
+        try {
+            val result = engine.tools.NativeToolsSuite.execute(
+                url = "tools://screen/screenshot",
+                payload = buildJsonObject { put("format", "png"); put("quality", "95") },
+                tenantId = "tenant_screen"
+            )
+            assertEquals("screen", result.toolId)
+            assertEquals("CAPTURED", result.resultData.jsonObject["status"]?.jsonPrimitive?.contentOrNull)
+            assertEquals("file:///tmp/shot.png", (result.outputVariables["user.screen_media_uri"] as DivVariableValue.Str).value)
+            assertEquals(1080L, (result.outputVariables["user.screen_width"] as DivVariableValue.IntVal).value)
+            assertEquals("shot_1", (result.outputVariables["user.screen_image_id"] as DivVariableValue.Str).value)
+        } finally {
+            engine.tools.impl.ScreenTool.screenshotSink = null
+        }
     }
 
     @Test
-    fun demoCard_surfacesKeepAwakeBlock() {
+    fun screenTool_screenshotFailureSurfacesTheReason() = kotlinx.coroutines.runBlocking {
+        engine.tools.impl.ScreenTool.screenshotSink = { _, _, _ ->
+            throw IllegalStateException("capture host exploded")
+        }
+        try {
+            val result = engine.tools.NativeToolsSuite.execute(
+                url = "tools://screen/screenshot",
+                payload = buildJsonObject {},
+                tenantId = "tenant_screen"
+            )
+            assertEquals("FAILED", result.resultData.jsonObject["status"]?.jsonPrimitive?.contentOrNull)
+            assertEquals(
+                "capture host exploded",
+                (result.outputVariables["user.screen_error"] as DivVariableValue.Str).value
+            )
+            assertFalse(result.success)
+        } finally {
+            engine.tools.impl.ScreenTool.screenshotSink = null
+        }
+    }
+
+    @Test
+    fun screenTool_recordingStartsAndStopsThroughHostSink() = kotlinx.coroutines.runBlocking {
+        engine.tools.impl.ScreenTool.recordingStartSink = { tenantId ->
+            assertEquals("tenant_screen", tenantId)
+            engine.tools.impl.ScreenTool.RecordingStart("rec_1", 1000L, 1080, 2400)
+        }
+        engine.tools.impl.ScreenTool.recordingStopSink = {
+            engine.tools.impl.ScreenTool.RecordingStop(
+                path = "/tmp/rec.mp4",
+                uri = "file:///tmp/rec.mp4",
+                durationMs = 5_000L,
+                width = 1080,
+                height = 2400,
+                bytes = 900_000L,
+                id = "rec_1"
+            )
+        }
+        try {
+            val start = engine.tools.NativeToolsSuite.execute(
+                url = "tools://screen/recording",
+                payload = buildJsonObject { put("action", "start") },
+                tenantId = "tenant_screen"
+            )
+            assertEquals("RECORDING", start.resultData.jsonObject["status"]?.jsonPrimitive?.contentOrNull)
+            assertEquals("true", start.resultData.jsonObject["recording"]?.jsonPrimitive?.contentOrNull)
+
+            val stop = engine.tools.NativeToolsSuite.execute(
+                url = "tools://screen/recording",
+                payload = buildJsonObject { put("action", "stop") },
+                tenantId = "tenant_screen"
+            )
+            assertEquals("RECORDED", stop.resultData.jsonObject["status"]?.jsonPrimitive?.contentOrNull)
+            assertEquals("file:///tmp/rec.mp4", (stop.outputVariables["user.screen_media_uri"] as DivVariableValue.Str).value)
+            assertEquals(5_000L, (stop.outputVariables["user.screen_duration_ms"] as DivVariableValue.IntVal).value)
+        } finally {
+            engine.tools.impl.ScreenTool.recordingStartSink = null
+            engine.tools.impl.ScreenTool.recordingStopSink = null
+        }
+    }
+
+    @Test
+    fun screenTool_withoutHostReportsUnsupported() = kotlinx.coroutines.runBlocking {
+        engine.tools.impl.ScreenTool.screenshotSink = null
+        engine.tools.impl.ScreenTool.recordingStartSink = null
+        engine.tools.impl.ScreenTool.recordingStopSink = null
+        val shot = engine.tools.NativeToolsSuite.execute(url = "tools://screen/screenshot", payload = buildJsonObject {})
+        assertEquals("UNSUPPORTED", shot.resultData.jsonObject["status"]?.jsonPrimitive?.contentOrNull)
+        assertFalse(shot.success)
+    }
+
+    @Test
+    fun screenTool_statusReportsCapabilities() = kotlinx.coroutines.runBlocking {
+        val status = engine.tools.NativeToolsSuite.execute(url = "tools://screen/status", payload = buildJsonObject {})
+        assertEquals("screen", status.toolId)
+        assertTrue(status.resultData.jsonObject.containsKey("supported_levels"))
+        assertTrue(status.resultData.jsonObject.containsKey("supported_operations"))
+        assertTrue(status.resultData.jsonObject.containsKey("recording_supported"))
+    }
+
+    @Test
+    fun demoCard_surfacesScreenBlock() {
         val spec = WorkspaceProvisioner.defaultWorkspaces.first()
         val json = allCardsJson(spec)
-        assertTrue(json.contains("tools://keep-awake/enable"))
-        assertTrue(json.contains("tools://keep-awake/disable"))
+        assertTrue(json.contains("tools://screen/keep-awake"))
+        assertTrue(json.contains("tools://screen/screenshot"))
+        assertTrue(json.contains("tools://screen/recording"))
     }
 
     // ------------------------------------------------------------------
@@ -1805,6 +2064,33 @@ class ExampleUnitTest {
     }
 
     @Test
+    fun kioskDemoCards_supplyTheArgumentsTheirToolsRequire() = kotlinx.coroutines.runBlocking {
+        val spec = WorkspaceProvisioner.defaultWorkspaces.first { it.demoRoot.contains("kiosk") }
+        val missingArgument = Regex("""(missing \S+ argument|requires a \S+)""", RegexOption.IGNORE_CASE)
+        val deadEnds = mutableListOf<String>()
+
+        (spec.toolCardOrder ?: DemoCardRepository.toolCardOrder).forEach { name ->
+            val card = DemoCardRepository.toolCard(spec, name) ?: return@forEach
+            collectToolActions(card).forEach { action ->
+                val url = action["url"]!!.jsonPrimitive.content
+                val payload = action["payload"] as? JsonObject ?: buildJsonObject { }
+                val error = runCatching {
+                    NativeToolsSuite.execute(url = url, payload = payload, tenantId = spec.tenantId)
+                        .resultData.jsonObject["error"]?.jsonPrimitive?.contentOrNull
+                }.getOrElse { it.message }
+                if (error != null && missingArgument.containsMatchIn(error)) {
+                    deadEnds.add("$name -> $url: $error")
+                }
+            }
+        }
+        runCatching {
+            NativeToolsSuite.execute(url = "tools://net/stop", payload = buildJsonObject { }, tenantId = spec.tenantId)
+        }
+
+        assertTrue("Kiosk buttons dispatch tools without their required arguments: $deadEnds", deadEnds.isEmpty())
+    }
+
+    @Test
     fun demoCards_bindOnlyFieldsTheirToolReturns() = kotlinx.coroutines.runBlocking {
         // A card that maps `status` while the tool returns `state` leaves the bound
         // variable permanently blank: the button appears to do nothing. Compare each
@@ -1852,6 +2138,11 @@ class ExampleUnitTest {
                     val action = node["action"] as? JsonObject
                     val url = action?.get("url")?.jsonPrimitive?.contentOrNull
                     if (url != null && url.startsWith("tools://")) found.add(action)
+                    (node["actions"] as? JsonArray)?.forEach { element ->
+                        val step = element as? JsonObject
+                        val stepUrl = step?.get("url")?.jsonPrimitive?.contentOrNull
+                        if (stepUrl != null && stepUrl.startsWith("tools://")) found.add(step)
+                    }
                     node.values.forEach(::walk)
                 }
                 is JsonArray -> node.forEach(::walk)
@@ -1930,5 +2221,109 @@ class ExampleUnitTest {
         ).forEach { name ->
             assertTrue("Demo card must declare $name", json.contains("\"$name\""))
         }
+    }
+
+    @Test
+    fun embeddingSimilarity_scoresIdenticalVectorsAsOne() = kotlinx.coroutines.runBlocking {
+        val packed = packedFloats(1f, 2f, 3f)
+        val outcome = NativeToolsSuite.execute(
+            url = "tools://embedding/similarity",
+            payload = buildJsonObject {
+                put("a", packed)
+                put("b", packed)
+            }
+        )
+        assertTrue("similarity should succeed: ${outcome.summary}", outcome.success)
+        assertEquals(1.0, outcome.resultData.jsonObject["score"]!!.jsonPrimitive.double, 1e-5)
+        assertEquals(3, outcome.resultData.jsonObject["dim"]!!.jsonPrimitive.int)
+        assertEquals("embedding", outcome.toolId)
+    }
+
+    @Test
+    fun embeddingSimilarity_legacyVectorizeAliasUsesEmbeddingSchema() = kotlinx.coroutines.runBlocking {
+        val packed = packedFloats(1f, 0f)
+        val outcome = NativeToolsSuite.execute(
+            url = "tools://vectorize/similarity",
+            payload = buildJsonObject {
+                put("a", packed)
+                put("b", packed)
+            }
+        )
+        assertTrue(outcome.success)
+        assertEquals("embedding", outcome.toolId)
+        assertEquals("similarity", outcome.operation)
+    }
+
+    @Test
+    fun embeddingSimilarity_rejectsMissingAndMismatchedVectors() = kotlinx.coroutines.runBlocking {
+        val missing = NativeToolsSuite.execute(
+            url = "tools://embedding/similarity",
+            payload = buildJsonObject { }
+        )
+        assertFalse(missing.success)
+        assertTrue(missing.resultData.jsonObject["error"]!!.jsonPrimitive.content.contains("requires packed vectors"))
+
+        val mismatch = NativeToolsSuite.execute(
+            url = "tools://embedding/similarity",
+            payload = buildJsonObject {
+                put("a", packedFloats(1f, 2f))
+                put("b", packedFloats(1f, 2f, 3f))
+            }
+        )
+        assertFalse(mismatch.success)
+        assertTrue(mismatch.resultData.jsonObject["error"]!!.jsonPrimitive.content.contains("dimension mismatch"))
+    }
+
+    @Test
+    fun embeddingText_rejectsBlankTextBeforeTouchingTheModel() = kotlinx.coroutines.runBlocking {
+        val outcome = NativeToolsSuite.execute(
+            url = "tools://embedding/text",
+            payload = buildJsonObject { put("text", "   ") }
+        )
+        assertFalse(outcome.success)
+        assertTrue(outcome.resultData.jsonObject["error"]!!.jsonPrimitive.content.contains("non-blank"))
+    }
+
+    @Test
+    fun hashedTextEmbedding_isDeterministicAndNormalized() {
+        val a = HashedTextEmbedding.embed("Wagyu Smash Burger")
+        val b = HashedTextEmbedding.embed("Wagyu Smash Burger")
+        assertArrayEquals(a, b, 0.000001f)
+        assertEquals(HashedTextEmbedding.DIM, a.size)
+        var norm = 0f
+        a.forEach { norm += it * it }
+        assertEquals(1f, norm, 0.0001f)
+    }
+
+    @Test
+    fun hashedTextEmbedding_ranksRelatedTextAboveUnrelatedText() {
+        val query = HashedTextEmbedding.embed("Wagyu Smash Burger")
+        val related = HashedTextEmbedding.embed("Smash burger with wagyu beef")
+        val unrelated = HashedTextEmbedding.embed("Thermal printer paper roll")
+        assertTrue(VectorMath.cosine(query, related) > VectorMath.cosine(query, unrelated))
+    }
+
+    @Test
+    fun embedding_isAllowedForPublisherProvenance() {
+        val checker = ProvenanceChecker()
+        assertTrue(checker.allows(Provenance.Publisher, "embedding"))
+        assertTrue(checker.allows(Provenance.Publisher, "vectorize"))
+    }
+
+    @Test
+    fun embedding_registersCanonicalHandlerAndKeepsVectorizeContractHandler() {
+        assertEquals("embedding", TerminalApp.registry.resolve("embedding")!!.capability)
+        assertEquals("vectorize", TerminalApp.registry.resolve("vectorize")!!.capability)
+        assertEquals(
+            TerminalApp.registry.resolve("vectorize"),
+            TerminalApp.registry.resolve("vector")
+        )
+    }
+
+    private fun packedFloats(vararg values: Float): String {
+        val buf = java.nio.ByteBuffer.allocate(values.size * Float.SIZE_BYTES)
+            .order(java.nio.ByteOrder.LITTLE_ENDIAN)
+        values.forEach { buf.putFloat(it) }
+        return java.util.Base64.getEncoder().encodeToString(buf.array())
     }
 }

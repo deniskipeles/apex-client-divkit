@@ -1,0 +1,245 @@
+{
+  "type": "container",
+  "orientation": "vertical",
+  "item_spacing": 10,
+  "paddings": {
+    "left": 12,
+    "right": 12,
+    "top": 12,
+    "bottom": 12
+  },
+  "items": [
+    {
+      "type": "text",
+      "text": "LAN HEAVY SHARE",
+      "font_size": 18,
+      "text_color": "#FCD34D",
+      "font_weight": "bold"
+    },
+    {
+      "type": "text",
+      "text": "Use LAN when the JSON exceeds QR capacity. QR is only the portable fallback.",
+      "font_size": 11,
+      "text_color": "#94A3B8"
+    },
+    {
+      "type": "text",
+      "text": "Hub: @{user.net_lan_url} • port @{user.net_hub_port} • share @{user.net_share_id}",
+      "font_size": 10,
+      "text_color": "#FDE68A",
+      "font_family": "monospace"
+    },
+    {
+      "type": "container",
+      "orientation": "horizontal",
+      "item_spacing": 8,
+      "items": [
+        {
+          "type": "button",
+          "text": "Start hub + share",
+          "background_color": "#F59E0B",
+          "text_color": "#FFFBEB",
+          "corner_radius": 10,
+          "font_size": 12,
+          "font_weight": "bold",
+          "actions": [
+            {
+              "log_id": "start_hub",
+              "url": "tools://net/serve",
+              "payload": {
+                "port": 8089,
+                "label": "APEX Kiosk LAN",
+                "output": {
+                  "local_ip": "user.net_local_ip",
+                  "lan_url": "user.net_lan_url",
+                  "port": "user.net_hub_port",
+                  "status": "user.net_status"
+                }
+              }
+            },
+            {
+              "log_id": "share_transfer",
+              "url": "tools://net/share",
+              "payload": {
+                "content": "@{user.qr_json}",
+                "name": "transfer.json",
+                "content_type": "application/json",
+                "output": {
+                  "id": "user.net_share_id",
+                  "path": "user.net_share_path",
+                  "status": "user.net_status"
+                }
+              }
+            },
+            {
+              "type": "set_variable",
+              "variable_name": "user.lan_download_url",
+              "value": {
+                "type": "string",
+                "value": "@{user.net_lan_url}@{user.net_share_path}"
+              }
+            }
+          ],
+          "icon": "globe",
+          "weight": 1
+        },
+        {
+          "type": "button",
+          "text": "Stop hub",
+          "background_color": "#7F1D1D",
+          "text_color": "#FEE2E2",
+          "corner_radius": 10,
+          "font_size": 12,
+          "font_weight": "bold",
+          "actions": [
+            {
+              "log_id": "stop_hub",
+              "url": "tools://net/stop",
+              "payload": {
+                "output": {
+                  "status": "user.net_status"
+                }
+              }
+            }
+          ],
+          "icon": "delete",
+          "weight": 1
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "text": "Paste the host LAN URL:",
+      "font_size": 11,
+      "text_color": "#CBD5E1"
+    },
+    {
+      "type": "input",
+      "text_variable": "user.lan_download_url",
+      "hint_text": "http://192.168.x.x:8089/file/...",
+      "hint_text_color": "#475569",
+      "text_color": "#F8FAFC",
+      "background_color": "#1E293B",
+      "corner_radius": 8,
+      "paddings": {
+        "left": 10,
+        "right": 10,
+        "top": 10,
+        "bottom": 10
+      },
+      "font_size": 12
+    },
+    {
+      "type": "button",
+      "text": "Pull over LAN",
+      "background_color": "#0EA5E9",
+      "text_color": "#E0F2FE",
+      "corner_radius": 10,
+      "font_size": 12,
+      "font_weight": "bold",
+      "actions": [
+        {
+          "log_id": "download_transfer",
+          "url": "tools://net/download",
+          "payload": {
+            "url": "@{user.lan_download_url}",
+            "output": {
+              "content_b64": "user.net_download_b64",
+              "status": "user.net_status"
+            }
+          }
+        },
+        {
+          "log_id": "decode_transfer",
+          "url": "tools://codec/base64",
+          "payload": {
+            "action": "decode",
+            "text": "@{user.net_download_b64}",
+            "output": {
+              "text": "user.receipt_json"
+            }
+          }
+        },
+        {
+          "log_id": "validate_receipt",
+          "url": "tools://codec/json/validate",
+          "payload": {
+            "json": "@{user.receipt_json}",
+            "output": {
+              "valid": "user.receipt_valid",
+              "error": "user.receipt_error"
+            }
+          }
+        },
+        {
+          "log_id": "extract_receipt",
+          "url": "tools://codec/json/extract",
+          "payload": {
+            "json": "@{user.receipt_json}",
+            "paths": [
+              "order_id",
+              "direction",
+              "status",
+              "total"
+            ],
+            "subtree_path": "lines",
+            "output": {
+              "values": "user.receipt_values",
+              "subtree_json": "user.receipt_lines_json"
+            }
+          }
+        }
+      ],
+      "icon": "download"
+    },
+    {
+      "type": "text",
+      "text": "Receipt order @{getArrayOptString(user.receipt_values, 0, '')} • status @{getArrayOptString(user.receipt_values, 2, '')} • total @{getArrayOptString(user.receipt_values, 3, '')}",
+      "font_size": 10,
+      "text_color": "#C4B5FD",
+      "font_family": "monospace"
+    },
+    {
+      "type": "json_list",
+      "data_var": "user.receipt_lines_json",
+      "empty_text": "No lines yet.",
+      "row_card": {
+        "type": "container",
+        "orientation": "horizontal",
+        "item_spacing": 8,
+        "background_color": "#0F172A",
+        "corner_radius": 10,
+        "paddings": {
+          "left": 10,
+          "right": 10,
+          "top": 8,
+          "bottom": 8
+        },
+        "items": [
+          {
+            "type": "container",
+            "orientation": "vertical",
+            "weight": 1,
+            "items": [
+              {
+                "type": "text",
+                "text": "@{item.item_name}",
+                "font_size": 13,
+                "text_color": "#F8FAFC",
+                "font_weight": "bold"
+              },
+              {
+                "type": "text",
+                "text": "SKU @{item.sku} • qty @{item.quantity} • $@{item.line_total}",
+                "font_size": 10,
+                "text_color": "#93C5FD",
+                "font_family": "monospace"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "background_color": "#0B1220"
+}

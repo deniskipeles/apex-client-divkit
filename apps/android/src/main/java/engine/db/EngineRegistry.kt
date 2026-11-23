@@ -125,6 +125,28 @@ class EngineRegistry(
                     OpResult.Rows(rows)
                 }
 
+                // Generic Record Update (id-only, shallow JSON merge)
+                "db.update", "records.update" -> {
+                    val col = payload["collection"]?.jsonPrimitive?.contentOrNull
+                        ?: payload["table"]?.jsonPrimitive?.contentOrNull
+                        ?: error("Missing 'collection' parameter")
+
+                    val recordId = payload["id"]?.jsonPrimitive?.contentOrNull
+                        ?: payload["record_id"]?.jsonPrimitive?.contentOrNull
+                        ?: error("Missing 'id' parameter for update operation")
+
+                    val data = payload["data"]?.jsonObject
+                        ?: payload["values"]?.jsonObject
+                        ?: error("Missing 'data' or 'values' object")
+
+                    val userRole = payload["auth_role"]?.jsonPrimitive?.contentOrNull ?: "public"
+                    val userUid = payload["auth_uid"]?.jsonPrimitive?.longOrNull ?: 0L
+                    val claims = Claims(uid = userUid, role = userRole)
+
+                    val updatedId = apexEngine.updateRecord(col, recordId, data, claims)
+                    OpResult.RowId(updatedId)
+                }
+
                 // Query Single Record
                 "db.query_one", "records.get" -> {
                     val col = payload["collection"]?.jsonPrimitive?.contentOrNull

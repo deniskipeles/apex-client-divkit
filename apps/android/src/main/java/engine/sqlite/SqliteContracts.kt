@@ -28,6 +28,9 @@ interface SqlPreparedStatement {
 }
 
 interface SqlDriver : Closeable {
+    /** False on Android builds whose bundled SQLite omits the JSON1 extension (e.g. API 28). */
+    val supportsJson1: Boolean get() = true
+
     fun executeQuery(
         identifier: Int?,
         sql: String,

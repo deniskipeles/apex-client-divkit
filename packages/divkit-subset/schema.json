@@ -9,11 +9,14 @@
       "type": "object",
       "required": ["type"],
       "properties": {
-        "type": { "enum": ["container", "text", "button", "grid", "input", "custom", "image"] },
+        "type": { "enum": ["container", "text", "button", "grid", "input", "custom", "image", "json_list"] },
         "id": { "type": "string" },
         "items": { "type": "array", "items": { "$ref": "#/$defs/component" } },
         "text": { "type": "string" },
         "actions": { "type": "array", "items": { "$ref": "#/$defs/action" } },
+        "data_var": { "type": "string", "minLength": 1 },
+        "empty_text": { "type": "string" },
+        "row_card": { "$ref": "#/$defs/component" },
         "width": { "$ref": "#/$defs/size" },
         "height": { "$ref": "#/$defs/size" },
         "margins": { "$ref": "#/$defs/spacing" },
@@ -40,6 +43,20 @@
                   "present_on_appear": { "type": "boolean", "default": false }
                 }
               }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "json_list" } },
+            "required": ["type"]
+          },
+          "then": {
+            "required": ["data_var", "row_card"],
+            "properties": {
+              "data_var": { "type": "string", "minLength": 1 },
+              "empty_text": { "type": "string" },
+              "row_card": { "$ref": "#/$defs/component" }
             }
           }
         }

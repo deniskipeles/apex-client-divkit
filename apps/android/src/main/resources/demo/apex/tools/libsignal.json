@@ -1,5 +1,14 @@
 {
     "type": "container",
+    "variables": [
+        { "name": "user.signal_peer_id", "type": "string", "value": "acme_peer_01" },
+        { "name": "user.signal_session_id", "type": "string", "value": "" },
+        { "name": "user.signal_fingerprint", "type": "string", "value": "" },
+        { "name": "user.signal_status", "type": "string", "value": "NO_SESSION" },
+        { "name": "user.signal_verification", "type": "string", "value": "UNVERIFIED" },
+        { "name": "user.signal_ciphertext", "type": "string", "value": "" },
+        { "name": "user.signal_plaintext", "type": "string", "value": "" }
+    ],
     "orientation": "vertical",
     "background_color": "#2E1065",
     "corner_radius": 12,
@@ -193,6 +202,14 @@
             "text_color": "#C4B5FD",
             "font_family": "monospace",
             "max_lines": 2
+        },
+        {
+            "type": "text",
+            "text": "Last engine result: @{user.engine_error}",
+            "font_size": 10,
+            "text_color": "#FCA5A5",
+            "font_family": "monospace",
+            "max_lines": 3
         }
     ]
 }

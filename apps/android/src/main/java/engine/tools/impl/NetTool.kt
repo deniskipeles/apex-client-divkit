@@ -26,6 +26,8 @@ import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
+import java.net.Inet4Address
+import java.net.NetworkInterface
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import io.ktor.server.cio.CIO as ServerCIO
@@ -246,6 +248,8 @@ class NetTool(
         server = engine
         serverPort = engine.engine.resolvedConnectors().firstOrNull()?.port ?: port
         val hub = hubId ?: newId().also { hubId = it }
+        val localIp = localIpv4()
+        val base = localIp?.let { "http://$it:$serverPort" }
 
         return ToolResult.Success(
             mapOf(
@@ -254,11 +258,13 @@ class NetTool(
                 "label" to label,
                 "host" to host,
                 "port" to serverPort,
+                "local_ip" to (localIp ?: ""),
+                "lan_url" to (base ?: ""),
                 "share_count" to shared.size,
                 "urls" to listOf(
-                    "http://<device-ip>:$serverPort/",
-                    "http://<device-ip>:$serverPort/health",
-                    "http://<device-ip>:$serverPort/list"
+                    "${base ?: "http://<device-ip>:$serverPort"}/",
+                    "${base ?: "http://<device-ip>:$serverPort"}/health",
+                    "${base ?: "http://<device-ip>:$serverPort"}/list"
                 ),
                 "timestamp" to currentTimeMillis()
             )
@@ -352,6 +358,22 @@ class NetTool(
     // ------------------------------------------------------------------
     // Helpers
     // ------------------------------------------------------------------
+
+    /** First non-loopback site-local IPv4 address, used for pairing URLs. */
+    private fun localIpv4(): String? {
+        return try {
+            NetworkInterface.getNetworkInterfaces()
+                .toList()
+                .asSequence()
+                .filter { it.isUp && !it.isLoopback }
+                .flatMap { it.inetAddresses.toList().asSequence() }
+                .filterIsInstance<Inet4Address>()
+                .firstOrNull { it.isSiteLocalAddress && !it.isLoopbackAddress }
+                ?.hostAddress
+        } catch (_: Exception) {
+            null
+        }
+    }
 
     private fun listJson(): String {
         val entries = shared.values.joinToString(",") {

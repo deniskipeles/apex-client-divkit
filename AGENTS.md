@@ -132,8 +132,11 @@ scheme adds roughly **64 KB** to the release APK (measured by building with and 
 
 ## Demo workspace showcase
 
-The single built-in demo tenant (`WorkspaceProvisioner.defaultWorkspaces`) is the live
-showcase of the SDUI surface. When a tool gains a user-facing operation, surface it there too:
+The built-in demo tenants (`WorkspaceProvisioner.defaultWorkspaces`) are the live showcase
+of the SDUI surface. `acme_pos` renders `demo/apex`; `apex_kiosk` renders
+`demo/apex-kiosk` (`demoRoot` + `toolCardOrder` on the spec) and exercises the SQLite data
+plane end to end. When a tool gains a user-facing operation, surface it in the appropriate
+tenant too:
 
 - `SduiOnFlyBuilder.build<Name>ToolBlock(spec)` — a DivKit container with live `user.*` readouts
   and `buildNativeToolTriggerBlock(...)` trigger buttons.
@@ -145,7 +148,7 @@ showcase of the SDUI surface. When a tool gains a user-facing operation, surface
 - `DivKitMultiplatform.resolveIcon(name)` — map any new `icon` names to a Material icon; the
   demo also showcases the `icons://native/<name>` scheme via `buildNativeIconSchemeBlock`.
 
-Demo cards are data (`src/main/resources/demo/tools/*.json`), so nothing type-checks their
+Demo cards are data (`src/main/resources/demo/apex/tools/*.json`), so nothing type-checks their
 action payloads. A handler reads `payload["options"]` as flat string args — a button that omits
 one fails at runtime with e.g. `missing url argument` instead of failing the build.
 `demoCards_supplyTheArgumentsTheirToolsRequire` dispatches every `tools://` action in every
@@ -295,6 +298,24 @@ pnpm check:desktop           # cargo check
 
 ## Testing conventions
 
+- **Text-only APK debugging.** Use `tools/android_ui_debug` and
+  `docs/testing/android-apk-debugging.md`. The harness drives the real APK through
+  `adb` + `uiautomator dump`, parses the XML tree, taps bounds centers, polls async
+  results, and writes UI/logcat artifacts on failure. Do not rely on screenshots.
+  `scenarios/libsignal.json` and `scenarios/embedding.json` are the device regression
+  flows; `python3 -m tools.android_ui_debug run <scenario> --apk <apk>` exits non-zero
+  on failure.
+- **Embedding tool naming.** The user-facing capability is `tools://embedding`
+  (`EmbeddingTool`, schema `toolId = "embedding"`). The shared contract still names the
+  canonical id `vectorize`; `VectorizeTool` is a deprecated subclass that keeps that
+  handler and its aliases (`vector`, `embed`, `embed-text`, `embed-image`) resolving.
+  Both dispatch to the same `executeEmbedding` implementation. The image path returns a
+  1000-d MobileNetV4 `class_logits` descriptor, not a metric-learning embedding; do not
+  document it as 512-d or as semantic image search. MediaPipe `tasks-text` 0.10.14 ships
+  no x86_64 text JNI, so `TextVectorizer` latches the load failure and falls back to
+  `HashedTextEmbedding` (512-d word/trigram hashing). The output `model` names the
+  fallback; never hard-code `MediaPipe USE-Lite` in a card or doc.
+
 - Tests live in `apps/android/src/test/java/com/example/ExampleUnitTest.kt` (plain JVM) and
   `ExampleRobolectricTest.kt` (Robolectric, for Android APIs).
 - Robolectric provides an `Application` context; `engine.db.currentAndroidContext` is set by
@@ -428,6 +449,10 @@ export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 ANDROID_HOME=$HOME/.apex-too
   the **full** tool inventory. `ExampleUnitTest.demoCard_surfacesEveryRegisteredNativeTool`
   asserts every `NativeToolsSuite.registeredSchemas` toolId appears as a `tools://<id>/` trigger.
   Adding a tool to the registry without a demo block fails that test.
+- `resolveJsonExpressions` coerces only short numeric literals (`isSafeNumericLiteral`).
+  A 60-digit Signal safety number is an identifier: parsing it as a `Double` rounds it, so
+  `verify_identity` reports `MISMATCH` for the number the card just displayed.
+  `DemoCardRenderTest.libsignalVerifyPayloadKeepsLongSafetyNumberAsText` pins this.
 
 ## Camera and hardware capabilities
 

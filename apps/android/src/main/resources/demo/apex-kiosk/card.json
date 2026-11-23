@@ -1,0 +1,557 @@
+{
+  "card": {
+    "log_id": "apex_kiosk_${tenantId}",
+    "variables": [
+      {
+        "name": "user.workspace_title",
+        "type": "string",
+        "value": "${displayName} (${terminalCode})"
+      },
+      {
+        "name": "user.engine_error",
+        "type": "string",
+        "value": "None"
+      },
+      {
+        "name": "user.catalog_json",
+        "type": "string",
+        "value": "[]"
+      },
+      {
+        "name": "user.catalog_count",
+        "type": "integer",
+        "value": 0
+      },
+      {
+        "name": "user.kiosk_order_id",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.kiosk_status",
+        "type": "string",
+        "value": "DRAFT"
+      },
+      {
+        "name": "user.kiosk_direction",
+        "type": "string",
+        "value": "CUSTOMER_REQUEST"
+      },
+      {
+        "name": "user.kiosk_total",
+        "type": "string",
+        "value": "0"
+      },
+      {
+        "name": "user.kiosk_item_count",
+        "type": "string",
+        "value": "0"
+      },
+      {
+        "name": "user.kiosk_lines_json",
+        "type": "string",
+        "value": "[]"
+      },
+      {
+        "name": "user.kiosk_last_line_id",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.kiosk_deleted_count",
+        "type": "integer",
+        "value": 0
+      },
+      {
+        "name": "user.qr_json",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_chunks",
+        "type": "array",
+        "value": []
+      },
+      {
+        "name": "user.qr_count",
+        "type": "integer",
+        "value": 0
+      },
+      {
+        "name": "user.qr_index",
+        "type": "integer",
+        "value": 0
+      },
+      {
+        "name": "user.qr_transfer_id",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_checksum",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_cache_dir",
+        "type": "string",
+        "value": "cache/qr/${tenantId}"
+      },
+      {
+        "name": "user.scanned_code",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.scan_status",
+        "type": "string",
+        "value": "IDLE"
+      },
+      {
+        "name": "user.scanned_chunks",
+        "type": "array",
+        "value": []
+      },
+      {
+        "name": "user.receipt_json",
+        "type": "string",
+        "value": "{}"
+      },
+      {
+        "name": "user.receipt_status",
+        "type": "string",
+        "value": "IDLE"
+      },
+      {
+        "name": "user.receipt_valid",
+        "type": "boolean",
+        "value": false
+      },
+      {
+        "name": "user.receipt_error",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.receipt_values",
+        "type": "array",
+        "value": []
+      },
+      {
+        "name": "user.receipt_lines_json",
+        "type": "string",
+        "value": "[]"
+      },
+      {
+        "name": "user.receipt_checksum_ok",
+        "type": "boolean",
+        "value": false
+      },
+      {
+        "name": "user.receipt_missing",
+        "type": "array",
+        "value": []
+      },
+      {
+        "name": "user.net_status",
+        "type": "string",
+        "value": "IDLE"
+      },
+      {
+        "name": "user.net_hub_port",
+        "type": "integer",
+        "value": 0
+      },
+      {
+        "name": "user.net_local_ip",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.net_lan_url",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.net_share_id",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.net_share_path",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.net_download_b64",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.lan_download_url",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_img_0",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_code_id_0",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_img_1",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_code_id_1",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_img_2",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_code_id_2",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_img_3",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_code_id_3",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_img_4",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_code_id_4",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_img_5",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_code_id_5",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_img_6",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_code_id_6",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_img_7",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_code_id_7",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_img_8",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_code_id_8",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_img_9",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_code_id_9",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_img_10",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_code_id_10",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_img_11",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_code_id_11",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_img_12",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_code_id_12",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_img_13",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_code_id_13",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_img_14",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_code_id_14",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_img_15",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_code_id_15",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_img_16",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_code_id_16",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_img_17",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_code_id_17",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_img_18",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_code_id_18",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_img_19",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_code_id_19",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_img_20",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_code_id_20",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_img_21",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_code_id_21",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_img_22",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_code_id_22",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_img_23",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_code_id_23",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_img_24",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_code_id_24",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_img_25",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_code_id_25",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_img_26",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_code_id_26",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_img_27",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_code_id_27",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_img_28",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_code_id_28",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_img_29",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_code_id_29",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_img_30",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_code_id_30",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_img_31",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.qr_code_id_31",
+        "type": "string",
+        "value": ""
+      }
+    ],
+    "states": [
+      {
+        "state_id": 0,
+        "div": {
+          "type": "container",
+          "orientation": "vertical",
+          "item_spacing": 10,
+          "background_color": "#050B16",
+          "paddings": {
+            "left": 14,
+            "right": 14,
+            "top": 16,
+            "bottom": 16
+          },
+          "items": [
+            {
+              "type": "text",
+              "text": "APEX KIOSK",
+              "font_size": 24,
+              "text_color": "#DDD6FE",
+              "font_weight": "bold"
+            },
+            {
+              "type": "text",
+              "text": "Bidirectional request / receipt workflow \u2022 QR chunks \u2264500 B \u2022 max 32 \u2022 LAN heavy share",
+              "font_size": 11,
+              "text_color": "#94A3B8"
+            },
+            {
+              "type": "text",
+              "text": "No kiosk:// scheme. All actions use local-db://, tools://codec, tools://code-generate, tools://scan, tools://net and tools://files.",
+              "font_size": 10,
+              "text_color": "#64748B",
+              "font_family": "monospace"
+            }
+          ],
+          "tool_catalog_after": 1
+        }
+      }
+    ]
+  }
+}

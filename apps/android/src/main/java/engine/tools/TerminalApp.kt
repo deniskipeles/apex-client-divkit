@@ -11,6 +11,7 @@ object TerminalApp {
     val registry: ToolRegistry by lazy { buildRegistry() }
     val router: DivActionRouter by lazy { DivActionRouter(registry) }
 
+    @Suppress("DEPRECATION")
     fun buildRegistry(): ToolRegistry {
         val handlers = listOf<ToolHandler>(
             HapticsTool(),
@@ -31,9 +32,12 @@ object TerminalApp {
             NativeToolsSuite.netTool,
             NativeToolsSuite.printTool,
             CodeGenerateTool(),
+            CodecTool(),
             LibSignalTool(),
+            EmbeddingTool(),
             VectorizeTool(),
             KeepAwakeTool(),
+            ScreenTool(),
             FilesTool(),
             ImageManipulationTool()
         )
@@ -134,11 +138,21 @@ object TerminalApp {
                     handlerMap["signal"] = h
                     handlerMap["crypto.signal"] = h
                 }
+                "embedding" -> {
+                    handlerMap["embedding"] = h
+                    handlerMap["embeddings"] = h
+                }
                 "vectorize" -> {
                     handlerMap["vector"] = h
                     handlerMap["embed"] = h
                     handlerMap["embed-text"] = h
                     handlerMap["embed-image"] = h
+                }
+                "data.codec@1" -> {
+                    handlerMap["codec"] = h
+                    handlerMap["data.codec"] = h
+                    handlerMap["text.codec"] = h
+                    handlerMap["text.codec@1"] = h
                 }
                 "storage.files@1" -> {
                     handlerMap["files"] = h
@@ -153,6 +167,12 @@ object TerminalApp {
                     handlerMap["keepawake"] = h
                     handlerMap["device.keep_awake"] = h
                     handlerMap["wakelock"] = h
+                }
+                "device.screen@1" -> {
+                    handlerMap["screen"] = h
+                    handlerMap["device.screen"] = h
+                    handlerMap["screen-capture"] = h
+                    handlerMap["screen-recording"] = h
                 }
                 "vision.image_manipulation@1" -> {
                     handlerMap["image-manipulation"] = h

@@ -70,7 +70,7 @@
       {
         "name": "user.ocr_text",
         "type": "string",
-        "value": "TABLE 12 • 2 GUESTS • ORDER #4821"
+        "value": "not_run"
       },
       {
         "name": "user.ocr_confidence",
@@ -310,22 +310,22 @@
       {
         "name": "user.vector_source",
         "type": "string",
-        "value": "text"
+        "value": "not_run"
       },
       {
         "name": "user.vector_dim",
         "type": "string",
-        "value": "512"
+        "value": "0"
       },
       {
         "name": "user.vector_similarity",
         "type": "string",
-        "value": "0.87"
+        "value": "—"
       },
       {
         "name": "user.vector_b64",
         "type": "string",
-        "value": "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8="
+        "value": ""
       },
       {
         "name": "user.offline_cache_status",
@@ -388,14 +388,64 @@
         "value": "0"
       },
       {
-        "name": "user.keep_awake_status",
+        "name": "user.screen_status",
         "type": "string",
-        "value": "DISABLED"
+        "value": "READY"
       },
       {
-        "name": "user.keep_awake_enabled",
+        "name": "user.screen_keep_awake",
         "type": "string",
         "value": "false"
+      },
+      {
+        "name": "user.screen_recording",
+        "type": "string",
+        "value": "false"
+      },
+      {
+        "name": "user.screen_recording_id",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.screen_media_uri",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.screen_media_path",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.screen_width",
+        "type": "string",
+        "value": "0"
+      },
+      {
+        "name": "user.screen_height",
+        "type": "string",
+        "value": "0"
+      },
+      {
+        "name": "user.screen_bytes",
+        "type": "string",
+        "value": "0"
+      },
+      {
+        "name": "user.screen_duration_ms",
+        "type": "string",
+        "value": "0"
+      },
+      {
+        "name": "user.screen_image_id",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.screen_error",
+        "type": "string",
+        "value": ""
       },
       {
         "name": "user.icon_name",

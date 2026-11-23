@@ -166,10 +166,10 @@ object NativeToolsSuite {
             )
         ),
         ToolSchema(
-            toolId = "vectorize",
-            displayName = "Text & Image Vector Embedding",
-            description = "Vectorizes text, images, or image-derived OCR text into L2-normalized embedding vectors. Uses quantized on-device models (ML Kit OCR + MobileNetV4 / USE-Lite). Standalone text extraction lives in tools://scan/ocr.",
-            supportedOperations = listOf("text", "image", "image_text", "similarity"),
+            toolId = "embedding",
+            displayName = "Text & Image Embeddings",
+            description = "Embeds text, images, or image-derived OCR text into L2-normalized vectors. Text uses MediaPipe USE-Lite when its JNI is present, otherwise a 512-d lexical fallback; images use the MobileNetV4 INT8 descriptor; image_text chains ML Kit OCR into the text embedder. Standalone text extraction lives in tools://scan/ocr. `vectorize` remains an alias.",
+            supportedOperations = listOf("text", "image", "image_text", "text_similarity", "similarity"),
             defaultOptions = mapOf("normalize" to "true", "include_ocr_text" to "true"),
             defaultOutputMapping = mapOf(
                 "vector_b64" to "user.vector_b64",
@@ -297,6 +297,34 @@ object NativeToolsSuite {
             )
         ),
         ToolSchema(
+            toolId = "codec",
+            displayName = "Generic Text & JSON Codec",
+            description = "Unopinionated text codec: Base64, Base45, and JSON validate/extract/stringify/chunk/assemble. Chunk envelopes are generic and enforce caller-supplied byte and chunk limits.",
+            supportedOperations = listOf(
+                "base64", "base45",
+                "json/validate", "json/extract", "json/stringify", "json/chunk", "json/assemble"
+            ),
+            defaultOptions = mapOf("encoding" to "base45", "max_bytes" to "500", "max_chunks" to "32"),
+            defaultOutputMapping = mapOf(
+                "status" to "user.codec_status",
+                "text" to "user.codec_text",
+                "encoding" to "user.codec_encoding",
+                "length" to "user.codec_length",
+                "valid" to "user.codec_valid",
+                "error" to "user.codec_error",
+                "values" to "user.codec_values",
+                "count" to "user.codec_count",
+                "missing" to "user.codec_missing",
+                "json" to "user.codec_json",
+                "subtree_json" to "user.codec_subtree_json",
+                "chunks" to "user.codec_chunks",
+                "transfer_id" to "user.codec_transfer_id",
+                "checksum" to "user.codec_checksum",
+                "checksum_ok" to "user.codec_checksum_ok",
+                "raw_bytes" to "user.codec_raw_bytes"
+            )
+        ),
+        ToolSchema(
             toolId = "code-generate",
             displayName = "Barcode & QR Code Generator",
             description = "Encodes arbitrary content into a 1D barcode or 2D matrix symbology (QR, DataMatrix, Aztec, PDF417) and renders it to an image plus an inspectable module matrix.",
@@ -320,17 +348,30 @@ object NativeToolsSuite {
             )
         ),
         ToolSchema(
-            toolId = "keep-awake",
-            displayName = "Keep-Awake / Screen Wake-Lock Controller",
-            description = "Holds the terminal awake (screen on / wake-lock) while a long-running task is in flight, with optional timeout and wake level. Unopinionated device capability.",
-            supportedOperations = listOf("enable", "disable", "toggle", "status"),
+            toolId = "screen",
+            displayName = "Screen: Keep-Awake, Screenshot & Recording",
+            description = "Screen-facing terminal capability: hold the display awake, capture a screenshot, or start/stop an MP4 screen recording. All three share one MediaProjection permission prompt.",
+            supportedOperations = listOf("keep-awake", "screenshot", "recording", "status"),
             defaultOptions = mapOf(
                 "level" to "screen",
-                "timeout_ms" to "0"
+                "timeout_ms" to "0",
+                "format" to "png",
+                "quality" to "95"
             ),
             defaultOutputMapping = mapOf(
-                "status" to "user.keep_awake_status",
-                "enabled" to "user.keep_awake_enabled"
+                "status" to "user.screen_status",
+                "enabled" to "user.screen_keep_awake",
+                "recording" to "user.screen_recording",
+                "recording_id" to "user.screen_recording_id",
+                "uri" to "user.screen_media_uri",
+                "path" to "user.screen_media_path",
+                "width" to "user.screen_width",
+                "height" to "user.screen_height",
+                "bytes" to "user.screen_bytes",
+                "duration_ms" to "user.screen_duration_ms",
+                "image_id" to "user.screen_image_id",
+                "error" to "user.screen_error",
+                "reason" to "user.screen_error"
             )
         )
     )
@@ -374,7 +415,7 @@ object NativeToolsSuite {
             "haptics", "device.haptics", "device.haptics@1" -> executeHaptics(operation, options, payload)
             "beeper", "device.beeper", "device.beeper@1" -> executeBeeper(operation, options, payload)
             "camera" -> executeCamera(operation, options, payload, tenantId)
-            "vectorize" -> executeVectorize(operation, options, payload, tenantId)
+            "embedding" -> executeEmbedding(operation, options, payload, tenantId)
             "image-manipulation", "image-process", "image-filter", "vision.image_manipulation@1",
             "image-background-remove" ->
                 executeImageManipulation(operation, options, payload, tenantId)
@@ -388,8 +429,9 @@ object NativeToolsSuite {
             "realtime-ws" -> executeRealtimeWs(operation, options, payload, tenantId)
             "net" -> executeNet(operation, options, payload, tenantId)
             "print" -> executePrint(operation, options, payload, tenantId)
+            "codec" -> executeCodec(operation, options, payload)
             "code-generate" -> executeCodeGenerate(operation, options, payload, tenantId)
-            "keep-awake" -> executeKeepAwake(operation, options, payload)
+            "screen" -> executeScreen(operation, options, payload, tenantId)
             "files" -> executeFiles(operation, options, payload, tenantId)
             else -> executeGenericFallback(toolId, operation, payload)
         }
@@ -411,6 +453,7 @@ object NativeToolsSuite {
                         DivVariableValue.DoubleVal(value)
                     }
                     is Float -> DivVariableValue.DoubleVal(value.toDouble())
+                    is List<*> -> DivVariableValue.ArrayVal(value.map { item -> divValueOf(item) })
                     else -> DivVariableValue.Str(value.toString())
                 }
                 finalVariables[stateVarName] = divVal
@@ -431,12 +474,23 @@ object NativeToolsSuite {
         )
     }
 
+    private fun divValueOf(value: Any?): DivVariableValue = when (value) {
+        null -> DivVariableValue.Str("")
+        is Boolean -> DivVariableValue.Bool(value)
+        is Int -> DivVariableValue.IntVal(value.toLong())
+        is Long -> DivVariableValue.IntVal(value)
+        is Double -> DivVariableValue.DoubleVal(value)
+        is Float -> DivVariableValue.DoubleVal(value.toDouble())
+        is List<*> -> DivVariableValue.ArrayVal(value.map { divValueOf(it) })
+        else -> DivVariableValue.Str(value.toString())
+    }
+
     private fun normalizeToolId(raw: String): String = when (raw.lowercase()) {
         "scan", "scanner", "scan-code", "vision.scan_code@1", "vision.scan_code", "scan-barcode", "scan-qr", "barcode", "qr", "ocr", "read-text", "text-recognition" -> "scan"
         "haptics", "device.haptics", "device.haptics@1", "vibrate" -> "haptics"
         "beeper", "device.beeper", "device.beeper@1", "tone", "audio" -> "beeper"
         "camera", "photo" -> "camera"
-        "vectorize", "vector", "embed", "embed-text", "embed-image" -> "vectorize"
+        "embedding", "embeddings", "vectorize", "vector", "embed", "embed-text", "embed-image" -> "embedding"
         "clipboard", "device.clipboard" -> "clipboard"
         "biometrics", "auth.biometrics" -> "biometrics"
         "libsignal", "signal", "secure.send", "secure.status", "secure.verify_identity" -> "libsignal"
@@ -447,9 +501,11 @@ object NativeToolsSuite {
         "realtime-ws", "realtime_ws", "network.realtime", "realtime", "ws" -> "realtime-ws"
         "net", "network.transfer", "network.transfer@1", "network", "http", "transfer" -> "net"
         "print", "printer", "device.printer", "device.printer@1", "bluetooth.print", "pos.print" -> "print"
+        "codec", "codecs", "encoding", "data.codec", "data.codec@1", "text.codec", "text.codec@1" -> "codec"
         "code-generate", "code_gen", "codegen", "generate-code", "generate_code", "barcode-generate",
         "qr-generate", "vision.generate_code@1", "vision.generate_code" -> "code-generate"
-        "keep-awake", "keep_awake", "keepawake", "device.keep_awake", "device.keep_awake@1", "wakelock" -> "keep-awake"
+        "screen", "device.screen", "device.screen@1", "screen-capture", "screen-recording",
+        "keep-awake", "keep_awake", "keepawake", "device.keep_awake", "device.keep_awake@1", "wakelock" -> "screen"
         "files", "file", "storage.files", "storage.files@1", "file-store", "fs" -> "files"
         else -> raw
     }
@@ -649,20 +705,10 @@ object NativeToolsSuite {
         // forbids the camera; the file picker stays available.
         val allowCamera = (payload["camera"]?.jsonPrimitive?.contentOrNull ?: options["camera"])
             ?.equals("false", ignoreCase = true) != true
-        val uri = declaredUri ?: imageSourceSink?.invoke(allowCamera)
-
-        if (uri == null) {
-            return InternalToolResult(
-                summary = "OCR cancelled: no image supplied",
-                dataMap = mapOf(
-                    "status" to "NO_INPUT",
-                    "error" to "No image was captured or selected"
-                ),
-                resultJson = buildJsonObject {
-                    put("status", "NO_INPUT")
-                    put("error", "No image was captured or selected")
-                }
-            )
+        val uri = declaredUri ?: run {
+            val sink = imageSourceSink
+                ?: return noInput("OCR", "No image source host is installed")
+            sink(allowCamera) ?: return cancelled("OCR", "No image was captured or selected")
         }
 
         val bmp = try {
@@ -808,56 +854,140 @@ object NativeToolsSuite {
         )
     }
 
-    private suspend fun executeVectorize(
+    private suspend fun executeEmbedding(
         operation: String, options: Map<String, String>, payload: JsonObject, tenantId: String
     ): InternalToolResult {
         val op = operation.lowercase().ifBlank { "text" }
-        val ctx = engine.db.currentAndroidContext?.invoke() ?: error("No Android context")
         val t0 = currentTimeMillis()
         val data: Map<String, Any>
         when (op) {
             "text" -> {
-                val text = payload["text"]?.jsonPrimitive?.contentOrNull ?: options["text"] ?: ""
-                val v = TextVectorizer.embed(ctx, text)
+                val text = (payload["text"]?.jsonPrimitive?.contentOrNull ?: options["text"]).orEmpty().trim()
+                if (text.isEmpty()) return embeddingFailure("text embedding requires non-blank 'text'")
+                val ctx = embeddingContext()
+                    ?: return embeddingFailure("No Android context available for embeddings")
+                val embedding = runCatching { TextVectorizer.embed(ctx, text) }.getOrElse {
+                    return embeddingFailure(it.message ?: "Text embedding failed")
+                }
+                val v = embedding.vector
                 data = mapOf("vector_b64" to packFloats(v), "dim" to v.size,
                              "source_type" to "text", "status" to "SUCCESS",
-                             "model" to "MediaPipe USE-Lite")
+                             "model" to embedding.model)
             }
             "image" -> {
-                val bmp = decodeBitmap(ctx, payload["uri"]?.jsonPrimitive?.contentOrNull ?: options["uri"])
-                val v = ImageVectorizer.embed(ctx, bmp)
-                data = mapOf("vector_b64" to packFloats(v), "dim" to v.size,
-                             "source_type" to "image", "status" to "SUCCESS",
-                             "model" to "MobileNetV4-small INT8")
+                val ctx = embeddingContext()
+                    ?: return embeddingFailure("No Android context available for embeddings")
+                val bmp = decodeEmbeddingBitmap(ctx, payload, options)
+                    ?: return embeddingFailure("image embedding needs a decodable 'uri'")
+                try {
+                    val v = runCatching { ImageVectorizer.embed(ctx, bmp) }.getOrElse {
+                        return embeddingFailure(it.message ?: "Image embedding failed")
+                    }
+                    data = mapOf("vector_b64" to packFloats(v), "dim" to v.size,
+                                 "source_type" to "image", "status" to "SUCCESS",
+                                 "model" to "MobileNetV4-small INT8 (1000-d class-score descriptor)")
+                } finally {
+                    bmp.recycle()
+                }
             }
             "image_text" -> {
-                val bmp = decodeBitmap(ctx, payload["uri"]?.jsonPrimitive?.contentOrNull ?: options["uri"])
-                val ocr = OcrExtractor.extract(bmp)
-                val v = TextVectorizer.embed(ctx, ocr.text)
-                data = mapOf("vector_b64" to packFloats(v), "dim" to v.size,
-                             "source_type" to "image_text", "status" to "SUCCESS",
-                             "ocr_text" to ocr.text, "ocr_confidence" to ocr.meanConfidence,
-                             "model" to "ML Kit + USE-Lite")
+                val ctx = embeddingContext()
+                    ?: return embeddingFailure("No Android context available for embeddings")
+                val bmp = decodeEmbeddingBitmap(ctx, payload, options)
+                    ?: return embeddingFailure("image_text embedding needs a decodable 'uri'")
+                try {
+                    val ocr = runCatching { OcrExtractor.extract(bmp) }.getOrElse {
+                        return embeddingFailure(it.message ?: "OCR failed")
+                    }
+                    if (ocr.text.isBlank()) return embeddingFailure("no text found in image")
+                    val embedding = runCatching { TextVectorizer.embed(ctx, ocr.text) }.getOrElse {
+                        return embeddingFailure(it.message ?: "Text embedding failed")
+                    }
+                    val v = embedding.vector
+                    data = mapOf("vector_b64" to packFloats(v), "dim" to v.size,
+                                 "source_type" to "image_text", "status" to "SUCCESS",
+                                 "ocr_text" to ocr.text, "ocr_confidence" to ocr.meanConfidence,
+                                 "model" to "ML Kit + ${embedding.model}")
+                } finally {
+                    bmp.recycle()
+                }
+            }
+            "text_similarity" -> {
+                val aText = (payload["a"]?.jsonPrimitive?.contentOrNull
+                    ?: payload["text_a"]?.jsonPrimitive?.contentOrNull
+                    ?: options["a"] ?: options["text_a"]).orEmpty().trim()
+                val bText = (payload["b"]?.jsonPrimitive?.contentOrNull
+                    ?: payload["text_b"]?.jsonPrimitive?.contentOrNull
+                    ?: options["b"] ?: options["text_b"]).orEmpty().trim()
+                if (aText.isEmpty() || bText.isEmpty()) {
+                    return embeddingFailure("text_similarity requires non-blank 'a' and 'b' text")
+                }
+                val ctx = embeddingContext()
+                    ?: return embeddingFailure("No Android context available for embeddings")
+                val va = runCatching { TextVectorizer.embed(ctx, aText) }.getOrElse {
+                    return embeddingFailure(it.message ?: "Text embedding failed")
+                }
+                val vb = runCatching { TextVectorizer.embed(ctx, bText) }.getOrElse {
+                    return embeddingFailure(it.message ?: "Text embedding failed")
+                }
+                data = mapOf("score" to VectorMath.cosine(va.vector, vb.vector), "dim" to va.vector.size,
+                             "method" to "cosine", "source_type" to "text_similarity",
+                             "status" to "SUCCESS", "model" to va.model)
             }
             "similarity" -> {
-                val a = unpackFloats(payload["a"]?.jsonPrimitive?.contentOrNull ?: "")
-                val b = unpackFloats(payload["b"]?.jsonPrimitive?.contentOrNull ?: "")
-                data = mapOf("score" to VectorMath.cosine(a, b), "method" to "cosine")
+                val aRaw = (payload["a"]?.jsonPrimitive?.contentOrNull ?: options["a"]).orEmpty()
+                val bRaw = (payload["b"]?.jsonPrimitive?.contentOrNull ?: options["b"]).orEmpty()
+                if (aRaw.isBlank() || bRaw.isBlank()) {
+                    return embeddingFailure("similarity requires packed vectors 'a' and 'b'")
+                }
+                val a = runCatching { unpackFloats(aRaw) }.getOrElse {
+                    return embeddingFailure("invalid vector 'a': ${it.message}")
+                }
+                val b = runCatching { unpackFloats(bRaw) }.getOrElse {
+                    return embeddingFailure("invalid vector 'b': ${it.message}")
+                }
+                if (a.isEmpty() || b.isEmpty()) return embeddingFailure("similarity vectors must not be empty")
+                if (a.size != b.size) return embeddingFailure("dimension mismatch: ${a.size} vs ${b.size}")
+                if (a.any { !it.isFinite() } || b.any { !it.isFinite() }) {
+                    return embeddingFailure("similarity vectors must contain finite values")
+                }
+                data = mapOf("score" to VectorMath.cosine(a, b), "dim" to a.size,
+                             "method" to "cosine", "source_type" to "similarity", "status" to "SUCCESS")
             }
-            else -> error("Unknown vectorize op: $op")
+            else -> return embeddingFailure("Unknown embedding op: $op")
         }
         val elapsed = (currentTimeMillis() - t0).coerceAtLeast(1L)
         return InternalToolResult(
-            summary = "vectorize/$op completed in ${elapsed}ms",
+            summary = "embedding/$op completed in ${elapsed}ms",
             dataMap = data,
             resultJson = buildJsonObject { data.forEach { (k, v) -> putJsonValue(k, v) } }
         )
     }
 
+    private fun embeddingContext(): Context? = engine.db.currentAndroidContext?.invoke()
+
+    private fun embeddingFailure(reason: String): InternalToolResult = InternalToolResult(
+        summary = "Embedding failed: $reason",
+        dataMap = mapOf("status" to "FAILED", "error" to reason),
+        resultJson = buildJsonObject {
+            put("status", "FAILED")
+            put("error", reason)
+        }
+    )
+
+    private fun decodeEmbeddingBitmap(
+        ctx: Context, payload: JsonObject, options: Map<String, String>
+    ): Bitmap? {
+        val ref = payload["uri"]?.jsonPrimitive?.contentOrNull
+            ?: payload["image"]?.jsonPrimitive?.contentOrNull
+            ?: options["uri"] ?: options["image"]
+        return runCatching { decodeBitmap(ctx, ref) }.getOrNull()
+    }
+
     /** Decodes a `data:`/`file://`/`content://`/bare-base64 image reference into a bitmap. */
     private fun decodeBitmap(ctx: Context, uri: String?): Bitmap {
         val raw = uri?.trim().orEmpty()
-        require(raw.isNotEmpty()) { "vectorize requires a bitmap uri" }
+        require(raw.isNotEmpty()) { "embedding needs a bitmap uri" }
         val bytes: ByteArray = when {
             raw.startsWith("data:image") -> Base64.decode(raw.substringAfter("base64,"), Base64.DEFAULT)
             raw.startsWith("content://") ->
@@ -936,19 +1066,11 @@ object NativeToolsSuite {
         var sourceUri = mergedArgs["uri"] ?: mergedArgs["image"]
         if (sourceUri.isNullOrBlank()) {
             val allowCamera = mergedArgs["camera"]?.equals("false", ignoreCase = true) != true
-            sourceUri = imageSourceSink?.invoke(allowCamera)
+            val sink = imageSourceSink
+                ?: return noInput("Image manipulation", "No image source host is installed")
+            sourceUri = sink(allowCamera)
             if (sourceUri.isNullOrBlank()) {
-                return InternalToolResult(
-                    summary = "Image manipulation cancelled: no image supplied",
-                    dataMap = mapOf(
-                        "status" to "NO_INPUT",
-                        "error" to "No image was captured or selected"
-                    ),
-                    resultJson = buildJsonObject {
-                        put("status", "NO_INPUT")
-                        put("error", "No image was captured or selected")
-                    }
-                )
+                return cancelled("Image manipulation", "No image was captured or selected")
             }
         }
 
@@ -1036,18 +1158,10 @@ object NativeToolsSuite {
             // rather than only supporting the camera.
             val wantsCamera = (payload["camera"]?.jsonPrimitive?.contentOrNull ?: options["camera"])
                 ?.equals("false", ignoreCase = true) != true
-            val acquired = imageSourceSink?.invoke(wantsCamera)
-                ?: return InternalToolResult(
-                    summary = "MobileNetV4 cancelled: no image supplied",
-                    dataMap = mapOf(
-                        "status" to "NO_INPUT",
-                        "error" to "No image was captured or selected"
-                    ),
-                    resultJson = buildJsonObject {
-                        put("status", "NO_INPUT")
-                        put("error", "No image was captured or selected")
-                    }
-                )
+            val sink = imageSourceSink
+                ?: return noInput("MobileNetV4", "No image source host is installed")
+            val acquired = sink(wantsCamera)
+                ?: return cancelled("MobileNetV4", "No image was captured or selected")
             sourceImage = acquired
             try {
                 decodeBitmap(ctx, acquired)
@@ -1122,17 +1236,34 @@ object NativeToolsSuite {
     // -------------------------------------------------------------------------
     // ON-DEVICE SALIENT SEGMENTATION (U-2-Net alpha matte)
     // -------------------------------------------------------------------------
+    private fun noInput(label: String, message: String): InternalToolResult {
+        val data = mapOf("status" to "NO_INPUT", "error" to message)
+        return InternalToolResult(
+            summary = "$label: $message",
+            dataMap = data,
+            resultJson = buildJsonObject { data.forEach { (k, v) -> put(k, v) } }
+        )
+    }
+
+    /** A user-initiated cancel is not a tool failure; keep the card state untouched. */
+    private fun cancelled(label: String, message: String): InternalToolResult {
+        val data = mapOf("status" to "CANCELLED", "cancelled" to "true", "error" to message)
+        return InternalToolResult(
+            summary = "$label cancelled: $message",
+            dataMap = data,
+            resultJson = buildJsonObject { data.forEach { (k, v) -> put(k, v) } }
+        )
+    }
+
     private suspend fun executeU2Net(
         operation: String,
         options: Map<String, String>,
         payload: JsonObject,
         tenantId: String
     ): InternalToolResult {
-        // No U-2-Net graph is bundled and no ONNX runtime exists here: the smallest public
-        // weights are ~176MB ONNX. Rather than return a synthetic mask (what this used to do),
-        // run the real on-device background remover so the card does something genuine, and say
-        // plainly that the algorithm is not U-2-Net.
-        engine.db.currentAndroidContext?.invoke()
+        // U-2-Netp is bundled as a 4.4 MB TFLite graph and runs locally. The colour matte is
+        // only a fallback for hosts where TFLite cannot load (e.g. plain JVM tests).
+        val ctx = engine.db.currentAndroidContext?.invoke()
             ?: return unsupported("Background removal", "No Android context")
 
         val declared = payload["uri"]?.jsonPrimitive?.contentOrNull
@@ -1141,18 +1272,49 @@ object NativeToolsSuite {
             ?: options["image"]
         val wantsCamera = (payload["camera"]?.jsonPrimitive?.contentOrNull ?: options["camera"])
             ?.equals("false", ignoreCase = true) != true
-        val uri = declared ?: imageSourceSink?.invoke(wantsCamera)
-            ?: return InternalToolResult(
-                summary = "Background removal cancelled: no image supplied",
-                dataMap = mapOf(
-                    "status" to "NO_INPUT",
-                    "error" to "No image was captured or selected"
-                ),
-                resultJson = buildJsonObject {
-                    put("status", "NO_INPUT")
-                    put("error", "No image was captured or selected")
+        val uri = declared ?: run {
+            val sink = imageSourceSink
+                ?: return noInput("Background removal", "No image source host is installed")
+            sink(wantsCamera) ?: return cancelled("Background removal", "No image was captured or selected")
+        }
+
+        // Prefer the real U-2-Netp graph when the bundled model and TFLite runtime load.
+        android.util.Log.d("U2NetTool", "segment input=$uri")
+        val u2net = try {
+            val bitmap = decodeBitmap(ctx, uri)
+            try {
+                engine.tools.image.U2NetEngine.segment(ctx, tenantId, bitmap).also {
+                    android.util.Log.d("U2NetTool", "segment result=${it != null}")
                 }
+            } finally {
+                bitmap.recycle()
+            }
+        } catch (t: Throwable) {
+            android.util.Log.e("U2NetTool", "segment threw", t)
+            null
+        }
+        if (u2net != null) {
+            val data = mapOf(
+                "status" to "SUCCESS",
+                "uri" to u2net.cutoutUri,
+                "mask_uri" to u2net.maskUri,
+                "image_id" to u2net.imageId,
+                "width" to u2net.width,
+                "height" to u2net.height,
+                "confidence" to u2net.confidence,
+                "inference_ms" to u2net.inferenceMs,
+                "algorithm" to "U-2-Netp (TFLite, 320x320 salient-object matte)",
+                "model" to "u2netp.tflite",
+                "tensor_input" to "320x320x3",
+                "saliency_cutoff" to (options["threshold"] ?: options["saliency_cutoff"] ?: "0.45"),
+                "source_image" to uri
             )
+            return InternalToolResult(
+                summary = "U-2-Netp removed the background (${(u2net.confidence * 100).toInt()}% mask coverage)",
+                dataMap = data,
+                resultJson = buildJsonObject { data.forEach { (k, v) -> put(k, v.toString()) } }
+            )
+        }
 
         val result = try {
             engine.tools.image.ImageManipulationEngine.process(
@@ -1188,13 +1350,13 @@ object NativeToolsSuite {
             "image_id" to result.imageId,
             "width" to result.width,
             "height" to result.height,
-            "algorithm" to "on-device colour-distance matte (not U-2-Net)",
-            "note" to "U-2-Net weights are not bundled; this is the native background remover",
+            "algorithm" to "on-device colour-distance matte (U-2-Net fallback)",
+            "note" to "U-2-Netp inference was unavailable on this host; used the native matte fallback",
             // Echo the segmented source so the card can show what was cut out.
             "source_image" to uri
         )
         return InternalToolResult(
-            summary = "Background removed with the on-device matte (U-2-Net weights not bundled)",
+            summary = "Background removed with the on-device matte fallback",
             dataMap = data,
             resultJson = buildJsonObject { data.forEach { (k, v) -> put(k, v.toString()) } }
         )
@@ -1324,6 +1486,29 @@ object NativeToolsSuite {
     // -------------------------------------------------------------------------
     // BARCODE / QR CODE GENERATOR (ZXing)
     // -------------------------------------------------------------------------
+    private suspend fun executeCodec(
+        operation: String,
+        options: Map<String, String>,
+        payload: JsonObject
+    ): InternalToolResult {
+        val mergedArgs = buildMap {
+            putAll(options)
+            put("codec", operation)
+            payload.forEach { (k, v) ->
+                if (k != "output" && k != "options") put(k, jsonContent(v))
+            }
+        }
+        val toolResult = engine.tools.impl.CodecTool().invoke(
+            args = ToolArgs(mergedArgs),
+            ctx = ToolContext(workspaceId = "codec")
+        )
+        return internalFromToolResult(
+            toolResult = toolResult,
+            label = "Codec",
+            successSummary = "Codec $operation completed"
+        )
+    }
+
     private suspend fun executeCodeGenerate(
         operation: String,
         options: Map<String, String>,
@@ -1347,12 +1532,13 @@ object NativeToolsSuite {
     }
 
     // -------------------------------------------------------------------------
-    // KEEP-AWAKE / SCREEN WAKE-LOCK
+    // SCREEN: KEEP-AWAKE / SCREENSHOT / RECORDING
     // -------------------------------------------------------------------------
-    private suspend fun executeKeepAwake(
+    private suspend fun executeScreen(
         operation: String,
         options: Map<String, String>,
-        payload: JsonObject
+        payload: JsonObject,
+        tenantId: String
     ): InternalToolResult {
         val mergedArgs = buildMap {
             putAll(options)
@@ -1361,11 +1547,14 @@ object NativeToolsSuite {
             }
             payload.forEach { (k, v) -> put(k, jsonContent(v)) }
         }
-        val toolResult = engine.tools.impl.KeepAwakeTool().invoke(ToolArgs(mergedArgs), ToolContext())
+        val toolResult = engine.tools.impl.ScreenTool().invoke(
+            ToolArgs(mergedArgs),
+            ToolContext(workspaceId = tenantId)
+        )
         return internalFromToolResult(
             toolResult = toolResult,
-            label = "Keep-awake",
-            successSummary = "Keep-awake ${mergedArgs["op"] ?: operation} executed"
+            label = "Screen",
+            successSummary = "Screen ${mergedArgs["op"] ?: operation} executed"
         )
     }
 
@@ -1465,6 +1654,20 @@ object NativeToolsSuite {
         )
     }
 
+    private fun kotlinx.serialization.json.JsonArrayBuilder.addJsonValue(value: Any?) {
+        when (value) {
+            null -> add(JsonNull)
+            is Boolean -> add(JsonPrimitive(value))
+            is Int -> add(JsonPrimitive(value))
+            is Long -> add(JsonPrimitive(value))
+            is Double -> add(JsonPrimitive(value))
+            is Float -> add(JsonPrimitive(value))
+            is JsonElement -> add(value)
+            is List<*> -> add(buildJsonArray { value.forEach { addJsonValue(it) } })
+            else -> add(JsonPrimitive(value.toString()))
+        }
+    }
+
     private fun JsonObjectBuilder.putJsonValue(key: String, value: Any?) {
         when (value) {
             null -> put(key, JsonNull)
@@ -1474,6 +1677,7 @@ object NativeToolsSuite {
             is Double -> put(key, value)
             is Float -> put(key, value.toDouble())
             is JsonElement -> put(key, value)
+            is List<*> -> put(key, buildJsonArray { value.forEach { item -> addJsonValue(item) } })
             else -> put(key, value.toString())
         }
     }

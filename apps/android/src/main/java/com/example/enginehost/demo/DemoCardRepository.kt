@@ -17,10 +17,10 @@ import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
 
 /**
- * Loads the built-in showcase cards from `src/main/resources/demo/`.
+ * Loads the built-in showcase cards from `src/main/resources/demo/apex/`.
  *
  * Card markup lives in JSON rather than Kotlin so the demo is editable as data. Each tool card
- * is its own file under `demo/tools/`, so one tool's markup can change without touching the
+ * is its own file under `demo/apex/tools/`, so one tool's markup can change without touching the
  * rest and the Kotlin side holds no large literal builders. Resources are used rather than
  * `assets/` so the same files load in plain-JVM unit tests, where no `Context` exists.
  *
@@ -30,19 +30,19 @@ object DemoCardRepository {
 
     private val json = Json { prettyPrint = true; ignoreUnknownKeys = true }
 
-    private const val ROOT = "demo"
-    private const val TOOLS = "$ROOT/tools"
+    private const val DEFAULT_ROOT = "demo/apex"
 
     /** Tool card files in render order — the on-screen showcase order. */
     val toolCardOrder: List<String> = listOf(
         "local_db",
         "scanner",
         "code_generate",
+        "codec",
         "camera",
         "mobilenet",
         "u2net",
         "image_manipulation",
-        "vectorize",
+        "embedding",
         "libsignal",
         "biometrics",
         "haptics",
@@ -52,7 +52,7 @@ object DemoCardRepository {
         "realtime_ws",
         "net",
         "print",
-        "keep_awake",
+        "screen",
         "files",
         "native_icons",
         "catalog_list",
@@ -104,24 +104,32 @@ object DemoCardRepository {
         "demoQrUri" to (DemoMedia.qrImageUri(spec.tenantId) ?: "")
     )
 
-    /** All tool cards for [spec], in [toolCardOrder]. Missing resources are skipped. */
+    private fun root(spec: TenantWorkspaceSpec): String =
+        spec.demoRoot.ifBlank { DEFAULT_ROOT }
+
+    private fun tools(spec: TenantWorkspaceSpec): String = "${root(spec)}/tools"
+
+    private fun order(spec: TenantWorkspaceSpec): List<String> =
+        spec.toolCardOrder ?: toolCardOrder
+
+    /** All tool cards for [spec], in its card order. Missing resources are skipped. */
     fun toolCards(spec: TenantWorkspaceSpec): List<JsonObject> {
         val values = placeholders(spec)
-        return toolCardOrder.mapNotNull { name -> readObject("$TOOLS/$name.json", values) }
+        return order(spec).mapNotNull { name -> readObject("${tools(spec)}/$name.json", values) }
     }
 
     /** One tool card by file name (without extension), or null when absent. */
     fun toolCard(spec: TenantWorkspaceSpec, name: String): JsonObject? =
-        readObject("$TOOLS/$name.json", placeholders(spec))
+        readObject("${tools(spec)}/$name.json", placeholders(spec))
 
     /** `user.*` variable declarations from the hub card, reused by every pushed card. */
     private fun sharedVariables(spec: TenantWorkspaceSpec): JsonArray? {
-        val hub = readObject("$ROOT/card.json", placeholders(spec)) ?: return null
+        val hub = readObject("${root(spec)}/card.json", placeholders(spec)) ?: return null
         return hub["card"]?.jsonObject?.get("variables") as? JsonArray
     }
 
     /**
-     * The entry hub: `demo/card.json` with a generated catalog spliced into the container
+     * The entry hub: `demo/apex/card.json` with a generated catalog spliced into the container
      * flagged by `tool_catalog_after`.
      *
      * The hub links to each tool card instead of inlining all of them, so the landing card
@@ -129,7 +137,7 @@ object DemoCardRepository {
      */
     fun hubCard(spec: TenantWorkspaceSpec): JsonObject? {
         val values = placeholders(spec)
-        val root = readObject("$ROOT/card.json", values) ?: return null
+        val root = readObject("${root(spec)}/card.json", values) ?: return null
         val catalog = catalogContainer(spec) ?: return root
 
         val card = root["card"]?.jsonObject ?: return root
@@ -170,9 +178,9 @@ object DemoCardRepository {
         }
     }
 
-    /** Catalog of `nav://push` entries, one per tool card, driven by `demo/tool_catalog.json`. */
+    /** Catalog of `nav://push` entries, one per tool card, driven by `demo/apex/tool_catalog.json`. */
     fun catalogContainer(spec: TenantWorkspaceSpec): JsonObject? {
-        val catalog = readObject("$ROOT/tool_catalog.json", placeholders(spec)) ?: return null
+        val catalog = readObject("${root(spec)}/tool_catalog.json", placeholders(spec)) ?: return null
         val entries = catalog["entries"]?.jsonArray ?: return null
 
         return buildJsonObject {
@@ -245,13 +253,20 @@ object DemoCardRepository {
      * navigation stack.
      */
     fun toolCardDocument(spec: TenantWorkspaceSpec, name: String): JsonObject? {
-        val body = toolCard(spec, name) ?: return null
+        val rawBody = toolCard(spec, name) ?: return null
+        val timers = rawBody["_timers"]
+        val body = if (timers != null) {
+            JsonObject(rawBody.filterKeys { it != "_timers" })
+        } else {
+            rawBody
+        }
         val variables = sharedVariables(spec)
 
         return buildJsonObject {
             putJsonObject("card") {
                 put("log_id", "tool_${name}_${spec.tenantId}")
                 if (variables != null) put("variables", variables)
+                if (timers != null) put("timers", timers)
                 putJsonArray("states") {
                     addJsonObject {
                         put("state_id", 0)
@@ -293,7 +308,7 @@ object DemoCardRepository {
     fun cardStack(spec: TenantWorkspaceSpec): List<Pair<String, JsonObject>> {
         val cards = mutableListOf<Pair<String, JsonObject>>()
         hubCard(spec)?.let { cards += hubCardId(spec) to it }
-        toolCardOrder.forEach { name ->
+        order(spec).forEach { name ->
             toolCardDocument(spec, name)?.let { cards += toolCardId(name) to it }
         }
         return cards

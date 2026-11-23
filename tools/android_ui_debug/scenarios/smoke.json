@@ -1,0 +1,12 @@
+{
+  "name": "smoke",
+  "package": "com.aistudio.sduiposengine.kmpdiv",
+  "activity": "com.example.MainActivity",
+  "steps": [
+    { "action": "launch", "settle": 25, "clear_data": true },
+    { "action": "wait_text", "contains": "Apex POS Terminal", "timeout": 90 },
+    { "action": "tap", "text": "Apex POS Terminal", "settle": 8 },
+    { "action": "assert_text", "contains": "SQLite:", "scroll": false },
+    { "action": "assert_no_crash" }
+  ]
+}

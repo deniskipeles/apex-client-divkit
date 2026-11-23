@@ -86,12 +86,21 @@ object LibSignalEngine {
      */
     fun setupIdentity(workspaceId: String): Pair<Int, String> {
         val store = localStore(workspaceId)
-        return try {
-            val regId = store.localRegistrationId
-            val identity = store.identityKeyPair
-            regId to Base64.getEncoder().encodeToString(identity.publicKey.serialize())
+        val result = try {
+            store.localRegistrationId to
+                Base64.getEncoder().encodeToString(store.identityKeyPair.publicKey.serialize())
         } catch (_: Exception) {
             generateIdentity(store)
+        }
+        ensurePreKeyMaterial(store)
+        return result
+    }
+
+    /** Signed prekeys are stable, but a partially-written identity must not break export. */
+    private fun ensurePreKeyMaterial(store: SqliteSignalProtocolStore) {
+        store.ensurePreKeys()
+        if (!store.containsSignedPreKey(1)) {
+            store.storeSignedPreKey(1, KeyHelper.generateSignedPreKey(store.identityKeyPair, 1))
         }
     }
 
@@ -107,13 +116,14 @@ object LibSignalEngine {
         } catch (_: Exception) {
             generateIdentity(store)
         }
+        ensurePreKeyMaterial(store)
         return store
     }
 
     private fun generateIdentity(store: SqliteSignalProtocolStore): Pair<Int, String> {
         val identityKeyPair = KeyHelper.generateIdentityKeyPair()
         val registrationId = KeyHelper.generateRegistrationId(false)
-        val preKeys = KeyHelper.generatePreKeys(1, 100)
+        val preKeys = KeyHelper.generatePreKeys(1, 10)
         val signedPreKey = KeyHelper.generateSignedPreKey(identityKeyPair, 1)
 
         store.saveIdentityKeyPair(registrationId, identityKeyPair)
@@ -143,7 +153,8 @@ object LibSignalEngine {
         val identityKey = store.identityKeyPair.publicKey
         val regId = store.localRegistrationId
         val signedPreKey = store.loadSignedPreKey(1)
-        val preKey = store.loadPreKey(1)
+        // One-time prekeys are consumed on receipt, so advertise an unused one.
+        val preKey = store.nextPreKey()
 
         return ExportedPreKeyBundle(
             registrationId = regId,
@@ -218,27 +229,50 @@ object LibSignalEngine {
     /**
      * Decrypts an incoming message envelope on the peer's side using the official
      * SessionCipher. PreKey messages establish the peer's session implicitly.
+     *
+     * [messageType] may be 2 (SignalMessage), 3 (PreKeySignalMessage) or 0 to detect it
+     * from the envelope. Callers that omit the type used to be forced through the
+     * PreKey path, so a reply from an already-established session failed to decrypt.
      */
     fun decrypt(
         workspaceId: String,
         peerId: String,
         deviceId: Int = 1,
         ciphertextB64: String,
-        messageType: Int = 3
+        messageType: Int = 0
     ): String {
         setupIdentity(workspaceId)
         ensurePeerIdentity(workspaceId, peerId)
 
-        val peerCipher = SessionCipher(peerStore(workspaceId, peerId), address(workspaceId, deviceId))
+        val peer = peerStore(workspaceId, peerId)
+        val peerCipher = SessionCipher(peer, address(workspaceId, deviceId))
         val rawBytes = Base64.getDecoder().decode(ciphertextB64)
 
-        val decryptedBytes = if (messageType == 3) {
-            peerCipher.decrypt(PreKeySignalMessage(rawBytes))
-        } else {
-            peerCipher.decrypt(SignalMessage(rawBytes))
+        val decryptedBytes = when (messageType) {
+            2 -> peerCipher.decrypt(SignalMessage(rawBytes))
+            3 -> peerCipher.decrypt(PreKeySignalMessage(rawBytes))
+            else -> if (isPreKeyMessage(rawBytes)) {
+                peerCipher.decrypt(PreKeySignalMessage(rawBytes))
+            } else {
+                peerCipher.decrypt(SignalMessage(rawBytes))
+            }
         }
+        // Processing a PreKeySignalMessage consumes its one-time prekey.
+        peer.ensurePreKeys()
 
         return String(decryptedBytes, Charsets.UTF_8)
+    }
+
+    /**
+     * A PreKeySignalMessage carries the sender identity and base key; a plain SignalMessage
+     * parsed with the PreKey reader leaves both absent. Detecting before decrypting avoids
+     * consuming a message key on the wrong reader.
+     */
+    private fun isPreKeyMessage(rawBytes: ByteArray): Boolean = try {
+        val message = PreKeySignalMessage(rawBytes)
+        message.identityKey != null && message.baseKey != null && message.whisperMessage != null
+    } catch (_: Exception) {
+        false
     }
 
     /**
@@ -247,11 +281,12 @@ object LibSignalEngine {
      */
     fun getSafetyNumber(workspaceId: String, peerId: String, deviceId: Int = 1): String {
         setupIdentity(workspaceId)
-        ensureLocalSession(workspaceId, peerId, deviceId)
 
         val store = localStore(workspaceId)
         val localIdentity = store.identityKeyPair.publicKey
-        val remoteIdentity = store.getIdentity(address(peerId, deviceId)) ?: localIdentity
+        // No session means the peer never completed a handshake, so there is no remote
+        // identity to fingerprint. Returning the local key would be a fabricated match.
+        val remoteIdentity = store.getIdentity(address(peerId, deviceId)) ?: return ""
 
         val generator = NumericFingerprintGenerator(5200) // 5200 iterations matching official Signal standard
         val fingerprint = generator.createFor(
@@ -270,9 +305,22 @@ object LibSignalEngine {
 
     /**
      * Ensures a session exists with the peer and returns a telemetry snapshot.
+     *
+     * [fresh] discards both sides' ratchet state first. The demo's "Establish session"
+     * button means exactly that: without the reset a session persisted from an earlier
+     * run is reused, so the displayed session is not the one the buttons just set up and
+     * a ciphertext from the old ratchet can fail to decrypt.
      */
-    fun createOrGetSession(workspaceId: String, peerId: String, deviceId: Int = 1): SignalSession {
+    fun createOrGetSession(
+        workspaceId: String,
+        peerId: String,
+        deviceId: Int = 1,
+        fresh: Boolean = false
+    ): SignalSession {
         setupIdentity(workspaceId)
+        if (fresh) {
+            resetRatchet(workspaceId, peerId, deviceId)
+        }
         ensureLocalSession(workspaceId, peerId, deviceId)
 
         val fingerprint = getSafetyNumber(workspaceId, peerId, deviceId)
@@ -289,6 +337,12 @@ object LibSignalEngine {
             sendCounter = 0L,
             recvCounter = 0L
         )
+    }
+
+    /** Drops both the local and the simulated peer ratchet without touching trust state. */
+    private fun resetRatchet(workspaceId: String, peerId: String, deviceId: Int) {
+        localStore(workspaceId).deleteSession(address(peerId, deviceId))
+        peerStore(workspaceId, peerId).deleteSession(address(workspaceId, deviceId))
     }
 
     /**
@@ -325,10 +379,10 @@ object LibSignalEngine {
         deviceId: Int = 1
     ): SignalVerification {
         setupIdentity(workspaceId)
-        ensureLocalSession(workspaceId, peerId, deviceId)
 
         val expected = getSafetyNumber(workspaceId, peerId, deviceId)
-        val matches = normalizeSafetyNumber(providedSafetyNumber) == normalizeSafetyNumber(expected)
+        val matches = expected.isNotEmpty() &&
+            normalizeSafetyNumber(providedSafetyNumber) == normalizeSafetyNumber(expected)
         val store = localStore(workspaceId)
         val addr = address(peerId, deviceId)
         val previous = store.loadVerification(addr)
@@ -381,9 +435,7 @@ object LibSignalEngine {
         value.filter { it.isLetterOrDigit() }.lowercase()
 
     fun resetSession(workspaceId: String, peerId: String, deviceId: Int = 1) {
-        val store = localStore(workspaceId)
-        val addr = address(peerId, deviceId)
-        store.deleteSession(addr)
-        store.deleteVerification(addr)
+        resetRatchet(workspaceId, peerId, deviceId)
+        localStore(workspaceId).deleteVerification(address(peerId, deviceId))
     }
 }

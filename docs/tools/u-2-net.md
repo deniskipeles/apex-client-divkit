@@ -13,17 +13,19 @@
 ┌────────────────────────────────────────────────────────────────────────┐
 │                U-2-NET SALIENT SEGMENTATION RUNTIME                    │
 │                                                                        │
-│  1. U-2-Net quantized salient-object segmentation                      │
-│  2. Saliency cutoff thresholding                                       │
-│  3. Produces an alpha-matte mask (PNG)                                 │
+│  1. U-2-Netp TFLite graph (bundled, 320x320)                          │
+│  2. Sigmoid saliency map normalised to an alpha matte                  │
+│  3. Produces a transparent cutout PNG and a grayscale mask PNG         │
 └───────────────────────────────────┬────────────────────────────────────┘
                                     │
                                     ▼ Generic JSON Output
 ┌────────────────────────────────────────────────────────────────────────┐
 │  {                                                                     │
-│    "mask_uri": "content://com.example.provider/u2net_masks/mask_...",  │
+│    "uri": "file:///.../u2net_<id>_cutout.png",                         │
+│    "mask_uri": "file:///.../u2net_<id>_mask.png",                      │
 │    "confidence": 0.94,                                                 │
-│    "saliency_cutoff": 0.45,                                            │
+│    "algorithm": "U-2-Netp (TFLite, 320x320 salient-object matte)",     │
+│    "model": "u2netp.tflite",                                           │
 │    "inference_ms": 22,                                                 │
 │    "status": "SUCCESS"                                                 │
 │  }                                                                     │
@@ -32,9 +34,11 @@
 
 # U-2-Net Salient Object Segmentation (`tools://u-2-Net.tflite` / `vision.remove_background@1`)
 
-The **U-2-Net Segmentation Tool** performs on-device salient object segmentation, producing
-an alpha-matte mask. It is unopinionated: it returns a mask URI and confidence without
-assuming how the mask will be used.
+The **U-2-Net Segmentation Tool** runs the real **U-2-Netp** model on device through
+TensorFlow Lite (`assets/u2netp.tflite`, 4.4 MB) and produces an alpha-matte cutout plus a
+grayscale mask. If the TFLite runtime or model cannot load on a host, it falls back to the
+native colour-distance matte and says so in `algorithm`/`note` rather than fabricating a
+neural result.
 
 ---
 
@@ -50,8 +54,10 @@ Invoked via:
 
 | Option | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `tensor_input` | `string` | `"320x320x3"` | Input tensor shape. |
-| `saliency_cutoff` | `double` | `0.45` | Threshold above which a pixel is treated as salient foreground. |
+| `uri` / `image` | `string` | — | Source image path, `file://` URI, or base64. When omitted the host image-source bridge opens the camera or picker. |
+| `camera` | `boolean` | `true` | Allow the camera when acquiring a frame from the host. |
+| `tensor_input` | `string` | `"320x320x3"` | Echoed model input shape. |
+| `saliency_cutoff` / `threshold` | `double` | `0.45` | Echoed cutoff used by the card; the U-2-Net sigmoid already yields a soft matte. |
 
 ---
 
@@ -59,10 +65,15 @@ Invoked via:
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `mask_uri` | `string` | URI of the generated alpha-matte PNG. |
-| `confidence` | `double` | Segmentation confidence. |
-| `saliency_cutoff` | `double` | Cutoff applied. |
-| `inference_ms` | `integer` | Inference time in milliseconds. |
+| `uri` | `string` | Transparent cutout PNG (same as `mask_uri` for card compatibility). |
+| `mask_uri` | `string` | Grayscale alpha-matte PNG. |
+| `image_id` | `string` | Generated image identifier. |
+| `width`, `height` | `integer` | Output dimensions. |
+| `confidence` | `double` | Mean alpha coverage (0–1). |
+| `algorithm` | `string` | `U-2-Netp (TFLite, ...)` or the fallback name. |
+| `model` | `string` | `u2netp.tflite`. |
+| `inference_ms` | `integer` | End-to-end segmentation time in milliseconds. |
+| `source_image` | `string` | Input URI/path. |
 | `status` | `string` | `"SUCCESS"`. |
 
 Default output mapping: `mask_uri → user.u2net_mask_uri`,

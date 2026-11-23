@@ -6,6 +6,7 @@ import engine.crypto.SigningKeyPair
 import engine.db.EngineRegistry
 import engine.db.OpResult
 import engine.db.WorkspaceDatabase
+import com.example.enginehost.demo.DemoCollectionRepository
 import kotlinx.serialization.json.*
 
 data class WorkspaceToolPermissions(
@@ -59,7 +60,11 @@ data class TenantWorkspaceSpec(
     val pullEndpoint: String = "/webhook/edge_notifications/pull-notifications",
     val publicClientId: String = "pk_live_bdbc75560c43b6605370bf4a",
     val unreadCount: Int = 0,
-    val defaultTools: WorkspaceToolPermissions = WorkspaceToolPermissions()
+    val defaultTools: WorkspaceToolPermissions = WorkspaceToolPermissions(),
+    /** Resource root for this workspace's DivKit demo cards. */
+    val demoRoot: String = "demo/apex",
+    /** Tool card names in render order; null uses the default showcase order. */
+    val toolCardOrder: List<String>? = null
 )
 
 data class SeedProduct(
@@ -123,6 +128,43 @@ object WorkspaceProvisioner {
                 SeedOrder("Truffle Parmesan Fries", "ACM-102", 8.00, 2, "POS-TERM-01", "OPEN"),
                 SeedOrder("Artisan Cold Brew", "ACM-204", 5.50, 1, "POS-TERM-01", "OPEN")
             )
+        ),
+        TenantWorkspaceSpec(
+            tenantId = "apex_kiosk",
+            displayName = "APEX KIOSK",
+            terminalCode = "KSK-001",
+            subtitle = "Customer & owner receipt workflows • QR / LAN",
+            accentHex = "#7C3AED",
+            mode = EngineConfig.Mode.HYBRID,
+            capabilities = setOf("scanner", "printer", "haptics", "beeper", "clipboard"),
+            isBuiltInDemo = true,
+            tunnelUrl = "https://apex-kiosk.local/",
+            localLanUrl = "http://192.168.1.20:8089",
+            publicClientId = "pk_live_bdbc75560c43b6605370bf4a",
+            unreadCount = 2,
+            defaultTools = WorkspaceToolPermissions(
+                hapticVibration = true,
+                hardwareBeeperAudio = true,
+                cameraBarcodeScanner = true,
+                clipboardAccess = true,
+                backgroundAlertsPush = true,
+                offlinePageCaching = true,
+                realtimeEngineWsSse = true
+            ),
+            defaultProducts = listOf(
+                SeedProduct("Mineral Water", "P1001", 1.50, 120, "Drinks", "#0EA5E9"),
+                SeedProduct("Sandwich", "P1008", 4.00, 40, "Food", "#F59E0B"),
+                SeedProduct("Coffee", "P1012", 2.50, 80, "Drinks", "#8B5CF6"),
+                SeedProduct("Chocolate Bar", "P1015", 1.75, 60, "Snacks", "#EC4899"),
+                SeedProduct("Fresh Juice", "P1020", 3.25, 35, "Drinks", "#10B981"),
+                SeedProduct("Croissant", "P1024", 2.75, 25, "Bakery", "#F97316")
+            ),
+            defaultOrders = listOf(
+                SeedOrder("Mineral Water", "P1001", 1.50, 2, "KSK-001", "OPEN"),
+                SeedOrder("Sandwich", "P1008", 4.00, 1, "KSK-001", "PAID")
+            ),
+            demoRoot = "demo/apex-kiosk",
+            toolCardOrder = listOf("kiosk_customer", "kiosk_owner", "kiosk_transfer", "kiosk_lan")
         )
     )
 
@@ -176,20 +218,10 @@ object WorkspaceProvisioner {
 
         // Collections are INSERT OR REPLACE'd by import, which would cascade-delete
         // existing records, so only import when the tenant schema is absent.
-        if (apexEngine.getCollection("orders") == null) {
-            registry.execute(
-                "db.import_schema",
-                db,
-                ws,
-                buildJsonObject {
-                    putJsonObject("schema") {
-                        putJsonArray("collections") {
-                            add(collectionJson(id = 1L, name = "orders", fields = ORDERS_FIELDS))
-                            add(collectionJson(id = 2L, name = "inventory", fields = INVENTORY_FIELDS))
-                        }
-                    }
-                }
-            )
+        val demoCollections = DemoCollectionRepository.load()
+        val missingCollection = demoCollections?.names?.any { apexEngine.getCollection(it) == null } == true
+        if (demoCollections != null && missingCollection) {
+            registry.execute("db.import_schema", db, ws, demoCollections.schemaPayload)
         }
 
         // Check if inventory is empty; if so, seed via EngineRegistry
@@ -255,8 +287,8 @@ object WorkspaceProvisioner {
     /**
      * Generates the route-index-0 DivKit card for a tenant POS workspace.
      *
-     * Layout comes from `resources/demo/card.json`; the tool catalog spliced into it links to
-     * each tool card through `nav://push`. Tool markup lives in `resources/demo/tools` and is
+     * Layout comes from `resources/demo/apex/card.json`; the tool catalog spliced into it links to
+     * each tool card through `nav://push`. Tool markup lives in `resources/demo/apex/tools` and is
      * registered separately, so the landing card stays small.
      */
     fun buildDefaultDivKitCardJson(spec: TenantWorkspaceSpec): String =
@@ -340,28 +372,5 @@ object WorkspaceProvisioner {
         }
     }
 
-    private fun collectionJson(id: Long, name: String, fields: List<String>): JsonObject = buildJsonObject {
-        put("id", id)
-        put("name", name)
-        putJsonObject("schema") {
-            putJsonObject("fields") {
-                for (field in fields) {
-                    putJsonObject(field) {
-                        put("type", if (field == "price") "number" else "string")
-                        put("required", false)
-                        put("uid", "${name}_$field")
-                    }
-                }
-            }
-            putJsonObject("policies") {
-                put("read", "public")
-                put("create", "public")
-                put("update", "admin")
-                put("delete", "admin")
-            }
-        }
-    }
 
-    private val ORDERS_FIELDS = listOf("item_name", "sku", "price", "qty", "terminal_id", "status")
-    private val INVENTORY_FIELDS = listOf("item_name", "sku", "price", "stock", "category")
 }

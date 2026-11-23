@@ -399,6 +399,21 @@ fun SduiBuilderTab(
                     ) {
                         Text("+ LibSignal E2EE", fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
                     }
+
+                    FilledTonalButton(
+                        onClick = {
+                            val block = SduiOnFlyBuilder.buildEmbeddingToolBlock(spec)
+                            viewModel.injectOnFlyComponent(block, "tools://embedding Text/Image Embeddings", prepend = true)
+                            onSwitchToTerminalPreview()
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .defaultMinSize(minHeight = 48.dp)
+                            .testTag("inject_embedding_button"),
+                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp)
+                    ) {
+                        Text("+ Embeddings", fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                    }
                 }
 
                 Row(

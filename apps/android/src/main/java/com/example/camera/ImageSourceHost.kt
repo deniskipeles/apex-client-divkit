@@ -3,6 +3,7 @@ package com.example.camera
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -89,6 +90,8 @@ object ImageSourceHost {
 fun ImageSourceOverlay() {
     val request = ImageSourceHost.request ?: return
     val context = LocalContext.current
+
+    BackHandler { ImageSourceHost.cancel() }
 
     val picker = rememberLauncherForActivityResult(
         ActivityResultContracts.GetContent()

@@ -38,12 +38,33 @@ Like the W3C `WebCrypto` API in web browsers, it operates as an unopinionated na
 | :--- | :--- | :--- |
 | `tools://libsignal/setup_identity` | `setup_identity` | Generates or loads terminal X25519 Identity Key and Signed PreKey. |
 | `tools://libsignal/export_bundle` | `export_bundle` | Exports public PreKeyBundle for sharing with peer endpoints. |
-| `tools://libsignal/create_session` | `create_session` | Performs X3DH key agreement and initializes Double Ratchet with a peer. |
+| `tools://libsignal/create_session` | `create_session` | Starts a fresh X3DH + Double Ratchet handshake with a peer, replacing any stored ratchet. |
 | `tools://libsignal/encrypt` | `encrypt` | Ratchets sending key forward, encrypts payload via AES-256-GCM. |
-| `tools://libsignal/decrypt` | `decrypt` | Decrypts inbound ciphertext and ratchets receiving key. |
+| `tools://libsignal/decrypt` | `decrypt` | Decrypts inbound ciphertext and ratchets receiving key. Detects PreKey vs. session messages. |
 | `tools://libsignal/status` | `status` | Returns session status, message counters, and verification state. |
 | `tools://libsignal/verify_identity` | `verify_identity` | Compares and verifies 6-block safety numbers. |
+| `tools://libsignal/reset_session` | `reset_session` | Drops both ratchet states and the recorded verification. |
 | `div-action://terminal.tool.invoke?tool=crypto.signal@1` | `invoke` | Versioned tool capability invoke interface. |
+
+### Session lifecycle
+
+`create_session` always begins a new handshake. It deletes the local ratchet and the
+simulated peer ratchet before processing a fresh PreKeyBundle, so pressing the demo's
+"Establish session" button after an app restart never reuses a stale session.
+
+One-time prekeys are consumed by the receiving side, exactly as the Signal protocol
+requires. The bundle advertises the lowest **unused** prekey and the store replenishes up
+to 10 when fewer remain; assuming prekey `#1` always exists caused the second handshake to
+fail with `PreKey #1 not found`.
+
+`decrypt` accepts an optional `type` (`2` = `SignalMessage`, `3` = `PreKeySignalMessage`).
+When it is omitted the envelope is inspected: a PreKey message carries the sender identity
+and base key, a plain session message does not. The previous default of `3` rejected the
+second half of a conversation.
+
+The bundled demo card declares `user.signal_peer_id` (default `acme_peer_01`) itself, and
+`SduiEngineViewModel` seeds the same value. A tool card opened directly from the tool
+gallery therefore has a real peer id instead of resolving `peer_id` to an empty string.
 
 ---
 
@@ -97,13 +118,21 @@ Like the W3C `WebCrypto` API in web browsers, it operates as an unopinionated na
   "url": "tools://libsignal/decrypt",
   "payload": {
     "peer_id": "remote_node_01",
-    "ciphertext": "@{encrypted_envelope_b64}",
+    "ciphertext": "@{user.signal_ciphertext}",
     "output": {
-      "plaintext": "decrypted_content"
+      "status": "user.signal_status",
+      "plaintext": "user.signal_plaintext",
+      "safety_number": "user.signal_fingerprint"
     }
   }
 }
 ```
+`type` is optional (`2` or `3`). Leave it out and the engine detects whether the
+envelope is a PreKey message or a message on an established session.
+
+A failed decrypt returns `status: "FAILED"` and an `error` field. The host surfaces the
+reason in the status banner and in `user.engine_error`; a card can bind `error` explicitly
+if it wants to show it inline.
 
 ### 3.5 Verifying Safety Numbers (`verify_identity`)
 ```json
@@ -118,6 +147,21 @@ Like the W3C `WebCrypto` API in web browsers, it operates as an unopinionated na
   }
 }
 ```
+`provided_fingerprint` (or `safety_number`) is **required**. There is no default: a
+missing value fails with `missing safety_number argument to verify` instead of recording
+trust. A peer with no established session also fails, because there is no remote identity
+to compare against.
+
+`status` is read-only. It reports `NO_SESSION` for a peer that has never handshaked rather
+than creating a session as a side effect, and `verify_identity` never mints a fingerprint
+for a session that does not exist.
+
+The `secure.*@1` aliases are honest too: `secure.status@1` returns `NO_SESSION`, and
+`secure.verify_identity@1` requires `provided_fingerprint`.
+
+Action payload expressions keep long digit strings verbatim. A 60-digit safety number is
+an identifier, not a number: coercing `@{user.signal_fingerprint}` to a `Double` rounded it
+and made every comparison report `MISMATCH`.
 
 ---
 

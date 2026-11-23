@@ -93,7 +93,7 @@ Default output mapping: `raw_value → user.scanned_code`, `format → user.scan
 
 > OCR runs fully on-device through ML Kit Text Recognition v2 (Latin model, ≈4.1 MB).
 > For text that must then be embedded into a vector, use
-> [`tools://vectorize/image_text`](vectorize.md), which chains OCR and embedding.
+> [`tools://embedding/image_text`](embedding.md), which chains OCR and embedding.
 
 ---
 

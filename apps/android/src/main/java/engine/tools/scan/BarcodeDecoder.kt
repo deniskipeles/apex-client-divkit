@@ -182,7 +182,7 @@ object BarcodeDecoder {
     }
 
     private fun runReader(image: BinaryBitmap, tryHarder: Boolean = false): ScanResult? = try {
-        val reader = threadLocalReader.get().apply {
+        val reader = threadLocalReader.get()!!.apply {
             setHints(if (tryHarder) stillHints else liveHints)
             reset()
         }

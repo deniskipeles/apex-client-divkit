@@ -47,3 +47,10 @@ apps/web/.output
 # --- pnpm workspace ---
 node_modules/
 .pnpm-store/
+
+# --- local APK debug runs ---
+artifacts/
+
+# --- local Python tooling ---
+__pycache__/
+*.py[cod]

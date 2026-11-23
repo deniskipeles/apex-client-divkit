@@ -10,6 +10,8 @@
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
 
     <!-- Bluetooth printer discovery & connections (legacy <= Android 11). -->
     <uses-permission
@@ -55,6 +57,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <service
+            android:name=".screen.ScreenProjectionService"
+            android:exported="false"
+            android:foregroundServiceType="mediaProjection" />
 
         <!-- Exposes workspace files to external viewers for "Open with". -->
         <provider

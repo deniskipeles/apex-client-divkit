@@ -27,6 +27,14 @@ class DirectSqliteDriver(
     val writableDb: SQLiteDatabase
         get() = helper.writableDatabase
 
+    override val supportsJson1: Boolean by lazy {
+        try {
+            writableDb.rawQuery("SELECT json_extract('{\"a\":1}', '$.a')", null).use { it.count == 1 }
+        } catch (_: Exception) {
+            false
+        }
+    }
+
     override fun executeQuery(
         identifier: Int?,
         sql: String,

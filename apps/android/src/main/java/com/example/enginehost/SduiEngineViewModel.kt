@@ -10,6 +10,7 @@ import engine.crypto.Ed25519
 import engine.crypto.PayloadVerifier
 import engine.crypto.SigningKeyPair
 import engine.crypto.currentTimeMillis
+import engine.db.ApexKitDatabaseEngine
 import engine.db.CachedSchemaVersion
 import engine.db.EngineRegistry
 import engine.db.OpLogEntry
@@ -71,6 +72,8 @@ data class SduiEngineUiState(
     val workspaces: List<TenantWorkspaceSpec> = WorkspaceProvisioner.defaultWorkspaces,
     val activeWorkspace: TenantWorkspaceSpec = WorkspaceProvisioner.defaultWorkspaces.first(),
     val isWorkspaceOpen: Boolean = false,
+    /** True while a remembered workspace is being restored after a cold launch. */
+    val isRestoringSession: Boolean = false,
     val themeMode: EngineThemeMode = EngineThemeMode.SYSTEM,
     val isGridView: Boolean = true,
     val searchQuery: String = "",
@@ -163,19 +166,24 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
     /** Card stack for the active workspace: the entry hub at index 0, pushed cards on top. */
     private var navigator: DivCardNavigator? = null
 
-    private val _uiState = MutableStateFlow(
-        WorkspaceProvisioner.defaultWorkspaces
-            .sortedByUsage(usageStore.usage())
-            .let { ordered -> SduiEngineUiState(workspaces = ordered, activeWorkspace = ordered.first()) }
-    )
-    val uiState: StateFlow<SduiEngineUiState> = _uiState.asStateFlow()
+    private val initialWorkspaces =
+        WorkspaceProvisioner.defaultWorkspaces.sortedByUsage(usageStore.usage())
 
     /** Tenant whose workspace should be re-opened on the next launch, if any. */
-    private var resumeTenantId: String? = usageStore.lastOpenedTenantId()
-        ?.takeIf { id -> _uiState.value.workspaces.any { it.tenantId == id } }
+    private val resumeTenantId: String? = usageStore.lastOpenedTenantId()
+        ?.takeIf { id -> initialWorkspaces.any { it.tenantId == id } }
 
     private val shouldResumeWorkspace: Boolean =
         resumeTenantId != null && usageStore.wasWorkspaceOpen()
+
+    private val _uiState = MutableStateFlow(
+        SduiEngineUiState(
+            workspaces = initialWorkspaces,
+            activeWorkspace = initialWorkspaces.first(),
+            isRestoringSession = shouldResumeWorkspace
+        )
+    )
+    val uiState: StateFlow<SduiEngineUiState> = _uiState.asStateFlow()
 
     init {
         currentAndroidContext = { context }
@@ -207,9 +215,15 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                     WorkspaceProvisioner.defaultWorkspaces.firstOrNull { it.tenantId == id }
                 }
                 if (resumeSpec != null && shouldResumeWorkspace) {
-                    switchWorkspace(resumeSpec, openDedicatedScreen = true, recordVisit = false)
+                    switchWorkspace(
+                        resumeSpec,
+                        openDedicatedScreen = true,
+                        recordVisit = false,
+                        onFinished = ::finishSessionRestore
+                    )
                 } else {
                     switchWorkspace(WorkspaceProvisioner.defaultWorkspaces.first(), openDedicatedScreen = false)
+                    finishSessionRestore()
                 }
             } catch (e: Exception) {
                 _uiState.update {
@@ -219,6 +233,7 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                         statusBannerMessage = "Workspace provisioning failed: ${e.message}"
                     )
                 }
+                finishSessionRestore()
             }
         }
     }
@@ -487,7 +502,8 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
     fun switchWorkspace(
         spec: TenantWorkspaceSpec,
         openDedicatedScreen: Boolean = true,
-        recordVisit: Boolean = false
+        recordVisit: Boolean = false,
+        onFinished: (() -> Unit)? = null
     ) {
         if (recordVisit) {
             usageStore.recordVisit(spec.tenantId)
@@ -502,12 +518,29 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                 // 2. Ensure tenant DB & cached DivKit schema versions exist in `workspace_<tenant>.db`
                 var cachedActive: CachedSchemaVersion? = null
                 var allCachedVersions: List<CachedSchemaVersion> = emptyList()
+                var catalogJson = "[]"
+                var catalogCount = spec.defaultProducts.size.toLong()
                 withContext(Dispatchers.IO) {
                     ensureTenantInitiatedWithCachedSchema(spec)
                     workspaceManager.useDatabase(spec.tenantId) { db ->
                         allCachedVersions = db.workspaceQueries.selectAllSchemaVersions()
                         cachedActive = db.workspaceQueries.selectActiveSchemaVersion()
                             ?: allCachedVersions.firstOrNull()
+                        val products = ApexKitDatabaseEngine(db.driver).queryRecords(
+                            "inventory",
+                            orderBy = "id",
+                            ascending = true,
+                            limit = 50
+                        )
+                        catalogCount = products.size.toLong()
+                        catalogJson = buildJsonArray {
+                            products.forEach { record ->
+                                addJsonObject {
+                                    put("id", record.id)
+                                    record.data.forEach { (key, value) -> put(key, value) }
+                                }
+                            }
+                        }.toString()
                     }
                 }
 
@@ -546,13 +579,20 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                         "user.sync_status" to DivVariableValue.Str(verifiedConfig.mode.name.lowercase()),
                         "user.engine_error" to DivVariableValue.Str("None"),
                         "user.order_count" to DivVariableValue.IntVal(spec.defaultOrders.size.toLong()),
-                        "user.catalog_count" to DivVariableValue.IntVal(spec.defaultProducts.size.toLong()),
+                        "user.catalog_count" to DivVariableValue.IntVal(catalogCount),
+                        "user.catalog_json" to DivVariableValue.Str(catalogJson),
                         "user.last_order_id" to DivVariableValue.IntVal(spec.defaultOrders.size.toLong()),
                         "user.scanned_code" to DivVariableValue.Str("9780201633610"),
                         "user.scanned_format" to DivVariableValue.Str("EAN_13"),
                         "user.scanned_type" to DivVariableValue.Str("1D"),
                         "user.scan_status" to DivVariableValue.Str("SUCCESS"),
-                        "user.ocr_text" to DivVariableValue.Str("TABLE 12 • 2 GUESTS • ORDER #4821"),
+                        "user.ocr_text" to DivVariableValue.Str("not_run"),
+                        // Embedding results start empty: a seeded vector/score would look
+                        // like the tool had already run.
+                        "user.vector_source" to DivVariableValue.Str("not_run"),
+                        "user.vector_dim" to DivVariableValue.Str("0"),
+                        "user.vector_similarity" to DivVariableValue.Str("—"),
+                        "user.vector_b64" to DivVariableValue.Str(""),
                         "user.ocr_confidence" to DivVariableValue.Str("0.94"),
                         "user.ocr_block_count" to DivVariableValue.IntVal(3L),
                         "user.scan_image_uri" to DivVariableValue.Str(""),
@@ -562,18 +602,26 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                         "user.code_content" to DivVariableValue.Str("apexpos://order/pickup?terminal=${spec.terminalCode}"),
                         "user.code_id" to DivVariableValue.Str("code_9f3c1a2b7d10"),
                         "user.code_status" to DivVariableValue.Str("SUCCESS"),
-                        "user.ai_prediction_label" to DivVariableValue.Str("Wagyu Smash Burger (Entree)"),
-                        "user.ai_confidence_score" to DivVariableValue.Str("0.93"),
+                        // MobileNetV4 is an ImageNet classifier, not a SKU model. A seeded
+                        // POS label would claim a detection the graph never made.
+                        "user.ai_prediction_label" to DivVariableValue.Str("not_run"),
+                        "user.ai_confidence_score" to DivVariableValue.Str("0"),
                         "user.ai_source_image_uri" to DivVariableValue.Str(""),
                         // Nothing has been segmented yet: a fabricated URI here would render an
                         // empty preview and claim a result the tool never produced.
                         "user.u2net_mask_uri" to DivVariableValue.Str(""),
                         "user.bg_remove_status" to DivVariableValue.Str("Not run yet"),
-                        "user.signal_session_id" to DivVariableValue.Str("sig_sess_acme_peer_01"),
-                        "user.signal_fingerprint" to DivVariableValue.Str("4E-91-A2-5F-C0-83"),
-                        "user.signal_status" to DivVariableValue.Str("ESTABLISHED"),
+                        // Nothing has been handshaked yet. Seeding ESTABLISHED plus a made-up
+                        // safety number made an untouched peer look verified.
+                        "user.signal_peer_id" to DivVariableValue.Str("acme_peer_01"),
+                        "user.signal_session_id" to DivVariableValue.Str(""),
+                        "user.signal_fingerprint" to DivVariableValue.Str(""),
+                        "user.signal_status" to DivVariableValue.Str("NO_SESSION"),
+                        "user.signal_verification" to DivVariableValue.Str("UNVERIFIED"),
+                        "user.signal_ciphertext" to DivVariableValue.Str(""),
+                        "user.signal_plaintext" to DivVariableValue.Str(""),
                         "user.tool_last_status" to DivVariableValue.Str("Ready"),
-                        "user.tool_last_latency" to DivVariableValue.IntVal(3L),
+                        "user.tool_last_latency" to DivVariableValue.IntVal(0L),
                         "user.icon_name" to DivVariableValue.Str("cart"),
                         "user.icon_material" to DivVariableValue.Str("ShoppingCart"),
                         "user.icon_category" to DivVariableValue.Str("Commerce")
@@ -635,7 +683,15 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                         statusBannerMessage = "Error: ${e.message}"
                     )
                 }
+            } finally {
+                onFinished?.invoke()
             }
+        }
+    }
+
+    private fun finishSessionRestore() {
+        if (_uiState.value.isRestoringSession) {
+            _uiState.update { it.copy(isRestoringSession = false) }
         }
     }
 
@@ -691,30 +747,38 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
     }
 
     fun dispatchDivKitAction(url: String, payloadJsonStr: String?) {
+        viewModelScope.launch {
+            dispatchDivKitActionAwait(url, payloadJsonStr)
+        }
+    }
+
+    /**
+     * Suspending variant used by [DivView] so a multi-action button can read variables
+     * produced by the previous action (for example an inserted record id).
+     */
+    suspend fun dispatchDivKitActionAwait(url: String, payloadJsonStr: String?) {
         val router = activeRouter ?: return
         val spec = _uiState.value.activeWorkspace
-        viewModelScope.launch {
-            val payloadObj = payloadJsonStr?.let {
-                try {
-                    Json.parseToJsonElement(it).jsonObject
-                } catch (_: Exception) {
-                    null
-                }
+        val payloadObj = payloadJsonStr?.let {
+            try {
+                Json.parseToJsonElement(it).jsonObject
+            } catch (_: Exception) {
+                null
             }
-            val outcome = withContext(Dispatchers.IO) {
-                router.handle(url, payloadObj)
-            }
-            // Card navigation touches no database state, so it neither reports a DB banner
-            // nor forces a telemetry refresh.
-            if (url.startsWith("nav://") || url.startsWith("sheet://")) return@launch
-            val banner = when (outcome) {
-                is EngineRouter.ActionOutcome.Handled -> "Executed $url on workspace_${spec.tenantId}.db"
-                is EngineRouter.ActionOutcome.Error -> "Blocked ($url): ${outcome.message}"
-                is EngineRouter.ActionOutcome.Unhandled -> "Unhandled scheme: $url"
-            }
-            _uiState.update { it.copy(statusBannerMessage = banner) }
-            refreshDatabaseTelemetry(spec.tenantId)
         }
+        val outcome = withContext(Dispatchers.IO) {
+            router.handle(url, payloadObj)
+        }
+        // Card navigation touches no database state, so it neither reports a DB banner
+        // nor forces a telemetry refresh.
+        if (url.startsWith("nav://") || url.startsWith("sheet://")) return
+        val banner = when (outcome) {
+            is EngineRouter.ActionOutcome.Handled -> "Executed $url on workspace_${spec.tenantId}.db"
+            is EngineRouter.ActionOutcome.Error -> "Blocked ($url): ${outcome.message}"
+            is EngineRouter.ActionOutcome.Unhandled -> "Unhandled scheme: $url"
+        }
+        _uiState.update { it.copy(statusBannerMessage = banner) }
+        refreshDatabaseTelemetry(spec.tenantId)
     }
 
     /**

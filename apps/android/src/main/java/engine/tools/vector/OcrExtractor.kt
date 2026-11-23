@@ -15,11 +15,15 @@ object OcrExtractor {
     // variant (:text-recognition-play-services) — 0 MB app footprint, downloaded on demand.
     fun extract(bitmap: Bitmap): OcrResult {
         val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
-        val visionText = Tasks.await(recognizer.process(InputImage.fromBitmap(bitmap, 0)))
-        val blocks = visionText.textBlocks.map { b ->
-            OcrBlock(b.text, b.boundingBox?.let { intArrayOf(it.left, it.top, it.right, it.bottom) } ?: intArrayOf())
+        try {
+            val visionText = Tasks.await(recognizer.process(InputImage.fromBitmap(bitmap, 0)))
+            val blocks = visionText.textBlocks.map { b ->
+                OcrBlock(b.text, b.boundingBox?.let { intArrayOf(it.left, it.top, it.right, it.bottom) } ?: intArrayOf())
+            }
+            val confs = visionText.textBlocks.flatMap { it.lines }.flatMap { it.elements }.map { it.confidence }
+            return OcrResult(visionText.text, blocks, confs.takeIf { it.isNotEmpty() }?.average()?.toFloat() ?: 0f)
+        } finally {
+            recognizer.close()
         }
-        val confs = visionText.textBlocks.flatMap { it.lines }.flatMap { it.elements }.map { it.confidence }
-        return OcrResult(visionText.text, blocks, confs.takeIf { it.isNotEmpty() }?.average()?.toFloat() ?: 0f)
     }
 }
