@@ -715,8 +715,12 @@ private fun resolveJsonExpressions(
                 val raw = el.content
                 val evaluated = evalExpr(raw, variables, rowContext)
                 if (raw.startsWith("@{") && raw.endsWith("}") && !raw.drop(2).dropLast(1).contains("@{")) {
-                    evaluated.toLongOrNull()?.let { return JsonPrimitive(it) }
-                    evaluated.toDoubleOrNull()?.let { return JsonPrimitive(it) }
+                    // Only coerce short, unambiguous literals. A 60-digit Signal safety number
+                    // parses as a Double, which rounds it and turns a match into a mismatch.
+                    if (isSafeNumericLiteral(evaluated)) {
+                        evaluated.toLongOrNull()?.let { return JsonPrimitive(it) }
+                        evaluated.toDoubleOrNull()?.let { return JsonPrimitive(it) }
+                    }
                     if (evaluated == "true" || evaluated == "false") return JsonPrimitive(evaluated.toBoolean())
                 }
                 JsonPrimitive(evaluated)
@@ -725,6 +729,17 @@ private fun resolveJsonExpressions(
         is JsonArray -> JsonArray(el.map { resolveJsonExpressions(it, variables, rowContext) })
         is JsonObject -> JsonObject(el.mapValues { (_, v) -> resolveJsonExpressions(v, variables, rowContext) })
     }
+}
+
+/**
+ * Numeric action arguments are convenience, not semantics. Coercing a long digit string
+ * (a safety number, an account id, a barcode) to Double loses digits, so only short
+ * canonical literals are converted.
+ */
+private fun isSafeNumericLiteral(value: String): Boolean {
+    if (value.isEmpty() || value.length > 15) return false
+    if (value.length > 1 && value[0] == '0' && value[1].isDigit()) return false
+    return value.toLongOrNull() != null || value.toDoubleOrNull() != null
 }
 
 private val EXPR_REGEX = Regex("@\\{([^}]+)\\}")

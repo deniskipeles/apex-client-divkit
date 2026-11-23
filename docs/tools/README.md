@@ -18,10 +18,10 @@ dispatch contract and the provenance gate.
 | [beeper.md](beeper.md) | `tools://beeper` | `hardware.beeper@1` | PCM tone synthesis, profiles, and sequences. |
 | [camera.md](camera.md) | `tools://camera` | `hardware.camera@1` (`vision.capture_photo@1` alias) | Camera frame capture and torch control. |
 | [image-manipulation.md](image-manipulation.md) | `tools://image-manipulation` | `vision.image_manipulation@1` | On-device image ops & background removal. |
-| [embed-image.md](embed-image.md) | — | `vision.embed_image@1` | Image embedding vector (512-dim). |
+| [embed-image.md](embed-image.md) | — | `vision.embed_image@1` | Image descriptor vector (1000-dim). |
 | [mobilenetv4-small.md](mobilenetv4-small.md) | `tools://MobileNetV4-small` | `vision.identify_product@1` | On-device INT8 image classification / SKU. |
 | [u-2-net.md](u-2-net.md) | `tools://u-2-Net.tflite` | `vision.remove_background@1` | Salient object segmentation (alpha matte). |
-| [vectorize.md](vectorize.md) | `tools://vectorize` | — | Text/image/OCR embeddings + cosine similarity. |
+| [embedding.md](embedding.md) | `tools://embedding` (alias `tools://vectorize`) | — | Text/image/OCR embeddings + cosine similarity. |
 | [libsignal.md](libsignal.md) | `tools://libsignal` | `secure.send@1`, `secure.status@1`, `secure.verify_identity@1` | Signal E2EE Double Ratchet transport. |
 | [biometrics.md](biometrics.md) | `tools://biometrics` | `auth.biometrics@1` | Biometric / PIN authorization gate. |
 | [clipboard.md](clipboard.md) | `tools://clipboard` | `device.clipboard@1` | System clipboard copy/paste/clear. |
@@ -31,7 +31,7 @@ dispatch contract and the provenance gate.
 | [net.md](net.md) | `tools://net` | `network.transfer@1` | Ktor HTTP client + embedded LAN transfer hub. |
 | [print.md](print.md) | `tools://print` | `device.printer@1` | Bluetooth printer discovery & ESC/POS printing. |
 | [code-generate.md](code-generate.md) | `tools://code-generate` | `vision.generate_code@1` | Barcode & QR / matrix code generation (ZXing). |
-| [keep-awake.md](keep-awake.md) | `tools://keep-awake` | `device.keep_awake@1` | Screen / wake-lock controller for long-running tasks. |
+| [screen.md](screen.md) | `tools://screen/{keep-awake,screenshot,recording}` | `device.screen@1` | Wake-lock, screenshot and MP4 screen recording. |
 | [files.md](files.md) | `tools://files` | `storage.files@1` | Tenant-scoped workspace file store (bytes in, bytes out). |
 | [local-db.md](local-db.md) | `local-db://op/<name>` | `db.*` / `records.*` | Tenant SQLite bridge — insert/query/count/delete via DivKit actions. |
 | [icons.md](icons.md) | `icons://native/<name>` | — | Bundled native POS icon catalog (285 icons) + Compose vector resolver. |

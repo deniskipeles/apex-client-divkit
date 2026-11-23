@@ -1,0 +1,23 @@
+{
+  "name": "embedding-demo",
+  "package": "com.aistudio.sduiposengine.kmpdiv",
+  "activity": "com.example.MainActivity",
+  "steps": [
+    { "action": "launch", "settle": 25, "clear_data": true },
+    { "action": "wait_text", "contains": "Apex POS Terminal", "timeout": 90 },
+    { "action": "tap", "text": "Apex POS Terminal", "settle": 8 },
+    { "action": "wait_text", "contains": "ACTIVE TERMINAL CAPABILITIES", "timeout": 30 },
+    { "action": "scroll_to", "contains": "Embeddings", "max_swipes": 15, "scroll_percent": 0.7 },
+    { "action": "tap", "contains": "Embeddings", "scroll": false, "settle": 2 },
+    { "action": "wait_text", "contains": "TEXT & IMAGE EMBEDDINGS", "timeout": 20 },
+    { "action": "tap", "text": "Embed Item Name", "scroll": true, "settle": 3 },
+    { "action": "wait_text", "contains": "Source: text", "timeout": 30 },
+    { "action": "assert_text", "contains": "Vector:", "scroll": false },
+    { "action": "tap", "text": "Compare Two Texts", "scroll": true, "settle": 3 },
+    { "action": "wait_text", "contains": "Similarity:", "timeout": 30, "scroll": true },
+    { "action": "assert_text", "contains": "Similarity:", "scroll": true },
+    { "action": "tap", "text": "Compare Current Vector", "scroll": true, "settle": 3 },
+    { "action": "wait_text", "contains": "Similarity:", "timeout": 30, "scroll": true },
+    { "action": "assert_no_crash" }
+  ]
+}

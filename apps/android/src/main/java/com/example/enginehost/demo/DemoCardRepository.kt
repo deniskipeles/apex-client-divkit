@@ -17,10 +17,10 @@ import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
 
 /**
- * Loads the built-in showcase cards from `src/main/resources/demo/`.
+ * Loads the built-in showcase cards from `src/main/resources/demo/apex/`.
  *
  * Card markup lives in JSON rather than Kotlin so the demo is editable as data. Each tool card
- * is its own file under `demo/tools/`, so one tool's markup can change without touching the
+ * is its own file under `demo/apex/tools/`, so one tool's markup can change without touching the
  * rest and the Kotlin side holds no large literal builders. Resources are used rather than
  * `assets/` so the same files load in plain-JVM unit tests, where no `Context` exists.
  *
@@ -30,7 +30,7 @@ object DemoCardRepository {
 
     private val json = Json { prettyPrint = true; ignoreUnknownKeys = true }
 
-    private const val ROOT = "demo"
+    private const val ROOT = "demo/apex"
     private const val TOOLS = "$ROOT/tools"
 
     /** Tool card files in render order — the on-screen showcase order. */
@@ -42,7 +42,7 @@ object DemoCardRepository {
         "mobilenet",
         "u2net",
         "image_manipulation",
-        "vectorize",
+        "embedding",
         "libsignal",
         "biometrics",
         "haptics",
@@ -52,7 +52,7 @@ object DemoCardRepository {
         "realtime_ws",
         "net",
         "print",
-        "keep_awake",
+        "screen",
         "files",
         "native_icons",
         "catalog_list",
@@ -121,7 +121,7 @@ object DemoCardRepository {
     }
 
     /**
-     * The entry hub: `demo/card.json` with a generated catalog spliced into the container
+     * The entry hub: `demo/apex/card.json` with a generated catalog spliced into the container
      * flagged by `tool_catalog_after`.
      *
      * The hub links to each tool card instead of inlining all of them, so the landing card
@@ -170,7 +170,7 @@ object DemoCardRepository {
         }
     }
 
-    /** Catalog of `nav://push` entries, one per tool card, driven by `demo/tool_catalog.json`. */
+    /** Catalog of `nav://push` entries, one per tool card, driven by `demo/apex/tool_catalog.json`. */
     fun catalogContainer(spec: TenantWorkspaceSpec): JsonObject? {
         val catalog = readObject("$ROOT/tool_catalog.json", placeholders(spec)) ?: return null
         val entries = catalog["entries"]?.jsonArray ?: return null

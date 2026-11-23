@@ -5,10 +5,14 @@ import android.content.Context
 import android.content.Intent
 import android.os.Handler
 import android.os.Looper
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import engine.tools.impl.BiometricsTool
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -26,7 +30,8 @@ import kotlin.coroutines.resume
  * PIN at all - so every refund and void was "supervisor approved".
  */
 object CredentialGate {
-    private var pending: Request? = null
+    // Compose must observe the request or the overlay never launches the OS prompt.
+    private var pending by mutableStateOf<Request?>(null)
 
     val request: Request? get() = pending
 
@@ -83,6 +88,8 @@ object CredentialGate {
 fun CredentialGateOverlay() {
     val request = CredentialGate.request ?: return
     val context = LocalContext.current
+
+    BackHandler { request.deliver(null) }
 
     val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()

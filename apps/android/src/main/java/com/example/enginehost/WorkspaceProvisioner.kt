@@ -255,8 +255,8 @@ object WorkspaceProvisioner {
     /**
      * Generates the route-index-0 DivKit card for a tenant POS workspace.
      *
-     * Layout comes from `resources/demo/card.json`; the tool catalog spliced into it links to
-     * each tool card through `nav://push`. Tool markup lives in `resources/demo/tools` and is
+     * Layout comes from `resources/demo/apex/card.json`; the tool catalog spliced into it links to
+     * each tool card through `nav://push`. Tool markup lives in `resources/demo/apex/tools` and is
      * registered separately, so the landing card stays small.
      */
     fun buildDefaultDivKitCardJson(spec: TenantWorkspaceSpec): String =

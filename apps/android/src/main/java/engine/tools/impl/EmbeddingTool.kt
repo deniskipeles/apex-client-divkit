@@ -12,25 +12,26 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 
 /**
- * Text & image vector embedding capability ("vectorize").
- * Bridges the versioned handler registry to the unversioned NativeToolsSuite schema.
+ * Text and image embedding capability ("embedding").
+ *
+ * Bridges the versioned handler registry to the unversioned [NativeToolsSuite] schema.
+ * `vectorize` remains registered as a deprecated handler because the shared contract still
+ * names it; both classes dispatch to the same `tools://embedding/<op>` operations.
  */
-class VectorizeTool : ToolHandler {
-    override val capability = "vectorize"
+open class EmbeddingTool : ToolHandler {
+    override val capability = "embedding"
 
     override suspend fun invoke(args: ToolArgs, ctx: ToolContext): ToolResult {
         val op = args["op"] ?: args["operation"] ?: "text"
         val payload = buildJsonObject {
             put("op", op)
-            args["text"]?.let { put("text", it) }
-            args["uri"]?.let { put("uri", it) }
-            args["image"]?.let { put("uri", it) }
-            args["a"]?.let { put("a", it) }
-            args["b"]?.let { put("b", it) }
+            for (key in listOf("text", "uri", "image", "a", "b", "text_a", "text_b")) {
+                args[key]?.let { put(key, it) }
+            }
         }
 
         val outcome = NativeToolsSuite.execute(
-            url = "tools://vectorize/$op",
+            url = "tools://embedding/$op",
             payload = payload,
             tenantId = ctx.workspaceId
         )
@@ -44,4 +45,10 @@ class VectorizeTool : ToolHandler {
             ToolResult.Success(resultMap)
         }
     }
+}
+
+/** Deprecated contract name retained so `tools.json` and old cards keep resolving. */
+@Deprecated("Use EmbeddingTool / tools://embedding")
+class VectorizeTool : EmbeddingTool() {
+    override val capability = "vectorize"
 }

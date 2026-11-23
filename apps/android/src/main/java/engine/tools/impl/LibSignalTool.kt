@@ -49,9 +49,9 @@ class LibSignalTool : ToolHandler {
                 }
 
                 "create_session", "establish_session" -> {
-                    // createOrGetSession seeds the local ratchet from the peer's
-                    // advertised PreKeyBundle on first use and is idempotent.
-                    val session = LibSignalEngine.createOrGetSession(tenantId, peerId, deviceId)
+                    // Establish is a fresh handshake: discard any ratchet persisted from a
+                    // previous run so encrypt/decrypt always operate on the session shown.
+                    val session = LibSignalEngine.createOrGetSession(tenantId, peerId, deviceId, fresh = true)
                     ToolResult.Success(
                         mapOf(
                             "status" to "ESTABLISHED",
@@ -85,7 +85,10 @@ class LibSignalTool : ToolHandler {
                 "decrypt", "receive" -> {
                     val ciphertext = args["ciphertext"] ?: args["payload"]
                         ?: return ToolResult.Failed(capability, "Missing 'ciphertext' to decrypt")
-                    val type = args.getInt("type", 3)
+                    // 0 = infer from the envelope: a reply on an established session is a
+                    // SignalMessage (type 2), not the PreKeySignalMessage (type 3) that
+                    // starts it. Defaulting to 3 made the second half of a conversation fail.
+                    val type = args.getInt("type", 0)
                     val plaintext = LibSignalEngine.decrypt(tenantId, peerId, deviceId, ciphertext, type)
                     val safetyNumber = LibSignalEngine.getSafetyNumber(tenantId, peerId, deviceId)
 
@@ -116,13 +119,22 @@ class LibSignalTool : ToolHandler {
 
                 "verify_identity", "verify", "compare_safety_number" -> {
                     // The caller echoes the safety number it read off the other terminal.
-                    // Supplying the peer's own number is the positive case; anything else is
-                    // a mismatch and must not be recorded as trusted.
+                    // There is no safe default: treating a missing number as a match would
+                    // authorise a peer nobody compared.
                     val provided = args["safety_number"]
                         ?: args["provided_fingerprint"]
                         ?: args["expected_fingerprint"]
                         ?: args["fingerprint"]
-                        ?: LibSignalEngine.verificationStatus(tenantId, peerId, deviceId).safetyNumber
+                        ?: return ToolResult.Failed(
+                            capability,
+                            "missing safety_number argument to verify"
+                        )
+                    if (!LibSignalEngine.hasSession(tenantId, peerId, deviceId)) {
+                        return ToolResult.Failed(
+                            capability,
+                            "no session with peer '$peerId'; establish a session before verifying"
+                        )
+                    }
 
                     val verification = LibSignalEngine.verifyIdentity(tenantId, peerId, provided, deviceId)
                     ToolResult.Success(
@@ -149,6 +161,7 @@ class LibSignalTool : ToolHandler {
                 else -> ToolResult.Failed(capability, "Unknown operation '$op'")
             }
         } catch (e: Exception) {
+            android.util.Log.e("LibSignalTool", "op=$op peer=$peerId failed", e)
             ToolResult.Failed(capability, e.message ?: "Signal Protocol error")
         }
     }

@@ -1,7 +1,7 @@
 {
     "type": "container",
     "orientation": "vertical",
-    "background_color": "#1E293B",
+    "background_color": "#142834",
     "corner_radius": 12,
     "paddings": {
         "left": 12,
@@ -12,24 +12,31 @@
     "border": {
         "corner_radius": 12,
         "stroke": {
-            "color": "#38BDF8",
+            "color": "#06B6D4",
             "width": 1
         }
     },
     "items": [
         {
             "type": "text",
-            "text": "☀️ KEEP-AWAKE / SCREEN WAKE-LOCK (tools://keep-awake)",
+            "text": "🪄 BACKGROUND REMOVAL — ON-DEVICE U-2-NETP MATTE (tools://u-2-Net.tflite)",
             "font_size": 11,
             "font_weight": "bold",
-            "text_color": "#7DD3FC"
+            "text_color": "#67E8F9"
         },
         {
             "type": "text",
-            "text": "Status: @{user.keep_awake_status} • Enabled: @{user.keep_awake_enabled}",
+            "text": "Status: @{user.bg_remove_status}",
             "font_size": 12,
             "text_color": "#E0F2FE",
             "font_family": "monospace"
+        },
+        {
+            "type": "image",
+            "image_url": "@{user.u2net_mask_uri}",
+            "preview_height": 200,
+            "corner_radius": 10,
+            "content_description": "Background-removed image"
         },
         {
             "type": "container",
@@ -42,25 +49,25 @@
                     "items": [
                         {
                             "type": "button",
-                            "id": "tool_keep-awake_enable",
-                            "text": "Hold Screen Awake",
-                            "subtitle": "tools://keep-awake/enable • 5 min",
-                            "icon": "bell",
-                            "background_color": "#0284C7",
+                            "id": "tool_u-2-Net_tflite_segment",
+                            "text": "🪄 Remove Background (Camera)",
+                            "subtitle": "Runs U-2-Netp on this device",
+                            "icon": "crop",
+                            "background_color": "#0891B2",
                             "text_color": "#FFFFFF",
                             "corner_radius": 10,
                             "action": {
-                                "log_id": "exec_tool_keep-awake_enable",
-                                "url": "tools://keep-awake/enable",
+                                "log_id": "exec_tool_u-2-Net.tflite_segment",
+                                "url": "tools://u-2-Net.tflite/segment",
                                 "payload": {
-                                    "operation": "enable",
+                                    "operation": "segment",
                                     "options": {
-                                        "level": "screen",
-                                        "timeout_ms": "300000"
+                                        "threshold": "0.45",
+                                        "camera": "true"
                                     },
                                     "output": {
-                                        "status": "user.keep_awake_status",
-                                        "enabled": "user.keep_awake_enabled"
+                                        "status": "user.bg_remove_status",
+                                        "uri": "user.u2net_mask_uri"
                                     }
                                 }
                             }
@@ -73,24 +80,25 @@
                     "items": [
                         {
                             "type": "button",
-                            "id": "tool_keep-awake_disable",
-                            "text": "Release Wake-Lock",
-                            "subtitle": "tools://keep-awake/disable",
-                            "icon": "volume_off",
-                            "background_color": "#075985",
+                            "id": "tool_u-2-Net_tflite_segment_file",
+                            "text": "🖼 Remove Background (Photo)",
+                            "subtitle": "Pick an existing image",
+                            "icon": "image",
+                            "background_color": "#155E75",
                             "text_color": "#FFFFFF",
                             "corner_radius": 10,
                             "action": {
-                                "log_id": "exec_tool_keep-awake_disable",
-                                "url": "tools://keep-awake/disable",
+                                "log_id": "exec_tool_u-2-Net.tflite_segment_file",
+                                "url": "tools://u-2-Net.tflite/segment",
                                 "payload": {
-                                    "operation": "disable",
+                                    "operation": "segment",
                                     "options": {
-                                        "op": "disable"
+                                        "threshold": "0.45",
+                                        "camera": "false"
                                     },
                                     "output": {
-                                        "status": "user.keep_awake_status",
-                                        "enabled": "user.keep_awake_enabled"
+                                        "status": "user.bg_remove_status",
+                                        "uri": "user.u2net_mask_uri"
                                     }
                                 }
                             }

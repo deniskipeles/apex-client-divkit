@@ -59,12 +59,17 @@ Invoked via:
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `image_id` | `string` | The image reference that was embedded. |
-| `dim` | `integer` | Embedding dimensionality (`512`). |
-| `vector_sample` | `string` | Comma-separated preview of the first vector components. |
+| `dim` | `integer` | Descriptor dimensionality (`1000`). |
+| `vector_b64` | `string` | Base64 of little-endian float32 descriptor components. |
+| `model` | `string` | `"MobileNetV4-small INT8"`. |
 | `state` | `string` | `"ok"`. |
 
 A missing `image`/`image_id` argument returns a `Failed` result
 (`"missing image argument"`).
+
+The bundled MobileNetV4 graph exposes a single 1000-value `class_logits` tensor. This is a
+class-score descriptor, not a trained metric-learning embedding; use `tools://embedding/image_text`
+for semantic text-based image search.
 
 ---
 

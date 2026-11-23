@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Handler
 import android.os.Looper
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.OptIn
@@ -145,6 +146,8 @@ object CameraHost {
 fun CameraHostOverlay() {
     val request = CameraHost.request ?: return
     val context = LocalContext.current
+
+    BackHandler { CameraHost.cancel() }
 
     var hasPermission by remember {
         mutableStateOf(

@@ -6,17 +6,24 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import engine.state.DivVariableValue
+import engine.state.EngineStateBridge
 import com.example.enginehost.WorkspaceProvisioner
 import com.example.enginehost.demo.DemoCardRepository
 import com.example.ui.theme.MyApplicationTheme
 import com.yandex.divkit.multiplatform.DivKit
 import com.yandex.divkit.multiplatform.DivKitDependencies
 import com.yandex.divkit.multiplatform.DivView
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.JsonPrimitive
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -112,7 +119,51 @@ class DemoCardRenderTest {
     fun netCardRendersAndDispatches() = renderAndClick("net")
 
     @Test
+    fun embeddingCardRendersAndDispatches() = renderAndClick("embedding", minimumButtons = 5)
+
+    @Test
     fun libsignalCardRendersAndDispatches() = renderAndClick("libsignal")
+
+    @Test
+    fun libsignalCardRendersDecryptedPlaintext() {
+        val plaintext = """{"order":"#1042","total":"18.50","terminal":"till-07"}"""
+        EngineStateBridge.pushBatch(
+            mapOf(
+                "user.signal_status" to DivVariableValue.Str("DECRYPTED"),
+                "user.signal_ciphertext" to DivVariableValue.Str("MwgDEiEF"),
+                "user.signal_plaintext" to DivVariableValue.Str(plaintext)
+            )
+        )
+        try {
+            val card = DemoCardRepository.toolCardDocument(spec, "libsignal")
+                ?: error("missing libsignal tool card")
+            render(card, DemoCardRepository.toolCardId("libsignal")) { _, _ -> }
+            composeRule.onNodeWithText("Decrypted: $plaintext").assertExists()
+        } finally {
+            EngineStateBridge.clear()
+        }
+    }
+
+    @Test
+    fun libsignalVerifyPayloadKeepsLongSafetyNumberAsText() {
+        val safety = "133650570450770696718167269354915747401852798198450987416227"
+        EngineStateBridge.pushUpdate("user.signal_fingerprint", DivVariableValue.Str(safety))
+        try {
+            val card = DemoCardRepository.toolCardDocument(spec, "libsignal")
+                ?: error("missing libsignal tool card")
+            var verifyPayload: String? = null
+            render(card, DemoCardRepository.toolCardId("libsignal")) { url, payload ->
+                if (url.contains("verify_identity")) verifyPayload = payload
+            }
+            composeRule.onNodeWithTag("div_btn_tool_libsignal_verify_identity").performClick()
+            composeRule.waitForIdle()
+            val json = Json.parseToJsonElement(verifyPayload ?: error("verify action not dispatched"))
+                .jsonObject
+            assertEquals(safety, json["safety_number"]?.jsonPrimitive?.contentOrNull)
+        } finally {
+            EngineStateBridge.clear()
+        }
+    }
 
     @Test
     fun everyToolCardRendersWithoutRenderError() {

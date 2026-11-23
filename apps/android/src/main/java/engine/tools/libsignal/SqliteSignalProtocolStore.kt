@@ -9,6 +9,7 @@ import org.whispersystems.libsignal.state.PreKeyRecord
 import org.whispersystems.libsignal.state.SessionRecord
 import org.whispersystems.libsignal.state.SignalProtocolStore
 import org.whispersystems.libsignal.state.SignedPreKeyRecord
+import org.whispersystems.libsignal.util.KeyHelper
 import java.util.Base64
 
 /**
@@ -350,6 +351,45 @@ class SqliteSignalProtocolStore(
             bindString(0, workspaceId)
             bindLong(1, preKeyId.toLong())
         }
+    }
+
+    /**
+     * The next unused one-time prekey. Signal consumes a prekey when it processes a
+     * PreKeySignalMessage, so a bundle must never assume id 1 is still available.
+     * Replenishes a batch when the store runs dry.
+     */
+    fun nextPreKey(): PreKeyRecord {
+        ensurePreKeys()
+        var id: Int? = null
+        driver.executeQuery(
+            null,
+            "SELECT MIN(prekey_id) FROM signal_prekeys WHERE tenant_id = ?",
+            1
+        ) {
+            bindString(0, workspaceId)
+        }.use { c ->
+            if (c.next().value) id = c.getLong(0)?.toInt()
+        }
+        return loadPreKey(id ?: error("No prekeys available for workspace $workspaceId"))
+    }
+
+    fun ensurePreKeys(minCount: Int = 10) {
+        var count = 0
+        var maxId = 0
+        driver.executeQuery(
+            null,
+            "SELECT COUNT(*), COALESCE(MAX(prekey_id), 0) FROM signal_prekeys WHERE tenant_id = ?",
+            1
+        ) {
+            bindString(0, workspaceId)
+        }.use { c ->
+            if (c.next().value) {
+                count = c.getLong(0)?.toInt() ?: 0
+                maxId = c.getLong(1)?.toInt() ?: 0
+            }
+        }
+        if (count >= minCount) return
+        KeyHelper.generatePreKeys(maxId + 1, 10 - count).forEach { storePreKey(it.id, it) }
     }
 
     // -------------------------------------------------------------

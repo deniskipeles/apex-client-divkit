@@ -1,0 +1,24 @@
+{
+  "name": "libsignal-demo",
+  "package": "com.aistudio.sduiposengine.kmpdiv",
+  "activity": "com.example.MainActivity",
+  "steps": [
+    { "action": "launch", "settle": 25, "clear_data": true },
+    { "action": "wait_text", "contains": "Apex POS Terminal", "timeout": 90 },
+    { "action": "tap", "text": "Apex POS Terminal", "settle": 8 },
+    { "action": "wait_text", "contains": "ACTIVE TERMINAL CAPABILITIES", "timeout": 30 },
+    { "action": "scroll_to", "contains": "Libsignal E2EE", "max_swipes": 15, "scroll_percent": 0.7 },
+    { "action": "tap", "contains": "Libsignal E2EE", "scroll": false, "settle": 2 },
+    { "action": "wait_text", "contains": "LIBSIGNAL E2EE SESSION", "timeout": 20 },
+    { "action": "tap", "text": "1. Establish session", "scroll": true, "settle": 2 },
+    { "action": "wait_text", "contains": "ESTABLISHED", "timeout": 30 },
+    { "action": "tap", "text": "2. Encrypt", "scroll": true, "settle": 2 },
+    { "action": "wait_text", "contains": "ENCRYPTED", "timeout": 30 },
+    { "action": "tap", "text": "3. Decrypt", "scroll": true, "settle": 2 },
+    { "action": "wait_text", "contains": "DECRYPTED", "timeout": 30 },
+    { "action": "assert_text", "contains": "Decrypted:", "scroll": true },
+    { "action": "tap", "text": "4. Verify identity", "scroll": true, "settle": 2 },
+    { "action": "wait_text", "contains": "VERIFIED", "timeout": 30 },
+    { "action": "assert_no_crash" }
+  ]
+}

@@ -9,6 +9,7 @@ import android.hardware.camera2.CameraManager
 import android.os.Build
 import engine.crypto.currentTimeMillis
 import engine.db.currentAndroidContext
+import engine.tools.NativeToolsSuite
 import engine.tools.ToolArgs
 import engine.tools.ToolContext
 import engine.tools.ToolHandler
@@ -93,19 +94,34 @@ class CameraTool : ToolHandler {
 
         val outputFile = File(mediaDir, "$imageId.$extension")
 
+        var captureSource = "camera"
         val captured: ByteArray = if (simulatedBase64 != null) {
+            captureSource = "simulated"
             Base64.getDecoder().decode(simulatedBase64)
         } else {
             val sink = captureSink
-                ?: return ToolResult.Unsupported(
-                    capability,
-                    "No camera host installed: capture requires an Activity with a camera preview"
-                )
-            sink(CaptureRequest(facing = facing, maxDimension = maxDim, showPreview = true))
-                ?: return ToolResult.Failed(
-                    capability,
-                    "Camera capture was cancelled or returned no frame"
-                )
+            if (sink != null) {
+                sink(CaptureRequest(facing = facing, maxDimension = maxDim, showPreview = true))
+                    ?: return ToolResult.Failed(
+                        capability,
+                        "Camera capture was cancelled or returned no frame"
+                    )
+            } else {
+                // The host may expose the generic image-source bridge (camera or picker)
+                // without installing CameraTool.captureSink. Ask it with camera allowed so
+                // capture still works on hosts that only wire the shared bridge.
+                val picked = NativeToolsSuite.imageSourceSink?.invoke(true)
+                    ?: return ToolResult.Unsupported(
+                        capability,
+                        "No camera host or image source installed: capture needs real pixels"
+                    )
+                val file = File(picked.removePrefix("file://"))
+                if (!file.isFile || file.length() == 0L) {
+                    return ToolResult.Failed(capability, "Captured image is empty or unreadable")
+                }
+                captureSource = "image_source"
+                file.readBytes()
+            }
         }
 
         val bytes = transcode(captured, extension, quality, maxDim)
@@ -131,6 +147,7 @@ class CameraTool : ToolHandler {
             "height" to height,
             "size_bytes" to bytes.size,
             "facing" to facing,
+            "source" to captureSource,
             "timestamp" to timestamp,
             "status" to "SUCCESS"
         )

@@ -94,8 +94,17 @@ class EngineRouter(
     private suspend fun handleTools(url: String, payload: JsonObject): ActionOutcome {
         val ws = activeWorkspace()
         return try {
-            engine.tools.NativeToolsSuite.execute(url, payload, tenantId = ws)
-            ActionOutcome.Handled
+            val outcome = engine.tools.NativeToolsSuite.execute(url, payload, tenantId = ws)
+            // A tool may complete without throwing yet report a domain failure
+            // (FAILED/UNSUPPORTED/DENIED). Reporting Handled here made those look like
+            // successes in the banner and left the operator without the reason.
+            if (outcome.success) {
+                EngineStateBridge.pushUpdate("user.engine_error", DivVariableValue.Str("None"))
+                ActionOutcome.Handled
+            } else {
+                emitError(outcome.summary, payload)
+                ActionOutcome.Error(outcome.summary)
+            }
         } catch (e: Exception) {
             val msg = e.message ?: "Tool execution failed"
             emitError(msg, payload)

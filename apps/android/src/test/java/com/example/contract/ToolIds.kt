@@ -24,6 +24,7 @@ object ToolIds {
         "device.printer@1",
         "vision.generate_code@1",
         "device.keep_awake@1",
+        "device.screen@1",
         "storage.files@1"
     )
 
@@ -49,6 +50,7 @@ object ToolIds {
         "device.printer@1" to listOf("print", "printer", "device.printer"),
         "vision.generate_code@1" to listOf("code-generate", "code_gen", "generate-code", "barcode-generate", "qr-generate", "vision.generate_code"),
         "device.keep_awake@1" to listOf("keep-awake", "keep_awake", "keepawake", "device.keep_awake", "wakelock"),
+        "device.screen@1" to listOf("screen", "device.screen", "screen-capture", "screen-recording"),
         "storage.files@1" to listOf("files", "file", "storage.files", "file-store", "fs")
     )
 }

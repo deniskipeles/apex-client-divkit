@@ -214,7 +214,27 @@ class SecureStatusTool : ToolHandler {
 
     override suspend fun invoke(args: ToolArgs, ctx: ToolContext): ToolResult {
         val peerId = args["peer_id"] ?: "${ctx.workspaceId}_peer"
-        val session = engine.tools.libsignal.LibSignalEngine.createOrGetSession(ctx.workspaceId, peerId)
+        val deviceId = args.getInt("device_id", 1)
+        // Status must be a read: reporting ESTABLISHED after silently creating a session
+        // made an untouched peer look handshaked.
+        if (!engine.tools.libsignal.LibSignalEngine.hasSession(ctx.workspaceId, peerId, deviceId)) {
+            return ToolResult.Success(
+                mapOf(
+                    "state" to "no_session",
+                    "status" to "NO_SESSION",
+                    "peer_id" to peerId,
+                    "session_id" to "",
+                    "fingerprint" to "",
+                    "is_verified" to false,
+                    "send_counter" to 0,
+                    "recv_counter" to 0,
+                    "cipher" to "AES-256-GCM + X25519"
+                )
+            )
+        }
+        val session = engine.tools.libsignal.LibSignalEngine.createOrGetSession(
+            ctx.workspaceId, peerId, deviceId
+        )
 
         return ToolResult.Success(
             mapOf(
@@ -240,19 +260,33 @@ class SecureVerifyIdentityTool : ToolHandler {
 
     override suspend fun invoke(args: ToolArgs, ctx: ToolContext): ToolResult {
         val peerId = args["peer_id"] ?: "${ctx.workspaceId}_peer"
-        val session = engine.tools.libsignal.LibSignalEngine.createOrGetSession(ctx.workspaceId, peerId)
-        val expected = args["expected_fingerprint"] ?: session.fingerprint
-        val provided = args["provided_fingerprint"] ?: args["safety_number"] ?: expected
+        val deviceId = args.getInt("device_id", 1)
+        val provided = args["provided_fingerprint"]
+            ?: args["safety_number"]
+            ?: return ToolResult.Failed(
+                capability,
+                "missing provided_fingerprint argument to verify"
+            )
+        if (!engine.tools.libsignal.LibSignalEngine.hasSession(ctx.workspaceId, peerId, deviceId)) {
+            return ToolResult.Failed(
+                capability,
+                "no session with peer '$peerId'; establish a session before verifying"
+            )
+        }
 
-        val matches = provided.replace("-", "").equals(expected.replace("-", ""), ignoreCase = true)
-        engine.tools.libsignal.LibSignalEngine.setSessionVerified(ctx.workspaceId, peerId, matches)
+        // Compare against the peer's current fingerprint; a missing match is a refusal, not
+        // a default success.
+        val verification = engine.tools.libsignal.LibSignalEngine.verifyIdentity(
+            ctx.workspaceId, peerId, provided, deviceId
+        )
 
         return ToolResult.Success(
             mapOf(
-                "state" to if (matches) "verified" else "mismatch",
+                "state" to if (verification.verified) "verified" else "mismatch",
                 "peer_id" to peerId,
-                "fingerprint" to session.fingerprint,
-                "verified" to matches,
+                "fingerprint" to verification.safetyNumber,
+                "provided_fingerprint" to provided,
+                "verified" to verification.verified,
                 "timestamp" to currentTimeMillis()
             )
         )

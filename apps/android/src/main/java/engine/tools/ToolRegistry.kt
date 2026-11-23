@@ -44,6 +44,8 @@ class ProvenanceChecker {
         "vision.capture_photo@1",
         "vision.identify_product@1",
         "vision.embed_image@1",
+        "embedding",
+        "vectorize",
         "vision.remove_background@1",
         "secure.send@1",
         "secure.status@1",
@@ -57,6 +59,7 @@ class ProvenanceChecker {
         "device.printer@1",
         "vision.generate_code@1",
         "device.keep_awake@1",
+        "device.screen@1",
         "storage.files@1",
         "vision.image_manipulation@1"
     )

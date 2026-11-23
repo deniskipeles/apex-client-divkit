@@ -193,6 +193,14 @@
             "text_color": "#C4B5FD",
             "font_family": "monospace",
             "max_lines": 2
+        },
+        {
+            "type": "text",
+            "text": "Last engine result: @{user.engine_error}",
+            "font_size": 10,
+            "text_color": "#FCA5A5",
+            "font_family": "monospace",
+            "max_lines": 3
         }
     ]
 }

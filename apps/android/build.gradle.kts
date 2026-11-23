@@ -161,6 +161,7 @@ dependencies {
 
   // ZXing renders the tools://code-generate bar/QR code matrices and images.
   implementation(libs.zxing.core)
+
 }
 
 configurations.all {

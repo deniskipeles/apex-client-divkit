@@ -6,7 +6,7 @@ import kotlinx.serialization.json.*
 /**
  * Builds and edits DivKit cards for the host.
  *
- * Tool showcase cards are not written in Kotlin: each lives in `resources/demo/tools/<tool>.json`
+ * Tool showcase cards are not written in Kotlin: each lives in `resources/demo/apex/tools/<tool>.json`
  * and is loaded through [DemoCardRepository]. The builders here only cover the small pieces the
  * host composes at runtime (on-the-fly buttons, hardware triggers, the tool action button) and
  * the assembled showcase card.
@@ -192,7 +192,7 @@ object SduiOnFlyBuilder {
     fun buildU2NetToolBlock(spec: TenantWorkspaceSpec): JsonObject = buildToolCard(spec, "u2net")
     fun buildImageManipulationToolBlock(spec: TenantWorkspaceSpec): JsonObject = buildToolCard(spec, "image_manipulation")
     fun buildCameraToolBlock(spec: TenantWorkspaceSpec): JsonObject = buildToolCard(spec, "camera")
-    fun buildVectorizeToolBlock(spec: TenantWorkspaceSpec): JsonObject = buildToolCard(spec, "vectorize")
+    fun buildEmbeddingToolBlock(spec: TenantWorkspaceSpec): JsonObject = buildToolCard(spec, "embedding")
     fun buildLibSignalToolBlock(spec: TenantWorkspaceSpec): JsonObject = buildToolCard(spec, "libsignal")
     fun buildBiometricsToolBlock(spec: TenantWorkspaceSpec): JsonObject = buildToolCard(spec, "biometrics")
     fun buildHapticsToolBlock(spec: TenantWorkspaceSpec): JsonObject = buildToolCard(spec, "haptics")
@@ -202,7 +202,7 @@ object SduiOnFlyBuilder {
     fun buildRealtimeWsToolBlock(spec: TenantWorkspaceSpec): JsonObject = buildToolCard(spec, "realtime_ws")
     fun buildNetToolBlock(spec: TenantWorkspaceSpec): JsonObject = buildToolCard(spec, "net")
     fun buildPrintToolBlock(spec: TenantWorkspaceSpec): JsonObject = buildToolCard(spec, "print")
-    fun buildKeepAwakeToolBlock(spec: TenantWorkspaceSpec): JsonObject = buildToolCard(spec, "keep_awake")
+    fun buildScreenToolBlock(spec: TenantWorkspaceSpec): JsonObject = buildToolCard(spec, "screen")
     fun buildFilesToolBlock(spec: TenantWorkspaceSpec): JsonObject = buildToolCard(spec, "files")
     fun buildNativeIconSchemeBlock(spec: TenantWorkspaceSpec): JsonObject = buildToolCard(spec, "native_icons")
     fun buildCatalogJsonListBlock(spec: TenantWorkspaceSpec): JsonObject = buildToolCard(spec, "catalog_list")
