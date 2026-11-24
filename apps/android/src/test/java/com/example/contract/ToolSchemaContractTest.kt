@@ -35,5 +35,7 @@ class ToolSchemaContractTest {
         listOf("container", "text", "button", "grid", "input", "custom", "image").forEach {
             assertTrue("subset schema missing component type '$it'", text.contains("\"$it\""))
         }
+        // The renderer honours `visibility`, so the schema must advertise it too.
+        assertTrue("subset schema missing the visibility property", text.contains("\"visibility\""))
     }
 }

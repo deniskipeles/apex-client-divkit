@@ -5,7 +5,7 @@
     "custom_props": {
         "chart_type": "area",
         "title": "HOURLY POS THROUGHPUT (${terminalCode})",
-        "subtitle": "Custom DivKit AREA Chart • KMP KoalaPlot + Vico M3 + iOS Swift Charts",
+        "subtitle": "Orders per two-hour window today",
         "value_prefix": "$",
         "accent_color": "#0284C7",
         "height": 200,

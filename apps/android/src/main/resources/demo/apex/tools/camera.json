@@ -26,7 +26,7 @@
         },
         {
             "type": "text",
-            "text": "Last capture: @{user.camera_capture_uri}",
+            "text": "Last capture: @{if(user.camera_capture_uri == '', 'none yet — tap Capture', user.camera_capture_uri)}",
             "font_size": 12,
             "text_color": "#CFFAFE",
             "font_family": "monospace"

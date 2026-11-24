@@ -73,10 +73,17 @@ object CodeGeneratorEngine {
      */
     private const val MIN_LINEAR_MARGIN = 10
 
+    // ISO/IEC 18004 requires a 4-module quiet zone; without it decoders (and phone cameras)
+    // cannot find the symbol edges, so a generated QR is unscannable.
+    private const val MIN_2D_MARGIN = 4
+
     /** Applies the quiet-zone floor that linear symbologies need to stay scannable. */
     fun effectiveMargin(format: BarcodeFormat, requested: Int): Int {
         val clamped = requested.coerceIn(0, 16)
-        return if (kindOf(format) == "1D") maxOf(clamped, MIN_LINEAR_MARGIN) else clamped
+        return when (kindOf(format)) {
+            "1D" -> maxOf(clamped, MIN_LINEAR_MARGIN)
+            else -> maxOf(clamped, MIN_2D_MARGIN)
+        }
     }
 
     fun generate(

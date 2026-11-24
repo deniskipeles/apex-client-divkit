@@ -5,7 +5,7 @@
     "items": [
         {
             "type": "text",
-            "text": "ON-THE-FLY CATALOG JSON_LIST (user.catalog_json)",
+            "text": "CATALOG · LIVE FROM INVENTORY",
             "font_size": 11,
             "font_weight": "bold",
             "text_color": "#34D399"
@@ -47,7 +47,7 @@
                             },
                             {
                                 "type": "text",
-                                "text": "SKU: @{item.sku} • $@{item.price} • Stock: @{item.stock}",
+                                "text": "SKU: @{item.sku} • $@{item.price_display} • Stock: @{item.stock}",
                                 "font_size": 11,
                                 "text_color": "#34D399",
                                 "font_family": "monospace"

@@ -11,6 +11,11 @@
       "properties": {
         "type": { "enum": ["container", "text", "button", "grid", "input", "custom", "image", "json_list"] },
         "id": { "type": "string" },
+        "visibility": {
+          "description": "DivKit visibility. `gone` removes the node from layout, `invisible` keeps its space. Accepts an @{...} expression.",
+          "type": "string",
+          "enum": ["visible", "invisible", "gone"]
+        },
         "items": { "type": "array", "items": { "$ref": "#/$defs/component" } },
         "text": { "type": "string" },
         "actions": { "type": "array", "items": { "$ref": "#/$defs/action" } },

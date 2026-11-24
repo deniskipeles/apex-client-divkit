@@ -225,12 +225,12 @@ fun SduiPosEngineApp(viewModel: SduiEngineViewModel) {
                     title = {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             Surface(
                                 color = colorScheme.primary,
                                 shape = RoundedCornerShape(12.dp),
-                                modifier = Modifier.size(42.dp)
+                                modifier = Modifier.size(38.dp)
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Icon(
@@ -242,20 +242,23 @@ fun SduiPosEngineApp(viewModel: SduiEngineViewModel) {
                                 }
                             }
                             Column {
+                                // Four 48dp actions leave ~120dp for the title column, so the
+                                // wordmark is short and the status line wraps instead of
+                                // truncating mid-word.
                                 Text(
-                                    text = "ApexClient Terminal",
+                                    text = "ApexClient",
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 18.sp,
+                                    fontSize = 17.sp,
                                     color = colorScheme.onSurface,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
                                 Text(
                                     text = uiState.statusBannerMessage
-                                        ?: "Enterprise Workspaces & POS Terminals",
-                                    fontSize = 12.sp,
+                                        ?: "Workspaces & POS terminals",
+                                    fontSize = 11.sp,
                                     color = colorScheme.onSurfaceVariant,
-                                    maxLines = 1,
+                                    maxLines = 2,
                                     overflow = TextOverflow.Ellipsis
                                 )
                             }

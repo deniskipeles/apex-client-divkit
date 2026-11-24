@@ -376,7 +376,7 @@
 
     {
       "type": "text",
-      "text": "✏️  CUSTOM LINE ITEM  (user.* Variable Binding)",
+      "text": "CUSTOM LINE ITEM",
       "font_size": 11,
       "font_weight": "bold",
       "text_color": "#94A3B8",
@@ -482,7 +482,7 @@
 
     {
       "type": "text",
-      "text": "📋  LIVE ORDER LEDGER  (db.query → user.orders_json)",
+      "text": "LIVE ORDER LEDGER",
       "font_size": 11,
       "font_weight": "bold",
       "text_color": "#94A3B8",

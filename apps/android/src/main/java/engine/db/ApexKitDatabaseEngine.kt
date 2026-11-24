@@ -494,19 +494,22 @@ class ApexKitDatabaseEngine(val driver: SqlDriver) {
 
         for (f in filters) {
             val fieldPath = f.field.replace("'", "''")
+            // `id` is the row identity, not a JSON field: callers filter on it constantly and
+            // `orderBy = "id"` already resolves to `records.id`, so the filter must agree.
+            val expr = if (f.field == "id") "records.id" else "json_extract(records.data, '$.$fieldPath')"
             when (f.op.uppercase()) {
                 "=", "!=", ">", ">=", "<", "<=" -> {
-                    whereClauses.add("json_extract(records.data, '$.$fieldPath') ${f.op} ?")
+                    whereClauses.add("$expr ${f.op} ?")
                     args.add(f.value)
                 }
                 "LIKE" -> {
-                    whereClauses.add("json_extract(records.data, '$.$fieldPath') LIKE ?")
+                    whereClauses.add("$expr LIKE ?")
                     args.add(f.value)
                 }
                 "IN" -> {
                     val values = f.value.split(",").map { it.trim() }
                     val placeholders = values.joinToString(",") { "?" }
-                    whereClauses.add("json_extract(records.data, '$.$fieldPath') IN ($placeholders)")
+                    whereClauses.add("$expr IN ($placeholders)")
                     args.addAll(values)
                 }
             }

@@ -1110,11 +1110,18 @@ object NativeToolsSuite {
             args = ToolArgs(mergedArgs),
             ctx = ToolContext(workspaceId = tenantId)
         )
-        return internalFromToolResult(
+        val result = internalFromToolResult(
             toolResult = toolResult,
             label = "Signal E2EE",
             successSummary = "Signal $operation completed"
         )
+        // A failed decrypt must not leave the previous plaintext on screen: the card would
+        // show ciphertext that "decrypted" to text while the badge says FAILED.
+        return if (toolResult is ToolResult.Success) {
+            result
+        } else {
+            result.copy(dataMap = result.dataMap + mapOf("plaintext" to ""))
+        }
     }
 
     // -------------------------------------------------------------------------

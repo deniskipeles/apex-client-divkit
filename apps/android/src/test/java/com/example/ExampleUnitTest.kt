@@ -852,6 +852,94 @@ class ExampleUnitTest {
     }
 
     @Test
+    fun libSignalTamperedCiphertext_failsInsteadOfReportingSuccess() = kotlinx.coroutines.runBlocking {
+        val tenant = "tenant_logistics_hub"
+        val peer = "courier_van_15"
+        val suite = engine.tools.NativeToolsSuite
+
+        val created = suite.execute(
+            url = "tools://libsignal/create_session",
+            payload = buildJsonObject { put("peer_id", peer) },
+            tenantId = tenant
+        )
+        assertTrue(created.success)
+
+        val encrypted = suite.execute(
+            url = "tools://libsignal/encrypt",
+            payload = buildJsonObject {
+                put("peer_id", peer)
+                put("data", "tamper-check-payload")
+            },
+            tenantId = tenant
+        )
+        assertTrue(encrypted.success)
+        val ciphertext =
+            (encrypted.outputVariables["user.signal_ciphertext"] as DivVariableValue.Str).value
+
+        // A real round trip first, so a stale plaintext would be visible if it leaked.
+        val decrypted = suite.execute(
+            url = "tools://libsignal/decrypt",
+            payload = buildJsonObject {
+                put("peer_id", peer)
+                put("ciphertext", ciphertext)
+            },
+            tenantId = tenant
+        )
+        assertTrue(decrypted.success)
+
+        val encryptedAgain = suite.execute(
+            url = "tools://libsignal/encrypt",
+            payload = buildJsonObject {
+                put("peer_id", peer)
+                put("data", "tamper-check-payload")
+            },
+            tenantId = tenant
+        )
+        assertTrue(encryptedAgain.success)
+        val secondCiphertext =
+            (encryptedAgain.outputVariables["user.signal_ciphertext"] as DivVariableValue.Str).value
+
+        val tampered = suite.execute(
+            url = "tools://libsignal/decrypt",
+            payload = buildJsonObject {
+                put("peer_id", peer)
+                put("ciphertext", secondCiphertext)
+                put("tamper", "1")
+            },
+            tenantId = tenant
+        )
+        assertFalse("tampered ciphertext must not decrypt", tampered.success)
+        val status = tampered.outputVariables["user.signal_status"] as? DivVariableValue.Str
+        assertEquals("FAILED", status?.value)
+        val plaintext = tampered.outputVariables["user.signal_plaintext"] as? DivVariableValue.Str
+        assertTrue(
+            "a failed decrypt must clear the previous plaintext, got '${plaintext?.value}'",
+            plaintext?.value.isNullOrEmpty()
+        )
+        // EngineRouter copies this into user.engine_error; the suite reports it in resultData.
+        val error = tampered.resultData.jsonObject["error"]?.jsonPrimitive?.contentOrNull
+        assertTrue(
+            "the error must name the authentication failure, got '$error'",
+            error?.contains("authentication", ignoreCase = true) == true
+        )
+    }
+
+    @Test
+    fun libSignalDecrypt_withoutCiphertextFailsClosed() = kotlinx.coroutines.runBlocking {
+        val outcome = engine.tools.NativeToolsSuite.execute(
+            url = "tools://libsignal/decrypt",
+            payload = buildJsonObject {
+                put("peer_id", "courier_van_16")
+                put("ciphertext", "")
+            },
+            tenantId = "tenant_logistics_hub"
+        )
+        assertFalse("empty ciphertext must not report success", outcome.success)
+        val plaintext = outcome.outputVariables["user.signal_plaintext"] as? DivVariableValue.Str
+        assertTrue(plaintext?.value.isNullOrEmpty())
+    }
+
+    @Test
     fun genericLibSignal_reestablishingSessionRepeatsRoundTrip() = kotlinx.coroutines.runBlocking {
         // The demo runs create → encrypt → decrypt. Re-running it after the process
         // restarted must not reuse the previous ratchet and fail on the second decrypt.
@@ -1446,6 +1534,66 @@ class ExampleUnitTest {
     }
 
     @Test
+    fun codeGenerate_keepsAQuietZoneAroundTwoDimensionalSymbols() {
+        // Regression: the kiosk passed margin=2, so generated QR codes had a 2-module quiet
+        // zone instead of the 4 ISO/IEC 18004 requires and scanned unreliably.
+        assertEquals(
+            4,
+            engine.tools.code.CodeGeneratorEngine.effectiveMargin(
+                com.google.zxing.BarcodeFormat.QR_CODE,
+                0
+            )
+        )
+        assertEquals(
+            4,
+            engine.tools.code.CodeGeneratorEngine.effectiveMargin(
+                com.google.zxing.BarcodeFormat.QR_CODE,
+                2
+            )
+        )
+        // An explicit larger quiet zone is still honoured.
+        assertEquals(
+            8,
+            engine.tools.code.CodeGeneratorEngine.effectiveMargin(
+                com.google.zxing.BarcodeFormat.QR_CODE,
+                8
+            )
+        )
+        // Linear formats keep their wider 10-module requirement.
+        assertEquals(
+            10,
+            engine.tools.code.CodeGeneratorEngine.effectiveMargin(
+                com.google.zxing.BarcodeFormat.EAN_13,
+                0
+            )
+        )
+    }
+
+    @Test
+    fun codeGenerateTool_qrDecodesBackFromTheGeneratedPng() = kotlinx.coroutines.runBlocking {
+        val outcome = engine.tools.NativeToolsSuite.execute(
+            url = "tools://code-generate/generate",
+            payload = buildJsonObject {
+                put("content", "APEX-KIOSK-TRANSFER|chunk=1|of=2")
+                put("format", "QR_CODE")
+                put("width", "640")
+                put("height", "640")
+                put("margin", "0")
+            }
+        )
+        val uri = (outcome.outputVariables["user.code_image_uri"] as DivVariableValue.Str).value
+        val bitmap = engine.tools.scan.BarcodeDecoder.loadBitmap(uri)
+        assertNotNull("generated QR image should be loadable", bitmap)
+        try {
+            val decoded = engine.tools.scan.BarcodeDecoder.decode(bitmap!!)
+            assertNotNull("generated QR must decode back", decoded)
+            assertEquals("APEX-KIOSK-TRANSFER|chunk=1|of=2", decoded!!.rawValue)
+        } finally {
+            bitmap!!.recycle()
+        }
+    }
+
+    @Test
     fun decodeLuminance_decodesA1DBarcodeOnlyWhenSensorRotationIsApplied() = kotlinx.coroutines.runBlocking {
         // Regression for "QR scans but barcodes never do". A camera sensor is mounted rotated, so
         // the Y plane arrives landscape while the user holds the phone upright. A 1D barcode is a
@@ -1809,6 +1957,22 @@ class ExampleUnitTest {
             .forEach { name ->
                 assertTrue("Demo card missing icons://native/$name", json.contains("icons://native/$name"))
             }
+    }
+
+    @Test
+    fun demoCards_referenceOnlyResolvableIconNames() {
+        // A typo'd icon name silently renders a lightning bolt, which looks like a broken card.
+        val unresolved = WorkspaceProvisioner.defaultWorkspaces
+            .flatMap { spec ->
+                Regex(""""icon"\s*:\s*"([^"]+)"""")
+                    .findAll(allCardsJson(spec))
+                    .map { it.groupValues[1].substringAfterLast('/') }
+                    .toList()
+            }
+            .distinct()
+            .filter { engine.icons.NativeIconCatalog.find(it) == null }
+
+        assertTrue("Demo cards reference unknown icons: $unresolved", unresolved.isEmpty())
     }
 
     @Test
@@ -2206,6 +2370,167 @@ class ExampleUnitTest {
         )
         assertEquals("scan", outcome.toolId)
         assertEquals("ocr", outcome.operation)
+    }
+
+    /** Removes every `@{...}` binding (nested braces included) from card copy. */
+    private fun stripBindings(text: String): String {
+        val out = StringBuilder()
+        var depth = 0
+        var index = 0
+        while (index < text.length) {
+            if (depth == 0 && text.startsWith("@{", index)) {
+                depth = 1
+                index += 2
+                continue
+            }
+            when {
+                depth == 0 -> out.append(text[index])
+                text[index] == '{' -> depth++
+                text[index] == '}' -> depth--
+            }
+            index++
+        }
+        return out.toString()
+    }
+
+    @Test
+    fun demoCards_hideInternalVariableNamesFromVisibleLabels() {
+        val jargon = listOf("user.", "JSON_LIST", "db.query", "Variable Binding")
+        val offenders = mutableListOf<String>()
+        val cards = listOf(
+            "catalog_list", "local_db", "scanner", "libsignal", "net", "files", "screen",
+            "print", "camera", "codec", "code_generate", "embedding", "mobilenet", "u2net",
+            "image_manipulation", "biometrics", "haptics", "beeper", "clipboard_push",
+            "offline_cache", "realtime_ws", "native_icons", "hourly_chart", "sdui_chart"
+        )
+        cards.forEach { cardName ->
+            val json = javaClass.classLoader!!
+                .getResourceAsStream("demo/apex/tools/$cardName.json")!!
+                .bufferedReader().use { it.readText() }
+            val card = Json.parseToJsonElement(json)
+            fun visit(node: JsonElement) {
+                when (node) {
+                    is JsonObject -> {
+                        node.forEach { (key, value) ->
+                            // `text` is also a key inside tool output mappings, which never
+                            // reach the screen; only real DivKit nodes carry a `type`.
+                            if (key == "text" && node.containsKey("type")) {
+                                // Bindings render as values, so only the literal copy around
+                                // them is user-visible: strip every @{...} span before checking.
+                                val literal = stripBindings(value.jsonPrimitive.contentOrNull.orEmpty())
+                                if (jargon.any { literal.contains(it) }) {
+                                    offenders += "$cardName: $literal"
+                                }
+                            }
+                            visit(value)
+                        }
+                    }
+                    is JsonArray -> node.forEach { visit(it) }
+                    else -> Unit
+                }
+            }
+            visit(card)
+        }
+        assertTrue(
+            "card labels must not expose variable names or SQL internals: $offenders",
+            offenders.isEmpty()
+        )
+    }
+
+    @Test
+    fun chartCards_subtitlesAreUserFacingNotInternalJargon() {
+        val jargon = listOf("sdui_chart", "user.", "Vico", "KoalaPlot", "DivKit", "Swift Charts")
+        listOf("hourly_chart", "sdui_chart").forEach { card ->
+            val json = javaClass.classLoader!!
+                .getResourceAsStream("demo/apex/tools/$card.json")!!
+                .bufferedReader().use { it.readText() }
+            val subtitle = Regex("\"subtitle\"\\s*:\\s*\"([^\"]*)\"").find(json)!!.groupValues[1]
+            jargon.forEach { term ->
+                assertFalse(
+                    "$card subtitle leaks '$term': $subtitle",
+                    subtitle.contains(term, ignoreCase = true)
+                )
+            }
+            assertTrue("$card subtitle is empty", subtitle.isNotBlank())
+        }
+    }
+
+    @Test
+    fun demoCards_haveNoTrailingBlankLineInStatusText() {
+        val offenders = mutableListOf<String>()
+        listOf("screen", "scanner", "libsignal", "local_db", "net").forEach { card ->
+            val json = javaClass.classLoader!!
+                .getResourceAsStream("demo/apex/tools/$card.json")!!
+                .bufferedReader().use { it.readText() }
+            Regex("\"text\"\\s*:\\s*\"([^\"]*)\"").findAll(json).forEach { m ->
+                if (m.groupValues[1].endsWith("\\n")) offenders += "$card: ${m.groupValues[1]}"
+            }
+        }
+        assertEquals("status text renders an empty extra line: $offenders", emptyList<String>(), offenders)
+    }
+
+    @Test
+    fun scannerCard_threeUpButtonLabelsFitTheirRow() {
+        val root = Json.parseToJsonElement(
+            javaClass.classLoader!!
+                .getResourceAsStream("demo/apex/tools/scanner.json")!!
+                .bufferedReader()
+                .use { it.readText() }
+        )
+        val buttons = mutableListOf<JsonObject>()
+        fun walk(node: JsonElement) {
+            if (node is JsonObject) {
+                if (node["type"]?.jsonPrimitive?.contentOrNull == "button") buttons += node
+                node.values.forEach(::walk)
+            } else if (node is JsonArray) {
+                node.forEach(::walk)
+            }
+        }
+        walk(root)
+        // The three scan buttons share one phone row (~90dp each). Longer labels rendered as
+        // "Scan ..." on device, so keep them short and the font small.
+        val liveRow = buttons.filter {
+            it["text"]?.jsonPrimitive?.contentOrNull in setOf("Barcode", "QR code", "Both")
+        }
+        assertEquals("scanner LIVE row must keep its three scan buttons", 3, liveRow.size)
+        liveRow.forEach { button ->
+            val label = button["text"]!!.jsonPrimitive.content
+            assertTrue("label '$label' will truncate in a 3-up row", label.length <= 12)
+            assertTrue(
+                "button '$label' needs font_size <= 12 in a 3-up row",
+                (button["font_size"]?.jsonPrimitive?.intOrNull ?: 14) <= 12
+            )
+        }
+    }
+
+    @Test
+    fun demoCard_defaultsDoNotFabricateHardwareOrMlResults() {
+        val card = Json.parseToJsonElement(
+            javaClass.classLoader!!
+                .getResourceAsStream("demo/apex/card.json")!!
+                .bufferedReader()
+                .use { it.readText() }
+        ).jsonObject
+        val defaults = card["card"]!!.jsonObject["variables"]!!.jsonArray.associate { variable ->
+            val node = variable.jsonObject
+            node["name"]!!.jsonPrimitive.content to node["value"]!!.jsonPrimitive.content
+        }
+        // A fresh install must not display a scan, a generated code, a camera capture, a
+        // processed image or a model prediction that this terminal never produced.
+        assertEquals("", defaults["user.scanned_code"])
+        assertEquals("", defaults["user.scanned_format"])
+        assertEquals("", defaults["user.scanned_type"])
+        assertEquals("IDLE", defaults["user.scan_status"])
+        assertEquals("0", defaults["user.ocr_confidence"])
+        assertEquals("0", defaults["user.ocr_block_count"])
+        assertEquals("", defaults["user.code_image_uri"])
+        assertEquals("", defaults["user.code_id"])
+        assertEquals("IDLE", defaults["user.code_status"])
+        assertEquals("0", defaults["user.code_matrix_rows"])
+        assertEquals("", defaults["user.camera_capture_uri"])
+        assertEquals("", defaults["user.processed_image_uri"])
+        assertEquals("not_run", defaults["user.ai_prediction_label"])
+        assertEquals("0", defaults["user.ai_confidence_score"])
     }
 
     @Test

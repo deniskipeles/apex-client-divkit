@@ -22,7 +22,7 @@
     },
     {
       "file": "kiosk_lan",
-      "label": "LAN Heavy Share",
+      "label": "LAN Share",
       "icon": "globe",
       "accent_color": "#F59E0B"
     }

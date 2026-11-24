@@ -1,6 +1,7 @@
 package engine.icons
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.ui.graphics.vector.ImageVector
 
@@ -177,6 +178,17 @@ internal object NativeIconVectors {
         "ManageAccounts" -> Icons.Default.ManageAccounts
         "Map" -> Icons.Default.Map
         "Memory" -> Icons.Default.Memory
+        "ArrowBack" -> Icons.AutoMirrored.Filled.ArrowBack
+        "BlurOn" -> Icons.Default.BlurOn
+        "ChevronRight" -> Icons.Default.ChevronRight
+        "Dns" -> Icons.Default.Dns
+        "LightMode" -> Icons.Default.LightMode
+        "PlayArrow" -> Icons.Default.PlayArrow
+        "Psychology" -> Icons.Default.Psychology
+        "SignalCellularAlt" -> Icons.Default.SignalCellularAlt
+        "Stop" -> Icons.Default.Stop
+        "Undo" -> Icons.Default.Undo
+        "AutoFixHigh" -> Icons.Default.AutoFixHigh
         "Menu" -> Icons.Default.Menu
         "MenuBook" -> Icons.Default.MenuBook
         "Message" -> Icons.Default.Message

@@ -19,7 +19,7 @@
     "items": [
         {
             "type": "text",
-            "text": "🪄 BACKGROUND REMOVAL — ON-DEVICE U-2-NETP MATTE (tools://u-2-Net.tflite)",
+            "text": "🪄 BACKGROUND REMOVAL — U-2-NETP (tools://u-2-Net.tflite · model not bundled)",
             "font_size": 11,
             "font_weight": "bold",
             "text_color": "#67E8F9"
@@ -51,7 +51,7 @@
                             "type": "button",
                             "id": "tool_u-2-Net_tflite_segment",
                             "text": "🪄 Remove Background (Camera)",
-                            "subtitle": "Runs U-2-Netp on this device",
+                            "subtitle": "Returns UNSUPPORTED unless the U-2-Netp weights are bundled",
                             "icon": "crop",
                             "background_color": "#0891B2",
                             "text_color": "#FFFFFF",
