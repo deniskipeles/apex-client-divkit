@@ -266,6 +266,11 @@ private fun RenderDivNode(
     fillWidth: Boolean = true
 ) {
     val type = node["type"]?.jsonPrimitive?.contentOrNull ?: "container"
+    // DivKit's `visibility` is an expression: `gone` removes the node from the layout, which is
+    // how a card hides an empty QR preview or disables a control without inventing a fake state.
+    val visibility = node["visibility"]?.jsonPrimitive?.contentOrNull
+        ?.let { evalExpr(it, variables, rowContext) }
+    if (visibility == "gone") return
     val paddings = node["paddings"]?.jsonObject
     val margins = node["margins"]?.jsonObject
     val cornerRadius = node["corner_radius"]?.jsonPrimitive?.intOrNull ?: 0
@@ -669,16 +674,20 @@ private fun RenderDivNode(
     }
 }
 
-private fun adaptSurfaceColorForTheme(hexStr: String, isDark: Boolean): Color {
+internal fun adaptSurfaceColorForTheme(hexStr: String, isDark: Boolean): Color {
     if (isDark) return parseHexColor(hexStr)
     return when (hexStr.trim().uppercase()) {
         "#1E293B", "#152033" -> Color(0xFFFFFFFF)
         "#0F172A", "#0B1120" -> Color(0xFFF8FAFC)
+        // Tool cards paint their data panels this slate. Leaving it dark while
+        // adaptTextColorForTheme maps the captions to light-theme greys renders
+        // #475569 on #334155 (~1.5:1) - effectively invisible.
+        "#334155" -> Color(0xFFF1F5F9)
         else -> parseHexColor(hexStr)
     }
 }
 
-private fun adaptBorderColorForTheme(hexStr: String, isDark: Boolean): Color {
+internal fun adaptBorderColorForTheme(hexStr: String, isDark: Boolean): Color {
     if (isDark) return parseHexColor(hexStr)
     return when (hexStr.trim().uppercase()) {
         "#334155", "#1E293B" -> Color(0xFFCBD5E1)
@@ -687,21 +696,27 @@ private fun adaptBorderColorForTheme(hexStr: String, isDark: Boolean): Color {
     }
 }
 
-private fun adaptTextColorForTheme(hexStr: String, isDark: Boolean): Color {
-    if (isDark) return parseHexColor(hexStr)
+internal fun adaptTextColorForTheme(hexStr: String, isDark: Boolean): Color {
+    if (isDark) {
+        // #64748B is only ever a caption on a slate surface, where it is 3:1.
+        return when (hexStr.trim().uppercase()) {
+            "#64748B", "#94A3B8" -> Color(0xFFCBD5E1)
+            else -> parseHexColor(hexStr)
+        }
+    }
     return when (hexStr.trim().uppercase()) {
         "#F8FAFC", "#E2E8F0", "#FFFFFF" -> Color(0xFF0F172A)
         "#94A3B8", "#CBD5E1" -> Color(0xFF475569)
-        "#64748B" -> Color(0xFF64748B)
+        "#64748B" -> Color(0xFF475569)
         "#38BDF8" -> Color(0xFF1D4ED8)
         "#34D399" -> Color(0xFF047857)
         "#FBBF24" -> Color(0xFFB45309)
-        "#F87171", "#FCA5A5" -> Color(0xFFDC2626)
+        "#F87171", "#FCA5A5" -> Color(0xFFB91C1C)
         else -> parseHexColor(hexStr)
     }
 }
 
-private fun adaptButtonBgForTheme(hexStr: String, isDark: Boolean): Color {
+internal fun adaptButtonBgForTheme(hexStr: String, isDark: Boolean): Color {
     if (isDark) return parseHexColor(hexStr)
     return when (hexStr.trim().uppercase()) {
         "#334155", "#1E293B" -> Color(0xFFF1F5F9)
@@ -711,7 +726,7 @@ private fun adaptButtonBgForTheme(hexStr: String, isDark: Boolean): Color {
     }
 }
 
-private fun adaptButtonTextForTheme(textHex: String, bgHex: String, isDark: Boolean): Color {
+internal fun adaptButtonTextForTheme(textHex: String, bgHex: String, isDark: Boolean): Color {
     if (isDark) return parseHexColor(textHex)
     val upperBg = bgHex.trim().uppercase()
     if (upperBg in setOf("#334155", "#1E293B")) {
@@ -989,7 +1004,9 @@ private fun parseHexColor(hexStr: String): Color {
  * always renders something.
  */
 private fun resolveIcon(name: String): ImageVector {
-    NativeIconCatalog.find(name)
+    // Cards may carry either a bare name or the full `icons://native/<name>` scheme.
+    val bare = name.removePrefix("icons://native/").removePrefix("icons://")
+    NativeIconCatalog.find(bare)
         ?.let { NativeIconVectors.resolve(it.material) }
         ?.let { return it }
     return Icons.Default.FlashOn

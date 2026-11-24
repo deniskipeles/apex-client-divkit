@@ -30,7 +30,7 @@
       {
         "name": "user.engine_error",
         "type": "string",
-        "value": "None"
+        "value": ""
       },
       {
         "name": "user.order_count",
@@ -50,22 +50,22 @@
       {
         "name": "user.scanned_code",
         "type": "string",
-        "value": "9780201633610"
+        "value": ""
       },
       {
         "name": "user.scanned_format",
         "type": "string",
-        "value": "EAN_13"
+        "value": ""
       },
       {
         "name": "user.scanned_type",
         "type": "string",
-        "value": "1D"
+        "value": ""
       },
       {
         "name": "user.scan_status",
         "type": "string",
-        "value": "SUCCESS"
+        "value": "IDLE"
       },
       {
         "name": "user.ocr_text",
@@ -75,12 +75,12 @@
       {
         "name": "user.ocr_confidence",
         "type": "string",
-        "value": "0.94"
+        "value": "0"
       },
       {
         "name": "user.ocr_block_count",
         "type": "integer",
-        "value": 3
+        "value": 0
       },
       {
         "name": "user.scan_image_uri",
@@ -90,7 +90,7 @@
       {
         "name": "user.code_image_uri",
         "type": "string",
-        "value": "file:///data/user/0/com.example/files/workspaces/${tenantId}/media/code_9f3c1a2b7d10.png"
+        "value": ""
       },
       {
         "name": "user.code_format",
@@ -110,27 +110,27 @@
       {
         "name": "user.code_id",
         "type": "string",
-        "value": "code_9f3c1a2b7d10"
+        "value": ""
       },
       {
         "name": "user.code_status",
         "type": "string",
-        "value": "SUCCESS"
+        "value": "IDLE"
       },
       {
         "name": "user.code_matrix_rows",
         "type": "integer",
-        "value": 39
+        "value": 0
       },
       {
         "name": "user.ai_prediction_label",
         "type": "string",
-        "value": "Wagyu Smash Burger (Entree)"
+        "value": "not_run"
       },
       {
         "name": "user.ai_confidence_score",
         "type": "string",
-        "value": "0.93"
+        "value": "0"
       },
       {
         "name": "user.ai_source_image_uri",
@@ -245,7 +245,7 @@
       {
         "name": "user.camera_capture_uri",
         "type": "string",
-        "value": "content://com.example.provider/camera/last_frame.jpg"
+        "value": ""
       },
       {
         "name": "user.camera_torch_state",
@@ -255,58 +255,58 @@
       {
         "name": "user.processed_image_uri",
         "type": "string",
-        "value": "content://com.example.provider/processed/matte_01.png"
+        "value": ""
       },
       {
         "name": "user.image_processing_status",
         "type": "string",
         "value": "idle"
       },
-        {
-            "name": "user.processed_source_uri",
-            "type": "string",
-            "value": "${demoImageUri}"
-        },
-        {
-            "name": "user.processed_width",
-            "type": "integer",
-            "value": 0
-        },
-        {
-            "name": "user.processed_height",
-            "type": "integer",
-            "value": 0
-        },
-        {
-            "name": "user.files_status",
-            "type": "string",
-            "value": "idle"
-        },
-        {
-            "name": "user.files_listing",
-            "type": "string",
-            "value": "No listing yet"
-        },
-        {
-            "name": "user.files_content",
-            "type": "string",
-            "value": "No content yet"
-        },
-        {
-            "name": "user.files_path",
-            "type": "string",
-            "value": "."
-        },
-        {
-            "name": "user.files_last_uri",
-            "type": "string",
-            "value": ""
-        },
-        {
-            "name": "user.files_last_path",
-            "type": "string",
-            "value": "."
-        },
+      {
+        "name": "user.processed_source_uri",
+        "type": "string",
+        "value": "${demoImageUri}"
+      },
+      {
+        "name": "user.processed_width",
+        "type": "integer",
+        "value": 0
+      },
+      {
+        "name": "user.processed_height",
+        "type": "integer",
+        "value": 0
+      },
+      {
+        "name": "user.files_status",
+        "type": "string",
+        "value": "idle"
+      },
+      {
+        "name": "user.files_listing",
+        "type": "string",
+        "value": "No listing yet"
+      },
+      {
+        "name": "user.files_content",
+        "type": "string",
+        "value": "No content yet"
+      },
+      {
+        "name": "user.files_path",
+        "type": "string",
+        "value": "."
+      },
+      {
+        "name": "user.files_last_uri",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.files_last_path",
+        "type": "string",
+        "value": "."
+      },
       {
         "name": "user.vector_source",
         "type": "string",
@@ -519,7 +519,7 @@
                 },
                 {
                   "type": "text",
-                  "text": "SQLite: workspace_${tenantId}.db • Sync: @{user.sync_status} • @{user.engine_error}",
+                  "text": "Sync: @{user.sync_status} · @{if(user.engine_error == '', 'All systems ready', user.engine_error)}",
                   "font_size": 12,
                   "text_color": "#94A3B8",
                   "font_family": "monospace"

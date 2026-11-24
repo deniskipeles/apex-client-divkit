@@ -15,7 +15,7 @@
         },
         {
             "type": "text",
-            "text": "Status: @{user.screen_status} • Awake: @{user.screen_keep_awake} • Recording: @{user.screen_recording}\n@{user.screen_error}",
+            "text": "Status: @{user.screen_status} • Awake: @{user.screen_keep_awake} • Recording: @{user.screen_recording} • @{user.screen_error}",
             "font_size": 12,
             "text_color": "#E0F2FE",
             "font_family": "monospace"

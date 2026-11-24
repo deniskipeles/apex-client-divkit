@@ -130,6 +130,11 @@ gallery therefore has a real peer id instead of resolving `peer_id` to an empty 
 `type` is optional (`2` or `3`). Leave it out and the engine detects whether the
 envelope is a PreKey message or a message on an established session.
 
+`decrypt` also accepts `tamper=1`, which flips one character of the envelope before the
+tag check. It exists so the demo card's **Tamper test** button can prove the failure path
+on device: the call returns `FAILED`, `user.signal_plaintext` stays empty and no status of
+`DECRYPTED` is reported.
+
 A failed decrypt returns `status: "FAILED"` and an `error` field. The host surfaces the
 reason in the status banner and in `user.engine_error`; a card can bind `error` explicitly
 if it wants to show it inline.

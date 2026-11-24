@@ -316,7 +316,12 @@ class NetTool(
 
         return ToolResult.Success(
             mapOf(
-                "status" to "SHARED",
+                // A share is staged in memory even when the hub is stopped: the item becomes
+                // reachable as soon as `serve` starts, and the status says so explicitly
+                // instead of implying the URL already works.
+                "status" to if (server != null) "SHARED" else "STAGED",
+                "hub_running" to (server != null),
+                "warning" to if (server == null) "LAN hub is not running; start it before downloading" else "",
                 "id" to id,
                 "name" to name,
                 "mime" to mime,

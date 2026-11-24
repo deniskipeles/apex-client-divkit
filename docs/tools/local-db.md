@@ -42,6 +42,14 @@ Operations are resolved by the registry's `when (opName)` whitelist. Several ope
 | `db.query_one` | `records.get` | `Row` | `collection` \| `table` |
 | `db.count` | `records.count` | `Count` | `collection` \| `table` |
 | `db.delete` | `records.delete` | `Count` | `collection` \| `table`, `id` \| `record_id` |
+| `kiosk.create` | `kiosk.new` | `Row` | `direction`, `terminal_id` |
+| `kiosk.add_line` | `kiosk.add` | `Row` | `order_id`, `sku`, `item_name`, `unit_price`, `quantity` |
+| `kiosk.set_qty` | — | `Row` | `order_id`, `line_id`, `quantity` |
+| `kiosk.remove_line` | `kiosk.remove` | `Row` | `order_id`, `line_id` |
+| `kiosk.submit` | — | `Row` | `order_id` |
+| `kiosk.load` | — | `Row` | `order_id` or `direction` |
+| `kiosk.list` | `kiosk.orders` | `Row` | `direction`?, `status`?, `limit`? |
+| `kiosk.export` | — | `Row` | `order_id` |
 
 ### Operation details
 
@@ -57,6 +65,11 @@ Operations are resolved by the registry's `when (opName)` whitelist. Several ope
   (default `100`), and `offset`.
 - **`db.query_one`** — returns the first matching record (with its `id`) or an empty row.
 - **`db.count`** — returns the number of records matching the `where` filter.
+- **`kiosk.list`** — lists orders newest-first for an optional `direction`
+  (`CUSTOMER_REQUEST` / `OWNER_RECEIPT`) and `status` (`DRAFT` / `SUBMITTED`), up to `limit`
+  (default 10, max 50). Returns `orders_json` (one object per order: `id`, `order_label`,
+  `status`, `direction`, `item_count`, `total_display`, `created_at`), `order_count` and
+  `orders_total_display`. The kiosk owner card uses it to list submitted customer orders.
 - **`db.delete`** — deletes one record by its `id`. Record ids are `TEXT`, so both
   caller-supplied values (`"customer_abc"`) and generated numeric strings (`"42"`) work;
   returns `1` when a row was removed.

@@ -74,16 +74,16 @@
                 },
                 {
                     "type": "text",
-                    "text": "Matrix rows: @{user.code_id}",
+                    "text": "Code id: @{user.code_id}",
                     "font_size": 11,
                     "text_color": "#FDE68A",
                     "font_family": "monospace"
                 },
                 {
                     "type": "text",
-                    "text": "Image URI: @{user.code_image_uri}",
+                    "text": "Image: @{if(user.code_image_uri == '', 'not generated yet — tap Generate', user.code_image_uri)}",
                     "font_size": 10,
-                    "text_color": "#A87E20",
+                    "text_color": "#FDE68A",
                     "font_family": "monospace"
                 }
             ]

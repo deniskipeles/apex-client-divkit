@@ -99,7 +99,7 @@ class EngineRouter(
             // (FAILED/UNSUPPORTED/DENIED). Reporting Handled here made those look like
             // successes in the banner and left the operator without the reason.
             if (outcome.success) {
-                EngineStateBridge.pushUpdate("user.engine_error", DivVariableValue.Str("None"))
+                clearError()
                 ActionOutcome.Handled
             } else {
                 emitError(outcome.summary, payload)
@@ -123,6 +123,7 @@ class EngineRouter(
                 }
             }
             emitResult(result, payload)
+            clearError()
             ActionOutcome.Handled
         } catch (e: Exception) {
             val msg = e.message ?: "Operation failed"
@@ -170,6 +171,7 @@ class EngineRouter(
         EngineStateBridge.pushUpdate("user.icon_name", DivVariableValue.Str(icon.name))
         EngineStateBridge.pushUpdate("user.icon_material", DivVariableValue.Str(icon.material))
         EngineStateBridge.pushUpdate("user.icon_category", DivVariableValue.Str(icon.category.label))
+        clearError()
         return ActionOutcome.Handled
     }
 
@@ -249,6 +251,11 @@ class EngineRouter(
             }
             OpResult.Empty -> Unit
         }
+    }
+
+    /** A successful action clears the last failure so cards never show a stale error banner. */
+    private fun clearError() {
+        EngineStateBridge.pushUpdate("user.engine_error", DivVariableValue.Str(""))
     }
 
     private fun emitError(message: String, payload: JsonObject) {

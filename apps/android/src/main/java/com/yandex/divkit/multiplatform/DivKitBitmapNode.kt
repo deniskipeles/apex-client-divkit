@@ -8,14 +8,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import engine.state.DivVariableValue
 import kotlinx.serialization.json.JsonObject
@@ -50,7 +48,9 @@ internal fun RenderDivBitmap(
         ?: node["preview_height"]?.jsonPrimitive?.intOrNull
         ?: 160
     val radius = node["corner_radius"]?.jsonPrimitive?.intOrNull ?: 10
-    val caption = node["content_description"]?.jsonPrimitive?.contentOrNull
+    // content_description is an accessibility label, not a caption: painting it over the
+    // bitmap covered the generated QR codes.
+    val description = node["content_description"]?.jsonPrimitive?.contentOrNull
         ?.let { evalExpr(it, variables, rowContext) }
     val tag = "div_bitmap_" + source.substringAfterLast('/').replace(Regex("[^a-zA-Z0-9._]+"), "_")
 
@@ -63,7 +63,7 @@ internal fun RenderDivBitmap(
         Box(contentAlignment = Alignment.Center) {
             AsyncImage(
                 model = source,
-                contentDescription = caption ?: "Image preview",
+                contentDescription = description ?: "Image preview",
                 contentScale = ContentScale.Fit,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -71,16 +71,6 @@ internal fun RenderDivBitmap(
                     .padding(4.dp)
                     .testTag(tag)
             )
-            if (caption != null) {
-                Text(
-                    text = caption,
-                    fontSize = 10.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(6.dp)
-                )
-            }
         }
     }
 }

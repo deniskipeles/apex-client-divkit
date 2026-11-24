@@ -5,9 +5,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import engine.state.DivVariableValue
 import engine.state.EngineStateBridge
 import com.example.enginehost.WorkspaceProvisioner
@@ -18,8 +21,10 @@ import com.yandex.divkit.multiplatform.DivKitDependencies
 import com.yandex.divkit.multiplatform.DivView
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.JsonPrimitive
@@ -73,12 +78,16 @@ class DemoCardRenderTest {
     private fun render(card: JsonObject, cardId: String, onAction: suspend (String, String?) -> Unit) {
         composeRule.setContent {
             MyApplicationTheme {
-                DivKit(dependencies = dependencies) {
-                    DivView(
-                        cardId = cardId,
-                        jsonData = DemoCardRepository.encode(card),
-                        onAction = onAction
-                    )
+                // Same shape as the workspace host: the card lives inside a vertical scroller,
+                // so buttons below the fold are reachable through performScrollTo().
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    DivKit(dependencies = dependencies) {
+                        DivView(
+                            cardId = cardId,
+                            jsonData = DemoCardRepository.encode(card),
+                            onAction = onAction
+                        )
+                    }
                 }
             }
         }
@@ -98,7 +107,9 @@ class DemoCardRenderTest {
         val dispatched = mutableListOf<String>()
         render(card, DemoCardRepository.toolCardId(cardName)) { url, _ -> dispatched.add(url) }
 
-        ids.forEach { id -> composeRule.onNodeWithTag("div_btn_$id").performClick() }
+        ids.forEach { id ->
+            composeRule.onNodeWithTag("div_btn_$id").performScrollTo().performClick()
+        }
         composeRule.waitForIdle()
 
         assertTrue("clicking every button on '$cardName' dispatched no actions", dispatched.isNotEmpty())
@@ -138,10 +149,48 @@ class DemoCardRenderTest {
             val card = DemoCardRepository.toolCardDocument(spec, "libsignal")
                 ?: error("missing libsignal tool card")
             render(card, DemoCardRepository.toolCardId("libsignal")) { _, _ -> }
-            composeRule.onNodeWithText("Decrypted: $plaintext").assertExists()
+            composeRule.onNodeWithText(plaintext).assertExists()
         } finally {
             EngineStateBridge.clear()
         }
+    }
+
+    @Test
+    fun libsignalSafetyNumberIsStackedUnderItsLabel() {
+        val card = Json.parseToJsonElement(
+            javaClass.classLoader!!
+                .getResourceAsStream("demo/apex/tools/libsignal.json")!!
+                .bufferedReader()
+                .use { it.readText() }
+        ).jsonObject
+        // Side by side with a weighted label, DivKit measures the 60-digit value at its
+        // intrinsic width and the row grows to most of the screen height.
+        val holder = containerHolding(card, "Safety number")!!
+        assertEquals("vertical", holder["orientation"]?.jsonPrimitive?.contentOrNull)
+        val texts = holder["items"]!!.jsonArray.map {
+            it.jsonObject["text"]?.jsonPrimitive?.contentOrNull ?: ""
+        }
+        assertTrue(texts.contains("Safety number"))
+        assertTrue(texts.any { it.contains("signal_fingerprint_display") })
+    }
+
+    private fun containerHolding(node: JsonElement, text: String): JsonObject? {
+        if (node is JsonObject) {
+            val items = node["items"] as? JsonArray
+            if (items?.any {
+                    (it as? JsonObject)?.get("text")?.jsonPrimitive?.contentOrNull == text
+                } == true
+            ) {
+                return node
+            }
+        }
+        val children = when (node) {
+            is JsonObject -> node.values
+            is JsonArray -> node
+            else -> emptyList()
+        }
+        children.forEach { child -> containerHolding(child, text)?.let { return it } }
+        return null
     }
 
     @Test
@@ -183,16 +232,18 @@ class DemoCardRenderTest {
                     """[{"id":"6","item_name":"Croissant","sku":"P1024","price":2.75,"stock":25}]"""
                 ),
                 "user.kiosk_lines_json" to DivVariableValue.Str(
-                    """[{"id":"11","item_name":"Coffee","sku":"P1012","quantity":1,"line_total":2.5}]"""
+                    """[{"id":"11","item_name":"Coffee","sku":"P1012","quantity":1,""" +
+                        """"unit_price":"2.50","line_total":"2.50"}]"""
                 )
             )
         )
         try {
             render(card, "kiosk_customer") { _, _ -> }
             composeRule.onNodeWithText("Croissant").assertExists()
-            composeRule.onNodeWithText("SKU P1024 • $2.75 • stock 25").assertExists()
+            composeRule.onNodeWithText("P1024 · $2.75 · 25 in stock").assertExists()
             composeRule.onNodeWithText("Coffee").assertExists()
-            composeRule.onNodeWithText("SKU P1012 • qty 1 • $2.5").assertExists()
+            composeRule.onNodeWithText("1 × $2.50").assertExists()
+            composeRule.onNodeWithText("Line $2.50").assertExists()
         } finally {
             EngineStateBridge.clear()
         }
@@ -244,7 +295,7 @@ class DemoCardRenderTest {
     }
 
     @Test
-    fun kioskTransferComposesTransferJsonFromLiveVariables() {
+    fun kioskTransferBuildsTheQrSetFromThePersistedOrder() {
         val raw = javaClass.classLoader!!
             .getResourceAsStream("demo/apex-kiosk/tools/kiosk_transfer.json")!!
             .bufferedReader()
@@ -252,27 +303,40 @@ class DemoCardRenderTest {
         val card = Json.parseToJsonElement(raw).jsonObject
         EngineStateBridge.pushBatch(
             mapOf(
-                "user.kiosk_direction" to DivVariableValue.Str("CUSTOMER_REQUEST"),
                 "user.kiosk_order_id" to DivVariableValue.Str("9"),
-                "user.kiosk_status" to DivVariableValue.Str("DRAFT"),
-                "user.kiosk_total" to DivVariableValue.Str("2.75"),
-                "user.kiosk_item_count" to DivVariableValue.Str("1"),
-                "user.kiosk_lines_json" to DivVariableValue.Str(
-                    """[{"sku":"P1024","quantity":1,"line_total":2.75}]"""
-                )
+                "user.kiosk_payload_json" to DivVariableValue.Str("""{"schema":"apex.kiosk.transfer/1","total":"2.75"}""")
             )
         )
+        val urls = mutableListOf<String>()
+        val payloads = mutableListOf<String?>()
         try {
-            render(card, "kiosk_transfer") { _, _ -> }
-            composeRule.onNodeWithTag("div_btn_create_qr_set").performClick()
+            render(card, "kiosk_transfer") { url, payload ->
+                urls.add(url)
+                payloads.add(payload)
+            }
+            composeRule.onNodeWithTag("div_btn_kiosk_build_qr_set").performScrollTo().performClick()
             composeRule.waitForIdle()
 
-            val composed = (EngineStateBridge.state.value["user.qr_json"] as DivVariableValue.Str).value
-            val parsed = Json.parseToJsonElement(composed).jsonObject
-            assertEquals("CUSTOMER_REQUEST", parsed["direction"]?.jsonPrimitive?.contentOrNull)
-            assertEquals("9", parsed["order_id"]?.jsonPrimitive?.contentOrNull)
-            assertEquals(2.75, parsed["total"]?.jsonPrimitive?.contentOrNull?.toDouble())
-            assertEquals(1, parsed["lines"]?.let { it as JsonArray }?.size)
+            // The card must load the persisted draft, export it, chunk it, then render chunk 0.
+            val order = listOf(
+                "local-db://op/kiosk.load",
+                "local-db://op/kiosk.export",
+                "tools://codec/json/chunk",
+                "tools://code-generate/generate"
+            )
+            assertEquals(order, urls)
+
+            val chunkPayload = Json.parseToJsonElement(payloads[2]!!).jsonObject
+            assertEquals(
+                """{"schema":"apex.kiosk.transfer/1","total":"2.75"}""",
+                chunkPayload["json"]?.jsonPrimitive?.contentOrNull
+            )
+            val qrPayload = Json.parseToJsonElement(payloads[3]!!).jsonObject
+            assertEquals("QR_CODE", qrPayload["format"]?.jsonPrimitive?.contentOrNull)
+            assertEquals(
+                "user.qr_img_current",
+                qrPayload["output"]?.jsonObject?.get("uri")?.jsonPrimitive?.contentOrNull
+            )
         } finally {
             EngineStateBridge.clear()
         }
@@ -288,18 +352,61 @@ class DemoCardRenderTest {
         val chunk = "C1|abcd1234|00|01|deadbeef1234|BB8"
         EngineStateBridge.pushBatch(
             mapOf(
-                "user.scanned_code" to DivVariableValue.Str(chunk),
+                "user.qr_chunks" to DivVariableValue.ArrayVal(listOf(DivVariableValue.Str(chunk))),
+                "user.qr_index" to DivVariableValue.IntVal(0L),
                 "user.scanned_chunks" to DivVariableValue.ArrayVal(emptyList())
             )
         )
         try {
             render(card, "kiosk_transfer_scan") { _, _ -> }
-            composeRule.onNodeWithTag("div_btn_scan_next_qr").performClick()
+            composeRule.onNodeWithTag("div_btn_kiosk_scan_current").performScrollTo().performClick()
             composeRule.waitForIdle()
 
             assertEquals(
                 DivVariableValue.ArrayVal(listOf(DivVariableValue.Str(chunk))),
                 EngineStateBridge.state.value["user.scanned_chunks"]
+            )
+        } finally {
+            EngineStateBridge.clear()
+        }
+    }
+
+    @Test
+    fun kioskAssembleClearsStaleResultSoAFailedTransferCannotReadAsMatch() {
+        val card = Json.parseToJsonElement(
+            javaClass.classLoader!!
+                .getResourceAsStream("demo/apex-kiosk/tools/kiosk_transfer.json")!!
+                .bufferedReader()
+                .use { it.readText() }
+        ).jsonObject
+        // A previous successful assemble left MATCH plus a reconstructed payload behind.
+        EngineStateBridge.pushBatch(
+            mapOf(
+                "user.scanned_chunks" to DivVariableValue.ArrayVal(
+                    listOf(DivVariableValue.Str("C1|corrupt|00|01|deadbeef|!!!"))
+                ),
+                "user.receipt_checksum_ok" to DivVariableValue.Bool(true),
+                "user.receipt_json" to DivVariableValue.Str("""{"schema":"apex.kiosk.transfer/1"}"""),
+                "user.receipt_status" to DivVariableValue.Str("COMPLETE")
+            )
+        )
+        val payloads = mutableListOf<String?>()
+        try {
+            render(card, "kiosk_transfer_assemble") { _, payload -> payloads.add(payload) }
+            composeRule.onNodeWithTag("div_btn_kiosk_assemble_scanned").performScrollTo().performClick()
+            composeRule.waitForIdle()
+
+            val state = EngineStateBridge.state.value
+            assertEquals(DivVariableValue.Bool(false), state["user.receipt_checksum_ok"])
+            assertEquals(DivVariableValue.Str(""), state["user.receipt_json"])
+
+            // The failure reason must reach the card, otherwise a failed assemble shows no cause.
+            val assemble = Json.parseToJsonElement(
+                payloads.first { it?.contains("chunks") == true }!!
+            ).jsonObject
+            assertEquals(
+                "user.receipt_error",
+                assemble["output"]?.jsonObject?.get("error")?.jsonPrimitive?.contentOrNull
             )
         } finally {
             EngineStateBridge.clear()
@@ -320,7 +427,7 @@ class DemoCardRenderTest {
         val payloads = mutableListOf<String?>()
         try {
             render(card, "kiosk_transfer_assemble") { _, payload -> payloads.add(payload) }
-            composeRule.onNodeWithTag("div_btn_assemble_scanned").performClick()
+            composeRule.onNodeWithTag("div_btn_kiosk_assemble_scanned").performScrollTo().performClick()
             composeRule.waitForIdle()
 
             val assemblePayload = payloads.firstOrNull { it?.contains("chunks") == true }
@@ -373,6 +480,61 @@ class DemoCardRenderTest {
         } finally {
             EngineStateBridge.clear()
         }
+    }
+
+    @Test
+    fun visibilityGoneRemovesTheNodeFromTheLayout() {
+        // Regression: the renderer ignored `visibility`, so a card could not hide an empty QR
+        // preview or retire the submit/quantity controls of an already-submitted order.
+        val card = Json.parseToJsonElement(
+            """
+            {
+              "type": "container",
+              "items": [
+                { "type": "text", "text": "Always visible" },
+                { "type": "text", "text": "Statically hidden", "visibility": "gone" },
+                {
+                  "type": "text",
+                  "text": "Conditionally hidden",
+                  "visibility": "@{if(user.hide_flag == 'yes', 'gone', 'visible')}"
+                }
+              ]
+            }
+            """.trimIndent()
+        ).jsonObject
+        EngineStateBridge.pushBatch(mapOf("user.hide_flag" to DivVariableValue.Str("yes")))
+        try {
+            render(card, "visibility_probe") { _, _ -> }
+            composeRule.onNodeWithText("Always visible").assertExists()
+            composeRule.onNodeWithText("Statically hidden").assertDoesNotExist()
+            composeRule.onNodeWithText("Conditionally hidden").assertDoesNotExist()
+        } finally {
+            EngineStateBridge.clear()
+        }
+    }
+
+    @Test
+    fun imageNodeKeepsContentDescriptionAsAccessibilityLabelOnly() {
+        // Regression: the renderer painted content_description as a caption across the bottom
+        // of the bitmap, which covered the kiosk receipt QR code.
+        val card = Json.parseToJsonElement(
+            """
+            {
+              "type": "container",
+              "items": [
+                {
+                  "type": "image",
+                  "image_url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+                  "height": { "type": "fixed", "value": 120 },
+                  "content_description": "Receipt QR code"
+                }
+              ]
+            }
+            """.trimIndent()
+        ).jsonObject
+        render(card, "image_description") { _, _ -> }
+        composeRule.onNodeWithContentDescription("Receipt QR code").assertExists()
+        composeRule.onNodeWithText("Receipt QR code").assertDoesNotExist()
     }
 
     @Test

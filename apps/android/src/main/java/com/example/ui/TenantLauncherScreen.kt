@@ -280,8 +280,9 @@ private fun ConnectedTenantGridCard(
         border = BorderStroke(1.dp, colorScheme.outline.copy(alpha = 0.5f)),
         modifier = Modifier
             .fillMaxWidth()
-            // Square card: the icon claims the top third, the copy sits at the bottom.
-            .aspectRatio(1f)
+            // Slightly taller than square: the copy zone must fit the title, subtitle,
+            // schema badge and the tools pill without the pill being clipped.
+            .aspectRatio(0.82f)
             .clip(RoundedCornerShape(24.dp))
             .combinedClickable(
                 onClick = onClick,
@@ -338,14 +339,15 @@ private fun ConnectedTenantGridCard(
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = colorScheme.onSurface,
-                        maxLines = 1,
+                        maxLines = 2,
+                        minLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
 
                     Spacer(Modifier.height(2.dp))
 
                     Text(
-                        text = if (spec.isBuiltInDemo) "⚡ DivKit SDUI Showcase"
+                        text = if (spec.isBuiltInDemo) spec.subtitle.ifBlank { "⚡ DivKit SDUI Showcase" }
                         else "🌍 ${spec.tunnelUrl.removePrefix("https://").removePrefix("http://")}",
                         fontSize = 12.sp,
                         fontWeight = if (spec.isBuiltInDemo) FontWeight.SemiBold else FontWeight.Normal,
@@ -354,7 +356,7 @@ private fun ConnectedTenantGridCard(
                         overflow = TextOverflow.Ellipsis
                     )
 
-                    Spacer(Modifier.height(4.dp))
+                    Spacer(Modifier.height(2.dp))
 
                     Text(
                         text = cachedBadge,
@@ -366,7 +368,7 @@ private fun ConnectedTenantGridCard(
                         overflow = TextOverflow.Ellipsis
                     )
 
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(6.dp))
 
                     ToolsStatusPill(activeTools = activeTools)
                 }

@@ -84,10 +84,24 @@ object ResultBinder {
                     }
                 }
             }
-            is ToolResult.Unsupported -> resultVar?.let { ctx.variables(it, "unsupported") }
-            is ToolResult.PermissionDenied -> resultVar?.let { ctx.variables(it, "denied") }
-            is ToolResult.Failed -> resultVar?.let { ctx.variables(it, "failed") }
+            is ToolResult.Unsupported -> {
+                resultVar?.let { ctx.variables(it, "unsupported") }
+                publishReason(resultVar, r.reason, ctx)
+            }
+            is ToolResult.PermissionDenied -> {
+                resultVar?.let { ctx.variables(it, "denied") }
+                publishReason(resultVar, r.permission, ctx)
+            }
+            is ToolResult.Failed -> {
+                resultVar?.let { ctx.variables(it, "failed") }
+                publishReason(resultVar, r.message, ctx)
+            }
         }
+    }
+
+    /** A bare status leaves the operator nothing to act on, so the reason goes next to it. */
+    private fun publishReason(resultVar: String?, reason: String, ctx: ToolContext) {
+        resultVar?.let { ctx.variables("${it}_error", reason) }
     }
 }
 

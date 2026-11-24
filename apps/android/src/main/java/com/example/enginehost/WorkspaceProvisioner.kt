@@ -98,7 +98,7 @@ object WorkspaceProvisioner {
             tenantId = "acme_pos",
             displayName = "Apex POS Terminal",
             terminalCode = "POS-TERM-01",
-            subtitle = "DivKit SDUI Showcase • Full Native Tool Suite",
+            subtitle = "DivKit SDUI showcase",
             accentHex = "#0284C7",
             mode = EngineConfig.Mode.HYBRID,
             capabilities = setOf("scanner", "printer", "nfc", "cash_drawer", "haptics", "beeper"),
@@ -133,7 +133,7 @@ object WorkspaceProvisioner {
             tenantId = "apex_kiosk",
             displayName = "APEX KIOSK",
             terminalCode = "KSK-001",
-            subtitle = "Customer & owner receipt workflows • QR / LAN",
+            subtitle = "Orders, receipts, QR & LAN",
             accentHex = "#7C3AED",
             mode = EngineConfig.Mode.HYBRID,
             capabilities = setOf("scanner", "printer", "haptics", "beeper", "clipboard"),
@@ -246,6 +246,9 @@ object WorkspaceProvisioner {
                             put("item_name", prod.name)
                             put("sku", prod.sku)
                             put("price", prod.price)
+                            // Cards cannot format numbers, so the 2-decimal money string
+                            // travels with the record alongside the numeric price.
+                            put("price_display", String.format(java.util.Locale.US, "%.2f", prod.price))
                             put("stock", prod.stock)
                             put("category", prod.category)
                         }

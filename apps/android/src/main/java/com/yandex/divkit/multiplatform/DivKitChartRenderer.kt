@@ -110,18 +110,22 @@ fun RenderDivChartBlock(
                             fontWeight = FontWeight.Bold,
                             color = colorScheme.onSurface,
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false)
                         )
                         Surface(
                             color = colorScheme.primary.copy(alpha = 0.14f),
                             shape = RoundedCornerShape(6.dp)
                         ) {
+                            // A two-word badge wrapped to "KMP / Chart" beside a long title.
                             Text(
-                                text = "KMP Chart",
+                                text = "KMP",
                                 fontSize = 9.sp,
                                 fontFamily = FontFamily.Monospace,
                                 fontWeight = FontWeight.Bold,
                                 color = colorScheme.primary,
+                                maxLines = 1,
+                                softWrap = false,
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                             )
                         }
@@ -130,7 +134,7 @@ fun RenderDivChartBlock(
                         text = spec.subtitle,
                         fontSize = 11.sp,
                         color = colorScheme.onSurfaceVariant,
-                        maxLines = 1,
+                        maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
                 }

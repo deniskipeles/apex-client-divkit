@@ -1,438 +1,898 @@
 {
   "type": "container",
   "orientation": "vertical",
-  "item_spacing": 10,
-  "paddings": {
-    "left": 12,
-    "right": 12,
-    "top": 12,
-    "bottom": 12
-  },
+  "item_spacing": 12,
   "items": [
     {
-      "type": "text",
-      "text": "OWNER RECEIPT",
-      "font_size": 18,
-      "text_color": "#C4B5FD",
-      "font_weight": "bold"
-    },
-    {
-      "type": "text",
-      "text": "Order @{user.kiosk_order_id} • @{user.kiosk_status} • $@{user.kiosk_total} • @{user.kiosk_item_count} items",
-      "font_size": 11,
-      "text_color": "#94A3B8",
-      "font_family": "monospace"
-    },
-    {
-      "type": "text",
-      "text": "Direction: @{user.kiosk_direction}",
-      "font_size": 10,
-      "text_color": "#64748B",
-      "font_family": "monospace"
-    },
-    {
-      "type": "text",
-      "text": "Owner selects items and shares only the receipt to the customer.",
-      "font_size": 11,
-      "text_color": "#94A3B8"
+      "type": "container",
+      "orientation": "vertical",
+      "item_spacing": 10,
+      "items": [
+        {
+          "type": "container",
+          "orientation": "horizontal",
+          "item_spacing": 10,
+          "items": [
+            {
+              "type": "container",
+              "orientation": "vertical",
+              "item_spacing": 3,
+              "items": [
+                {
+                  "type": "text",
+                  "text": "Owner receipt",
+                  "font_size": 22,
+                  "text_color": "#F8FAFC",
+                  "font_weight": "bold"
+                },
+                {
+                  "type": "text",
+                  "text": "Build the receipt, then show its QR to the customer",
+                  "font_size": 12,
+                  "text_color": "#94A3B8"
+                }
+              ],
+              "weight": 1
+            },
+            {
+              "type": "text",
+              "text": "@{user.kiosk_status}",
+              "font_size": 11,
+              "text_color": "#F8FAFC",
+              "font_weight": "bold",
+              "background_color": "#0F172A",
+              "corner_radius": 20,
+              "paddings": {
+                "left": 10,
+                "right": 10,
+                "top": 5,
+                "bottom": 5
+              }
+            }
+          ]
+        },
+        {
+          "type": "container",
+          "orientation": "horizontal",
+          "item_spacing": 6,
+          "items": [
+            {
+              "type": "text",
+              "text": "Order",
+              "font_size": 12,
+              "text_color": "#64748B"
+            },
+            {
+              "type": "text",
+              "text": "@{user.kiosk_order_label}",
+              "font_size": 15,
+              "text_color": "#F8FAFC",
+              "font_weight": "bold",
+              "font_family": "monospace"
+            },
+            {
+              "type": "text",
+              "text": "·",
+              "font_size": 12,
+              "text_color": "#64748B"
+            },
+            {
+              "type": "text",
+              "text": "@{user.kiosk_item_count} items",
+              "font_size": 12,
+              "text_color": "#94A3B8"
+            }
+          ]
+        }
+      ]
     },
     {
       "type": "container",
       "orientation": "horizontal",
-      "item_spacing": 8,
+      "item_spacing": 10,
       "items": [
         {
           "type": "button",
-          "text": "New Owner Receipt",
-          "background_color": "#0891B2",
-          "text_color": "#ECFEFF",
-          "corner_radius": 10,
-          "font_size": 12,
+          "text": "New receipt",
+          "background_color": "#7C3AED",
+          "text_color": "#FFFFFF",
+          "corner_radius": 12,
+          "font_size": 14,
           "font_weight": "bold",
           "actions": [
             {
               "type": "set_variable",
-              "variable_name": "user.kiosk_direction",
+              "variable_name": "user.kiosk_notice",
               "value": {
                 "type": "string",
-                "value": "OWNER_RECEIPT"
+                "value": "Started a new owner receipt"
               }
             },
             {
-              "log_id": "new_order",
-              "url": "local-db://op/db.insert",
+              "url": "local-db://op/kiosk.create",
               "payload": {
-                "table": "kiosk_orders",
-                "values": {
-                  "direction": "@{user.kiosk_direction}",
-                  "status": "DRAFT",
-                  "subtotal": 0,
-                  "total": 0,
-                  "item_count": 0,
-                  "lines_json": "[]",
-                  "terminal_id": "${terminalCode}",
-                  "created_at": "@{formatDateAsLocal(nowLocal(), 'yyyy-MM-dd HH:mm:ss')}",
-                  "updated_at": "@{formatDateAsLocal(nowLocal(), 'yyyy-MM-dd HH:mm:ss')}"
-                },
+                "direction": "OWNER_RECEIPT",
+                "terminal_id": "${terminalCode}",
                 "output": {
-                  "id": "user.kiosk_order_id"
-                }
-              }
-            },
-            {
-              "log_id": "query_order",
-              "url": "local-db://op/db.query_one",
-              "payload": {
-                "table": "kiosk_orders",
-                "where": [
-                  {
-                    "field": "id",
-                    "op": "=",
-                    "value": "@{user.kiosk_order_id}"
-                  }
-                ],
-                "output": {
-                  "total": "user.kiosk_total",
-                  "item_count": "user.kiosk_item_count",
+                  "order_id": "user.kiosk_order_id",
+                  "order_label": "user.kiosk_order_label",
                   "status": "user.kiosk_status",
-                  "direction": "user.kiosk_direction"
+                  "direction": "user.kiosk_direction",
+                  "total_display": "user.kiosk_total",
+                  "subtotal_display": "user.kiosk_subtotal",
+                  "item_count": "user.kiosk_item_count",
+                  "line_count": "user.kiosk_line_count",
+                  "lines_json": "user.kiosk_lines_json",
+                  "payload_json": "user.kiosk_payload_json",
+                  "checksum": "user.kiosk_checksum"
                 }
-              }
+              },
+              "log_id": "kiosk_new_receipt"
             },
             {
-              "log_id": "query_lines",
-              "url": "local-db://op/db.query",
+              "url": "local-db://op/kiosk.list",
               "payload": {
-                "table": "kiosk_order_lines",
-                "where": {
-                  "order_id": "@{user.kiosk_order_id}"
-                },
-                "order_by": "id",
-                "limit": 100,
-                "json_list_var": "user.kiosk_lines_json",
+                "direction": "CUSTOMER_REQUEST",
+                "status": "SUBMITTED",
+                "limit": 5,
                 "output": {
-                  "_json": "user.kiosk_lines_json"
+                  "orders_json": "user.kiosk_orders_json",
+                  "order_count": "user.kiosk_order_count"
                 }
-              }
+              },
+              "log_id": "kiosk_list_orders"
             }
           ],
           "icon": "add",
-          "weight": 1
+          "weight": 1,
+          "id": "kiosk_new_receipt"
         },
         {
           "type": "button",
-          "text": "Refresh Catalog",
-          "background_color": "#1E293B",
-          "text_color": "#CBD5E1",
-          "corner_radius": 10,
-          "font_size": 12,
+          "text": "Reopen",
+          "background_color": "#334155",
+          "text_color": "#F8FAFC",
+          "corner_radius": 12,
+          "font_size": 14,
           "font_weight": "bold",
           "actions": [
             {
-              "log_id": "query_catalog",
-              "url": "local-db://op/db.query",
-              "payload": {
-                "table": "inventory",
-                "order_by": "id",
-                "limit": 50,
-                "json_list_var": "user.catalog_json",
-                "output": {
-                  "_json": "user.catalog_json"
-                }
+              "type": "set_variable",
+              "variable_name": "user.kiosk_notice",
+              "value": {
+                "type": "string",
+                "value": "Reloaded the latest receipt from SQLite"
               }
             },
             {
-              "log_id": "count_catalog",
-              "url": "local-db://op/db.count",
+              "url": "local-db://op/kiosk.load",
               "payload": {
-                "table": "inventory",
+                "direction": "OWNER_RECEIPT",
                 "output": {
-                  "count": "user.catalog_count"
+                  "order_id": "user.kiosk_order_id",
+                  "order_label": "user.kiosk_order_label",
+                  "status": "user.kiosk_status",
+                  "direction": "user.kiosk_direction",
+                  "total_display": "user.kiosk_total",
+                  "subtotal_display": "user.kiosk_subtotal",
+                  "item_count": "user.kiosk_item_count",
+                  "line_count": "user.kiosk_line_count",
+                  "lines_json": "user.kiosk_lines_json",
+                  "payload_json": "user.kiosk_payload_json",
+                  "checksum": "user.kiosk_checksum"
                 }
-              }
+              },
+              "log_id": "kiosk_reload_receipt"
+            },
+            {
+              "url": "local-db://op/kiosk.list",
+              "payload": {
+                "direction": "CUSTOMER_REQUEST",
+                "status": "SUBMITTED",
+                "limit": 5,
+                "output": {
+                  "orders_json": "user.kiosk_orders_json",
+                  "order_count": "user.kiosk_order_count"
+                }
+              },
+              "log_id": "kiosk_list_orders"
             }
           ],
           "icon": "refresh",
-          "weight": 1
+          "weight": 1,
+          "id": "kiosk_reload_receipt"
+        }
+      ]
+    },
+    {
+      "type": "container",
+      "orientation": "vertical",
+      "item_spacing": 2,
+      "items": [
+        {
+          "type": "text",
+          "text": "ADD ITEMS",
+          "font_size": 11,
+          "text_color": "#94A3B8",
+          "font_weight": "bold"
+        },
+        {
+          "type": "text",
+          "text": "Same live catalog as the customer order",
+          "font_size": 11,
+          "text_color": "#64748B"
+        }
+      ],
+      "visibility": "@{if(user.kiosk_status == 'SUBMITTED', 'gone', 'visible')}"
+    },
+    {
+      "type": "json_list",
+      "data_var": "user.catalog_json",
+      "empty_text": "Catalog is empty — no inventory rows found.",
+      "row_card": {
+        "type": "container",
+        "orientation": "vertical",
+        "item_spacing": 4,
+        "items": [
+          {
+            "type": "container",
+            "orientation": "horizontal",
+            "item_spacing": 10,
+            "items": [
+              {
+                "type": "container",
+                "orientation": "vertical",
+                "item_spacing": 2,
+                "items": [
+                  {
+                    "type": "text",
+                    "text": "@{item.item_name}",
+                    "font_size": 15,
+                    "text_color": "#F8FAFC",
+                    "font_weight": "bold"
+                  },
+                  {
+                    "type": "text",
+                    "text": "@{item.sku} · $@{if(item.price_display == '', item.price, item.price_display)} · @{item.stock} in stock",
+                    "font_size": 10,
+                    "text_color": "#94A3B8",
+                    "font_family": "monospace",
+                    "max_lines": 1
+                  }
+                ],
+                "weight": 1
+              },
+              {
+                "type": "button",
+                "text": "Add",
+                "background_color": "#047857",
+                "text_color": "#D1FAE5",
+                "corner_radius": 12,
+                "font_size": 13,
+                "font_weight": "bold",
+                "actions": [
+                  {
+                    "url": "local-db://op/kiosk.add_line",
+                    "payload": {
+                      "order_id": "@{user.kiosk_order_id}",
+                      "sku": "@{item.sku}",
+                      "item_name": "@{item.item_name}",
+                      "unit_price": "@{item.price}",
+                      "quantity": 1,
+                      "output": {
+                        "order_id": "user.kiosk_order_id",
+                        "order_label": "user.kiosk_order_label",
+                        "status": "user.kiosk_status",
+                        "direction": "user.kiosk_direction",
+                        "total_display": "user.kiosk_total",
+                        "subtotal_display": "user.kiosk_subtotal",
+                        "item_count": "user.kiosk_item_count",
+                        "line_count": "user.kiosk_line_count",
+                        "lines_json": "user.kiosk_lines_json",
+                        "payload_json": "user.kiosk_payload_json",
+                        "checksum": "user.kiosk_checksum"
+                      }
+                    },
+                    "log_id": "kiosk_receipt_add"
+                  }
+                ],
+                "icon": "add"
+              }
+            ]
+          }
+        ],
+        "background_color": "#0F172A",
+        "corner_radius": 12,
+        "paddings": {
+          "left": 14,
+          "right": 12,
+          "top": 12,
+          "bottom": 12
+        }
+      },
+      "visibility": "@{if(user.kiosk_status == 'SUBMITTED', 'gone', 'visible')}"
+    },
+    {
+      "type": "container",
+      "orientation": "vertical",
+      "item_spacing": 2,
+      "items": [
+        {
+          "type": "text",
+          "text": "RECEIPT LINES",
+          "font_size": 11,
+          "text_color": "#94A3B8",
+          "font_weight": "bold"
+        },
+        {
+          "type": "text",
+          "text": "Remove a line to correct the receipt",
+          "font_size": 11,
+          "text_color": "#64748B"
+        }
+      ]
+    },
+    {
+      "type": "json_list",
+      "data_var": "user.kiosk_lines_json",
+      "empty_text": "Receipt is empty — add at least one item.",
+      "row_card": {
+        "type": "container",
+        "orientation": "vertical",
+        "item_spacing": 6,
+        "items": [
+          {
+            "type": "container",
+            "orientation": "horizontal",
+            "item_spacing": 8,
+            "items": [
+              {
+                "type": "text",
+                "text": "@{item.item_name}",
+                "font_size": 14,
+                "text_color": "#F8FAFC",
+                "font_weight": "bold",
+                "weight": 1
+              },
+              {
+                "type": "button",
+                "text": "Remove",
+                "background_color": "#3F1D24",
+                "text_color": "#FCA5A5",
+                "corner_radius": 12,
+                "font_size": 12,
+                "font_weight": "bold",
+                "actions": [
+                  {
+                    "type": "set_variable",
+                    "variable_name": "user.kiosk_notice",
+                    "value": {
+                      "type": "string",
+                      "value": "Removed @{item.item_name} — tap Undo last remove to restore"
+                    }
+                  },
+                  {
+                    "url": "local-db://op/kiosk.remove_line",
+                    "payload": {
+                      "order_id": "@{user.kiosk_order_id}",
+                      "line_id": "@{item.id}",
+                      "output": {
+                        "order_id": "user.kiosk_order_id",
+                        "order_label": "user.kiosk_order_label",
+                        "status": "user.kiosk_status",
+                        "direction": "user.kiosk_direction",
+                        "total_display": "user.kiosk_total",
+                        "subtotal_display": "user.kiosk_subtotal",
+                        "item_count": "user.kiosk_item_count",
+                        "line_count": "user.kiosk_line_count",
+                        "lines_json": "user.kiosk_lines_json",
+                        "payload_json": "user.kiosk_payload_json",
+                        "checksum": "user.kiosk_checksum",
+                        "removed_sku": "user.kiosk_undo_sku",
+                        "removed_name": "user.kiosk_undo_label",
+                        "removed_quantity": "user.kiosk_undo_qty",
+                        "removed_unit_price_display": "user.kiosk_undo_price"
+                      }
+                    },
+                    "log_id": "kiosk_receipt_remove"
+                  }
+                ],
+                "visibility": "@{if(user.kiosk_status == 'SUBMITTED', 'gone', 'visible')}"
+              }
+            ]
+          },
+          {
+            "type": "container",
+            "orientation": "horizontal",
+            "item_spacing": 8,
+            "items": [
+              {
+                "type": "text",
+                "text": "@{item.quantity} × $@{item.unit_price}",
+                "font_size": 12,
+                "text_color": "#94A3B8",
+                "font_family": "monospace",
+                "weight": 1
+              },
+              {
+                "type": "text",
+                "text": "Line $@{item.line_total}",
+                "font_size": 13,
+                "text_color": "#38BDF8",
+                "font_weight": "bold",
+                "font_family": "monospace"
+              }
+            ]
+          }
+        ],
+        "background_color": "#0F172A",
+        "corner_radius": 12,
+        "paddings": {
+          "left": 14,
+          "right": 12,
+          "top": 12,
+          "bottom": 12
+        }
+      }
+    },
+    {
+      "type": "button",
+      "text": "Undo last remove",
+      "background_color": "#334155",
+      "text_color": "#F8FAFC",
+      "corner_radius": 12,
+      "font_size": 13,
+      "font_weight": "bold",
+      "actions": [
+        {
+          "type": "set_variable",
+          "variable_name": "user.kiosk_notice",
+          "value": {
+            "type": "string",
+            "value": "Restored @{user.kiosk_undo_label}"
+          }
+        },
+        {
+          "url": "local-db://op/kiosk.add_line",
+          "payload": {
+            "order_id": "@{user.kiosk_order_id}",
+            "sku": "@{user.kiosk_undo_sku}",
+            "item_name": "@{user.kiosk_undo_label}",
+            "unit_price": "@{user.kiosk_undo_price}",
+            "quantity": "@{user.kiosk_undo_qty}",
+            "output": {
+              "order_id": "user.kiosk_order_id",
+              "order_label": "user.kiosk_order_label",
+              "status": "user.kiosk_status",
+              "direction": "user.kiosk_direction",
+              "total_display": "user.kiosk_total",
+              "subtotal_display": "user.kiosk_subtotal",
+              "item_count": "user.kiosk_item_count",
+              "line_count": "user.kiosk_line_count",
+              "lines_json": "user.kiosk_lines_json",
+              "payload_json": "user.kiosk_payload_json",
+              "checksum": "user.kiosk_checksum"
+            }
+          },
+          "log_id": "kiosk_receipt_undo"
+        }
+      ],
+      "icon": "undo",
+      "visibility": "@{if(user.kiosk_status == 'SUBMITTED', 'gone', 'visible')}"
+    },
+    {
+      "type": "container",
+      "orientation": "vertical",
+      "item_spacing": 8,
+      "items": [
+        {
+          "type": "container",
+          "orientation": "horizontal",
+          "item_spacing": 6,
+          "items": [
+            {
+              "type": "text",
+              "text": "Items",
+              "font_size": 13,
+              "text_color": "#94A3B8",
+              "weight": 1
+            },
+            {
+              "type": "text",
+              "text": "@{user.kiosk_item_count}",
+              "font_size": 13,
+              "text_color": "#F8FAFC",
+              "font_weight": "bold"
+            }
+          ]
+        },
+        {
+          "type": "container",
+          "orientation": "horizontal",
+          "item_spacing": 6,
+          "items": [
+            {
+              "type": "text",
+              "text": "Subtotal",
+              "font_size": 13,
+              "text_color": "#94A3B8",
+              "weight": 1
+            },
+            {
+              "type": "text",
+              "text": "$@{user.kiosk_subtotal}",
+              "font_size": 13,
+              "text_color": "#F8FAFC",
+              "font_weight": "bold"
+            }
+          ]
+        },
+        {
+          "type": "separator"
+        },
+        {
+          "type": "container",
+          "orientation": "horizontal",
+          "item_spacing": 8,
+          "items": [
+            {
+              "type": "text",
+              "text": "Total",
+              "font_size": 17,
+              "text_color": "#F8FAFC",
+              "font_weight": "bold",
+              "weight": 1
+            },
+            {
+              "type": "text",
+              "text": "$@{user.kiosk_total}",
+              "font_size": 26,
+              "text_color": "#F8FAFC",
+              "font_weight": "bold"
+            }
+          ]
+        }
+      ],
+      "background_color": "#0F172A",
+      "corner_radius": 14,
+      "paddings": {
+        "left": 14,
+        "right": 14,
+        "top": 12,
+        "bottom": 12
+      }
+    },
+    {
+      "type": "container",
+      "orientation": "vertical",
+      "item_spacing": 2,
+      "items": [
+        {
+          "type": "text",
+          "text": "SUBMITTED CUSTOMER ORDERS",
+          "font_size": 11,
+          "text_color": "#94A3B8",
+          "font_weight": "bold"
+        },
+        {
+          "type": "text",
+          "text": "@{if(user.kiosk_order_count == 0, 'Tap Reopen to load orders from SQLite', user.kiosk_order_count + ' submitted order(s) — tap Review to load one')}",
+          "font_size": 11,
+          "text_color": "#64748B"
+        }
+      ]
+    },
+    {
+      "type": "json_list",
+      "data_var": "user.kiosk_orders_json",
+      "empty_text": "No submitted customer orders loaded yet — tap Reopen.",
+      "row_card": {
+        "type": "container",
+        "orientation": "vertical",
+        "item_spacing": 6,
+        "items": [
+          {
+            "type": "container",
+            "orientation": "horizontal",
+            "item_spacing": 8,
+            "items": [
+              {
+                "type": "text",
+                "text": "@{item.order_label}",
+                "font_size": 14,
+                "text_color": "#F8FAFC",
+                "font_weight": "bold",
+                "font_family": "monospace",
+                "weight": 1
+              },
+              {
+                "type": "text",
+                "text": "$@{item.total_display}",
+                "font_size": 14,
+                "text_color": "#38BDF8",
+                "font_weight": "bold",
+                "font_family": "monospace"
+              }
+            ]
+          },
+          {
+            "type": "container",
+            "orientation": "horizontal",
+            "item_spacing": 8,
+            "items": [
+              {
+                "type": "text",
+                "text": "@{item.item_count} items · @{item.status}",
+                "font_size": 11,
+                "text_color": "#94A3B8",
+                "weight": 1
+              },
+              {
+                "type": "button",
+                "text": "Review",
+                "background_color": "#334155",
+                "text_color": "#F8FAFC",
+                "corner_radius": 12,
+                "font_size": 12,
+                "font_weight": "bold",
+                "actions": [
+                  {
+                    "type": "set_variable",
+                    "variable_name": "user.kiosk_notice",
+                    "value": {
+                      "type": "string",
+                      "value": "Reviewing customer order @{item.order_label}"
+                    }
+                  },
+                  {
+                    "url": "local-db://op/kiosk.load",
+                    "payload": {
+                      "order_id": "@{item.id}",
+                      "output": {
+                        "order_id": "user.kiosk_order_id",
+                        "order_label": "user.kiosk_order_label",
+                        "status": "user.kiosk_status",
+                        "direction": "user.kiosk_direction",
+                        "total_display": "user.kiosk_total",
+                        "subtotal_display": "user.kiosk_subtotal",
+                        "item_count": "user.kiosk_item_count",
+                        "line_count": "user.kiosk_line_count",
+                        "lines_json": "user.kiosk_lines_json",
+                        "payload_json": "user.kiosk_payload_json",
+                        "checksum": "user.kiosk_checksum"
+                      }
+                    },
+                    "log_id": "kiosk_review_order"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "background_color": "#0F172A",
+        "corner_radius": 12,
+        "paddings": {
+          "left": 14,
+          "right": 12,
+          "top": 12,
+          "bottom": 12
+        }
+      }
+    },
+    {
+      "type": "button",
+      "text": "Close receipt",
+      "background_color": "#38BDF8",
+      "text_color": "#FFFFFF",
+      "corner_radius": 12,
+      "font_size": 16,
+      "font_weight": "bold",
+      "actions": [
+        {
+          "type": "set_variable",
+          "variable_name": "user.kiosk_notice",
+          "value": {
+            "type": "string",
+            "value": "Receipt closed and saved"
+          }
+        },
+        {
+          "url": "local-db://op/kiosk.submit",
+          "payload": {
+            "order_id": "@{user.kiosk_order_id}",
+            "output": {
+              "order_id": "user.kiosk_order_id",
+              "order_label": "user.kiosk_order_label",
+              "status": "user.kiosk_status",
+              "direction": "user.kiosk_direction",
+              "total_display": "user.kiosk_total",
+              "subtotal_display": "user.kiosk_subtotal",
+              "item_count": "user.kiosk_item_count",
+              "line_count": "user.kiosk_line_count",
+              "lines_json": "user.kiosk_lines_json",
+              "payload_json": "user.kiosk_payload_json",
+              "checksum": "user.kiosk_checksum"
+            }
+          },
+          "log_id": "kiosk_close_receipt"
+        }
+      ],
+      "icon": "check",
+      "visibility": "@{if(user.kiosk_status == 'SUBMITTED', 'gone', 'visible')}",
+      "id": "kiosk_close_receipt"
+    },
+    {
+      "type": "container",
+      "orientation": "vertical",
+      "item_spacing": 2,
+      "items": [
+        {
+          "type": "text",
+          "text": "RECEIPT QR",
+          "font_size": 11,
+          "text_color": "#94A3B8",
+          "font_weight": "bold"
+        },
+        {
+          "type": "text",
+          "text": "Generated from the persisted receipt payload",
+          "font_size": 11,
+          "text_color": "#64748B"
+        }
+      ]
+    },
+    {
+      "type": "image",
+      "image_url": "@{user.qr_img_current}",
+      "height": {
+        "type": "fixed",
+        "value": 260
+      },
+      "corner_radius": 12,
+      "visibility": "@{if(user.qr_img_current == '', 'gone', 'visible')}",
+      "content_description": "Receipt QR code"
+    },
+    {
+      "type": "text",
+      "text": "@{if(user.qr_img_current == '', 'No QR yet — tap Generate QR.', '')}",
+      "font_size": 11,
+      "text_color": "#64748B"
+    },
+    {
+      "type": "container",
+      "orientation": "horizontal",
+      "item_spacing": 10,
+      "items": [
+        {
+          "type": "button",
+          "text": "Generate QR",
+          "background_color": "#047857",
+          "text_color": "#D1FAE5",
+          "corner_radius": 12,
+          "font_size": 14,
+          "font_weight": "bold",
+          "actions": [
+            {
+              "type": "set_variable",
+              "variable_name": "user.qr_index",
+              "value": {
+                "type": "integer",
+                "value": 0
+              }
+            },
+            {
+              "url": "local-db://op/kiosk.export",
+              "payload": {
+                "order_id": "@{user.kiosk_order_id}",
+                "output": {
+                  "order_id": "user.kiosk_order_id",
+                  "order_label": "user.kiosk_order_label",
+                  "status": "user.kiosk_status",
+                  "direction": "user.kiosk_direction",
+                  "total_display": "user.kiosk_total",
+                  "subtotal_display": "user.kiosk_subtotal",
+                  "item_count": "user.kiosk_item_count",
+                  "line_count": "user.kiosk_line_count",
+                  "lines_json": "user.kiosk_lines_json",
+                  "payload_json": "user.kiosk_payload_json",
+                  "checksum": "user.kiosk_checksum"
+                }
+              },
+              "log_id": "kiosk_export_receipt"
+            },
+            {
+              "url": "tools://codec/json/chunk",
+              "payload": {
+                "json": "@{user.kiosk_payload_json}",
+                "max_bytes": 700,
+                "encoding": "base45",
+                "output": {
+                  "chunks": "user.qr_chunks",
+                  "count": "user.qr_count",
+                  "transfer_id": "user.qr_transfer_id",
+                  "checksum": "user.qr_checksum"
+                }
+              },
+              "log_id": "kiosk_receipt_chunk"
+            },
+            {
+              "url": "tools://code-generate/generate",
+              "payload": {
+                "content": "@{getArrayOptString(user.qr_chunks, 0, '')}",
+                "format": "QR_CODE",
+                "width": 640,
+                "height": 640,
+                "margin": 4,
+                "output": {
+                  "uri": "user.qr_img_current",
+                  "status": "user.qr_status"
+                }
+              },
+              "log_id": "kiosk_receipt_qr"
+            }
+          ],
+          "icon": "qr_code",
+          "weight": 1,
+          "id": "kiosk_generate_receipt_qr"
+        },
+        {
+          "type": "button",
+          "text": "Next chunk",
+          "background_color": "#334155",
+          "text_color": "#F8FAFC",
+          "corner_radius": 12,
+          "font_size": 14,
+          "font_weight": "bold",
+          "actions": [
+            {
+              "type": "set_variable",
+              "variable_name": "user.qr_index",
+              "value": {
+                "type": "integer",
+                "value": "@{min(toInteger(user.qr_count) - 1, toInteger(user.qr_index) + 1)}"
+              }
+            },
+            {
+              "url": "tools://code-generate/generate",
+              "payload": {
+                "content": "@{getArrayOptString(user.qr_chunks, user.qr_index, '')}",
+                "format": "QR_CODE",
+                "width": 640,
+                "height": 640,
+                "margin": 4,
+                "output": {
+                  "uri": "user.qr_img_current",
+                  "status": "user.qr_status"
+                }
+              },
+              "log_id": "kiosk_receipt_qr_next"
+            }
+          ],
+          "icon": "chevron_right",
+          "weight": 1,
+          "id": "kiosk_receipt_next_chunk"
         }
       ]
     },
     {
       "type": "text",
-      "text": "CATALOG",
+      "text": "@{if(toInteger(user.qr_count) == 0, 'No QR generated yet — tap Generate QR.', 'Chunk ' + (toInteger(user.qr_index) + 1) + ' of ' + user.qr_count + ' · transfer ' + user.qr_transfer_id)}",
       "font_size": 11,
-      "text_color": "#67E8F9",
-      "font_weight": "bold"
-    },
-    {
-      "type": "json_list",
-      "data_var": "user.catalog_json",
-      "empty_text": "No inventory rows. Tap Refresh Catalog.",
-      "row_card": {
-        "type": "container",
-        "orientation": "horizontal",
-        "item_spacing": 8,
-        "background_color": "#0F172A",
-        "corner_radius": 10,
-        "paddings": {
-          "left": 10,
-          "right": 10,
-          "top": 8,
-          "bottom": 8
-        },
-        "items": [
-          {
-            "type": "container",
-            "orientation": "vertical",
-            "weight": 1,
-            "items": [
-              {
-                "type": "text",
-                "text": "@{item.item_name}",
-                "font_size": 13,
-                "text_color": "#F8FAFC",
-                "font_weight": "bold"
-              },
-              {
-                "type": "text",
-                "text": "SKU @{item.sku} • $@{item.price} • stock @{item.stock}",
-                "font_size": 10,
-                "text_color": "#34D399",
-                "font_family": "monospace"
-              }
-            ]
-          },
-          {
-            "type": "button",
-            "text": "+ Add",
-            "background_color": "#065F46",
-            "text_color": "#A7F3D0",
-            "corner_radius": 10,
-            "font_size": 12,
-            "font_weight": "bold",
-            "actions": [
-              {
-                "log_id": "add_line",
-                "url": "local-db://op/db.insert",
-                "payload": {
-                  "table": "kiosk_order_lines",
-                  "values": {
-                    "order_id": "@{user.kiosk_order_id}",
-                    "sku": "@{item.sku}",
-                    "item_name": "@{item.item_name}",
-                    "unit_price": "@{toNumber(item.price)}",
-                    "quantity": 1,
-                    "line_total": "@{toNumber(item.price)}"
-                  },
-                  "output": {
-                    "id": "user.kiosk_last_line_id"
-                  }
-                }
-              },
-              {
-                "log_id": "update_order_total",
-                "url": "local-db://op/db.update",
-                "payload": {
-                  "table": "kiosk_orders",
-                  "id": "@{user.kiosk_order_id}",
-                  "values": {
-                    "total": "@{toNumber(user.kiosk_total) + toNumber(item.price)}",
-                    "subtotal": "@{toNumber(user.kiosk_total) + toNumber(item.price)}",
-                    "item_count": "@{toInteger(user.kiosk_item_count) + 1}",
-                    "updated_at": "@{formatDateAsLocal(nowLocal(), 'yyyy-MM-dd HH:mm:ss')}"
-                  }
-                }
-              },
-              {
-                "log_id": "update_stock",
-                "url": "local-db://op/db.update",
-                "payload": {
-                  "table": "inventory",
-                  "id": "@{item.id}",
-                  "values": {
-                    "stock": "@{toNumber(item.stock) - 1}"
-                  }
-                }
-              },
-              {
-                "log_id": "query_order",
-                "url": "local-db://op/db.query_one",
-                "payload": {
-                  "table": "kiosk_orders",
-                  "where": [
-                    {
-                      "field": "id",
-                      "op": "=",
-                      "value": "@{user.kiosk_order_id}"
-                    }
-                  ],
-                  "output": {
-                    "total": "user.kiosk_total",
-                    "item_count": "user.kiosk_item_count",
-                    "status": "user.kiosk_status",
-                    "direction": "user.kiosk_direction"
-                  }
-                }
-              },
-              {
-                "log_id": "query_lines",
-                "url": "local-db://op/db.query",
-                "payload": {
-                  "table": "kiosk_order_lines",
-                  "where": {
-                    "order_id": "@{user.kiosk_order_id}"
-                  },
-                  "order_by": "id",
-                  "limit": 100,
-                  "json_list_var": "user.kiosk_lines_json",
-                  "output": {
-                    "_json": "user.kiosk_lines_json"
-                  }
-                }
-              }
-            ],
-            "icon": "add"
-          }
-        ]
-      }
+      "text_color": "#64748B",
+      "font_family": "monospace"
     },
     {
       "type": "text",
-      "text": "RECEIPT LINES",
-      "font_size": 11,
-      "text_color": "#93C5FD",
-      "font_weight": "bold"
-    },
-    {
-      "type": "json_list",
-      "data_var": "user.kiosk_lines_json",
-      "empty_text": "No lines yet.",
-      "row_card": {
-        "type": "container",
-        "orientation": "horizontal",
-        "item_spacing": 8,
-        "background_color": "#0F172A",
-        "corner_radius": 10,
-        "paddings": {
-          "left": 10,
-          "right": 10,
-          "top": 8,
-          "bottom": 8
-        },
-        "items": [
-          {
-            "type": "container",
-            "orientation": "vertical",
-            "weight": 1,
-            "items": [
-              {
-                "type": "text",
-                "text": "@{item.item_name}",
-                "font_size": 13,
-                "text_color": "#F8FAFC",
-                "font_weight": "bold"
-              },
-              {
-                "type": "text",
-                "text": "SKU @{item.sku} • qty @{item.quantity} • $@{item.line_total}",
-                "font_size": 10,
-                "text_color": "#93C5FD",
-                "font_family": "monospace"
-              }
-            ]
-          },
-          {
-            "type": "button",
-            "text": "Remove",
-            "background_color": "#7F1D1D",
-            "text_color": "#FECACA",
-            "corner_radius": 10,
-            "font_size": 12,
-            "font_weight": "bold",
-            "actions": [
-              {
-                "log_id": "delete_line",
-                "url": "local-db://op/db.delete",
-                "payload": {
-                  "table": "kiosk_order_lines",
-                  "id": "@{item.id}",
-                  "output": {
-                    "count": "user.kiosk_deleted_count"
-                  }
-                }
-              },
-              {
-                "log_id": "subtract_order_total",
-                "url": "local-db://op/db.update",
-                "payload": {
-                  "table": "kiosk_orders",
-                  "id": "@{user.kiosk_order_id}",
-                  "values": {
-                    "total": "@{toNumber(user.kiosk_total) - toNumber(item.line_total)}",
-                    "subtotal": "@{toNumber(user.kiosk_total) - toNumber(item.line_total)}",
-                    "item_count": "@{toInteger(user.kiosk_item_count) - 1}",
-                    "updated_at": "@{formatDateAsLocal(nowLocal(), 'yyyy-MM-dd HH:mm:ss')}"
-                  }
-                }
-              },
-              {
-                "log_id": "query_order",
-                "url": "local-db://op/db.query_one",
-                "payload": {
-                  "table": "kiosk_orders",
-                  "where": [
-                    {
-                      "field": "id",
-                      "op": "=",
-                      "value": "@{user.kiosk_order_id}"
-                    }
-                  ],
-                  "output": {
-                    "total": "user.kiosk_total",
-                    "item_count": "user.kiosk_item_count",
-                    "status": "user.kiosk_status",
-                    "direction": "user.kiosk_direction"
-                  }
-                }
-              },
-              {
-                "log_id": "query_lines",
-                "url": "local-db://op/db.query",
-                "payload": {
-                  "table": "kiosk_order_lines",
-                  "where": {
-                    "order_id": "@{user.kiosk_order_id}"
-                  },
-                  "order_by": "id",
-                  "limit": 100,
-                  "json_list_var": "user.kiosk_lines_json",
-                  "output": {
-                    "_json": "user.kiosk_lines_json"
-                  }
-                }
-              }
-            ],
-            "icon": "delete"
-          }
-        ]
-      }
-    },
-    {
-      "type": "button",
-      "text": "Open Receipt QR →",
-      "background_color": "#059669",
-      "text_color": "#ECFDF5",
-      "corner_radius": 10,
+      "text": "@{if(user.engine_error == '', user.kiosk_notice, 'Error: ' + user.engine_error)}",
       "font_size": 12,
-      "font_weight": "bold",
-      "actions": [
-        {
-          "log_id": "push?id=tool_kiosk_transfer",
-          "url": "nav://push?id=tool_kiosk_transfer"
-        }
-      ],
-      "icon": "qr_code"
+      "text_color": "@{if(user.engine_error == '', '#64748B', '#F87171')}"
     }
   ],
-  "background_color": "#0B1220"
+  "background_color": "#1E293B",
+  "paddings": {
+    "left": 14,
+    "right": 14,
+    "top": 16,
+    "bottom": 20
+  }
 }

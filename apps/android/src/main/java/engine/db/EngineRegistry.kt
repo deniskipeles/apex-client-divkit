@@ -202,6 +202,131 @@ class EngineRegistry(
                     OpResult.Count(if (deleted) 1L else 0L)
                 }
 
+                // Kiosk order plane: header + lines stay consistent because every mutation
+                // recomputes the stored totals from the persisted line rows.
+                "kiosk.create", "kiosk.new" -> {
+                    val cart = KioskOps.createOrder(
+                        apexEngine,
+                        direction = payload["direction"]?.jsonPrimitive?.contentOrNull ?: KioskOps.DIRECTION_CUSTOMER,
+                        terminalId = payload["terminal_id"]?.jsonPrimitive?.contentOrNull ?: "KIOSK",
+                        customerName = payload["customer_name"]?.jsonPrimitive?.contentOrNull ?: "",
+                        now = clock()
+                    )
+                    OpResult.Row(KioskOps.row(cart))
+                }
+
+                "kiosk.add_line", "kiosk.add" -> {
+                    val orderId = requireOrderId(payload)
+                    val sku = payload["sku"]?.jsonPrimitive?.contentOrNull
+                        ?: error("Missing 'sku' parameter")
+                    val cart = KioskOps.addLine(
+                        apexEngine,
+                        orderId = orderId,
+                        sku = sku,
+                        itemName = payload["item_name"]?.jsonPrimitive?.contentOrNull ?: sku,
+                        unitPrice = payload.number("unit_price"),
+                        quantity = payload.number("quantity").toInt().takeIf { it > 0 } ?: 1,
+                        now = clock()
+                    )
+                    OpResult.Row(KioskOps.row(cart) + mapOf("sku" to sku))
+                }
+
+                "kiosk.set_qty" -> {
+                    val cart = KioskOps.setQuantity(
+                        apexEngine,
+                        orderId = requireOrderId(payload),
+                        lineId = payload["line_id"]?.jsonPrimitive?.contentOrNull
+                            ?: error("Missing 'line_id' parameter"),
+                        quantity = payload.number("quantity").toInt(),
+                        now = clock()
+                    )
+                    OpResult.Row(KioskOps.row(cart))
+                }
+
+                "kiosk.remove_line", "kiosk.remove" -> {
+                    val orderId = requireOrderId(payload)
+                    val lineId = payload["line_id"]?.jsonPrimitive?.contentOrNull
+                        ?: error("Missing 'line_id' parameter")
+                    val before = KioskOps.load(apexEngine, orderId)
+                    val removed = before?.lines?.firstOrNull { it.id == lineId }
+                    val cart = KioskOps.removeLine(apexEngine, orderId, lineId, clock())
+                    val undo = removed?.let {
+                        buildJsonObject {
+                            put("sku", it.sku)
+                            put("item_name", it.itemName)
+                            put("unit_price", it.unitPrice)
+                            put("quantity", it.quantity)
+                        }
+                    } ?: JsonObject(emptyMap())
+                    OpResult.Row(
+                        KioskOps.row(cart) + mapOf(
+                            "removed_sku" to (removed?.sku ?: ""),
+                            "removed_name" to (removed?.itemName ?: ""),
+                            "removed_quantity" to (removed?.quantity?.toLong() ?: 0L),
+                            "removed_unit_price" to (removed?.unitPrice ?: 0.0),
+                            "removed_unit_price_display" to KioskOps.format(removed?.unitPrice ?: 0.0),
+                            "undo_json" to undo.toString()
+                        )
+                    )
+                }
+
+                "kiosk.clear" -> {
+                    OpResult.Row(KioskOps.row(KioskOps.clearOrder(apexEngine, requireOrderId(payload), clock())))
+                }
+
+                "kiosk.submit" -> {
+                    OpResult.Row(KioskOps.row(KioskOps.submit(apexEngine, requireOrderId(payload), clock())))
+                }
+
+                "kiosk.load" -> {
+                    val orderId = payload["order_id"]?.jsonPrimitive?.contentOrNull
+                    val cart = if (!orderId.isNullOrBlank()) {
+                        KioskOps.load(apexEngine, orderId)
+                    } else {
+                        KioskOps.latest(apexEngine, payload["direction"]?.jsonPrimitive?.contentOrNull)
+                    }
+                    if (cart == null) {
+                        OpResult.Row(
+                            KioskOps.row(
+                                KioskOps.Cart(
+                                    orderId = "",
+                                    direction = payload["direction"]?.jsonPrimitive?.contentOrNull
+                                        ?: KioskOps.DIRECTION_CUSTOMER,
+                                    status = "NO_ORDER",
+                                    terminalId = "",
+                                    customerName = "",
+                                    createdAt = "",
+                                    lines = emptyList()
+                                )
+                            )
+                        )
+                    } else {
+                        OpResult.Row(KioskOps.row(cart))
+                    }
+                }
+
+                "kiosk.list", "kiosk.orders" -> {
+                    val carts = KioskOps.recent(
+                        apexEngine,
+                        direction = payload["direction"]?.jsonPrimitive?.contentOrNull,
+                        status = payload["status"]?.jsonPrimitive?.contentOrNull,
+                        limit = payload["limit"]?.jsonPrimitive?.intOrNull ?: 10
+                    )
+                    OpResult.Row(
+                        mapOf(
+                            "orders_json" to KioskOps.listJson(carts),
+                            "order_count" to carts.size.toLong(),
+                            "orders_total_display" to KioskOps.format(carts.sumOf { it.total })
+                        )
+                    )
+                }
+
+                "kiosk.export" -> {
+                    val cart = KioskOps.load(apexEngine, requireOrderId(payload))
+                        ?: error("Order does not exist")
+                    OpResult.Row(KioskOps.row(cart))
+                }
+
                 else -> throw SecurityException("Unknown operation: $opName")
             }
 
@@ -250,6 +375,15 @@ class EngineRegistry(
     private fun JsonElement.asScalar(): Any? = when (this) {
         is JsonPrimitive -> contentOrNull
         else -> toString()
+    }
+
+    private fun requireOrderId(payload: JsonObject): String =
+        payload["order_id"]?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() }
+            ?: error("Missing 'order_id' parameter")
+
+    private fun JsonObject.number(field: String): Double {
+        val el = this[field] as? JsonPrimitive ?: return 0.0
+        return el.doubleOrNull ?: el.contentOrNull?.toDoubleOrNull() ?: 0.0
     }
 
     private fun parseFilters(array: JsonArray?): List<QueryFilter> {

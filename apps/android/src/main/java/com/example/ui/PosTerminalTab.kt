@@ -91,6 +91,9 @@ fun PosTerminalTab(
     var isAppBarExpanded by remember(uiState.activeWorkspace.tenantId) { mutableStateOf(false) }
     var showOverflowMenu by remember { mutableStateOf(false) }
     var activeOverlay by remember { mutableStateOf(ActiveHostOverlay.NONE) }
+    // Host chrome (client id, cURL sample, route debug, hardware tester, schema rollback) is
+    // developer tooling; it must not compete with the tenant card for the operator's screen.
+    var showHostDiagnostics by remember(uiState.activeWorkspace.tenantId) { mutableStateOf(false) }
 
     val spec = uiState.activeWorkspace
     val permissions = uiState.tenantToolsMap[spec.tenantId] ?: spec.defaultTools
@@ -123,530 +126,550 @@ fun PosTerminalTab(
             .fillMaxSize()
             .background(colorScheme.background)
     ) {
-        // 1. Active Workspace Screen (Full-Screen Self-Contained Tenant SDUI Content + Native Bridge Cards)
-        // Clicking anywhere on the active workspace screen while the AppBar is open dismisses the AppBar.
+        // 1. Active Workspace Screen (Full-Screen Self-Contained Tenant SDUI Content + Native
+        //    Bridge Cards). The breadcrumb is pinned outside the scroll container so a long
+        //    card can never push the only way back to the hub off-screen.
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .testTag("workspace_active_screen_area")
-                .pointerInput(isAppBarExpanded) {
-                    if (!isAppBarExpanded) return@pointerInput
-                    awaitEachGesture {
-                        val down = awaitFirstDown(
-                            requireUnconsumed = false,
-                            pass = PointerEventPass.Initial
-                        )
-                        val downPos = down.position
-                        val up = waitForUpOrCancellation(pass = PointerEventPass.Initial)
-                        if (up != null) {
-                            val dx = abs(up.position.x - downPos.x)
-                            val dy = abs(up.position.y - downPos.y)
-                            if (dx < viewConfiguration.touchSlop && dy < viewConfiguration.touchSlop) {
-                                isAppBarExpanded = false
-                            }
-                        }
-                    }
-                }
-                .verticalScroll(workspaceScrollState)
-                .padding(
-                    start = 14.dp,
-                    end = 14.dp,
-                    top = if (isAppBarExpanded) 68.dp else 18.dp,
-                    bottom = 24.dp
-                ),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // A1. Card stack breadcrumb — pinned above the card so a long tool card cannot
-            //     push the only way back to the hub off-screen.
             if (uiState.cardStack.size > 1) {
-                CardStackBreadcrumb(
-                    stack = uiState.cardStack,
-                    onBack = { viewModel.navigateBack() }
-                )
-            }
-
-            // A2. Dynamic DivKit SDUI card. Route index 0 is the entry hub; tool cards are
-            //    pushed on top of it through nav://push, so only the visible card renders here.
-            val visibleCardJson = uiState.activeCardJson.ifBlank { uiState.verifiedDivKitJson }
-            if (visibleCardJson.isNotBlank()) {
-                key(
-                    uiState.activeSchemaVersion?.versionId ?: 0L,
-                    uiState.activeCardId,
-                    visibleCardJson.hashCode()
-                ) {
-                    EngineScreen(
-                        divKitDependencies = divKitDeps,
-                        initialJson = visibleCardJson,
-                        cardId = uiState.activeCardId.ifBlank {
-                            "pos_card_${spec.tenantId}_$activeSchemaTag"
-                        },
-                        onAction = { url, payload ->
-                            viewModel.dispatchDivKitActionAwait(url, payload)
-                        }
+                // The collapsed app-bar pill sits at TopCenter, so the breadcrumb clears it.
+                Box(modifier = Modifier.padding(start = 14.dp, end = 14.dp, top = 30.dp)) {
+                    CardStackBreadcrumb(
+                        stack = uiState.cardStack,
+                        onBack = { viewModel.navigateBack() }
                     )
                 }
             }
 
-            // B. Public Client ID (Origin-Scoped) & cURL Dispatch Card (Screenshots 7 & 11)
-            Surface(
-                color = colorScheme.surface,
-                shape = RoundedCornerShape(16.dp),
-                border = BorderStroke(1.dp, colorScheme.primary.copy(alpha = 0.6f)),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier.padding(14.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "🔑 PUBLIC CLIENT ID (ORIGIN-SCOPED)",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = "SYNCED TO GATEWAY",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = colorScheme.primary
-                        )
-                    }
-
-                    Surface(
-                        color = colorScheme.background,
-                        shape = RoundedCornerShape(10.dp),
-                        border = BorderStroke(1.dp, colorScheme.outline),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            text = spec.publicClientId,
-                            fontSize = 14.sp,
-                            fontFamily = FontFamily.Monospace,
-                            fontWeight = FontWeight.SemiBold,
-                            color = colorScheme.onSurface,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)
-                        )
-                    }
-
-                    Button(
-                        onClick = {
-                            if (!permissions.clipboardAccess) {
-                                Toast.makeText(
-                                    context,
-                                    "Clipboard Access is OFF in Workspace Settings — enabling copy via host",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            }
-                            copyToSystemClipboard(context, "Public Client ID", spec.publicClientId)
-                        },
-                        shape = RoundedCornerShape(10.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = colorScheme.primary),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(44.dp)
-                            .testTag("copy_public_client_id_button")
-                    ) {
-                        Text(
-                            text = "📋 Copy Client ID",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                    }
-
-                    Text(
-                        text = "Test dispatching to this terminal with cURL:",
-                        fontSize = 11.sp,
-                        color = colorScheme.onSurfaceVariant
-                    )
-
-                    val curlSnippet = remember(spec.publicClientId, uiState.pushGatewayBase) {
-                        """
-                        curl -X POST ${uiState.pushGatewayBase}/api/v1/webhook/fcm/dispatch \
-                          -H "Authorization: Bearer gwk_live_4a8f9c1b2e3d5a7e9f012345" \
-                          -H "Content-Type: application/json" \
-                          -d '{"clientId": "${spec.publicClientId}", "event": "ORDER_READY", "notification": {"title": "Kitchen Alert", "body": "Order #4091 is ready for pick-up!"}}'
-                        """.trimIndent()
-                    }
-
-                    Surface(
-                        color = colorScheme.background,
-                        shape = RoundedCornerShape(10.dp),
-                        border = BorderStroke(1.dp, colorScheme.outline),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            text = curlSnippet,
-                            fontSize = 11.sp,
-                            fontFamily = FontFamily.Monospace,
-                            color = colorScheme.onSurface,
-                            modifier = Modifier.padding(12.dp)
-                        )
-                    }
-                }
-            }
-
-            // C. Native Android Bridge Security Notice Banner (Screenshots 7 & 11)
-            Surface(
-                color = colorScheme.primary.copy(alpha = 0.10f),
-                shape = RoundedCornerShape(14.dp),
-                border = BorderStroke(1.dp, colorScheme.primary.copy(alpha = 0.4f)),
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(14.dp))
-                    .clickable { activeOverlay = ActiveHostOverlay.WORKSPACE_SETTINGS }
-            ) {
-                Column(
-                    modifier = Modifier.padding(14.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Text(
-                        text = "⚡ Native Android Bridge (${permissions.activeCount}/8 tools active): By default, native bridged tools (Haptics, Beep, Scanner, Biometrics, Clipboard, Push, Realtime) are turned OFF for security. Tap here or open the ⋮ (3-dot menu) at the top and select Workspace Settings.",
-                        fontSize = 12.sp,
-                        color = colorScheme.onSurface
-                    )
-                }
-            }
-
-            // D. Active Route Path & URL Queries — Preserved on Refresh (Screenshot 1 from earlier turn)
-            Surface(
-                color = colorScheme.surface,
-                shape = RoundedCornerShape(16.dp),
-                border = BorderStroke(1.dp, colorScheme.outline),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier.padding(14.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "🌐 ACTIVE ROUTE PATH & URL QUERIES",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = colorScheme.onSurfaceVariant,
-                            modifier = Modifier.weight(1f)
-                        )
-                        Text(
-                            text = "PRESERVED ON REFRESH",
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = colorScheme.tertiary
-                        )
-                    }
-
-                    val fullUrl = buildString {
-                        append(spec.tunnelUrl.trimEnd('/'))
-                        append(uiState.activeRoutePath)
-                        if (uiState.activeRouteQueries != "(none)") {
-                            append("?")
-                            append(uiState.activeRouteQueries)
+                    .weight(1f)
+                    .pointerInput(isAppBarExpanded) {
+                        if (!isAppBarExpanded) return@pointerInput
+                        awaitEachGesture {
+                            val down = awaitFirstDown(
+                                requireUnconsumed = false,
+                                pass = PointerEventPass.Initial
+                            )
+                            val downPos = down.position
+                            val up = waitForUpOrCancellation(pass = PointerEventPass.Initial)
+                            if (up != null) {
+                                val dx = abs(up.position.x - downPos.x)
+                                val dy = abs(up.position.y - downPos.y)
+                                if (dx < viewConfiguration.touchSlop && dy < viewConfiguration.touchSlop) {
+                                    isAppBarExpanded = false
+                                }
+                            }
                         }
                     }
-
-                    Surface(
-                        color = colorScheme.background,
-                        shape = RoundedCornerShape(10.dp),
-                        border = BorderStroke(1.dp, colorScheme.outline),
-                        modifier = Modifier.fillMaxWidth()
+                    .verticalScroll(workspaceScrollState)
+                    .padding(
+                        start = 14.dp,
+                        end = 14.dp,
+                        // The collapsed state floats the 48dp standout pill over the scroll area,
+                        // so the landing card has to start below it or the pill lands on the
+                        // title. A pushed card already sits under the breadcrumb, which clears
+                        // the pill, so it keeps the tighter inset.
+                        top = when {
+                            isAppBarExpanded -> 68.dp
+                            uiState.cardStack.size > 1 -> 12.dp
+                            else -> 44.dp
+                        },
+                        bottom = 24.dp
+                    ),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // A2. Dynamic DivKit SDUI card. Route index 0 is the entry hub; tool cards are
+                //    pushed on top of it through nav://push, so only the visible card renders here.
+                val visibleCardJson = uiState.activeCardJson.ifBlank { uiState.verifiedDivKitJson }
+                if (visibleCardJson.isNotBlank()) {
+                    key(
+                        uiState.activeSchemaVersion?.versionId ?: 0L,
+                        uiState.activeCardId,
+                        visibleCardJson.hashCode()
                     ) {
-                        Column(
-                            modifier = Modifier.padding(12.dp),
-                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        EngineScreen(
+                            divKitDependencies = divKitDeps,
+                            initialJson = visibleCardJson,
+                            cardId = uiState.activeCardId.ifBlank {
+                                "pos_card_${spec.tenantId}_$activeSchemaTag"
+                            },
+                            onAction = { url, payload ->
+                                viewModel.dispatchDivKitActionAwait(url, payload)
+                            }
+                        )
+                    }
+                }
+
+                HostDiagnosticsSection(
+                    expanded = showHostDiagnostics,
+                    onToggle = { showHostDiagnostics = !showHostDiagnostics }
+                ) {
+                // B. Public Client ID (Origin-Scoped) & cURL Dispatch Card (Screenshots 7 & 11)
+                Surface(
+                    color = colorScheme.surface,
+                    shape = RoundedCornerShape(16.dp),
+                    border = BorderStroke(1.dp, colorScheme.primary.copy(alpha = 0.6f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "Full URL: $fullUrl",
-                                fontSize = 12.sp,
-                                fontFamily = FontFamily.Monospace,
-                                color = colorScheme.onSurface
+                                text = "🔑 PUBLIC CLIENT ID (ORIGIN-SCOPED)",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = colorScheme.onSurfaceVariant
                             )
                             Text(
-                                text = "Path: ${uiState.activeRoutePath}",
-                                fontSize = 12.sp,
-                                fontFamily = FontFamily.Monospace,
+                                text = "SYNCED TO GATEWAY",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
                                 color = colorScheme.primary
                             )
+                        }
+
+                        Surface(
+                            color = colorScheme.background,
+                            shape = RoundedCornerShape(10.dp),
+                            border = BorderStroke(1.dp, colorScheme.outline),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
                             Text(
-                                text = "Queries: ${uiState.activeRouteQueries}",
-                                fontSize = 12.sp,
+                                text = spec.publicClientId,
+                                fontSize = 14.sp,
                                 fontFamily = FontFamily.Monospace,
-                                color = Color(0xFFF59E0B)
+                                fontWeight = FontWeight.SemiBold,
+                                color = colorScheme.onSurface,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)
+                            )
+                        }
+
+                        Button(
+                            onClick = {
+                                if (!permissions.clipboardAccess) {
+                                    Toast.makeText(
+                                        context,
+                                        "Clipboard Access is OFF in Workspace Settings — enabling copy via host",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                                copyToSystemClipboard(context, "Public Client ID", spec.publicClientId)
+                            },
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = colorScheme.primary),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(44.dp)
+                                .testTag("copy_public_client_id_button")
+                        ) {
+                            Text(
+                                text = "📋 Copy Client ID",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
+
+                        Text(
+                            text = "Test dispatching to this terminal with cURL:",
+                            fontSize = 11.sp,
+                            color = colorScheme.onSurfaceVariant
+                        )
+
+                        val curlSnippet = remember(spec.publicClientId, uiState.pushGatewayBase) {
+                            """
+                            curl -X POST ${uiState.pushGatewayBase}/api/v1/webhook/fcm/dispatch \
+                              -H "Authorization: Bearer gwk_live_4a8f9c1b2e3d5a7e9f012345" \
+                              -H "Content-Type: application/json" \
+                              -d '{"clientId": "${spec.publicClientId}", "event": "ORDER_READY", "notification": {"title": "Kitchen Alert", "body": "Order #4091 is ready for pick-up!"}}'
+                            """.trimIndent()
+                        }
+
+                        Surface(
+                            color = colorScheme.background,
+                            shape = RoundedCornerShape(10.dp),
+                            border = BorderStroke(1.dp, colorScheme.outline),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = curlSnippet,
+                                fontSize = 11.sp,
+                                fontFamily = FontFamily.Monospace,
+                                color = colorScheme.onSurface,
+                                modifier = Modifier.padding(12.dp)
                             )
                         }
                     }
+                }
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                // C. Native Android Bridge Security Notice Banner (Screenshots 7 & 11)
+                Surface(
+                    color = colorScheme.primary.copy(alpha = 0.10f),
+                    shape = RoundedCornerShape(14.dp),
+                    border = BorderStroke(1.dp, colorScheme.primary.copy(alpha = 0.4f)),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(14.dp))
+                        .clickable { activeOverlay = ActiveHostOverlay.WORKSPACE_SETTINGS }
+                ) {
+                    Column(
+                        modifier = Modifier.padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        RoutePresetButton(
-                            title = "🛒 POS Register 01",
-                            queries = "station=1&cashier=john",
-                            onClick = { viewModel.switchActiveRoute("/register", "station=1&cashier=john") },
-                            modifier = Modifier.weight(1f)
-                        )
-                        RoutePresetButton(
-                            title = "🍳 Kitchen KDS Grill",
-                            queries = "station=grill&priority=urgent",
-                            onClick = { viewModel.switchActiveRoute("/kds", "station=grill&priority=urgent") },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        RoutePresetButton(
-                            title = "📦 Catalog Stock",
-                            queries = "category=beverage",
-                            onClick = { viewModel.switchActiveRoute("/catalog", "category=beverage") },
-                            modifier = Modifier.weight(1f)
-                        )
-                        RoutePresetButton(
-                            title = "📊 Sales Report",
-                            queries = "date=today&format=summary",
-                            onClick = { viewModel.switchActiveRoute("/reports", "date=today&format=summary") },
-                            modifier = Modifier.weight(1f)
+                        Text(
+                            text = "⚡ Native Android Bridge (${permissions.activeCount}/8 tools active): By default, native bridged tools (Haptics, Beep, Scanner, Biometrics, Clipboard, Push, Realtime) are turned OFF for security. Tap here or open the ⋮ (3-dot menu) at the top and select Workspace Settings.",
+                            fontSize = 12.sp,
+                            color = colorScheme.onSurface
                         )
                     }
                 }
-            }
 
-            // E. Hardware capability tester — delegates to the generic tool registry
-            // (tools://beeper/*, tools://haptics/*); no host-side audio/vibration logic.
-            Surface(
-                color = colorScheme.surface,
-                shape = RoundedCornerShape(16.dp),
-                border = BorderStroke(1.dp, colorScheme.outline),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier.padding(14.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                // D. Active Route Path & URL Queries — Preserved on Refresh (Screenshot 1 from earlier turn)
+                Surface(
+                    color = colorScheme.surface,
+                    shape = RoundedCornerShape(16.dp),
+                    border = BorderStroke(1.dp, colorScheme.outline),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                    Column(
+                        modifier = Modifier.padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        Text(
-                            text = "🔊 HARDWARE TOOLS",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = "tools://beeper • tools://haptics",
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = colorScheme.onSurfaceVariant
-                        )
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        HardwareTestButton(
-                            title = "🔔 Ring",
-                            subtitle = "beeper/ring",
-                            onClick = {
-                                triggerBeeper(
-                                    context = context,
-                                    enabled = permissions.hardwareBeeperAudio,
-                                    operation = "ring",
-                                    dispatch = { viewModel.dispatchTool(it) },
-                                    onBlocked = { activeOverlay = ActiveHostOverlay.WORKSPACE_SETTINGS }
-                                )
-                            },
-                            modifier = Modifier.weight(1f)
-                        )
-                        HardwareTestButton(
-                            title = "⚠️ Alert",
-                            subtitle = "beeper/alert",
-                            onClick = {
-                                triggerBeeper(
-                                    context = context,
-                                    enabled = permissions.hardwareBeeperAudio,
-                                    operation = "alert",
-                                    dispatch = { viewModel.dispatchTool(it) },
-                                    onBlocked = { activeOverlay = ActiveHostOverlay.WORKSPACE_SETTINGS }
-                                )
-                            },
-                            modifier = Modifier.weight(1f)
-                        )
-                        HardwareTestButton(
-                            title = "❌ Error",
-                            subtitle = "beeper/error",
-                            onClick = {
-                                triggerBeeper(
-                                    context = context,
-                                    enabled = permissions.hardwareBeeperAudio,
-                                    operation = "error",
-                                    dispatch = { viewModel.dispatchTool(it) },
-                                    onBlocked = { activeOverlay = ActiveHostOverlay.WORKSPACE_SETTINGS }
-                                )
-                            },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        HardwareTestButton(
-                            title = "📳 Tick",
-                            subtitle = "haptics/tick",
-                            onClick = {
-                                triggerHaptic(
-                                    context = context,
-                                    enabled = permissions.hapticVibration,
-                                    operation = "tick",
-                                    dispatch = { viewModel.dispatchTool(it) },
-                                    onBlocked = { activeOverlay = ActiveHostOverlay.WORKSPACE_SETTINGS }
-                                )
-                            },
-                            modifier = Modifier.weight(1f)
-                        )
-                        HardwareTestButton(
-                            title = "📳 Click",
-                            subtitle = "haptics/click",
-                            onClick = {
-                                triggerHaptic(
-                                    context = context,
-                                    enabled = permissions.hapticVibration,
-                                    operation = "click",
-                                    dispatch = { viewModel.dispatchTool(it) },
-                                    onBlocked = { activeOverlay = ActiveHostOverlay.WORKSPACE_SETTINGS }
-                                )
-                            },
-                            modifier = Modifier.weight(1f)
-                        )
-                        HardwareTestButton(
-                            title = "📳 Heavy",
-                            subtitle = "haptics/heavy",
-                            onClick = {
-                                triggerHaptic(
-                                    context = context,
-                                    enabled = permissions.hapticVibration,
-                                    operation = "heavy",
-                                    dispatch = { viewModel.dispatchTool(it) },
-                                    onBlocked = { activeOverlay = ActiveHostOverlay.WORKSPACE_SETTINGS }
-                                )
-                            },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                }
-            }
-
-            // F. Cached Schema Status & Version Rollback Quick Bar + EngineStateBridge
-            Surface(
-                color = colorScheme.surface,
-                shape = RoundedCornerShape(12.dp),
-                border = BorderStroke(1.dp, colorScheme.outline),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier.padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             Text(
-                                text = "CACHED DIVKIT SCHEMA • ${activeSchemaTag.uppercase()} ACTIVE",
+                                text = "🌐 ACTIVE ROUTE PATH & URL QUERIES",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = colorScheme.onSurfaceVariant,
+                                modifier = Modifier.weight(1f)
+                            )
+                            Text(
+                                text = "PRESERVED ON REFRESH",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = colorScheme.tertiary
+                            )
+                        }
+
+                        val fullUrl = buildString {
+                            append(spec.tunnelUrl.trimEnd('/'))
+                            append(uiState.activeRoutePath)
+                            if (uiState.activeRouteQueries != "(none)") {
+                                append("?")
+                                append(uiState.activeRouteQueries)
+                            }
+                        }
+
+                        Surface(
+                            color = colorScheme.background,
+                            shape = RoundedCornerShape(10.dp),
+                            border = BorderStroke(1.dp, colorScheme.outline),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(12.dp),
+                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Text(
+                                    text = "Full URL: $fullUrl",
+                                    fontSize = 12.sp,
+                                    fontFamily = FontFamily.Monospace,
+                                    color = colorScheme.onSurface
+                                )
+                                Text(
+                                    text = "Path: ${uiState.activeRoutePath}",
+                                    fontSize = 12.sp,
+                                    fontFamily = FontFamily.Monospace,
+                                    color = colorScheme.primary
+                                )
+                                Text(
+                                    text = "Queries: ${uiState.activeRouteQueries}",
+                                    fontSize = 12.sp,
+                                    fontFamily = FontFamily.Monospace,
+                                    color = Color(0xFFF59E0B)
+                                )
+                            }
+                        }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            RoutePresetButton(
+                                title = "🛒 POS Register 01",
+                                queries = "station=1&cashier=john",
+                                onClick = { viewModel.switchActiveRoute("/register", "station=1&cashier=john") },
+                                modifier = Modifier.weight(1f)
+                            )
+                            RoutePresetButton(
+                                title = "🍳 Kitchen KDS Grill",
+                                queries = "station=grill&priority=urgent",
+                                onClick = { viewModel.switchActiveRoute("/kds", "station=grill&priority=urgent") },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            RoutePresetButton(
+                                title = "📦 Catalog Stock",
+                                queries = "category=beverage",
+                                onClick = { viewModel.switchActiveRoute("/catalog", "category=beverage") },
+                                modifier = Modifier.weight(1f)
+                            )
+                            RoutePresetButton(
+                                title = "📊 Sales Report",
+                                queries = "date=today&format=summary",
+                                onClick = { viewModel.switchActiveRoute("/reports", "date=today&format=summary") },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
+                }
+
+                // E. Hardware capability tester — delegates to the generic tool registry
+                // (tools://beeper/*, tools://haptics/*); no host-side audio/vibration logic.
+                Surface(
+                    color = colorScheme.surface,
+                    shape = RoundedCornerShape(16.dp),
+                    border = BorderStroke(1.dp, colorScheme.outline),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "🔊 HARDWARE TOOLS",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = "tools://beeper • tools://haptics",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            HardwareTestButton(
+                                title = "🔔 Ring",
+                                subtitle = "beeper/ring",
+                                onClick = {
+                                    triggerBeeper(
+                                        context = context,
+                                        enabled = permissions.hardwareBeeperAudio,
+                                        operation = "ring",
+                                        dispatch = { viewModel.dispatchTool(it) },
+                                        onBlocked = { activeOverlay = ActiveHostOverlay.WORKSPACE_SETTINGS }
+                                    )
+                                },
+                                modifier = Modifier.weight(1f)
+                            )
+                            HardwareTestButton(
+                                title = "⚠️ Alert",
+                                subtitle = "beeper/alert",
+                                onClick = {
+                                    triggerBeeper(
+                                        context = context,
+                                        enabled = permissions.hardwareBeeperAudio,
+                                        operation = "alert",
+                                        dispatch = { viewModel.dispatchTool(it) },
+                                        onBlocked = { activeOverlay = ActiveHostOverlay.WORKSPACE_SETTINGS }
+                                    )
+                                },
+                                modifier = Modifier.weight(1f)
+                            )
+                            HardwareTestButton(
+                                title = "❌ Error",
+                                subtitle = "beeper/error",
+                                onClick = {
+                                    triggerBeeper(
+                                        context = context,
+                                        enabled = permissions.hardwareBeeperAudio,
+                                        operation = "error",
+                                        dispatch = { viewModel.dispatchTool(it) },
+                                        onBlocked = { activeOverlay = ActiveHostOverlay.WORKSPACE_SETTINGS }
+                                    )
+                                },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            HardwareTestButton(
+                                title = "📳 Tick",
+                                subtitle = "haptics/tick",
+                                onClick = {
+                                    triggerHaptic(
+                                        context = context,
+                                        enabled = permissions.hapticVibration,
+                                        operation = "tick",
+                                        dispatch = { viewModel.dispatchTool(it) },
+                                        onBlocked = { activeOverlay = ActiveHostOverlay.WORKSPACE_SETTINGS }
+                                    )
+                                },
+                                modifier = Modifier.weight(1f)
+                            )
+                            HardwareTestButton(
+                                title = "📳 Click",
+                                subtitle = "haptics/click",
+                                onClick = {
+                                    triggerHaptic(
+                                        context = context,
+                                        enabled = permissions.hapticVibration,
+                                        operation = "click",
+                                        dispatch = { viewModel.dispatchTool(it) },
+                                        onBlocked = { activeOverlay = ActiveHostOverlay.WORKSPACE_SETTINGS }
+                                    )
+                                },
+                                modifier = Modifier.weight(1f)
+                            )
+                            HardwareTestButton(
+                                title = "📳 Heavy",
+                                subtitle = "haptics/heavy",
+                                onClick = {
+                                    triggerHaptic(
+                                        context = context,
+                                        enabled = permissions.hapticVibration,
+                                        operation = "heavy",
+                                        dispatch = { viewModel.dispatchTool(it) },
+                                        onBlocked = { activeOverlay = ActiveHostOverlay.WORKSPACE_SETTINGS }
+                                    )
+                                },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
+                }
+
+                // F. Cached Schema Status & Version Rollback Quick Bar + EngineStateBridge
+                Surface(
+                    color = colorScheme.surface,
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, colorScheme.outline),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "CACHED DIVKIT SCHEMA • ${activeSchemaTag.uppercase()} ACTIVE",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = colorScheme.primary
+                                )
+                                Text(
+                                    text = uiState.activeSchemaVersion?.changeSummary
+                                        ?: "Cached in SQLite (sdui_schema_versions)",
+                                    fontSize = 11.sp,
+                                    color = colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                            Spacer(Modifier.width(8.dp))
+                            FilledTonalButton(
+                                onClick = { activeOverlay = ActiveHostOverlay.SCHEMA_ROLLBACK },
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                                modifier = Modifier
+                                    .defaultMinSize(minHeight = 36.dp)
+                                    .testTag("open_schema_rollback_button")
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.History,
+                                    contentDescription = "Schema Rollback",
+                                    modifier = Modifier.size(15.dp)
+                                )
+                                Spacer(Modifier.width(4.dp))
+                                Text(
+                                    text = "Rollback (${uiState.schemaVersions.size})",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+
+                        HorizontalDivider(color = colorScheme.outline.copy(alpha = 0.5f))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                "ENGINESTATEBRIDGE (user.* StateFlow)",
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = colorScheme.primary
                             )
                             Text(
-                                text = uiState.activeSchemaVersion?.changeSummary
-                                    ?: "Cached in SQLite (sdui_schema_versions)",
-                                fontSize = 11.sp,
-                                color = colorScheme.onSurfaceVariant,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
+                                "Ed25519 Verified • ${bridgeVars.size} vars",
+                                fontSize = 10.sp,
+                                fontFamily = FontFamily.Monospace,
+                                color = colorScheme.tertiary
                             )
                         }
-                        Spacer(Modifier.width(8.dp))
-                        FilledTonalButton(
-                            onClick = { activeOverlay = ActiveHostOverlay.SCHEMA_ROLLBACK },
-                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                            modifier = Modifier
-                                .defaultMinSize(minHeight = 36.dp)
-                                .testTag("open_schema_rollback_button")
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.History,
-                                contentDescription = "Schema Rollback",
-                                modifier = Modifier.size(15.dp)
-                            )
-                            Spacer(Modifier.width(4.dp))
-                            Text(
-                                text = "Rollback (${uiState.schemaVersions.size})",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-
-                    HorizontalDivider(color = colorScheme.outline.copy(alpha = 0.5f))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            "ENGINESTATEBRIDGE (user.* StateFlow)",
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = colorScheme.primary
-                        )
-                        Text(
-                            "Ed25519 Verified • ${bridgeVars.size} vars",
-                            fontSize = 10.sp,
-                            fontFamily = FontFamily.Monospace,
-                            color = colorScheme.tertiary
-                        )
-                    }
-                    bridgeVars.entries
-                        .filter { it.key != "user.orders_json" && it.key != "user.catalog_json" }
-                        .forEach { (k, v) ->
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(
-                                    text = k,
-                                    fontSize = 11.sp,
-                                    fontFamily = FontFamily.Monospace,
-                                    color = colorScheme.onSurfaceVariant
-                                )
-                                Text(
-                                    text = v.asDisplayString(),
-                                    fontSize = 11.sp,
-                                    fontFamily = FontFamily.Monospace,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = colorScheme.onSurface
-                                )
+                        bridgeVars.entries
+                            .filter { it.key != "user.orders_json" && it.key != "user.catalog_json" }
+                            .forEach { (k, v) ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        text = k,
+                                        fontSize = 11.sp,
+                                        fontFamily = FontFamily.Monospace,
+                                        color = colorScheme.onSurfaceVariant
+                                    )
+                                    Text(
+                                        text = v.asDisplayString(),
+                                        fontSize = 11.sp,
+                                        fontFamily = FontFamily.Monospace,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = colorScheme.onSurface
+                                    )
+                                }
                             }
                         }
+                    }
                 }
             }
         }
@@ -1012,6 +1035,78 @@ fun PosTerminalTab(
     }
 }
 
+/**
+ * Collapsible host-side developer chrome. Collapsed by default so the tenant card owns the
+ * screen; the operator only sees it when they deliberately open diagnostics.
+ */
+@Composable
+private fun HostDiagnosticsSection(
+    expanded: Boolean,
+    onToggle: () -> Unit,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(12.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable(onClick = onToggle)
+                    .testTag("host_diagnostics_toggle")
+                    .padding(vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Build,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = "Developer diagnostics",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f)
+                )
+                Text(
+                    text = if (expanded) "Hide" else "Show",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+            if (expanded) {
+                Spacer(Modifier.height(8.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) { content() }
+            }
+        }
+    }
+}
+
+/** Human label for a card id: the stack must never show `tool_kiosk_customer` to a user. */
+private fun cardStackLabel(id: String): String {
+    KIOSK_CARD_LABELS[id]?.let { return it }
+    val words = id.removePrefix("hub_").removePrefix("tool_").split('_').filter { it.isNotBlank() }
+    return words.joinToString(" ") { word ->
+        if (word.length <= 2) word.uppercase() else word.replaceFirstChar { it.uppercase() }
+    }
+}
+
+private val KIOSK_CARD_LABELS = mapOf(
+    "hub_apex_kiosk" to "APEX KIOSK",
+    "tool_kiosk_customer" to "Customer order",
+    "tool_kiosk_owner" to "Owner receipt",
+    "tool_kiosk_transfer" to "QR transfer",
+    "tool_kiosk_lan" to "LAN share"
+)
+
 /** Shows how deep the card stack is and offers one-tap return to the hub. */
 @Composable
 private fun CardStackBreadcrumb(
@@ -1049,9 +1144,8 @@ private fun CardStackBreadcrumb(
                 )
             }
             Text(
-                text = stack.joinToString(" › "),
+                text = stack.joinToString(" › ") { cardStackLabel(it) },
                 fontSize = 11.sp,
-                fontFamily = FontFamily.Monospace,
                 color = colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,

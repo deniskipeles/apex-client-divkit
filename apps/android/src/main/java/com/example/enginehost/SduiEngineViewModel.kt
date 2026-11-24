@@ -13,6 +13,7 @@ import engine.crypto.currentTimeMillis
 import engine.db.ApexKitDatabaseEngine
 import engine.db.CachedSchemaVersion
 import engine.db.EngineRegistry
+import engine.db.KioskOps
 import engine.db.OpLogEntry
 import engine.db.PendingSyncEntry
 import engine.db.WorkspaceDriverFactory
@@ -38,6 +39,7 @@ import engine.state.EngineStateBridge
 import engine.sync.BackgroundSyncScheduler
 import engine.sync.SyncEngine
 import engine.sync.SyncOutcome
+import engine.tools.libsignal.LibSignalEngine
 import engine.sync.createHttpClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -207,7 +209,7 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                 _uiState.update {
                     it.copy(
                         activeDbFiles = dbFiles,
-                        statusBannerMessage = "${WorkspaceProvisioner.defaultWorkspaces.size} tenants initiated & cached in SQLite"
+                        statusBannerMessage = "${WorkspaceProvisioner.defaultWorkspaces.size} workspaces ready"
                     )
                 }
                 // Resume the previously opened tenant on relaunch; otherwise land on the launcher.
@@ -359,7 +361,7 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
         _uiState.update {
             it.copy(
                 isWorkspaceOpen = false,
-                statusBannerMessage = "Select a connected tenant to launch its cached SDUI workspace"
+                statusBannerMessage = "Select a workspace to open it"
             )
         }
     }
@@ -520,6 +522,7 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                 var allCachedVersions: List<CachedSchemaVersion> = emptyList()
                 var catalogJson = "[]"
                 var catalogCount = spec.defaultProducts.size.toLong()
+                var kioskSeed: Map<String, DivVariableValue> = emptyMap()
                 withContext(Dispatchers.IO) {
                     ensureTenantInitiatedWithCachedSchema(spec)
                     workspaceManager.useDatabase(spec.tenantId) { db ->
@@ -541,6 +544,11 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                                 }
                             }
                         }.toString()
+                        kioskSeed = seedKioskVariables(
+                            ApexKitDatabaseEngine(db.driver),
+                            spec,
+                            KioskOps.DIRECTION_CUSTOMER
+                        )
                     }
                 }
 
@@ -577,15 +585,17 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                         "user.custom_item_price" to DivVariableValue.Str("12.50"),
                         "user.last_hardware_event" to DivVariableValue.Str("Ready (${spec.capabilities.joinToString("/")})"),
                         "user.sync_status" to DivVariableValue.Str(verifiedConfig.mode.name.lowercase()),
-                        "user.engine_error" to DivVariableValue.Str("None"),
+                        "user.engine_error" to DivVariableValue.Str(""),
                         "user.order_count" to DivVariableValue.IntVal(spec.defaultOrders.size.toLong()),
                         "user.catalog_count" to DivVariableValue.IntVal(catalogCount),
                         "user.catalog_json" to DivVariableValue.Str(catalogJson),
                         "user.last_order_id" to DivVariableValue.IntVal(spec.defaultOrders.size.toLong()),
-                        "user.scanned_code" to DivVariableValue.Str("9780201633610"),
-                        "user.scanned_format" to DivVariableValue.Str("EAN_13"),
-                        "user.scanned_type" to DivVariableValue.Str("1D"),
-                        "user.scan_status" to DivVariableValue.Str("SUCCESS"),
+                        // Scanner results start empty: a seeded code and SUCCESS badge would
+                        // claim a hardware scan the terminal never performed.
+                        "user.scanned_code" to DivVariableValue.Str(""),
+                        "user.scanned_format" to DivVariableValue.Str(""),
+                        "user.scanned_type" to DivVariableValue.Str(""),
+                        "user.scan_status" to DivVariableValue.Str("IDLE"),
                         "user.ocr_text" to DivVariableValue.Str("not_run"),
                         // Embedding results start empty: a seeded vector/score would look
                         // like the tool had already run.
@@ -593,15 +603,15 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                         "user.vector_dim" to DivVariableValue.Str("0"),
                         "user.vector_similarity" to DivVariableValue.Str("—"),
                         "user.vector_b64" to DivVariableValue.Str(""),
-                        "user.ocr_confidence" to DivVariableValue.Str("0.94"),
-                        "user.ocr_block_count" to DivVariableValue.IntVal(3L),
+                        "user.ocr_confidence" to DivVariableValue.Str("0"),
+                        "user.ocr_block_count" to DivVariableValue.IntVal(0L),
                         "user.scan_image_uri" to DivVariableValue.Str(""),
-                        "user.code_image_uri" to DivVariableValue.Str("file:///data/user/0/com.example/files/workspaces/${spec.tenantId}/media/code_9f3c1a2b7d10.png"),
+                        "user.code_image_uri" to DivVariableValue.Str(""),
                         "user.code_format" to DivVariableValue.Str("QR_CODE"),
                         "user.code_kind" to DivVariableValue.Str("2D"),
                         "user.code_content" to DivVariableValue.Str("apexpos://order/pickup?terminal=${spec.terminalCode}"),
-                        "user.code_id" to DivVariableValue.Str("code_9f3c1a2b7d10"),
-                        "user.code_status" to DivVariableValue.Str("SUCCESS"),
+                        "user.code_id" to DivVariableValue.Str(""),
+                        "user.code_status" to DivVariableValue.Str("IDLE"),
                         // MobileNetV4 is an ImageNet classifier, not a SKU model. A seeded
                         // POS label would claim a detection the graph never made.
                         "user.ai_prediction_label" to DivVariableValue.Str("not_run"),
@@ -616,6 +626,7 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                         "user.signal_peer_id" to DivVariableValue.Str("acme_peer_01"),
                         "user.signal_session_id" to DivVariableValue.Str(""),
                         "user.signal_fingerprint" to DivVariableValue.Str(""),
+                        "user.signal_fingerprint_display" to DivVariableValue.Str(""),
                         "user.signal_status" to DivVariableValue.Str("NO_SESSION"),
                         "user.signal_verification" to DivVariableValue.Str("UNVERIFIED"),
                         "user.signal_ciphertext" to DivVariableValue.Str(""),
@@ -624,8 +635,9 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                         "user.tool_last_latency" to DivVariableValue.IntVal(0L),
                         "user.icon_name" to DivVariableValue.Str("cart"),
                         "user.icon_material" to DivVariableValue.Str("ShoppingCart"),
-                        "user.icon_category" to DivVariableValue.Str("Commerce")
-                    )
+                        "user.icon_category" to DivVariableValue.Str("Commerce"),
+                        "user.kiosk_notice" to DivVariableValue.Str("Ready — no action yet")
+                    ) + kioskSeed + seedSignalVariables(spec)
                 )
 
                 // 6. Load the stored/cached verified DivKit JSON schema for this tenant
@@ -829,7 +841,10 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
         val op = NavigationUrlParser.parse(url) ?: return false
         val before = nav.current?.id
         when (op) {
-            is NavOp.Push -> CardRegistry.card(op.cardId)?.let { nav.push(CardEntry(op.cardId, it)) }
+            is NavOp.Push -> CardRegistry.card(op.cardId)?.let {
+                nav.push(CardEntry(op.cardId, it))
+                maybeSeedKioskContext(op.cardId)
+            }
             NavOp.Pop -> nav.pop()
             is NavOp.Replace -> CardRegistry.card(op.cardId)?.let { nav.replace(CardEntry(op.cardId, it)) }
             is NavOp.Reset -> CardRegistry.card(op.cardId)?.let { nav.reset(CardEntry(op.cardId, it)) }
@@ -845,6 +860,88 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
         }
         return true
     }
+
+    /**
+     * The kiosk customer order and owner receipt cards share one variable namespace, so the
+     * card that was just pushed decides which persisted draft is loaded into it. Without this
+     * the receipt card would render the customer's cart.
+     */
+    private fun maybeSeedKioskContext(cardId: String) {
+        val direction = when (cardId) {
+            "tool_kiosk_owner" -> KioskOps.DIRECTION_OWNER
+            "tool_kiosk_customer" -> KioskOps.DIRECTION_CUSTOMER
+            else -> return
+        }
+        val spec = _uiState.value.activeWorkspace
+        viewModelScope.launch {
+            val batch = withContext(Dispatchers.IO) {
+                runCatching {
+                    workspaceManager.useDatabase(spec.tenantId) { db ->
+                        seedKioskVariables(ApexKitDatabaseEngine(db.driver), spec, direction)
+                    }
+                }.getOrDefault(emptyMap())
+            }
+            if (batch.isNotEmpty()) EngineStateBridge.pushBatch(batch)
+        }
+    }
+
+    /**
+     * Publishes the persisted draft for [direction] so reopening a kiosk card shows real
+     * SQLite state instead of empty placeholders. A missing draft is created once, which is
+     * a real record the operator can then edit.
+     */
+    private fun seedKioskVariables(
+        engine: ApexKitDatabaseEngine,
+        spec: TenantWorkspaceSpec,
+        direction: String
+    ): Map<String, DivVariableValue> {
+        if (engine.getCollection(KioskOps.ORDERS) == null) return emptyMap()
+        val cart = runCatching {
+            KioskOps.latestOrCreate(engine, direction, spec.terminalCode)
+        }.getOrNull() ?: return emptyMap()
+        val submitted = runCatching {
+            KioskOps.recent(engine, KioskOps.DIRECTION_CUSTOMER, "SUBMITTED", 5)
+        }.getOrDefault(emptyList())
+        return mapOf(
+            "user.kiosk_order_id" to DivVariableValue.Str(cart.orderId),
+            "user.kiosk_order_label" to DivVariableValue.Str(cart.label),
+            "user.kiosk_status" to DivVariableValue.Str(cart.status),
+            "user.kiosk_direction" to DivVariableValue.Str(cart.direction),
+            "user.kiosk_total" to DivVariableValue.Str(KioskOps.format(cart.total)),
+            "user.kiosk_subtotal" to DivVariableValue.Str(KioskOps.format(cart.subtotal)),
+            "user.kiosk_item_count" to DivVariableValue.Str(cart.itemCount.toString()),
+            "user.kiosk_line_count" to DivVariableValue.Str(cart.lines.size.toString()),
+            "user.kiosk_lines_json" to DivVariableValue.Str(KioskOps.linesJson(cart)),
+            "user.kiosk_payload_json" to DivVariableValue.Str(KioskOps.exportPayload(cart)),
+            "user.kiosk_checksum" to DivVariableValue.Str(KioskOps.checksum(KioskOps.exportPayload(cart))),
+            "user.kiosk_orders_json" to DivVariableValue.Str(KioskOps.listJson(submitted)),
+            "user.kiosk_order_count" to DivVariableValue.IntVal(submitted.size.toLong())
+        )
+    }
+
+    /**
+     * Reports the persisted Signal session so a reopened card does not claim NO_SESSION while
+     * the ratchet and trust record are still on disk.
+     */
+    private fun seedSignalVariables(spec: TenantWorkspaceSpec): Map<String, DivVariableValue> =
+        runCatching {
+            val peer = "acme_peer_01"
+            val hasSession = LibSignalEngine.hasSession(spec.tenantId, peer)
+            if (!hasSession) return emptyMap()
+            val status = LibSignalEngine.verificationStatus(spec.tenantId, peer)
+            mapOf(
+                "user.signal_peer_id" to DivVariableValue.Str(peer),
+                "user.signal_status" to DivVariableValue.Str("ESTABLISHED"),
+                "user.signal_session_id" to DivVariableValue.Str(
+                    LibSignalEngine.createOrGetSession(spec.tenantId, peer, fresh = false).sessionId
+                ),
+                "user.signal_fingerprint" to DivVariableValue.Str(status.safetyNumber),
+                "user.signal_fingerprint_display" to DivVariableValue.Str(
+                    status.safetyNumber.filter { it.isDigit() }.chunked(5).joinToString(" ")
+                ),
+                "user.signal_verification" to DivVariableValue.Str(status.status)
+            )
+        }.getOrDefault(emptyMap())
 
     /** Pops the active card. No-op on the hub, so the landing card cannot be popped away. */
     fun navigateBack() {

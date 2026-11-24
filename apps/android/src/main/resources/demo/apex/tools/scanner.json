@@ -37,7 +37,7 @@
                 },
                 {
                     "type": "text",
-                    "text": "Live viewfinder (barcode • QR • both) + file decode + ML Kit OCR. All results flow into user.* variables.",
+                    "text": "Point the camera at a barcode or QR code, or decode an image file. Results appear below.",
                     "font_size": 11,
                     "text_color": "#6EE7B7",
                     "margins": {"top": 4}
@@ -119,8 +119,9 @@
                         {
                             "type": "button",
                             "id": "tool_scan_live_barcode",
-                            "text": "Scan Barcode",
-                            "subtitle": "Opens rear camera viewfinder",
+                            "text": "Barcode",
+                        "font_size": 12,
+                            "subtitle": "Camera",
                             "icon": "scanner",
                             "background_color": "#047857",
                             "text_color": "#FFFFFF",
@@ -152,8 +153,9 @@
                         {
                             "type": "button",
                             "id": "tool_scan_live_qr",
-                            "text": "Scan QR",
-                            "subtitle": "Opens rear camera viewfinder",
+                            "text": "QR code",
+                        "font_size": 12,
+                            "subtitle": "Camera",
                             "icon": "qr_code",
                             "background_color": "#0D9488",
                             "text_color": "#FFFFFF",
@@ -185,8 +187,9 @@
                         {
                             "type": "button",
                             "id": "tool_scan_live_both",
-                            "text": "Scan Both",
-                            "subtitle": "Barcode or QR — auto-detect",
+                            "text": "Both",
+                        "font_size": 12,
+                            "subtitle": "Auto",
                             "icon": "scanner",
                             "background_color": "#065F46",
                             "text_color": "#FFFFFF",
@@ -321,8 +324,9 @@
                                 {
                                     "type": "button",
                                     "id": "tool_scan_scan",
-                                    "text": "Decode Sample Barcode File",
-                                    "subtitle": "EAN-13 test image — no camera",
+                                    "text": "Sample barcode",
+                        "font_size": 12,
+                                    "subtitle": "EAN-13 file",
                                     "icon": "barcode",
                                     "background_color": "#064E3B",
                                     "text_color": "#FFFFFF",
@@ -354,8 +358,9 @@
                                 {
                                     "type": "button",
                                     "id": "tool_scan_scan_qr",
-                                    "text": "Decode Sample QR File",
-                                    "subtitle": "QR test image — no camera",
+                                    "text": "Sample QR",
+                        "font_size": 12,
+                                    "subtitle": "QR file",
                                     "icon": "qr_code",
                                     "background_color": "#065F46",
                                     "text_color": "#FFFFFF",

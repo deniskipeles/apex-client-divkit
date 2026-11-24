@@ -281,7 +281,7 @@ object DemoCardRepository {
                                 addJsonObject {
                                     put("type", "button")
                                     put("id", "nav_back_$name")
-                                    put("text", "← Back to tool cards")
+                                    put("text", "Back to tool cards")
                                     put("icon", "back")
                                     put("background_color", "#1E293B")
                                     put("text_color", "#CBD5E1")
