@@ -7,6 +7,7 @@ import engine.db.WorkspaceManager
 import engine.icons.NativeIconCatalog
 import engine.state.DivVariableValue
 import engine.state.EngineStateBridge
+import engine.state.WorkspaceVariableScope
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.*
 
@@ -30,7 +31,6 @@ class EngineRouter(
     private val navigationDispatcher: ((url: String) -> Boolean)? = null
 ) {
     companion object {
-        private val VAR_NAME_REGEX = Regex("^user\\.[a-zA-Z][a-zA-Z0-9_.]{0,62}$")
         private const val OP_TIMEOUT_MS = 5_000L
     }
 
@@ -165,7 +165,7 @@ class EngineRouter(
             ?: body["var"]?.jsonPrimitive?.contentOrNull
             ?: body["result_var"]?.jsonPrimitive?.contentOrNull
             ?: "user.icon_name"
-        if (VAR_NAME_REGEX.matches(target)) {
+        if (WorkspaceVariableScope.isValid(target)) {
             EngineStateBridge.pushUpdate(target, DivVariableValue.Str(icon.name))
         }
         EngineStateBridge.pushUpdate("user.icon_name", DivVariableValue.Str(icon.name))
@@ -261,16 +261,14 @@ class EngineRouter(
     private fun emitError(message: String, payload: JsonObject) {
         EngineStateBridge.pushUpdate("user.engine_error", DivVariableValue.Str(message))
         payload["error_variable"]?.jsonPrimitive?.contentOrNull?.let { v ->
-            if (VAR_NAME_REGEX.matches(v)) {
+            if (WorkspaceVariableScope.isValid(v)) {
                 EngineStateBridge.pushUpdate(v, DivVariableValue.Str(message))
             }
         }
     }
 
     private fun requireVar(name: String) {
-        require(VAR_NAME_REGEX.matches(name)) {
-            "Output variable must be user.*-namespaced: $name"
-        }
+        WorkspaceVariableScope.requireValid(name)
     }
 
     private fun toDivValue(v: Any?): DivVariableValue = when (v) {

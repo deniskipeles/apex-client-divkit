@@ -103,12 +103,15 @@
               }
             },
             {
-              "url": "local-db://op/kiosk.load",
+              "url": "local-db://op/db.query",
               "payload": {
-                "direction": "CUSTOMER_REQUEST",
+                "collection": "kiosk_orders",
+                "where": {
+                  "direction": "CUSTOMER_REQUEST"
+                },
+                "limit": 1,
                 "output": {
-                  "order_id": "user.kiosk_order_id",
-                  "order_label": "user.kiosk_order_label",
+                  "id": "user.kiosk_order_label",
                   "status": "user.kiosk_status",
                   "direction": "user.kiosk_direction",
                   "total_display": "user.kiosk_total",
@@ -123,12 +126,12 @@
               "log_id": "kiosk_transfer_load"
             },
             {
-              "url": "local-db://op/kiosk.export",
+              "url": "local-db://op/doc.pack",
               "payload": {
-                "order_id": "@{user.kiosk_order_id}",
+                "collection": "kiosk_orders",
+                "id": "@{user.kiosk_order_id}",
                 "output": {
-                  "order_id": "user.kiosk_order_id",
-                  "order_label": "user.kiosk_order_label",
+                  "id": "user.kiosk_order_label",
                   "status": "user.kiosk_status",
                   "direction": "user.kiosk_direction",
                   "total_display": "user.kiosk_total",

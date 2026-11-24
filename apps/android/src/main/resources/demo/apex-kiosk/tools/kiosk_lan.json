@@ -219,12 +219,12 @@
               }
             },
             {
-              "url": "local-db://op/kiosk.export",
+              "url": "local-db://op/doc.pack",
               "payload": {
-                "order_id": "@{user.kiosk_order_id}",
+                "collection": "kiosk_orders",
+                "id": "@{user.kiosk_order_id}",
                 "output": {
-                  "order_id": "user.kiosk_order_id",
-                  "order_label": "user.kiosk_order_label",
+                  "id": "user.kiosk_order_label",
                   "status": "user.kiosk_status",
                   "direction": "user.kiosk_direction",
                   "total_display": "user.kiosk_total",

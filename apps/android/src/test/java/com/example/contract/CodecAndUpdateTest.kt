@@ -213,9 +213,13 @@ class CodecAndUpdateTest {
     fun demoCollectionsLoadFromResources() {
         val loaded = DemoCollectionRepository.load()
         assertNotNull(loaded)
-        assertTrue(loaded!!.names.containsAll(listOf("inventory", "orders", "kiosk_orders", "kiosk_order_lines")))
+        assertTrue(
+            loaded!!.names.containsAll(
+                listOf("inventory", "orders", "kiosk_orders", "kiosk_order_lines", "cust_history")
+            )
+        )
         val collections = loaded.schemaPayload["schema"]!!.jsonObject["collections"]!!
             .let { it as kotlinx.serialization.json.JsonArray }
-        assertEquals(4, collections.size)
+        assertEquals(5, collections.size)
     }
 }

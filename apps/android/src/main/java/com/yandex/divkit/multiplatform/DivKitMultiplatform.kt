@@ -28,11 +28,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import engine.ui.SduiLayoutBlocks
+import engine.ui.flag
+import engine.ui.items
+import engine.ui.number
+import engine.ui.text
 import androidx.compose.ui.unit.sp
 import engine.icons.NativeIconCatalog
 import engine.icons.NativeIconVectors
 import engine.state.DivVariableValue
 import engine.state.EngineStateBridge
+import engine.state.WorkspaceVariableScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -163,7 +169,7 @@ fun DivView(
         for (v in vars) {
             val obj = v.jsonObject
             val name = obj["name"]?.jsonPrimitive?.contentOrNull ?: continue
-            if (!name.startsWith("user.") || name in current) continue
+            if (!WorkspaceVariableScope.isValid(name) || name in current) continue
             val type = obj["type"]?.jsonPrimitive?.contentOrNull ?: "string"
             val valueEl = obj["value"]
             val dv = when (type) {
@@ -250,7 +256,8 @@ private fun handleDivSetVariable(url: String) {
     }.toMap()
     val name = params["name"] ?: return
     val value = params["value"] ?: ""
-    if (name.startsWith("user.")) {
+    // Only card-declared variables are writable: the workspace owns the vocabulary.
+    if (name.contains('.')) {
         EngineStateBridge.pushUpdate(name, DivVariableValue.Str(value))
     }
 }
@@ -321,6 +328,20 @@ private fun RenderDivNode(
     }
 
     when (type) {
+        "sticky_footer", "segmented", "bottom_tabs", "progress_ring", "text_field",
+        "scan_chips", "qr_controls", "fab", "toast", "form_modal", "bottom_sheet",
+        "camera_viewfinder", "inline_banner" -> {
+            RenderLayoutBlock(
+                type = type,
+                node = node,
+                variables = variables,
+                rowContext = rowContext,
+                isDark = isDark,
+                scope = scope,
+                onDispatchAction = onDispatchAction,
+                modifier = boxModifier
+            )
+        }
         "container" -> {
             val orientation = node["orientation"]?.jsonPrimitive?.contentOrNull ?: "vertical"
             val items = node["items"]?.jsonArray ?: JsonArray(emptyList())
@@ -520,7 +541,7 @@ private fun RenderDivNode(
             OutlinedTextField(
                 value = currentVal,
                 onValueChange = { newValue ->
-                    if (varName.startsWith("user.")) {
+                    if (WorkspaceVariableScope.isValid(varName)) {
                         EngineStateBridge.pushUpdate(varName, DivVariableValue.Str(newValue))
                     }
                 },
@@ -1010,4 +1031,139 @@ private fun resolveIcon(name: String): ImageVector {
         ?.let { NativeIconVectors.resolve(it.material) }
         ?.let { return it }
     return Icons.Default.FlashOn
+}
+
+/**
+ * Renders the neutral layout blocks. Everything workspace-specific arrives as copy, values
+ * and action payloads in the card, so a new workspace needs no Kotlin.
+ */
+@Composable
+private fun RenderLayoutBlock(
+    type: String,
+    node: JsonObject,
+    variables: Map<String, DivVariableValue>,
+    rowContext: Map<String, Any?>,
+    isDark: Boolean,
+    scope: CoroutineScope,
+    onDispatchAction: suspend (String, String?) -> Unit,
+    modifier: Modifier
+) {
+    val props = SduiLayoutBlocks.props(node)
+    fun text(key: String, fallback: String = "") =
+        evalExpr(props[key]?.jsonPrimitive?.contentOrNull ?: fallback, variables, rowContext)
+    fun children(key: String) = props.items(key)
+    fun run(actions: List<JsonObject>) {
+        if (actions.isNotEmpty()) scope.launch { dispatchAllActions(actions, variables, rowContext, onDispatchAction) }
+    }
+    fun actionsOf(obj: JsonObject?) = obj?.let { extractActions(it) } ?: emptyList()
+    fun number(key: String) = text(key, "0").toDoubleOrNull() ?: 0.0
+    fun flag(key: String) = text(key, "false").toBooleanStrictOrNull() ?: false
+    val chunks = remember(variables[text("chunks_var", "chunks")]) {
+        parseJsonListVariable(variables[text("chunks_var", "chunks")]).map { it["chunk"]?.toString().orEmpty() }
+    }
+
+    when (type) {
+        "sticky_footer" -> SduiLayoutBlocks.StickyFooter(
+            body = {
+                Column(Modifier.padding(horizontal = SduiLayoutBlocks.gap(SduiLayoutBlocks.GUTTER / SduiLayoutBlocks.STEP))) {
+                    Column(verticalArrangement = Arrangement.spacedBy(SduiLayoutBlocks.gap(3))) {
+                        children("body").forEach { child ->
+                            RenderDivNode(child, variables, rowContext, isDark, scope, onDispatchAction)
+                        }
+                    }
+                }
+            },
+            footer = {
+                Column(verticalArrangement = Arrangement.spacedBy(SduiLayoutBlocks.gap(2))) {
+                    children("footer").forEach { child ->
+                        RenderDivNode(child, variables, rowContext, isDark, scope, onDispatchAction)
+                    }
+                }
+            },
+            modifier = modifier
+        )
+
+        "segmented" -> SduiLayoutBlocks.Segmented(
+            items = props.items(),
+            activeValue = text("active_value"),
+            modifier = modifier,
+            onSelect = { item -> run(actionsOf(item)) }
+        )
+
+        "bottom_tabs" -> SduiLayoutBlocks.BottomTabs(
+            items = props.items(),
+            activeValue = text("active_value"),
+            modifier = modifier,
+            onSelect = { item -> run(actionsOf(item)) }
+        )
+
+        "progress_ring" -> SduiLayoutBlocks.Ring(
+            fraction = number("value"),
+            label = text("label"),
+            caption = text("caption"),
+            modifier = modifier
+        )
+
+        "text_field" -> SduiLayoutBlocks.TextFieldBlock(
+            label = text("label"),
+            variable = text("variable"),
+            placeholder = text("placeholder"),
+            modifier = modifier
+        )
+
+        "scan_chips" -> SduiLayoutBlocks.ScanChips(
+            chunks = chunks,
+            expected = number("expected").toInt(),
+            modifier = modifier
+        )
+
+        "qr_controls" -> SduiLayoutBlocks.QrControls(
+            index = number("index").toInt(),
+            count = number("count").toInt(),
+            modifier = modifier,
+            onPrev = { run(actionsOf(props["prev"] as? JsonObject)) },
+            onNext = { run(actionsOf(props["next"] as? JsonObject)) }
+        )
+
+        "fab" -> SduiLayoutBlocks.FloatingAction(
+            label = text("label"),
+            modifier = modifier,
+            onClick = { run(actionsOf(props)) }
+        )
+
+        "toast" -> SduiLayoutBlocks.Toast(text("text"), modifier)
+
+        "form_modal", "bottom_sheet" -> {
+            val title = text("title")
+            val body: @Composable () -> Unit = {
+                Column(verticalArrangement = Arrangement.spacedBy(SduiLayoutBlocks.gap(3))) {
+                    children("body").forEach { child ->
+                        RenderDivNode(child, variables, rowContext, isDark, scope, onDispatchAction)
+                    }
+                }
+            }
+            if (type == "form_modal") {
+                SduiLayoutBlocks.Modal(
+                    visible = flag("visible"),
+                    title = title,
+                    body = body,
+                    primaryLabel = text("primary_label").ifBlank { null },
+                    onPrimary = { run(actionsOf(props["primary"] as? JsonObject)) },
+                    secondaryLabel = text("secondary_label").ifBlank { null },
+                    onSecondary = { run(actionsOf(props["secondary"] as? JsonObject)) }
+                )
+            } else {
+                SduiLayoutBlocks.SheetShell(
+                    visible = flag("visible"),
+                    title = title,
+                    body = body,
+                    onDismiss = { run(actionsOf(props["dismiss"] as? JsonObject)) }
+                )
+            }
+        }
+
+        "camera_viewfinder" -> SduiLayoutBlocks.Viewfinder(text("hint"), modifier)
+
+        "inline_banner" -> SduiLayoutBlocks.Banner(text("text"), text("tone", "info"), modifier)
+    }
 }

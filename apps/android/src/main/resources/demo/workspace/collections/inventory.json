@@ -3,12 +3,71 @@
   "name": "inventory",
   "schema": {
     "fields": {
-      "item_name": { "type": "string", "required": false, "uid": "inventory_item_name" },
-      "sku": { "type": "string", "required": false, "uid": "inventory_sku" },
-      "price": { "type": "number", "required": false, "uid": "inventory_price" },
-      "stock": { "type": "number", "required": false, "uid": "inventory_stock" },
-      "category": { "type": "string", "required": false, "uid": "inventory_category" }
+      "item_name": {
+        "type": "string",
+        "required": false,
+        "uid": "inventory_item_name",
+        "min_length": 1,
+        "max_length": 60
+      },
+      "sku": {
+        "type": "string",
+        "required": false,
+        "uid": "inventory_sku",
+        "unique": true,
+        "min_length": 2
+      },
+      "price": {
+        "type": "number",
+        "required": false,
+        "uid": "inventory_price",
+        "min": 0
+      },
+      "stock": {
+        "type": "number",
+        "required": false,
+        "uid": "inventory_stock"
+      },
+      "category": {
+        "type": "string",
+        "required": false,
+        "uid": "inventory_category"
+      },
+      "barcode": {
+        "type": "string",
+        "required": false,
+        "sql_indexed": true,
+        "uid": "inventory_barcode"
+      },
+      "description": {
+        "type": "string",
+        "required": false,
+        "uid": "inventory_description"
+      },
+      "photo_url": {
+        "type": "string",
+        "required": false,
+        "uid": "inventory_photo_url"
+      }
     },
-    "policies": { "read": "public", "create": "public", "update": "public", "delete": "public" }
+    "policies": {
+      "read": "public",
+      "create": "public",
+      "update": "public",
+      "delete": "public"
+    },
+    "lookup": {
+      "field": "barcode",
+      "secondary_field": "sku"
+    },
+    "references": [
+      {
+        "collection": "kiosk_order_lines",
+        "field": "sku",
+        "match": "sku",
+        "restrict_delete": true,
+        "message": "This product is on past orders and can't be deleted. Edit it instead to set stock to 0."
+      }
+    ]
   }
 }

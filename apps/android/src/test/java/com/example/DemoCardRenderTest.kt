@@ -317,10 +317,10 @@ class DemoCardRenderTest {
             composeRule.onNodeWithTag("div_btn_kiosk_build_qr_set").performScrollTo().performClick()
             composeRule.waitForIdle()
 
-            // The card must load the persisted draft, export it, chunk it, then render chunk 0.
+            // The card must read the persisted order, pack it, chunk it, then render chunk 0.
             val order = listOf(
-                "local-db://op/kiosk.load",
-                "local-db://op/kiosk.export",
+                "local-db://op/db.query",
+                "local-db://op/doc.pack",
                 "tools://codec/json/chunk",
                 "tools://code-generate/generate"
             )

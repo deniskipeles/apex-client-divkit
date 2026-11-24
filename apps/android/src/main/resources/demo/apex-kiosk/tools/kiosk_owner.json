@@ -109,13 +109,17 @@
               }
             },
             {
-              "url": "local-db://op/kiosk.create",
+              "url": "local-db://op/db.upsert",
               "payload": {
-                "direction": "OWNER_RECEIPT",
-                "terminal_id": "${terminalCode}",
+                "collection": "kiosk_orders",
+                "data": {
+                  "direction": "OWNER_RECEIPT",
+                  "status": "draft",
+                  "terminal_id": "${terminalCode}",
+                  "created_at": "@{user.now_iso}"
+                },
                 "output": {
-                  "order_id": "user.kiosk_order_id",
-                  "order_label": "user.kiosk_order_label",
+                  "id": "user.kiosk_order_label",
                   "status": "user.kiosk_status",
                   "direction": "user.kiosk_direction",
                   "total_display": "user.kiosk_total",
@@ -130,11 +134,13 @@
               "log_id": "kiosk_new_receipt"
             },
             {
-              "url": "local-db://op/kiosk.list",
+              "url": "local-db://op/db.query",
               "payload": {
-                "direction": "CUSTOMER_REQUEST",
-                "status": "SUBMITTED",
-                "limit": 5,
+                "collection": "kiosk_orders",
+                "where": {
+                  "status": "SUBMITTED"
+                },
+                "limit": 20,
                 "output": {
                   "orders_json": "user.kiosk_orders_json",
                   "order_count": "user.kiosk_order_count"
@@ -165,12 +171,15 @@
               }
             },
             {
-              "url": "local-db://op/kiosk.load",
+              "url": "local-db://op/db.query",
               "payload": {
-                "direction": "OWNER_RECEIPT",
+                "collection": "kiosk_orders",
+                "where": {
+                  "direction": "OWNER_RECEIPT"
+                },
+                "limit": 1,
                 "output": {
-                  "order_id": "user.kiosk_order_id",
-                  "order_label": "user.kiosk_order_label",
+                  "id": "user.kiosk_order_label",
                   "status": "user.kiosk_status",
                   "direction": "user.kiosk_direction",
                   "total_display": "user.kiosk_total",
@@ -185,11 +194,13 @@
               "log_id": "kiosk_reload_receipt"
             },
             {
-              "url": "local-db://op/kiosk.list",
+              "url": "local-db://op/db.query",
               "payload": {
-                "direction": "CUSTOMER_REQUEST",
-                "status": "SUBMITTED",
-                "limit": 5,
+                "collection": "kiosk_orders",
+                "where": {
+                  "status": "SUBMITTED"
+                },
+                "limit": 20,
                 "output": {
                   "orders_json": "user.kiosk_orders_json",
                   "order_count": "user.kiosk_order_count"
@@ -272,16 +283,18 @@
                 "font_weight": "bold",
                 "actions": [
                   {
-                    "url": "local-db://op/kiosk.add_line",
+                    "url": "local-db://op/db.append_child",
                     "payload": {
-                      "order_id": "@{user.kiosk_order_id}",
-                      "sku": "@{item.sku}",
-                      "item_name": "@{item.item_name}",
-                      "unit_price": "@{item.price}",
-                      "quantity": 1,
+                      "collection": "kiosk_order_lines",
+                      "parent_id": "@{user.kiosk_order_id}",
+                      "data": {
+                        "sku": "@{item.sku}",
+                        "item_name": "@{item.item_name}",
+                        "unit_price": "@{item.price}",
+                        "quantity": 1
+                      },
                       "output": {
-                        "order_id": "user.kiosk_order_id",
-                        "order_label": "user.kiosk_order_label",
+                        "id": "user.kiosk_order_label",
                         "status": "user.kiosk_status",
                         "direction": "user.kiosk_direction",
                         "total_display": "user.kiosk_total",
@@ -372,13 +385,12 @@
                     }
                   },
                   {
-                    "url": "local-db://op/kiosk.remove_line",
+                    "url": "local-db://op/db.remove_child",
                     "payload": {
-                      "order_id": "@{user.kiosk_order_id}",
-                      "line_id": "@{item.id}",
+                      "collection": "kiosk_order_lines",
+                      "id": "@{item.id}",
                       "output": {
-                        "order_id": "user.kiosk_order_id",
-                        "order_label": "user.kiosk_order_label",
+                        "id": "user.kiosk_order_label",
                         "status": "user.kiosk_status",
                         "direction": "user.kiosk_direction",
                         "total_display": "user.kiosk_total",
@@ -388,10 +400,10 @@
                         "lines_json": "user.kiosk_lines_json",
                         "payload_json": "user.kiosk_payload_json",
                         "checksum": "user.kiosk_checksum",
-                        "removed_sku": "user.kiosk_undo_sku",
-                        "removed_name": "user.kiosk_undo_label",
-                        "removed_quantity": "user.kiosk_undo_qty",
-                        "removed_unit_price_display": "user.kiosk_undo_price"
+                        "sku": "user.kiosk_undo_sku",
+                        "item_name": "user.kiosk_undo_label",
+                        "quantity": "user.kiosk_undo_qty",
+                        "unit_price": "user.kiosk_undo_price"
                       }
                     },
                     "log_id": "kiosk_receipt_remove"
@@ -453,16 +465,18 @@
           }
         },
         {
-          "url": "local-db://op/kiosk.add_line",
+          "url": "local-db://op/db.append_child",
           "payload": {
-            "order_id": "@{user.kiosk_order_id}",
-            "sku": "@{user.kiosk_undo_sku}",
-            "item_name": "@{user.kiosk_undo_label}",
-            "unit_price": "@{user.kiosk_undo_price}",
-            "quantity": "@{user.kiosk_undo_qty}",
+            "collection": "kiosk_order_lines",
+            "parent_id": "@{user.kiosk_order_id}",
+            "data": {
+              "sku": "@{user.kiosk_undo_sku}",
+              "item_name": "@{user.kiosk_undo_label}",
+              "unit_price": "@{user.kiosk_undo_price}",
+              "quantity": "@{user.kiosk_undo_qty}"
+            },
             "output": {
-              "order_id": "user.kiosk_order_id",
-              "order_label": "user.kiosk_order_label",
+              "id": "user.kiosk_order_label",
               "status": "user.kiosk_status",
               "direction": "user.kiosk_direction",
               "total_display": "user.kiosk_total",
@@ -645,12 +659,15 @@
                     }
                   },
                   {
-                    "url": "local-db://op/kiosk.load",
+                    "url": "local-db://op/db.query",
                     "payload": {
-                      "order_id": "@{item.id}",
+                      "collection": "kiosk_orders",
+                      "where": {
+                        "direction": "CUSTOMER_REQUEST"
+                      },
+                      "limit": 1,
                       "output": {
-                        "order_id": "user.kiosk_order_id",
-                        "order_label": "user.kiosk_order_label",
+                        "id": "user.kiosk_order_label",
                         "status": "user.kiosk_status",
                         "direction": "user.kiosk_direction",
                         "total_display": "user.kiosk_total",
@@ -697,12 +714,12 @@
           }
         },
         {
-          "url": "local-db://op/kiosk.submit",
+          "url": "local-db://op/db.commit",
           "payload": {
-            "order_id": "@{user.kiosk_order_id}",
+            "collection": "kiosk_orders",
+            "id": "@{user.kiosk_order_id}",
             "output": {
-              "order_id": "user.kiosk_order_id",
-              "order_label": "user.kiosk_order_label",
+              "id": "user.kiosk_order_label",
               "status": "user.kiosk_status",
               "direction": "user.kiosk_direction",
               "total_display": "user.kiosk_total",
@@ -781,12 +798,12 @@
               }
             },
             {
-              "url": "local-db://op/kiosk.export",
+              "url": "local-db://op/doc.pack",
               "payload": {
-                "order_id": "@{user.kiosk_order_id}",
+                "collection": "kiosk_orders",
+                "id": "@{user.kiosk_order_id}",
                 "output": {
-                  "order_id": "user.kiosk_order_id",
-                  "order_label": "user.kiosk_order_label",
+                  "id": "user.kiosk_order_label",
                   "status": "user.kiosk_status",
                   "direction": "user.kiosk_direction",
                   "total_display": "user.kiosk_total",

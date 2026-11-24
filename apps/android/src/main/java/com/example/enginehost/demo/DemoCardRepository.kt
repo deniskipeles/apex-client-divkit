@@ -95,6 +95,17 @@ object DemoCardRepository {
         return runCatching { Json.parseToJsonElement(text).jsonObject }.getOrNull()
     }
 
+
+    /**
+     * Workspace-declared startup operations. A card manifest lists the queries it wants run
+     * before it renders, so opening a workspace needs no tenant-specific Kotlin.
+     */
+    fun seedOps(spec: TenantWorkspaceSpec): List<JsonObject> {
+        val hub = readObject("${root(spec)}/card.json", placeholders(spec)) ?: return emptyList()
+        val ops = hub["card"]?.jsonObject?.get("seed_ops")?.jsonArray ?: return emptyList()
+        return ops.mapNotNull { it as? JsonObject }
+    }
+
     fun placeholders(spec: TenantWorkspaceSpec): Map<String, String> = mapOf(
         "tenantId" to spec.tenantId,
         "terminalCode" to spec.terminalCode,
@@ -186,58 +197,60 @@ object DemoCardRepository {
         return buildJsonObject {
             put("type", "container")
             put("orientation", "vertical")
-            put("item_spacing", 8)
-            put("background_color", "#0F172A")
-            put("corner_radius", 12)
+            put("item_spacing", 12)
+            put("background_color", "#FFFFFF")
+            put("corner_radius", 16)
             putJsonObject("paddings") {
-                put("left", 12); put("right", 12); put("top", 10); put("bottom", 10)
+                put("left", 20); put("right", 20); put("top", 20); put("bottom", 20)
             }
             putJsonObject("border") {
-                put("corner_radius", 12)
+                put("corner_radius", 16)
                 putJsonObject("stroke") {
-                    put("color", "#1E293B")
+                    put("color", "#E5E7EB")
                     put("width", 1)
                 }
             }
             putJsonArray("items") {
                 addJsonObject {
                     put("type", "text")
-                    put("text", catalog["title"]?.jsonPrimitive?.contentOrNull ?: "TOOL CARDS")
-                    put("font_size", 11)
+                    put("text", catalog["title"]?.jsonPrimitive?.contentOrNull ?: "Workflows")
+                    put("font_size", 17)
                     put("font_weight", "bold")
-                    put("text_color", "#94A3B8")
+                    put("text_color", "#111827")
                 }
                 addJsonObject {
                     put("type", "text")
                     put("text", catalog["subtitle"]?.jsonPrimitive?.contentOrNull ?: "")
-                    put("font_size", 11)
-                    put("text_color", "#64748B")
+                    put("font_size", 13)
+                    put("text_color", "#6B7280")
                 }
-                addJsonObject {
-                    put("type", "grid")
-                    put("column_count", 2)
-                    put("item_spacing", 8)
-                    putJsonArray("items") {
-                        entries.forEach { entryEl ->
-                            val entry = entryEl.jsonObject
-                            val file = entry["file"]?.jsonPrimitive?.contentOrNull ?: return@forEach
-                            addJsonObject {
-                                put("type", "button")
-                                put("id", "nav_$file")
-                                put("text", entry["label"]?.jsonPrimitive?.contentOrNull ?: file)
-                                put("subtitle", "Open card")
-                                entry["icon"]?.jsonPrimitive?.contentOrNull?.let { put("icon", it) }
-                                put(
-                                    "background_color",
-                                    entry["accent_color"]?.jsonPrimitive?.contentOrNull ?: "#1E293B"
-                                )
-                                put("text_color", "#F8FAFC")
-                                put("corner_radius", 10)
-                                putJsonObject("action") {
-                                    put("log_id", "nav_push_$file")
-                                    put("url", "nav://push?id=${toolCardId(file)}")
-                                }
+                entries.forEach { entryEl ->
+                    val entry = entryEl.jsonObject
+                    val file = entry["file"]?.jsonPrimitive?.contentOrNull ?: return@forEach
+                    addJsonObject {
+                        put("type", "button")
+                        put("id", "nav_$file")
+                        put("text", entry["label"]?.jsonPrimitive?.contentOrNull ?: file)
+                        put("subtitle", entry["subtitle"]?.jsonPrimitive?.contentOrNull ?: "")
+                        entry["icon"]?.jsonPrimitive?.contentOrNull?.let { put("icon", it) }
+                        put("background_color", "#FFFFFF")
+                        put("text_color", "#111827")
+                        put("font_size", 16)
+                        put("corner_radius", 14)
+                        put("text_alignment_horizontal", "left")
+                        putJsonObject("paddings") {
+                            put("left", 16); put("right", 16); put("top", 14); put("bottom", 14)
+                        }
+                        putJsonObject("border") {
+                            put("corner_radius", 14)
+                            putJsonObject("stroke") {
+                                put("color", "#E5E7EB")
+                                put("width", 1)
                             }
+                        }
+                        putJsonObject("action") {
+                            put("log_id", "nav_push_$file")
+                            put("url", "nav://push?id=${toolCardId(file)}")
                         }
                     }
                 }
