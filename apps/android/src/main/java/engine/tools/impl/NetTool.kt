@@ -279,10 +279,15 @@ class NetTool(
         try {
             running?.stop(500, 1500)
         } catch (_: Exception) {}
+        // `port`/`lan_url` report the *current* hub, so a card that maps them clears the URL it
+        // was showing. The port that was released is kept separately for diagnostics.
         return ToolResult.Success(
             mapOf(
                 "status" to if (running != null) "STOPPED" else "NOT_RUNNING",
-                "port" to stoppedPort,
+                "port" to 0,
+                "stopped_port" to stoppedPort,
+                "lan_url" to "",
+                "share_count" to shared.size,
                 "timestamp" to currentTimeMillis()
             )
         )
@@ -296,6 +301,7 @@ class NetTool(
                 "running" to running,
                 "hub_id" to (hubId ?: ""),
                 "port" to serverPort,
+                "lan_url" to if (running) (localIpv4()?.let { "http://$it:$serverPort" } ?: "") else "",
                 "share_count" to shared.size,
                 "supported_operations" to listOf(
                     "request", "get", "post", "download", "upload",
@@ -327,6 +333,7 @@ class NetTool(
                 "mime" to mime,
                 "bytes" to bytes.size,
                 "path" to "/file/$id",
+                "count" to shared.size,
                 "timestamp" to currentTimeMillis()
             )
         )

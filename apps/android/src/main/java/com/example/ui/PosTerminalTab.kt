@@ -35,6 +35,8 @@ import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -241,6 +243,7 @@ fun PosTerminalTab(
                     .minimumInteractiveComponentSize()
                     .clip(RoundedCornerShape(50))
                     .clickable { isAppBarExpanded = true }
+                    .semantics { contentDescription = "Workspace menu and Hub navigation" }
                     .testTag("workspace_standout_pill"),
                 contentAlignment = Alignment.Center
             ) {

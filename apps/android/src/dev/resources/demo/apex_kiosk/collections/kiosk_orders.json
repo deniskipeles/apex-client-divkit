@@ -1,138 +1,144 @@
 {
-  "id": 3,
-  "name": "kiosk_orders",
-  "schema": {
-    "fields": {
-      "direction": {
-        "type": "string",
-        "required": false,
-        "uid": "kiosk_orders_direction"
-      },
-      "status": {
-        "type": "string",
-        "required": false,
-        "uid": "kiosk_orders_status"
-      },
-      "subtotal": {
-        "type": "number",
-        "required": false,
-        "uid": "kiosk_orders_subtotal"
-      },
-      "total": {
-        "type": "number",
-        "required": false,
-        "uid": "kiosk_orders_total"
-      },
-      "item_count": {
-        "type": "number",
-        "required": false,
-        "uid": "kiosk_orders_item_count"
-      },
-      "payload_json": {
-        "type": "string",
-        "required": false,
-        "uid": "kiosk_orders_payload_json"
-      },
-      "lines_json": {
-        "type": "string",
-        "required": false,
-        "uid": "kiosk_orders_lines_json"
-      },
-      "transfer_id": {
-        "type": "string",
-        "required": false,
-        "uid": "kiosk_orders_transfer_id"
-      },
-      "checksum": {
-        "type": "string",
-        "required": false,
-        "uid": "kiosk_orders_checksum"
-      },
-      "customer_name": {
-        "type": "string",
-        "required": false,
-        "uid": "kiosk_orders_customer_name"
-      },
-      "terminal_id": {
-        "type": "string",
-        "required": false,
-        "uid": "kiosk_orders_terminal_id"
-      },
-      "created_at": {
-        "type": "string",
-        "required": false,
-        "uid": "kiosk_orders_created_at"
-      },
-      "updated_at": {
-        "type": "string",
-        "required": false,
-        "uid": "kiosk_orders_updated_at"
-      },
-      "chunks_json": {
-        "type": "string",
-        "required": false,
-        "uid": "kiosk_orders_chunks_json"
-      },
-      "chunk_count": {
-        "type": "number",
-        "required": false,
-        "uid": "kiosk_orders_chunk_count"
-      },
-      "chunk_bytes": {
-        "type": "number",
-        "required": false,
-        "uid": "kiosk_orders_chunk_bytes"
-      }
+ "id": 3,
+ "name": "kiosk_orders",
+ "schema": {
+  "fields": {
+   "direction": {
+    "type": "string",
+    "required": false,
+    "uid": "kiosk_orders_direction"
+   },
+   "status": {
+    "type": "string",
+    "required": false,
+    "uid": "kiosk_orders_status"
+   },
+   "subtotal": {
+    "type": "number",
+    "required": false,
+    "uid": "kiosk_orders_subtotal"
+   },
+   "total": {
+    "type": "number",
+    "required": false,
+    "uid": "kiosk_orders_total"
+   },
+   "item_count": {
+    "type": "number",
+    "required": false,
+    "uid": "kiosk_orders_item_count"
+   },
+   "payload_json": {
+    "type": "string",
+    "required": false,
+    "uid": "kiosk_orders_payload_json"
+   },
+   "lines_json": {
+    "type": "string",
+    "required": false,
+    "uid": "kiosk_orders_lines_json"
+   },
+   "transfer_id": {
+    "type": "string",
+    "required": false,
+    "uid": "kiosk_orders_transfer_id"
+   },
+   "checksum": {
+    "type": "string",
+    "required": false,
+    "uid": "kiosk_orders_checksum"
+   },
+   "customer_name": {
+    "type": "string",
+    "required": false,
+    "uid": "kiosk_orders_customer_name"
+   },
+   "terminal_id": {
+    "type": "string",
+    "required": false,
+    "uid": "kiosk_orders_terminal_id"
+   },
+   "created_at": {
+    "type": "string",
+    "required": false,
+    "uid": "kiosk_orders_created_at"
+   },
+   "updated_at": {
+    "type": "string",
+    "required": false,
+    "uid": "kiosk_orders_updated_at"
+   },
+   "chunks_json": {
+    "type": "string",
+    "required": false,
+    "uid": "kiosk_orders_chunks_json"
+   },
+   "chunk_count": {
+    "type": "number",
+    "required": false,
+    "uid": "kiosk_orders_chunk_count"
+   },
+   "chunk_bytes": {
+    "type": "number",
+    "required": false,
+    "uid": "kiosk_orders_chunk_bytes"
+   }
+  },
+  "policies": {
+   "read": "public",
+   "create": "public",
+   "update": "public",
+   "delete": "public"
+  },
+  "aggregates": [
+   {
+    "target": "kiosk_order_lines",
+    "foreign_field": "order_id",
+    "outputs": {
+     "item_count": "sum(quantity)",
+     "subtotal": "round2(sum(unit_price * quantity))",
+     "total": "round2(sum(unit_price * quantity))"
     },
-    "policies": {
-      "read": "public",
-      "create": "public",
-      "update": "public",
-      "delete": "public"
-    },
-    "aggregates": [
-      {
-        "target": "kiosk_order_lines",
-        "foreign_field": "order_id",
-        "outputs": {
-          "item_count": "count()",
-          "subtotal": "round2(sum(unit_price * quantity))",
-          "total": "round2(sum(unit_price * quantity))"
-        },
-        "require_non_empty": true,
-        "commit_status": "submitted",
-        "editable_status": [
-          "draft"
-        ]
-      }
-    ],
-    "canonical": {
-      "fields": [
-        "id",
-        "direction",
-        "status",
-        "terminal_id",
-        "total",
-        "item_count",
-        "created_at"
-      ],
-      "child": "lines",
-      "child_foreign_field": "order_id",
-      "child_fields": [
-        "sku",
-        "item_name",
-        "unit_price",
-        "quantity"
-      ],
-      "version": 1,
-      "chunk_bytes": 500,
-      "store": {
-        "payload": "payload_json",
-        "checksum": "checksum",
-        "chunks": "chunks_json",
-        "chunk_bytes": "chunk_bytes",
-        "chunk_count": "chunk_count"
-      }
-    }
+    "require_non_empty": true,
+    "commit_status": "submitted",
+    "editable_status": [
+     "draft"
+    ]
+   }
+  ],
+  "canonical": {
+   "fields": [
+    "id",
+    "direction",
+    "status",
+    "terminal_id",
+    "total",
+    "item_count",
+    "created_at"
+   ],
+   "child": "lines",
+   "child_foreign_field": "order_id",
+   "child_fields": [
+    "sku",
+    "item_name",
+    "unit_price",
+    "quantity"
+   ],
+   "version": 1,
+   "chunk_bytes": 500,
+   "store": {
+    "payload": "payload_json",
+    "checksum": "checksum",
+    "chunks": "chunks_json",
+    "chunk_bytes": "chunk_bytes",
+    "chunk_count": "chunk_count"
+   },
+   "child_json_key": "lines_json",
+   "child_count_key": "line_count",
+   "child_computed": {
+    "line_total": "round2(unit_price * quantity)",
+    "unit_price_display": "round2(unit_price)"
+   }
   }
+ }
 }

@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -206,7 +207,8 @@ class DemoCardRenderTest {
             render(card, DemoCardRepository.toolCardId("libsignal")) { url, payload ->
                 if (url.contains("verify_identity")) verifyPayload = payload
             }
-            composeRule.onNodeWithTag("div_btn_tool_libsignal_verify_identity").performClick()
+            composeRule.onNodeWithTag("div_btn_tool_libsignal_verify_identity")
+                .performScrollTo().performClick()
             composeRule.waitForIdle()
             val json = Json.parseToJsonElement(verifyPayload ?: error("verify action not dispatched"))
                 .jsonObject
@@ -229,11 +231,24 @@ class DemoCardRenderTest {
             ids.size >= minimumButtons
         )
         val dispatched = mutableListOf<String>()
-        render(card, DemoCardRepository.toolCardId(cardName)) { url, _ -> dispatched.add(url) }
-        ids.forEach { id ->
-            composeRule.onNodeWithTag("div_btn_$id").performScrollTo().performClick()
+        // Kiosk controls are state-gated: the catalog Add buttons and Undo only exist while an
+        // order is open, so the sweep runs against an open draft.
+        EngineStateBridge.pushBatch(
+            mapOf(
+                "user.kiosk_order_id" to DivVariableValue.Str("9"),
+                "user.kiosk_status" to DivVariableValue.Str("draft"),
+                "user.kiosk_undo_sku" to DivVariableValue.Str("P1001")
+            )
+        )
+        try {
+            render(card, DemoCardRepository.toolCardId(cardName)) { url, _ -> dispatched.add(url) }
+            ids.forEach { id ->
+                composeRule.onNodeWithTag("div_btn_$id").performScrollTo().performClick()
+            }
+            composeRule.waitForIdle()
+        } finally {
+            EngineStateBridge.clear()
         }
-        composeRule.waitForIdle()
         assertTrue("clicking every button on '$cardName' dispatched no actions", dispatched.isNotEmpty())
         assertTrue(
             "card '$cardName' dispatched a malformed action: $dispatched",
@@ -243,6 +258,31 @@ class DemoCardRenderTest {
 
     @Test
     fun kioskCustomerCardRendersAndDispatches() = renderAndClickKiosk("kiosk_customer", 3)
+
+    /** With no order open the catalog must explain itself instead of failing an insert. */
+    @Test
+    fun kioskCustomerCardHidesAddUntilAnOrderIsOpen() {
+        val card = DemoCardRepository.toolCard(kioskSpec, "kiosk_customer")
+            ?: error("missing kiosk customer card")
+        EngineStateBridge.pushBatch(
+            mapOf(
+                "user.kiosk_order_id" to DivVariableValue.Str(""),
+                "user.catalog_json" to DivVariableValue.Str(
+                    """[{"id":"6","item_name":"Croissant","sku":"P1024","price":2.75,"stock":25}]"""
+                )
+            )
+        )
+        try {
+            render(card, DemoCardRepository.toolCardId("kiosk_customer")) { _, _ -> }
+            composeRule.onNodeWithText("Start a new order to add items.").assertExists()
+            assertTrue(
+                "Add must stay hidden until an order exists",
+                composeRule.onAllNodesWithText("Add").fetchSemanticsNodes().isEmpty()
+            )
+        } finally {
+            EngineStateBridge.clear()
+        }
+    }
 
     @Test
     fun kioskOwnerCardRendersAndDispatches() = renderAndClickKiosk("kiosk_owner", 5)
@@ -263,7 +303,7 @@ class DemoCardRenderTest {
         EngineStateBridge.pushBatch(
             mapOf(
                 "user.kiosk_order_id" to DivVariableValue.Str("9"),
-                "user.kiosk_status" to DivVariableValue.Str("DRAFT"),
+                "user.kiosk_status" to DivVariableValue.Str("draft"),
                 "user.kiosk_total" to DivVariableValue.Str("2.75"),
                 "user.kiosk_item_count" to DivVariableValue.Str("1"),
                 "user.kiosk_direction" to DivVariableValue.Str("CUSTOMER_REQUEST"),
@@ -272,7 +312,8 @@ class DemoCardRenderTest {
                 ),
                 "user.kiosk_lines_json" to DivVariableValue.Str(
                     """[{"id":"11","item_name":"Coffee","sku":"P1012","quantity":1,""" +
-                        """"unit_price":"2.50","line_total":"2.50"}]"""
+                        """"unit_price":"2.50","unit_price_display":"2.50",""" +
+                        """"line_total":"2.50"}]"""
                 )
             )
         )

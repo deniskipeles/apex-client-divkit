@@ -33,21 +33,6 @@
         }
        ],
        "weight": 1
-      },
-      {
-       "type": "text",
-       "text": "@{user.kiosk_status}",
-       "font_size": 11,
-       "font_weight": "bold",
-       "text_color": "#F8FAFC",
-       "background_color": "#1B2740",
-       "corner_radius": 20,
-       "paddings": {
-        "left": 10,
-        "right": 10,
-        "top": 5,
-        "bottom": 5
-       }
       }
      ]
     },
@@ -78,7 +63,7 @@
       },
       {
        "type": "text",
-       "text": "@{user.kiosk_item_count} items",
+       "text": "@{toInteger(user.kiosk_item_count)} in cart",
        "font_size": 12,
        "text_color": "#94A3B8"
       },
@@ -95,10 +80,34 @@
        "text_color": "#C4B5FD",
        "font_weight": "bold",
        "font_family": "monospace"
+      },
+      {
+       "type": "text",
+       "text": "@{if(user.kiosk_status == 'draft', 'Draft', if(user.kiosk_status == 'submitted', 'Submitted', user.kiosk_status))}",
+       "font_size": 11,
+       "font_weight": "bold",
+       "text_color": "#F8FAFC",
+       "background_color": "#1B2740",
+       "corner_radius": 20,
+       "paddings": {
+        "left": 10,
+        "right": 10,
+        "top": 5,
+        "bottom": 5
+       }
       }
-     ]
+     ],
+     "visibility": "@{if(user.kiosk_order_id != '', 'visible', 'gone')}"
     }
    ]
+  },
+  {
+   "type": "text",
+   "text": "No receipt open — tap New receipt.",
+   "font_size": 13,
+   "text_color": "#475569",
+   "id": "kiosk_owner_empty",
+   "visibility": "@{if(user.kiosk_order_id == '', 'visible', 'gone')}"
   },
   {
    "type": "container",
@@ -167,7 +176,8 @@
        "value": {
         "type": "string",
         "value": "Started a new owner receipt"
-       }
+       },
+       "payload": {}
       },
       {
        "url": "local-db://op/db.upsert",
@@ -180,7 +190,7 @@
          "created_at": "@{format_date(now(), 'yyyy-MM-dd HH:mm:ss')}"
         },
         "output": {
-         "id": "user.kiosk_order_label",
+         "id": "user.kiosk_order_id",
          "status": "user.kiosk_status",
          "direction": "user.kiosk_direction",
          "total_display": "user.kiosk_total",
@@ -195,17 +205,27 @@
        "log_id": "kiosk_new_receipt"
       },
       {
+       "type": "set_variable",
+       "variable_name": "user.kiosk_order_label",
+       "value": {
+        "type": "string",
+        "value": "@{user.kiosk_order_id}"
+       },
+       "payload": {}
+      },
+      {
        "url": "local-db://op/db.query",
        "payload": {
         "collection": "kiosk_orders",
         "where": {
-         "status": "SUBMITTED"
+         "status": "submitted"
         },
         "limit": 20,
         "output": {
-         "orders_json": "user.kiosk_orders_json",
-         "order_count": "user.kiosk_order_count"
-        }
+         "_json": "user.kiosk_orders_json",
+         "_count": "user.kiosk_order_count"
+        },
+        "sort": "-created_at"
        },
        "log_id": "kiosk_list_orders"
       }
@@ -227,27 +247,16 @@
      "text": "Reopen",
      "font_size": 13,
      "font_weight": "normal",
-     "text_color": "#94A3B8",
+     "text_color": "#334155",
      "corner_radius": 12,
      "actions": [
-      {
-       "type": "set_variable",
-       "variable_name": "user.kiosk_notice",
-       "value": {
-        "type": "string",
-        "value": "Reloaded the latest receipt from SQLite"
-       }
-      },
       {
        "url": "local-db://op/db.query",
        "payload": {
         "collection": "kiosk_orders",
-        "where": {
-         "direction": "OWNER_RECEIPT"
-        },
         "limit": 1,
         "output": {
-         "id": "user.kiosk_order_label",
+         "id": "user.kiosk_order_id",
          "status": "user.kiosk_status",
          "direction": "user.kiosk_direction",
          "total_display": "user.kiosk_total",
@@ -257,7 +266,9 @@
          "lines_json": "user.kiosk_lines_json",
          "payload_json": "user.kiosk_payload_json",
          "checksum": "user.kiosk_checksum"
-        }
+        },
+        "single": true,
+        "sort": "-created_at"
        },
        "log_id": "kiosk_reload_receipt"
       },
@@ -266,20 +277,22 @@
        "payload": {
         "collection": "kiosk_orders",
         "where": {
-         "status": "SUBMITTED"
+         "status": "submitted"
         },
         "limit": 20,
         "output": {
-         "orders_json": "user.kiosk_orders_json",
-         "order_count": "user.kiosk_order_count"
-        }
+         "_json": "user.kiosk_orders_json",
+         "_count": "user.kiosk_order_count"
+        },
+        "sort": "-created_at"
        },
        "log_id": "kiosk_list_orders"
       }
      ],
      "weight": 1,
      "icon": "refresh",
-     "id": "kiosk_reload_receipt"
+     "id": "kiosk_reload_receipt",
+     "background_color": "#E2E8F0"
     }
    ]
   },
@@ -414,7 +427,8 @@
             "log_id": "kiosk_receipt_add"
            }
           ],
-          "background_color": "#6D28D9"
+          "background_color": "#6D28D9",
+          "visibility": "@{if(user.kiosk_order_id == '', 'gone', 'visible')}"
          }
         ]
        }
@@ -435,8 +449,18 @@
        }
       }
      }
+    },
+    {
+     "type": "text",
+     "id": "kiosk_owner_locked_hint",
+     "text": "Locked — start a new receipt to edit.",
+     "font_size": 12,
+     "text_color": "#94A3B8",
+     "visibility": "@{if(user.kiosk_order_id != '' && user.kiosk_status != 'draft', 'visible', 'gone')}"
     }
-   ]
+   ],
+   "id": "kiosk_owner_add_section",
+   "visibility": "@{if(user.kiosk_order_id != '' && user.kiosk_status == 'draft', 'visible', 'gone')}"
   },
   {
    "type": "container",
@@ -457,7 +481,7 @@
       },
       {
        "type": "text",
-       "text": "@{user.kiosk_line_count} lines",
+       "text": "@{user.kiosk_line_count} @{if(toInteger(user.kiosk_line_count) == 1, 'line', 'lines')}",
        "font_size": 11,
        "text_color": "#64748B",
        "weight": 1
@@ -493,7 +517,7 @@
            },
            {
             "type": "text",
-            "text": "@{item.sku} · $@{item.unit_price} each",
+            "text": "@{item.sku} · $@{item.unit_price_display} each",
             "font_size": 11,
             "text_color": "#64748B",
             "font_family": "monospace"
@@ -551,7 +575,8 @@
               "log_id": "kiosk_qty_down"
              }
             ],
-            "background_color": "#1B2740"
+            "background_color": "#1B2740",
+            "visibility": "@{if(user.kiosk_status == 'draft', 'visible', 'gone')}"
            },
            {
             "type": "text",
@@ -591,15 +616,10 @@
               "log_id": "kiosk_qty_up"
              }
             ],
-            "background_color": "#1B2740"
+            "background_color": "#1B2740",
+            "visibility": "@{if(user.kiosk_status == 'draft', 'visible', 'gone')}"
            }
-          ]
-         },
-         {
-          "type": "container",
-          "orientation": "horizontal",
-          "item_spacing": 0,
-          "items": [],
+          ],
           "weight": 1
          },
          {
@@ -616,7 +636,8 @@
             "value": {
              "type": "string",
              "value": "Removed @{item.item_name} — tap Undo last remove to restore"
-            }
+            },
+            "payload": {}
            },
            {
             "url": "local-db://op/db.remove_child",
@@ -643,7 +664,8 @@
             "log_id": "kiosk_receipt_remove"
            }
           ],
-          "background_color": "#3F1D24"
+          "background_color": "#3F1D24",
+          "visibility": "@{if(user.kiosk_status == 'draft', 'visible', 'gone')}"
          }
         ]
        }
@@ -667,10 +689,10 @@
     },
     {
      "type": "button",
-     "text": "Undo last remove",
+     "text": "Undo remove",
      "font_size": 13,
      "font_weight": "normal",
-     "text_color": "#94A3B8",
+     "text_color": "#334155",
      "corner_radius": 12,
      "actions": [
       {
@@ -679,7 +701,8 @@
        "value": {
         "type": "string",
         "value": "Restored @{user.kiosk_undo_label}"
-       }
+       },
+       "payload": {}
       },
       {
        "url": "local-db://op/db.append_child",
@@ -706,11 +729,32 @@
         }
        },
        "log_id": "kiosk_receipt_undo"
+      },
+      {
+       "type": "set_variable",
+       "variable_name": "user.kiosk_undo_sku",
+       "value": {
+        "type": "string",
+        "value": ""
+       }
+      },
+      {
+       "type": "set_variable",
+       "variable_name": "user.kiosk_undo_label",
+       "value": {
+        "type": "string",
+        "value": ""
+       }
       }
      ],
-     "icon": "undo"
+     "icon": "undo",
+     "background_color": "#E2E8F0",
+     "visibility": "@{if(user.kiosk_undo_sku != '' && user.kiosk_status == 'draft', 'visible', 'gone')}",
+     "id": "kiosk_undo_remove"
     }
-   ]
+   ],
+   "id": "kiosk_owner_lines_section",
+   "visibility": "@{if(user.kiosk_order_id != '', 'visible', 'gone')}"
   },
   {
    "type": "container",
@@ -802,7 +846,9 @@
      "color": "#24304A",
      "width": 1
     }
-   }
+   },
+   "id": "kiosk_owner_totals_section",
+   "visibility": "@{if(user.kiosk_order_id != '', 'visible', 'gone')}"
   },
   {
    "type": "container",
@@ -823,7 +869,7 @@
       },
       {
        "type": "text",
-       "text": "@{user.kiosk_order_count} orders",
+       "text": "@{user.kiosk_order_count} @{if(toInteger(user.kiosk_order_count) == 1, 'order', 'orders')}",
        "font_size": 11,
        "text_color": "#64748B",
        "weight": 1
@@ -851,7 +897,7 @@
           "items": [
            {
             "type": "text",
-            "text": "@{item.order_label}",
+            "text": "Order @{item.id}",
             "font_size": 14,
             "text_color": "#F8FAFC",
             "font_weight": "bold",
@@ -859,7 +905,7 @@
            },
            {
             "type": "text",
-            "text": "@{item.item_count} items · @{item.status}",
+            "text": "@{toInteger(item.item_count)} @{if(toInteger(item.item_count) == 1, 'item', 'items')} · @{if(item.status == 'draft', 'Draft', if(item.status == 'submitted', 'Submitted', item.status))}",
             "font_size": 11,
             "text_color": "#64748B"
            }
@@ -879,7 +925,7 @@
           "text": "Review",
           "font_size": 13,
           "font_weight": "normal",
-          "text_color": "#94A3B8",
+          "text_color": "#334155",
           "corner_radius": 12,
           "actions": [
            {
@@ -888,7 +934,8 @@
             "value": {
              "type": "string",
              "value": "Reviewing customer order @{item.order_label}"
-            }
+            },
+            "payload": {}
            },
            {
             "url": "local-db://op/db.query",
@@ -899,7 +946,7 @@
              },
              "limit": 1,
              "output": {
-              "id": "user.kiosk_order_label",
+              "id": "user.kiosk_order_id",
               "status": "user.kiosk_status",
               "direction": "user.kiosk_direction",
               "total_display": "user.kiosk_total",
@@ -909,11 +956,14 @@
               "lines_json": "user.kiosk_lines_json",
               "payload_json": "user.kiosk_payload_json",
               "checksum": "user.kiosk_checksum"
-             }
+             },
+             "single": true,
+             "sort": "-created_at"
             },
             "log_id": "kiosk_review_order"
            }
-          ]
+          ],
+          "background_color": "#E2E8F0"
          }
         ]
        }
@@ -935,7 +985,17 @@
       }
      }
     }
-   ]
+   ],
+   "id": "kiosk_owner_orders_section",
+   "visibility": "@{if(toInteger(user.kiosk_order_count) > 0, 'visible', 'gone')}"
+  },
+  {
+   "type": "text",
+   "text": "Closing saves the receipt and locks it.",
+   "font_size": 11,
+   "text_color": "#FBBF24",
+   "id": "kiosk_owner_close_section",
+   "visibility": "@{if(user.kiosk_order_id != '' && user.kiosk_status == 'draft', 'visible', 'gone')}"
   },
   {
    "type": "button",
@@ -947,31 +1007,11 @@
    "actions": [
     {
      "type": "set_variable",
-     "variable_name": "user.kiosk_notice",
+     "variable_name": "user.kiosk_confirm",
      "value": {
       "type": "string",
-      "value": "Receipt closed and saved"
+      "value": "close"
      }
-    },
-    {
-     "url": "local-db://op/db.commit",
-     "payload": {
-      "collection": "kiosk_orders",
-      "id": "@{user.kiosk_order_id}",
-      "output": {
-       "id": "user.kiosk_order_label",
-       "status": "user.kiosk_status",
-       "direction": "user.kiosk_direction",
-       "total_display": "user.kiosk_total",
-       "subtotal_display": "user.kiosk_subtotal",
-       "item_count": "user.kiosk_item_count",
-       "line_count": "user.kiosk_line_count",
-       "lines_json": "user.kiosk_lines_json",
-       "payload_json": "user.kiosk_payload_json",
-       "checksum": "user.kiosk_checksum"
-      }
-     },
-     "log_id": "kiosk_close_receipt"
     }
    ],
    "background_color": "#1B2740",
@@ -982,7 +1022,88 @@
      "width": 1
     }
    },
-   "id": "kiosk_close_receipt"
+   "id": "kiosk_close_receipt_ask",
+   "visibility": "@{if(user.kiosk_order_id != '' && user.kiosk_status == 'draft' && user.kiosk_confirm == '', 'visible', 'gone')}"
+  },
+  {
+   "type": "container",
+   "orientation": "horizontal",
+   "item_spacing": 10,
+   "visibility": "@{if(user.kiosk_confirm == 'close' && user.kiosk_order_id != '' && user.kiosk_status == 'draft', 'visible', 'gone')}",
+   "items": [
+    {
+     "type": "button",
+     "text": "Confirm close",
+     "font_size": 14,
+     "font_weight": "bold",
+     "text_color": "#F8FAFC",
+     "corner_radius": 12,
+     "actions": [
+      {
+       "type": "set_variable",
+       "variable_name": "user.kiosk_notice",
+       "value": {
+        "type": "string",
+        "value": "Receipt closed and saved"
+       },
+       "payload": {}
+      },
+      {
+       "url": "local-db://op/db.commit",
+       "payload": {
+        "collection": "kiosk_orders",
+        "id": "@{user.kiosk_order_id}",
+        "output": {
+         "id": "user.kiosk_order_label",
+         "status": "user.kiosk_status",
+         "direction": "user.kiosk_direction",
+         "total_display": "user.kiosk_total",
+         "subtotal_display": "user.kiosk_subtotal",
+         "item_count": "user.kiosk_item_count",
+         "line_count": "user.kiosk_line_count",
+         "lines_json": "user.kiosk_lines_json",
+         "payload_json": "user.kiosk_payload_json",
+         "checksum": "user.kiosk_checksum"
+        }
+       },
+       "log_id": "kiosk_close_receipt"
+      }
+     ],
+     "background_color": "#B91C1C",
+     "border": {
+      "corner_radius": 12,
+      "stroke": {
+       "color": "#24304A",
+       "width": 1
+      }
+     },
+     "id": "kiosk_close_receipt",
+     "weight": 1,
+     "visibility": "@{if(user.kiosk_confirm == 'close' && user.kiosk_order_id != '' && user.kiosk_status == 'draft', 'visible', 'gone')}"
+    },
+    {
+     "type": "button",
+     "text": "Cancel",
+     "font_size": 14,
+     "font_weight": "normal",
+     "text_color": "#334155",
+     "corner_radius": 12,
+     "background_color": "#E2E8F0",
+     "id": "kiosk_close_cancel",
+     "weight": 1,
+     "visibility": "@{if(user.kiosk_confirm == 'close', 'visible', 'gone')}",
+     "actions": [
+      {
+       "type": "set_variable",
+       "variable_name": "user.kiosk_confirm",
+       "value": {
+        "type": "string",
+        "value": ""
+       }
+      }
+     ]
+    }
+   ]
   },
   {
    "type": "container",
@@ -1032,7 +1153,8 @@
       "top": 12,
       "bottom": 12
      },
-     "corner_radius": 12
+     "corner_radius": 12,
+     "visibility": "@{if(user.qr_img_current == '', 'gone', 'visible')}"
     },
     {
      "type": "text",
@@ -1061,7 +1183,8 @@
          "value": {
           "type": "integer",
           "value": 0
-         }
+         },
+         "payload": {}
         },
         {
          "url": "local-db://op/doc.pack",
@@ -1130,7 +1253,7 @@
        "text": "Next chunk",
        "font_size": 13,
        "font_weight": "normal",
-       "text_color": "#94A3B8",
+       "text_color": "#334155",
        "corner_radius": 12,
        "actions": [
         {
@@ -1139,7 +1262,8 @@
          "value": {
           "type": "integer",
           "value": "@{min(toInteger(user.qr_count) - 1, toInteger(user.qr_index) + 1)}"
-         }
+         },
+         "payload": {}
         },
         {
          "url": "tools://code-generate/generate",
@@ -1158,11 +1282,14 @@
         }
        ],
        "weight": 1,
-       "id": "kiosk_receipt_next_chunk"
+       "id": "kiosk_receipt_next_chunk",
+       "background_color": "#E2E8F0"
       }
      ]
     }
-   ]
+   ],
+   "id": "kiosk_owner_qr_section",
+   "visibility": "@{if(user.kiosk_order_id != '', 'visible', 'gone')}"
   }
  ]
 }

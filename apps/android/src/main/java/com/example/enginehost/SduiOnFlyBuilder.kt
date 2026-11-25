@@ -171,11 +171,66 @@ object SduiOnFlyBuilder {
      * `nav://push`, so the landing card stays small and each tool gets its own screen.
      */
     fun buildShowcaseCard(spec: TenantWorkspaceSpec): String {
-        val card = DemoCardRepository.hubCard(spec)
-            ?: return buildJsonObject { putJsonObject("card") { put("log_id", "empty") } }
-                .let { prettyJson.encodeToString(JsonObject.serializer(), it) }
+        val card = DemoCardRepository.hubCard(spec) ?: return missingCardDocument(spec)
         return DemoCardRepository.encode(card)
     }
+
+    /**
+     * What a workspace renders when no DivKit document could be loaded.
+     *
+     * The previous fallback was `{"card":{"log_id":"empty"}}`: a card with no states, so the
+     * screen was indistinguishable from a broken app. This one says what is wrong.
+     */
+    private fun missingCardDocument(spec: TenantWorkspaceSpec): String =
+        DemoCardRepository.encode(
+            buildJsonObject {
+                putJsonObject("card") {
+                    put("log_id", "missing_card_${spec.tenantId}")
+                    putJsonArray("states") {
+                        addJsonObject {
+                            put("state_id", 0)
+                            putJsonObject("div") {
+                                put("type", "container")
+                                put("orientation", "vertical")
+                                put("item_spacing", 12)
+                                putJsonObject("paddings") {
+                                    put("left", 20); put("right", 20); put("top", 24); put("bottom", 24)
+                                }
+                                putJsonArray("items") {
+                                    addJsonObject {
+                                        put("type", "text")
+                                        put("text", "Workspace card unavailable")
+                                        put("font_size", 20)
+                                        put("font_weight", "bold")
+                                        put("text_color", "#111827")
+                                    }
+                                    addJsonObject {
+                                        put("type", "text")
+                                        put(
+                                            "text",
+                                            "No DivKit document was found for '${spec.tenantId}'. " +
+                                                "The workspace bundle is missing or unreadable in this build."
+                                        )
+                                        put("font_size", 14)
+                                        put("text_color", "#6B7280")
+                                    }
+                                    addJsonObject {
+                                        put("type", "text")
+                                        put(
+                                            "text",
+                                            "Open the workspace again from the hub, or rebuild with a valid " +
+                                                "workspace bundle."
+                                        )
+                                        put("font_size", 13)
+                                        put("text_color", "#6B7280")
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        )
 
     /** Every registered card for [spec], entry hub first — see [DemoCardRepository.cardStack]. */
     fun buildCardStack(spec: TenantWorkspaceSpec): List<Pair<String, JsonObject>> =

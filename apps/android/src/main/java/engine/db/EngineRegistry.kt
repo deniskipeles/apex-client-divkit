@@ -119,10 +119,24 @@ class EngineRegistry(
 
                     val jsonResultArray = QueryEngine.execute(db.driver, apexQuery, colId)
 
-                    // Convert to map rows for OpResult.Rows
-                    val rows = jsonResultArray.map { el -> flattenRecordRow(el.jsonObject) }
+                    // Convert to map rows for OpResult.Rows, carrying the canonical child
+                    // projection (lines_json / line_count) a card renders its detail list from.
+                    val rows = jsonResultArray.map { el ->
+                        val row = flattenRecordRow(el.jsonObject)
+                        val id = row["id"] as? String
+                        if (id != null) SchemaOps.project(apexEngine, colName, id, row) else row
+                    }
 
-                    OpResult.Rows(rows)
+                    // `single` lets a card load one record (the newest order, the open receipt)
+                    // and bind its columns to scalars. Without it every `output` entry became a
+                    // one-element array, so a reopened receipt rendered "[...]" totals.
+                    if (payload["single"]?.jsonPrimitive?.booleanOrNull == true) {
+                        // `single` promises exactly one row; reporting the miss keeps a card
+                        // from claiming it reloaded a record it never found.
+                        OpResult.Row(rows.firstOrNull() ?: error("No saved $colName yet"))
+                    } else {
+                        OpResult.Rows(rows)
+                    }
                 }
 
                 // Generic Record Update (id-only, shallow JSON merge)
@@ -160,12 +174,15 @@ class EngineRegistry(
 
                     val records = apexEngine.queryRecords(col, filters, limit = 1, user = claims)
                     val first = records.firstOrNull()
-                    val map = first?.data?.mapValues { (_, v) ->
-                        when (v) {
-                            is JsonPrimitive -> v.contentOrNull ?: v.toString()
-                            else -> v.toString()
-                        }
-                    }?.plus("id" to first.id)
+                    val map = first?.let { record ->
+                        val row = record.data.mapValues { (_, v) ->
+                            when (v) {
+                                is JsonPrimitive -> v.contentOrNull ?: v.toString()
+                                else -> v.toString()
+                            }
+                        } + ("id" to record.id)
+                        SchemaOps.project(apexEngine, col, record.id, row)
+                    }
                     OpResult.Row(map)
                 }
 
@@ -220,8 +237,15 @@ class EngineRegistry(
                         data,
                         payload["id"]?.jsonPrimitive?.contentOrNull
                     )
+                    // A record that owns roll-ups reports them from the write that created it. A
+                    // fresh order has no lines yet, and its card reads item_count/total_display
+                    // straight from this row - leaving them out rendered "Order 9 ·  items · $".
+                    val rollUps = apexEngine.getCollection(collection)?.schema?.aggregates
+                        ?.takeIf { it.isNotEmpty() }
+                        ?.let { SchemaOps.recompute(apexEngine, collection, result.id) }
+                        .orEmpty()
                     OpResult.Row(
-                        flattenRecord(result.data) + mapOf(
+                        flattenRecord(result.data) + rollUps + mapOf(
                             "id" to result.id,
                             "ok" to result.ok,
                             "errors_json" to JsonObject(
@@ -417,6 +441,17 @@ class EngineRegistry(
                 out[k] = v.asScalar()
             }
         }
+        // `records.id` is TEXT, so a numeric-looking id ("9", "42") must stay a String. The
+        // query engine can hand it back as a JSON number; leaving it that way made callers
+        // cast-fail and skipped the canonical child projection (the id-keyed lookup below).
+        (out["id"] as? Number)?.let { number ->
+            val asDouble = number.toDouble()
+            out["id"] = if (asDouble == Math.floor(asDouble) && !asDouble.isInfinite()) {
+                number.toLong().toString()
+            } else {
+                number.toString()
+            }
+        }
         return out
     }
 
@@ -445,8 +480,20 @@ class EngineRegistry(
             }
         }
 
+    /**
+     * Keeps the JSON type of a stored scalar.
+     *
+     * `contentOrNull` turns every number into a string, so a roll-up of `2` reached the card
+     * as `"2.0"` and rendered as `Items 2.0`. Only genuine strings stay strings here.
+     */
     private fun JsonElement.asScalar(): Any? = when (this) {
-        is JsonPrimitive -> contentOrNull
+        is JsonPrimitive -> when {
+            isString -> content
+            booleanOrNull != null -> boolean
+            longOrNull != null -> long
+            doubleOrNull != null -> double
+            else -> contentOrNull
+        }
         else -> toString()
     }
 

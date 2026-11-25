@@ -210,6 +210,10 @@ class EngineRouter(
                     for ((column, varEl) in output) {
                         val varName = varEl.jsonPrimitive.contentOrNull ?: continue
                         requireVar(varName)
+                        if (column == "_count") {
+                            EngineStateBridge.pushUpdate(varName, DivVariableValue.IntVal(result.rows.size.toLong()))
+                            continue
+                        }
                         if (column == "*" || column == "_json") {
                             EngineStateBridge.pushUpdate(varName, DivVariableValue.Str(jsonArrayStr))
                         } else {
@@ -223,14 +227,9 @@ class EngineRouter(
                 }
             }
             is OpResult.Row -> {
-                if (output != null) {
-                    for ((column, varEl) in output) {
-                        val varName = varEl.jsonPrimitive.contentOrNull ?: continue
-                        requireVar(varName)
-                        EngineStateBridge.pushUpdate(
-                            varName, toDivValue(result.row?.get(column))
-                        )
-                    }
+                rowOutputValues(result.row, output).forEach { (varName, value) ->
+                    requireVar(varName)
+                    EngineStateBridge.pushUpdate(varName, value)
                 }
             }
             is OpResult.RowId -> output?.get("id")?.jsonPrimitive?.contentOrNull?.let { v ->
@@ -271,12 +270,38 @@ class EngineRouter(
         WorkspaceVariableScope.requireValid(name)
     }
 
-    private fun toDivValue(v: Any?): DivVariableValue = when (v) {
-        null -> DivVariableValue.Str("")
-        is Boolean -> DivVariableValue.Bool(v)
-        is Int -> DivVariableValue.IntVal(v.toLong())
-        is Long -> DivVariableValue.IntVal(v)
-        is Double -> DivVariableValue.DoubleVal(v)
-        else -> DivVariableValue.Str(v.toString())
+}
+
+/**
+ * Resolves an `output` map against a write result.
+ *
+ * A column the row does not carry is skipped rather than published as `""`: write results
+ * are partial projections, so blanking on absence wiped state the write never touched (a
+ * kiosk `append_child` result carries the totals but not the order `status`, which hid
+ * every state-gated control). Failures still clear a field by returning it explicitly.
+ */
+internal fun rowOutputValues(
+    row: Map<String, Any?>?,
+    output: JsonObject?
+): Map<String, DivVariableValue> {
+    if (output == null) return emptyMap()
+    val values = LinkedHashMap<String, DivVariableValue>()
+    for ((column, varEl) in output) {
+        val varName = varEl.jsonPrimitive.contentOrNull ?: continue
+        if (row == null || !row.containsKey(column)) continue
+        values[varName] = toDivValue(row[column])
     }
+    return values
+}
+
+internal fun toDivValue(v: Any?): DivVariableValue = when (v) {
+    null -> DivVariableValue.Str("")
+    is Boolean -> DivVariableValue.Bool(v)
+    is Int -> DivVariableValue.IntVal(v.toLong())
+    is Long -> DivVariableValue.IntVal(v)
+    is Double -> DivVariableValue.DoubleVal(v)
+    // Tool results carry lists (missing chunk indexes, chunk sets). Publishing them as
+    // `Str("[00, 01]")` broke `len()` and every list expression the cards use.
+    is List<*> -> DivVariableValue.ArrayVal(v.map { toDivValue(it) })
+    else -> DivVariableValue.Str(v.toString())
 }

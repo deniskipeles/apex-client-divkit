@@ -14,6 +14,7 @@ import engine.db.ApexKitDatabaseEngine
 import engine.db.CachedSchemaVersion
 import engine.db.EngineRegistry
 import engine.db.OpLogEntry
+import engine.db.OpResult
 import engine.db.PendingSyncEntry
 import engine.db.WorkspaceDriverFactory
 import engine.db.WorkspaceManager
@@ -71,12 +72,14 @@ data class SchemaTableInfo(
 
 data class SduiEngineUiState(
     val workspaces: List<TenantWorkspaceSpec> = WorkspaceProvisioner.defaultWorkspaces,
-    val activeWorkspace: TenantWorkspaceSpec = WorkspaceProvisioner.defaultWorkspaces.first(),
+    val activeWorkspace: TenantWorkspaceSpec = WorkspaceProvisioner.emptyWorkspace,
     val isWorkspaceOpen: Boolean = false,
     /** Workspace packages that failed to load, keyed by id. Surfaced in dev tools. */
     val packageLoadErrors: Map<String, String> = emptyMap(),
     /** True while a remembered workspace is being restored after a cold launch. */
     val isRestoringSession: Boolean = false,
+    /** Why no workspace could be loaded, shown on the launcher instead of a blank list. */
+    val workspaceLoadError: String = "",
     val themeMode: EngineThemeMode = EngineThemeMode.SYSTEM,
     val isGridView: Boolean = true,
     val searchQuery: String = "",
@@ -188,7 +191,8 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
     private val _uiState = MutableStateFlow(
         SduiEngineUiState(
             workspaces = initialWorkspaces,
-            activeWorkspace = initialWorkspaces.first(),
+            activeWorkspace = WorkspaceProvisioner.firstOrEmpty(initialWorkspaces),
+            workspaceLoadError = WorkspaceProvisioner.lastLoadFailure,
             isRestoringSession = shouldResumeWorkspace
         )
     )
@@ -348,9 +352,9 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                 val all = db.workspaceQueries.selectAllSchemaVersions()
                 val active = all.firstOrNull { it.isActive } ?: all.firstOrNull()
                 if (active != null) {
-                    badgeMap[spec.tenantId] = "Schema v${active.schemaVersion} (${all.size} cached)"
+                    badgeMap[spec.tenantId] = "Schema v${active.schemaVersion}"
                 } else {
-                    badgeMap[spec.tenantId] = "Schema v1.0 (Cached)"
+                    badgeMap[spec.tenantId] = "Schema v1.0"
                 }
             }
         }
@@ -852,6 +856,7 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
         // Tool card ids are tenant-independent, so drop the previous tenant's cards rather
         // than letting a stale hub stay resolvable through nav://.
         CardRegistry.clear()
+        seededCardId = null
         val cards = SduiOnFlyBuilder.buildCardStack(spec)
         cards.forEach { (id, data) -> CardRegistry.register(id, data) }
 
@@ -877,7 +882,8 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
         if (specs.isEmpty()) return
         reloadWorkspaceIcons(report.bundles)
         _uiState.update { state ->
-            val active = specs.firstOrNull { it.tenantId == state.activeWorkspace.tenantId } ?: specs.first()
+            val active = specs.firstOrNull { it.tenantId == state.activeWorkspace.tenantId }
+                ?: WorkspaceProvisioner.firstOrEmpty(specs)
             state.copy(
                 workspaces = specs,
                 activeWorkspace = active,
@@ -902,6 +908,9 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
     }
 
     /** Mirrors the navigator's visible card into UI state so Compose can render it. */
+    /** Card whose persisted state is already published, so activation seeds run once. */
+    private var seededCardId: String? = null
+
     private fun publishActiveCard() {
         val current = navigator?.current
         val json = current?.let { CardRegistry.card(it.id)?.let(DemoCardRepository::encode) }
@@ -913,6 +922,10 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                 activeCardJson = json.orEmpty(),
                 cardStack = navigator?.stack?.map { entry -> entry.id }.orEmpty()
             )
+        }
+        if (current != null && current.id != seededCardId) {
+            seededCardId = current.id
+            seedKioskCard(current.id)
         }
     }
 
@@ -957,10 +970,38 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
 
     /**
      * The kiosk customer order and owner receipt cards share one variable namespace, so the
-     * card that was just pushed decides which persisted draft is loaded into it. Without this
-     * the receipt card would render the customer's cart.
+     * card that was just pushed decides which persisted order is loaded into it. Without this
+     * the receipt card would render the customer's cart, and a cold launch would render
+     * `NO_ORDER` while SQLite still holds the order.
+     *
+     * Only the order projection is published, so card-local state (notice, undo slot) is not
+     * resurrected from a previous session.
      */
-
+    private fun seedKioskCard(cardId: String) {
+        val filter = when (cardId) {
+            "tool_kiosk_owner" -> buildJsonObject { put("direction", "OWNER_RECEIPT") }
+            "tool_kiosk_customer", "hub_apex_kiosk" -> null
+            else -> return
+        }
+        val spec = _uiState.value.activeWorkspace
+        viewModelScope.launch {
+            val row = withContext(Dispatchers.IO) {
+                runCatching {
+                    workspaceManager.useDatabase(spec.tenantId) { db ->
+                        val payload = buildJsonObject {
+                            put("collection", "kiosk_orders")
+                            put("sort", "-created_at")
+                            put("limit", 1)
+                            filter?.let { put("where", it) }
+                        }
+                        (registry.execute("db.query", db, spec.tenantId, payload) as? OpResult.Rows)
+                            ?.rows?.firstOrNull()
+                    }
+                }.getOrNull()
+            }
+            EngineStateBridge.pushBatch(kioskSeedVariables(cardId, row))
+        }
+    }
 
     /**
      * Reports the persisted Signal session so a reopened card does not claim NO_SESSION while
@@ -1987,6 +2028,85 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
     }
 
     companion object {
+        /** Card-local kiosk variables that must not survive into a reopened card. */
+        /**
+         * Per-card transient state: a reopened card must not show the previous card's notice,
+         * a stale undo offer, an armed confirmation, or an error from another card.
+         */
+        private val KIOSK_LOCAL_VARIABLES =
+            listOf(
+                "user.kiosk_notice",
+                "user.kiosk_undo_sku",
+                "user.kiosk_undo_label",
+                "user.kiosk_confirm",
+                "user.engine_error"
+            )
+
+        /**
+         * Maps a `kiosk_orders` row onto the shared `user.kiosk_*` namespace.
+         *
+         * Null when there is nothing to restore, so a card keeps its declared defaults instead
+         * of rendering an empty order.
+         */
+        internal fun kioskSeedVariables(
+            cardId: String,
+            row: Map<String, Any?>?
+        ): Map<String, DivVariableValue> {
+            if (cardId !in KIOSK_CARDS) return emptyMap()
+            val orderId = row?.get("id")?.toString()?.takeIf { it.isNotBlank() }
+            if (orderId == null) {
+                // The kiosk cards share one variable namespace, so a card with nothing to
+                // restore must clear the projection: opening the receipt card after a
+                // customer order rendered that order (and its Add buttons wrote to it).
+                return (KIOSK_PROJECTION_VARIABLES + KIOSK_LOCAL_VARIABLES)
+                    .associateWith { DivVariableValue.Str("") }
+            }
+            val updates = LinkedHashMap<String, DivVariableValue>()
+            updates["user.kiosk_order_id"] = DivVariableValue.Str(orderId)
+            updates["user.kiosk_order_label"] = DivVariableValue.Str(orderId)
+            KIOSK_ORDER_COLUMNS.forEach { (column, variable) ->
+                row[column]?.let { seedText(it) }?.takeIf { it.isNotBlank() }?.let {
+                    updates[variable] = DivVariableValue.Str(it)
+                }
+            }
+            KIOSK_LOCAL_VARIABLES.forEach { updates[it] = DivVariableValue.Str("") }
+            return updates
+        }
+
+        /**
+         * Roll-ups are stored as JSON numbers, so a whole count round-trips as `4.0`. The
+         * workspace header read `ITEMS 4.0`; render integral values without the fraction.
+         */
+        private fun seedText(value: Any?): String? = when (value) {
+            is Double -> if (value.isFinite() && value == Math.floor(value) && Math.abs(value) < 1e15) {
+                value.toLong().toString()
+            } else {
+                value.toString()
+            }
+            is Float -> seedText(value.toDouble())
+            else -> value?.toString()
+        }
+
+        private val KIOSK_CARDS = setOf("tool_kiosk_customer", "tool_kiosk_owner", "hub_apex_kiosk")
+
+        /** `kiosk_orders` column to `user.*` variable pairs the kiosk cards render. */
+        private val KIOSK_ORDER_COLUMNS = linkedMapOf(
+            "status" to "user.kiosk_status",
+            "direction" to "user.kiosk_direction",
+            "total_display" to "user.kiosk_total",
+            "subtotal_display" to "user.kiosk_subtotal",
+            "item_count" to "user.kiosk_item_count",
+            "line_count" to "user.kiosk_line_count",
+            "lines_json" to "user.kiosk_lines_json",
+            "payload_json" to "user.kiosk_payload_json",
+            "checksum" to "user.kiosk_checksum"
+        )
+
+        /** Every `user.*` value projected from a `kiosk_orders` row, for a blank seed. */
+        private val KIOSK_PROJECTION_VARIABLES: List<String> =
+            listOf("user.kiosk_order_id", "user.kiosk_order_label") +
+                KIOSK_ORDER_COLUMNS.values + KIOSK_LOCAL_VARIABLES
+
         /**
          * Label for the bundled demo card. Card content, not this constant, decides whether a
          * cached tenant is refreshed.

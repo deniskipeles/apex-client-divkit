@@ -1,362 +1,376 @@
 {
-  "card": {
-    "log_id": "apex_kiosk_${tenantId}",
-    "variables": [
+ "card": {
+  "log_id": "apex_kiosk_${tenantId}",
+  "variables": [
+   {
+    "name": "user.workspace_title",
+    "type": "string",
+    "value": "${displayName} (${terminalCode})"
+   },
+   {
+    "name": "user.engine_error",
+    "type": "string",
+    "value": ""
+   },
+   {
+    "name": "user.catalog_json",
+    "type": "string",
+    "value": "[]"
+   },
+   {
+    "name": "user.catalog_count",
+    "type": "integer",
+    "value": 0
+   },
+   {
+    "name": "user.kiosk_order_id",
+    "type": "string",
+    "value": ""
+   },
+   {
+    "name": "user.kiosk_order_label",
+    "type": "string",
+    "value": "—"
+   },
+   {
+    "name": "user.kiosk_status",
+    "type": "string",
+    "value": "NO_ORDER"
+   },
+   {
+    "name": "user.kiosk_direction",
+    "type": "string",
+    "value": "CUSTOMER_REQUEST"
+   },
+   {
+    "name": "user.kiosk_total",
+    "type": "string",
+    "value": "0.00"
+   },
+   {
+    "name": "user.kiosk_subtotal",
+    "type": "string",
+    "value": "0.00"
+   },
+   {
+    "name": "user.kiosk_item_count",
+    "type": "string",
+    "value": "0"
+   },
+   {
+    "name": "user.kiosk_line_count",
+    "type": "string",
+    "value": "0"
+   },
+   {
+    "name": "user.kiosk_lines_json",
+    "type": "string",
+    "value": "[]"
+   },
+   {
+    "name": "user.kiosk_payload_json",
+    "type": "string",
+    "value": "{}"
+   },
+   {
+    "name": "user.kiosk_checksum",
+    "type": "string",
+    "value": ""
+   },
+   {
+    "name": "user.kiosk_notice",
+    "type": "string",
+    "value": ""
+   },
+   {
+    "name": "user.kiosk_undo_sku",
+    "type": "string",
+    "value": ""
+   },
+   {
+    "name": "user.kiosk_undo_label",
+    "type": "string",
+    "value": ""
+   },
+   {
+    "name": "user.kiosk_undo_qty",
+    "type": "integer",
+    "value": 1
+   },
+   {
+    "name": "user.kiosk_undo_price",
+    "type": "string",
+    "value": "0"
+   },
+   {
+    "name": "user.kiosk_orders_json",
+    "type": "string",
+    "value": "[]"
+   },
+   {
+    "name": "user.kiosk_order_count",
+    "type": "integer",
+    "value": 0
+   },
+   {
+    "name": "user.qr_chunks",
+    "type": "array",
+    "value": []
+   },
+   {
+    "name": "user.qr_count",
+    "type": "integer",
+    "value": 0
+   },
+   {
+    "name": "user.qr_index",
+    "type": "integer",
+    "value": 0
+   },
+   {
+    "name": "user.qr_status",
+    "type": "string",
+    "value": "IDLE"
+   },
+   {
+    "name": "user.qr_transfer_id",
+    "type": "string",
+    "value": ""
+   },
+   {
+    "name": "user.qr_checksum",
+    "type": "string",
+    "value": ""
+   },
+   {
+    "name": "user.qr_img_current",
+    "type": "string",
+    "value": ""
+   },
+   {
+    "name": "user.scanned_chunks",
+    "type": "array",
+    "value": []
+   },
+   {
+    "name": "user.receipt_status",
+    "type": "string",
+    "value": "IDLE"
+   },
+   {
+    "name": "user.receipt_json",
+    "type": "string",
+    "value": ""
+   },
+   {
+    "name": "user.receipt_checksum_ok",
+    "type": "boolean",
+    "value": false
+   },
+   {
+    "name": "user.receipt_missing",
+    "type": "array",
+    "value": []
+   },
+   {
+    "name": "user.receipt_error",
+    "type": "string",
+    "value": ""
+   },
+   {
+    "name": "user.net_status",
+    "type": "string",
+    "value": "IDLE"
+   },
+   {
+    "name": "user.net_hub_id",
+    "type": "string",
+    "value": ""
+   },
+   {
+    "name": "user.net_hub_port",
+    "type": "integer",
+    "value": 0
+   },
+   {
+    "name": "user.net_lan_url",
+    "type": "string",
+    "value": ""
+   },
+   {
+    "name": "user.net_share_id",
+    "type": "string",
+    "value": ""
+   },
+   {
+    "name": "user.net_share_path",
+    "type": "string",
+    "value": ""
+   },
+   {
+    "name": "user.net_share_bytes",
+    "type": "integer",
+    "value": 0
+   },
+   {
+    "name": "user.net_share_count",
+    "type": "integer",
+    "value": 0
+   },
+   {
+    "name": "user.net_response",
+    "type": "string",
+    "value": ""
+   },
+   {
+    "name": "user.kiosk_confirm",
+    "type": "string",
+    "value": ""
+   }
+  ],
+  "states": [
+   {
+    "state_id": 0,
+    "div": {
+     "type": "container",
+     "orientation": "vertical",
+     "item_spacing": 14,
+     "items": [
       {
-        "name": "user.workspace_title",
-        "type": "string",
-        "value": "${displayName} (${terminalCode})"
-      },
-      {
-        "name": "user.engine_error",
-        "type": "string",
-        "value": ""
-      },
-      {
-        "name": "user.catalog_json",
-        "type": "string",
-        "value": "[]"
-      },
-      {
-        "name": "user.catalog_count",
-        "type": "integer",
-        "value": 0
-      },
-      {
-        "name": "user.kiosk_order_id",
-        "type": "string",
-        "value": ""
-      },
-      {
-        "name": "user.kiosk_order_label",
-        "type": "string",
-        "value": "—"
-      },
-      {
-        "name": "user.kiosk_status",
-        "type": "string",
-        "value": "NO_ORDER"
-      },
-      {
-        "name": "user.kiosk_direction",
-        "type": "string",
-        "value": "CUSTOMER_REQUEST"
-      },
-      {
-        "name": "user.kiosk_total",
-        "type": "string",
-        "value": "0.00"
-      },
-      {
-        "name": "user.kiosk_subtotal",
-        "type": "string",
-        "value": "0.00"
-      },
-      {
-        "name": "user.kiosk_item_count",
-        "type": "string",
-        "value": "0"
-      },
-      {
-        "name": "user.kiosk_line_count",
-        "type": "string",
-        "value": "0"
-      },
-      {
-        "name": "user.kiosk_lines_json",
-        "type": "string",
-        "value": "[]"
-      },
-      {
-        "name": "user.kiosk_payload_json",
-        "type": "string",
-        "value": "{}"
-      },
-      {
-        "name": "user.kiosk_checksum",
-        "type": "string",
-        "value": ""
-      },
-      {
-        "name": "user.kiosk_notice",
-        "type": "string",
-        "value": "Ready — no action yet"
-      },
-      {
-        "name": "user.kiosk_undo_sku",
-        "type": "string",
-        "value": ""
-      },
-      {
-        "name": "user.kiosk_undo_label",
-        "type": "string",
-        "value": ""
-      },
-      {
-        "name": "user.kiosk_undo_qty",
-        "type": "integer",
-        "value": 1
-      },
-      {
-        "name": "user.kiosk_undo_price",
-        "type": "string",
-        "value": "0"
-      },
-      {
-        "name": "user.kiosk_orders_json",
-        "type": "string",
-        "value": "[]"
-      },
-      {
-        "name": "user.kiosk_order_count",
-        "type": "integer",
-        "value": 0
-      },
-      {
-        "name": "user.qr_chunks",
-        "type": "array",
-        "value": []
-      },
-      {
-        "name": "user.qr_count",
-        "type": "integer",
-        "value": 0
-      },
-      {
-        "name": "user.qr_index",
-        "type": "integer",
-        "value": 0
-      },
-      {
-        "name": "user.qr_status",
-        "type": "string",
-        "value": "IDLE"
-      },
-      {
-        "name": "user.qr_transfer_id",
-        "type": "string",
-        "value": ""
-      },
-      {
-        "name": "user.qr_checksum",
-        "type": "string",
-        "value": ""
-      },
-      {
-        "name": "user.qr_img_current",
-        "type": "string",
-        "value": ""
-      },
-      {
-        "name": "user.scanned_chunks",
-        "type": "array",
-        "value": []
-      },
-      {
-        "name": "user.receipt_status",
-        "type": "string",
-        "value": "IDLE"
-      },
-      {
-        "name": "user.receipt_json",
-        "type": "string",
-        "value": ""
-      },
-      {
-        "name": "user.receipt_checksum_ok",
-        "type": "boolean",
-        "value": false
-      },
-      {
-        "name": "user.receipt_missing",
-        "type": "array",
-        "value": []
-      },
-      {
-        "name": "user.receipt_error",
-        "type": "string",
-        "value": ""
-      },
-      {
-        "name": "user.net_status",
-        "type": "string",
-        "value": "IDLE"
-      },
-      {
-        "name": "user.net_hub_id",
-        "type": "string",
-        "value": ""
-      },
-      {
-        "name": "user.net_hub_port",
-        "type": "integer",
-        "value": 0
-      },
-      {
-        "name": "user.net_lan_url",
-        "type": "string",
-        "value": ""
-      },
-      {
-        "name": "user.net_share_id",
-        "type": "string",
-        "value": ""
-      },
-      {
-        "name": "user.net_share_path",
-        "type": "string",
-        "value": ""
-      },
-      {
-        "name": "user.net_share_bytes",
-        "type": "integer",
-        "value": 0
-      },
-      {
-        "name": "user.net_share_count",
-        "type": "integer",
-        "value": 0
-      },
-      {
-        "name": "user.net_response",
-        "type": "string",
-        "value": ""
-      }
-    ],
-    "states": [
-      {
-        "state_id": 0,
-        "div": {
-          "type": "container",
-          "orientation": "vertical",
-          "item_spacing": 14,
-          "items": [
-            {
-              "type": "container",
-              "orientation": "vertical",
-              "item_spacing": 4,
-              "items": [
-                {
-                  "type": "text",
-                  "text": "APEX KIOSK",
-                  "font_size": 26,
-                  "text_color": "#F8FAFC",
-                  "font_weight": "bold"
-                },
-                {
-                  "type": "text",
-                  "text": "Customer orders, owner receipts, QR transfer and LAN share",
-                  "font_size": 13,
-                  "text_color": "#94A3B8"
-                }
-              ]
-            },
-            {
-              "type": "container",
-              "orientation": "horizontal",
-              "item_spacing": 10,
-              "items": [
-                {
-                  "type": "container",
-                  "orientation": "vertical",
-                  "item_spacing": 2,
-                  "items": [
-                    {
-                      "type": "text",
-                      "text": "ORDER",
-                      "font_size": 10,
-                      "text_color": "#94A3B8",
-                      "font_weight": "bold"
-                    },
-                    {
-                      "type": "text",
-                      "text": "@{user.kiosk_order_label}",
-                      "font_size": 18,
-                      "text_color": "#F8FAFC",
-                      "font_weight": "bold",
-                      "font_family": "monospace"
-                    }
-                  ],
-                  "weight": 1
-                },
-                {
-                  "type": "container",
-                  "orientation": "vertical",
-                  "item_spacing": 2,
-                  "items": [
-                    {
-                      "type": "text",
-                      "text": "ITEMS",
-                      "font_size": 10,
-                      "text_color": "#94A3B8",
-                      "font_weight": "bold"
-                    },
-                    {
-                      "type": "text",
-                      "text": "@{user.kiosk_item_count}",
-                      "font_size": 18,
-                      "text_color": "#F8FAFC",
-                      "font_weight": "bold"
-                    }
-                  ],
-                  "weight": 1
-                },
-                {
-                  "type": "container",
-                  "orientation": "vertical",
-                  "item_spacing": 2,
-                  "items": [
-                    {
-                      "type": "text",
-                      "text": "TOTAL",
-                      "font_size": 10,
-                      "text_color": "#94A3B8",
-                      "font_weight": "bold"
-                    },
-                    {
-                      "type": "text",
-                      "text": "$@{user.kiosk_total}",
-                      "font_size": 18,
-                      "text_color": "#F8FAFC",
-                      "font_weight": "bold"
-                    }
-                  ],
-                  "weight": 1
-                }
-              ],
-              "background_color": "#0F172A",
-              "corner_radius": 14,
-              "paddings": {
-                "left": 14,
-                "right": 14,
-                "top": 12,
-                "bottom": 12
-              },
-              "border": {
-                "stroke": {
-                  "color": "#334155",
-                  "width": 1
-                },
-                "corner_radius": 14
-              }
-            },
-            {
-              "type": "text",
-              "text": "Pick a workflow below. Orders and receipts are stored in this device's SQLite database.",
-              "font_size": 12,
-              "text_color": "#94A3B8"
-            }
-          ],
-          "background_color": "#1E293B",
-          "paddings": {
-            "left": 16,
-            "right": 16,
-            "top": 18,
-            "bottom": 20
-          },
-          "tool_catalog_after": 2
+       "type": "container",
+       "orientation": "vertical",
+       "item_spacing": 4,
+       "items": [
+        {
+         "type": "text",
+         "text": "APEX KIOSK",
+         "font_size": 26,
+         "text_color": "#F8FAFC",
+         "font_weight": "bold"
+        },
+        {
+         "type": "text",
+         "text": "Customer orders, owner receipts, QR transfer and LAN share",
+         "font_size": 13,
+         "text_color": "#94A3B8"
         }
+       ]
+      },
+      {
+       "type": "container",
+       "orientation": "horizontal",
+       "item_spacing": 10,
+       "items": [
+        {
+         "type": "container",
+         "orientation": "vertical",
+         "item_spacing": 2,
+         "items": [
+          {
+           "type": "text",
+           "text": "ORDER",
+           "font_size": 10,
+           "text_color": "#94A3B8",
+           "font_weight": "bold"
+          },
+          {
+           "type": "text",
+           "text": "@{user.kiosk_order_label}",
+           "font_size": 18,
+           "text_color": "#F8FAFC",
+           "font_weight": "bold",
+           "font_family": "monospace"
+          }
+         ],
+         "weight": 1
+        },
+        {
+         "type": "container",
+         "orientation": "vertical",
+         "item_spacing": 2,
+         "items": [
+          {
+           "type": "text",
+           "text": "ITEMS",
+           "font_size": 10,
+           "text_color": "#94A3B8",
+           "font_weight": "bold"
+          },
+          {
+           "type": "text",
+           "text": "@{toInteger(user.kiosk_item_count)}",
+           "font_size": 18,
+           "text_color": "#F8FAFC",
+           "font_weight": "bold"
+          }
+         ],
+         "weight": 1
+        },
+        {
+         "type": "container",
+         "orientation": "vertical",
+         "item_spacing": 2,
+         "items": [
+          {
+           "type": "text",
+           "text": "TOTAL",
+           "font_size": 10,
+           "text_color": "#94A3B8",
+           "font_weight": "bold"
+          },
+          {
+           "type": "text",
+           "text": "$@{user.kiosk_total}",
+           "font_size": 18,
+           "text_color": "#F8FAFC",
+           "font_weight": "bold"
+          }
+         ],
+         "weight": 1
+        }
+       ],
+       "background_color": "#0F172A",
+       "corner_radius": 14,
+       "paddings": {
+        "left": 14,
+        "right": 14,
+        "top": 12,
+        "bottom": 12
+       },
+       "border": {
+        "stroke": {
+         "color": "#334155",
+         "width": 1
+        },
+        "corner_radius": 14
+       },
+       "visibility": "@{if(user.kiosk_order_id == '', 'gone', 'visible')}"
+      },
+      {
+       "type": "text",
+       "text": "@{if(user.kiosk_status == 'submitted', 'Submitted — locked for editing', 'Draft — not submitted yet')}",
+       "font_size": 12,
+       "text_color": "#475569",
+       "visibility": "@{if(user.kiosk_order_id == '', 'gone', 'visible')}"
+      },
+      {
+       "type": "text",
+       "text": "No orders yet — pick Customer order to begin.",
+       "font_size": 12,
+       "text_color": "#475569",
+       "visibility": "@{if(user.kiosk_order_id == '', 'visible', 'gone')}"
       }
-    ]
-  }
+     ],
+     "background_color": "#1E293B",
+     "paddings": {
+      "left": 16,
+      "right": 16,
+      "top": 18,
+      "bottom": 20
+     },
+     "tool_catalog_after": 2
+    }
+   }
+  ]
+ }
 }

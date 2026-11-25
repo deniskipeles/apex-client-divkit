@@ -96,7 +96,35 @@ object WorkspaceProvisioner {
      * Connect Workspace flow rather than being shipped as static demos.
      */
     val defaultWorkspaces: List<TenantWorkspaceSpec>
-        get() = engine.workspace.WorkspaceRepository.loadAll().bundles.map { it.toSpec() }
+        get() {
+            val report = engine.workspace.WorkspaceRepository.loadAll()
+            lastLoadFailure = report.failures.firstOrNull()
+                ?.let { "${it.id}: ${it.reason}" }
+                .orEmpty()
+            return report.bundles.map { it.toSpec() }
+        }
+
+    /** Why the last [defaultWorkspaces] scan came back empty, or "" when everything loaded. */
+    var lastLoadFailure: String = ""
+        private set
+
+    /**
+     * Stand-in when a build can load no workspace at all — a stale encryption key, a missing or
+     * corrupt bundle. `workspaces.first()` used to throw before the first frame was drawn, so the
+     * app died instead of explaining itself.
+     */
+    val emptyWorkspace: TenantWorkspaceSpec = TenantWorkspaceSpec(
+        tenantId = "",
+        displayName = "No workspace",
+        terminalCode = "",
+        subtitle = "",
+        accentHex = "#0F766E",
+        mode = EngineConfig.Mode.HYBRID,
+        capabilities = emptySet()
+    )
+
+    fun firstOrEmpty(workspaces: List<TenantWorkspaceSpec>): TenantWorkspaceSpec =
+        workspaces.firstOrNull() ?: emptyWorkspace
 
     /** Maps a data-defined workspace onto the runtime spec the engine already understands. */
     fun engine.workspace.WorkspaceBundle.toSpec(): TenantWorkspaceSpec {

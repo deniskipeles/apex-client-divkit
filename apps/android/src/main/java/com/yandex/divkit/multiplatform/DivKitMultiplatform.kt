@@ -270,7 +270,9 @@ private fun RenderDivNode(
     isDark: Boolean,
     scope: CoroutineScope,
     onDispatchAction: suspend (url: String, payload: String?) -> Unit,
-    fillWidth: Boolean = true
+    fillWidth: Boolean = true,
+    /** Nearest declared fill, so light-theme text is only darkened on a surface that was lightened. */
+    surfaceHex: String? = null
 ) {
     val type = node["type"]?.jsonPrimitive?.contentOrNull ?: "container"
     // DivKit's `visibility` is an expression: `gone` removes the node from the layout, which is
@@ -283,6 +285,7 @@ private fun RenderDivNode(
     val cornerRadius = node["corner_radius"]?.jsonPrimitive?.intOrNull ?: 0
     val bgHex = node["background_color"]?.jsonPrimitive?.contentOrNull
         ?: node["background"]?.jsonArray?.firstOrNull()?.jsonObject?.get("color")?.jsonPrimitive?.contentOrNull
+    val resolvedSurface = bgHex?.let { evalExpr(it, variables, rowContext) } ?: surfaceHex
     val borderHex = node["border"]?.jsonObject?.get("stroke")?.jsonObject?.get("color")?.jsonPrimitive?.contentOrNull
     val borderWidth = node["border"]?.jsonObject?.get("stroke")?.jsonObject?.get("width")?.jsonPrimitive?.intOrNull ?: 0
     val borderRadius = node["border"]?.jsonObject?.get("corner_radius")?.jsonPrimitive?.intOrNull ?: cornerRadius
@@ -358,7 +361,7 @@ private fun RenderDivNode(
                         Box(modifier = if (weight != null && weight > 0f) Modifier.weight(weight) else Modifier) {
                             RenderDivNode(
                                 childObj, variables, rowContext, isDark, scope, onDispatchAction,
-                                fillWidth = false
+                                fillWidth = false, surfaceHex = resolvedSurface
                             )
                         }
                     }
@@ -369,7 +372,10 @@ private fun RenderDivNode(
                     verticalArrangement = Arrangement.spacedBy(spacing)
                 ) {
                     for (child in items) {
-                        RenderDivNode(child.jsonObject, variables, rowContext, isDark, scope, onDispatchAction)
+                        RenderDivNode(
+                            child.jsonObject, variables, rowContext, isDark, scope, onDispatchAction,
+                            surfaceHex = resolvedSurface
+                        )
                     }
                 }
             }
@@ -386,7 +392,10 @@ private fun RenderDivNode(
                 horizontalArrangement = Arrangement.spacedBy(spacing)
             ) {
                 for (child in items) {
-                    RenderDivNode(child.jsonObject, variables, rowContext, isDark, scope, onDispatchAction)
+                    RenderDivNode(
+                        child.jsonObject, variables, rowContext, isDark, scope, onDispatchAction,
+                        surfaceHex = resolvedSurface
+                    )
                 }
             }
         }
@@ -407,7 +416,10 @@ private fun RenderDivNode(
                     ) {
                         for (child in rowItems) {
                             Box(modifier = Modifier.weight(1f)) {
-                                RenderDivNode(child.jsonObject, variables, rowContext, isDark, scope, onDispatchAction)
+                                RenderDivNode(
+                                    child.jsonObject, variables, rowContext, isDark, scope, onDispatchAction,
+                                    surfaceHex = resolvedSurface
+                                )
                             }
                         }
                         repeat(columnCount - rowItems.size) {
@@ -450,7 +462,9 @@ private fun RenderDivNode(
                 fontSize = fontSize,
                 fontWeight = fontWeight,
                 fontFamily = if (monospace) FontFamily.Monospace else FontFamily.Default,
-                color = adaptTextColorForTheme(evalExpr(colorHex, variables, rowContext), isDark),
+                color = adaptTextColorForTheme(
+                    evalExpr(colorHex, variables, rowContext), isDark, resolvedSurface
+                ),
                 textAlign = textAlign,
                 maxLines = node["max_lines"]?.jsonPrimitive?.intOrNull ?: Int.MAX_VALUE,
                 overflow = TextOverflow.Ellipsis,
@@ -497,10 +511,16 @@ private fun RenderDivNode(
                     }
                     .testTag("div_btn_$logId")
             ) {
+                val textAlignment = node["text_alignment_horizontal"]
+                    ?.jsonPrimitive?.contentOrNull
+                val alignStart = textAlignment == "left" || textAlignment == "start"
                 Row(
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                    modifier = Modifier
+                        .then(if (alignStart) Modifier.fillMaxWidth() else Modifier)
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
+                    horizontalArrangement =
+                        if (alignStart) Arrangement.Start else Arrangement.Center
                 ) {
                     if (iconName != null) {
                         Icon(
@@ -511,7 +531,11 @@ private fun RenderDivNode(
                         )
                         Spacer(Modifier.width(8.dp))
                     }
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Column(
+                        horizontalAlignment =
+                            if (alignStart) Alignment.Start else Alignment.CenterHorizontally,
+                        modifier = if (alignStart) Modifier.weight(1f) else Modifier
+                    ) {
                         Text(
                             text = resolvedText,
                             color = resolvedBtnText,
@@ -578,7 +602,11 @@ private fun RenderDivNode(
                 ?: node["icon"]?.jsonPrimitive?.contentOrNull
                 ?: node["custom_props"]?.jsonObject?.get("icon")?.jsonPrimitive?.contentOrNull
             val resolved = iconRef?.let { evalExpr(it, variables, rowContext) }
-            if (resolved != null && isBitmapSource(resolved)) {
+            if (resolved.isNullOrBlank()) {
+                // An image whose source has not been produced yet (a QR before generation)
+                // must render nothing: the icon fallback used to paint a lightning bolt
+                // inside the empty placeholder.
+            } else if (isBitmapSource(resolved)) {
                 RenderDivBitmap(node, resolved, variables, rowContext, boxModifier)
             } else {
                 val sizeDp = node["width"]?.jsonObject?.get("value")?.jsonPrimitive?.intOrNull
@@ -717,7 +745,16 @@ internal fun adaptBorderColorForTheme(hexStr: String, isDark: Boolean): Color {
     }
 }
 
-internal fun adaptTextColorForTheme(hexStr: String, isDark: Boolean): Color {
+internal fun adaptTextColorForTheme(hexStr: String, isDark: Boolean, surfaceHex: String? = null): Color {
+    val declared = parseHexColor(hexStr)
+    if (!isDark && surfaceHex != null && adaptSurfaceColorForTheme(surfaceHex, false).luminance() < 0.5f) {
+        // The panel keeps its dark fill in light theme (e.g. the Kiosk catalog rows), so flipping a
+        // light caption to ink paints dark-on-dark. Keep light captions light and lift the greys.
+        return when (hexStr.trim().uppercase()) {
+            "#64748B", "#94A3B8", "#475569" -> Color(0xFFCBD5E1)
+            else -> if (declared.luminance() < 0.35f) Color(0xFFF8FAFC) else declared
+        }
+    }
     if (isDark) {
         // #64748B is only ever a caption on a slate surface, where it is 3:1.
         return when (hexStr.trim().uppercase()) {
@@ -725,15 +762,22 @@ internal fun adaptTextColorForTheme(hexStr: String, isDark: Boolean): Color {
             else -> parseHexColor(hexStr)
         }
     }
-    return when (hexStr.trim().uppercase()) {
+    val mapped = when (hexStr.trim().uppercase()) {
         "#F8FAFC", "#E2E8F0", "#FFFFFF" -> Color(0xFF0F172A)
-        "#94A3B8", "#CBD5E1" -> Color(0xFF475569)
-        "#64748B" -> Color(0xFF475569)
+        "#94A3B8", "#CBD5E1", "#64748B" -> Color(0xFF475569)
         "#38BDF8" -> Color(0xFF1D4ED8)
         "#34D399" -> Color(0xFF047857)
         "#FBBF24" -> Color(0xFFB45309)
         "#F87171", "#FCA5A5" -> Color(0xFFB91C1C)
-        else -> parseHexColor(hexStr)
+        else -> null
+    }
+    if (mapped != null) return mapped
+    // Pastel accents (#C4B5FD totals, #67E8F9 telemetry) are authored for a dark panel. On a light
+    // surface they wash out to ~1.5:1, so keep the hue and drop the tone instead.
+    return if (declared.luminance() > 0.5f) {
+        Color(declared.red * 0.25f, declared.green * 0.25f, declared.blue * 0.25f)
+    } else {
+        declared
     }
 }
 
@@ -742,7 +786,16 @@ internal fun adaptButtonBgForTheme(hexStr: String, isDark: Boolean): Color {
     return when (hexStr.trim().uppercase()) {
         "#334155", "#1E293B" -> Color(0xFFF1F5F9)
         "#3F1D24" -> Color(0xFFFEE2E2)
+        // Mid-tone brand fills only reach ~3.2-4.2:1 against a white label. The light theme drops
+        // each one a step darker so the same white label clears 4.5:1.
         "#0EA5E9" -> Color(0xFF1D4ED8)
+        "#0284C7" -> Color(0xFF0369A1)
+        "#0891B2" -> Color(0xFF0E7490)
+        "#0D9488" -> Color(0xFF0F766E)
+        "#059669" -> Color(0xFF047857)
+        "#D97706" -> Color(0xFFB45309)
+        "#8B5CF6" -> Color(0xFF6D28D9)
+        "#DB2777" -> Color(0xFFBE123C)
         else -> parseHexColor(hexStr)
     }
 }

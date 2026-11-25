@@ -108,6 +108,12 @@ data class CanonicalView(
     /** Child field that holds the parent id. */
     val child_foreign_field: String? = null,
     val child_fields: List<String> = emptyList(),
+    /** Per-row derived fields (field -> arithmetic expression) appended to each projected row. */
+    val child_computed: Map<String, String> = emptyMap(),
+    /** Result key holding the projected child rows as a JSON array. Defaults to `<child>_json`. */
+    val child_json_key: String? = null,
+    /** Result key holding the projected child row count. Defaults to `<child>_count`. */
+    val child_count_key: String? = null,
     val version: Int = 1,
     val chunk_bytes: Int = 500,
     /** Result key -> header field. Keys: payload, checksum, chunks, chunk_bytes, chunk_count. */

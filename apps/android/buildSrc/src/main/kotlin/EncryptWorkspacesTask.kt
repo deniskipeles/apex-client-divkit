@@ -4,6 +4,7 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.provider.Property
+import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.Optional
@@ -35,7 +36,12 @@ abstract class EncryptWorkspacesTask : DefaultTask() {
     @get:OutputDirectory
     abstract val outputDir: DirectoryProperty
 
-    @get:Internal
+    /**
+     * An input, not internal: the bundle is encrypted with this key, so a key change must
+     * re-run the task. As an `@Internal` value a rebuilt APK kept a bundle encrypted with the
+     * previous key and could not decrypt its own workspace, which crashed at launch.
+     */
+    @get:Input
     abstract val workspaceKey: Property<String>
 
     @TaskAction

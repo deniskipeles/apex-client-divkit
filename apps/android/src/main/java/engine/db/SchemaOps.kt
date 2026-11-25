@@ -172,7 +172,65 @@ object SchemaOps {
         }
         val patch = buildJsonObject { values.forEach { (field, value) -> putAny(field, value) } }
         engine.updateRecord(collection, id, patch)
-        return values + mapOf("id" to id)
+        // The header's own fields (status, direction, ...) belong to the roll-up: a card that
+        // binds them from a write result would otherwise read them as absent.
+        return header.data.scalars() + values + childProjection(engine, schema, id) +
+            mapOf("id" to id)
+    }
+
+    /**
+     * The canonical view names the child by its payload key (`lines`); the rows live in the
+     * collection the aggregate rule targets (`kiosk_order_lines`).
+     */
+    private fun childCollection(schema: CollectionSchema, view: CanonicalView): String =
+        schema.aggregates.firstOrNull { it.foreign_field == view.child_foreign_field }?.target
+            ?: view.child
+            ?: error("Canonical view declares no child")
+
+    /**
+     * Adds the canonical child projection to a record read, so a card that loads an order from
+     * SQLite gets the same `lines_json`/`line_count` keys a write returns.
+     */
+    fun project(
+        engine: ApexKitDatabaseEngine,
+        collection: String,
+        rowId: String,
+        base: Map<String, Any?>
+    ): Map<String, Any?> {
+        val schema = engine.getCollection(collection)?.schema ?: return base
+        return base + childProjection(engine, schema, rowId)
+    }
+
+    /**
+     * Projects the canonical child rows (plus their per-row derived fields) into the write result.
+     * A card that renders an order's lines from a `json_list` reads them straight off the write
+     * that changed the order, so a write that only returned aggregates left the list empty.
+     */
+    private fun childProjection(
+        engine: ApexKitDatabaseEngine,
+        schema: CollectionSchema,
+        parentId: String
+    ): Map<String, Any?> {
+        val view = schema.canonical ?: return emptyMap()
+        val childKey = view.child ?: return emptyMap()
+        val foreign = view.child_foreign_field
+            ?: error("A canonical view with a child must declare child_foreign_field")
+        val child = childCollection(schema, view)
+        val rows = engine.queryRecords(child, listOf(QueryFilter(foreign, "=", parentId)), limit = 1000)
+            .sortedWith(compareBy({ it.created }, { it.id }))
+        val json = buildJsonArray {
+            rows.forEach { row ->
+                add(buildJsonObject {
+                    put("id", row.id)
+                    view.child_fields.forEach { field -> put(field, row.data[field] ?: JsonNull) }
+                    view.child_computed.forEach { (field, expr) -> putAny(field, evaluateRow(expr, row.data)) }
+                })
+            }
+        }
+        return mapOf(
+            (view.child_json_key ?: "${childKey}_json") to json.toString(),
+            (view.child_count_key ?: "${childKey}_count") to rows.size
+        )
     }
 
 
@@ -225,6 +283,8 @@ object SchemaOps {
             }
         }
 
+        requireEditableParent(engine, rule.parent, parentId)
+
         val childId = if (existing == null) {
             engine.insertRecord(
                 collection,
@@ -250,6 +310,31 @@ object SchemaOps {
         return ChildWrite(parentId, childId, stored, parent, "")
     }
 
+    /**
+     * Refuses child writes on a parent that is no longer editable.
+     *
+     * Cards hide their editing controls once an order is committed, but a stale card (or a
+     * hand-built action) could still rewrite a submitted total. The schema's
+     * `editable_status` is the authority.
+     */
+    private fun requireEditableParent(
+        engine: ApexKitDatabaseEngine,
+        parentCollection: String,
+        parentId: String
+    ) {
+        val schema = engine.getCollection(parentCollection)?.schema ?: return
+        val editable = schema.aggregates.flatMap { it.editable_status }.toSet()
+        if (editable.isEmpty()) return
+        val status = engine.queryRecords(
+            parentCollection,
+            listOf(QueryFilter("id", "=", parentId)),
+            limit = 1
+        ).firstOrNull()?.data?.get("status")?.jsonPrimitive?.contentOrNull ?: return
+        if (status !in editable) {
+            error("This order is ${status.lowercase()} and can no longer change")
+        }
+    }
+
     /** Sets a child's quantity; zero removes it. Returns the parent's fresh roll-up. */
     fun setChildQuantity(
         engine: ApexKitDatabaseEngine,
@@ -263,6 +348,7 @@ object SchemaOps {
             .firstOrNull() ?: error("Row '$childId' not found")
         val parentId = child.data[rule.parent_field]?.jsonPrimitive?.contentOrNull
             ?: error("Row '$childId' has no parent")
+        requireEditableParent(engine, rule.parent, parentId)
         if (quantity <= 0) {
             engine.deleteRecord(collection, childId)
             return ChildWrite(parentId, childId, child.data, recompute(engine, rule.parent, parentId), child.data.toString())
@@ -290,11 +376,25 @@ object SchemaOps {
             .firstOrNull() ?: error("Row '$childId' not found")
         val parentId = child.data[rule.parent_field]?.jsonPrimitive?.contentOrNull
             ?: error("Row '$childId' has no parent")
+        requireEditableParent(engine, rule.parent, parentId)
         engine.deleteRecord(collection, childId)
         val undo = buildJsonObject {
             child.data.forEach { (field, value) -> put(field, value) }
         }
         return ChildWrite(parentId, childId, child.data, recompute(engine, rule.parent, parentId), undo.toString())
+    }
+
+    /** `records.data` as plain Kotlin scalars, matching the shape `EngineRegistry` returns. */
+    private fun JsonObject.scalars(): Map<String, Any?> = mapValues { (_, value) ->
+        when (value) {
+            is JsonPrimitive -> when {
+                value.isString -> value.content
+                value.content == "true" || value.content == "false" -> value.content.toBoolean()
+                value.doubleOrNull != null -> value.doubleOrNull as Any
+                else -> value.content
+            }
+            else -> value.toString()
+        }
     }
 
     // ---------------------------------------------------------------- lookup
@@ -357,7 +457,7 @@ object SchemaOps {
         val header = engine.queryRecords(collection, listOf(QueryFilter("id", "=", id)), limit = 1)
             .firstOrNull() ?: error("Record '$id' not found")
 
-        val payload = canonicalPayload(engine, view, header.id, header.data)
+        val payload = canonicalPayload(engine, view, header.id, header.data, childCollection(col.schema, view))
         val checksum = sha256(payload)
         val encoded = Base45.encode(payload.toByteArray(Charsets.UTF_8))
         val size = (chunkBytes ?: view.chunk_bytes).coerceIn(50, 2000)
@@ -393,7 +493,8 @@ object SchemaOps {
         engine: ApexKitDatabaseEngine,
         view: CanonicalView,
         headerId: String,
-        headerData: JsonObject
+        headerData: JsonObject,
+        childCollection: String? = null
     ): String {
         val root = buildJsonObject {
             view.fields.forEach { field ->
@@ -403,7 +504,11 @@ object SchemaOps {
             if (child != null) {
                 val foreign = view.child_foreign_field
                     ?: error("A canonical view with a child must declare child_foreign_field")
-                val rows = engine.queryRecords(child, listOf(QueryFilter(foreign, "=", headerId)), limit = 1000)
+                val rows = engine.queryRecords(
+                    childCollection ?: child,
+                    listOf(QueryFilter(foreign, "=", headerId)),
+                    limit = 1000
+                )
                     .sortedWith(compareBy({ it.created }, { it.id }))
                 put(
                     child,
@@ -501,6 +606,24 @@ object SchemaOps {
 
     private fun round2(value: Double): Double =
         BigDecimal.valueOf(value).setScale(2, RoundingMode.HALF_UP).toDouble()
+
+    /** Per-row companion to [evaluate]: `field`, `a * b`, or `round2(a * b)` over one row. */
+    private fun evaluateRow(expr: String, row: JsonObject): Any {
+        val cleaned = expr.replace(" ", "")
+        if (cleaned.startsWith("round2(", ignoreCase = true) && cleaned.endsWith(")")) {
+            val inner = cleaned.substring(7, cleaned.length - 1)
+            return money(round2(rowProduct(inner, row)))
+        }
+        return rowProduct(cleaned, row)
+    }
+
+    private fun rowProduct(expr: String, row: JsonObject): Double =
+        if ('*' in expr) {
+            val (a, b) = expr.split('*', limit = 2)
+            number(row, a) * number(row, b)
+        } else {
+            number(row, expr)
+        }
 
     private fun number(row: JsonObject, field: String): Double {
         val el = row[field] ?: return 0.0

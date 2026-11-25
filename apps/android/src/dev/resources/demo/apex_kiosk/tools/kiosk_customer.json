@@ -23,7 +23,16 @@
          "text": "New order",
          "font_size": 24,
          "text_color": "#F8FAFC",
-         "font_weight": "bold"
+         "font_weight": "bold",
+         "visibility": "@{if(user.kiosk_order_id == '', 'visible', 'gone')}"
+        },
+        {
+         "type": "text",
+         "text": "Order @{user.kiosk_order_label}",
+         "font_size": 24,
+         "text_color": "#F8FAFC",
+         "font_weight": "bold",
+         "visibility": "@{if(user.kiosk_order_id == '', 'gone', 'visible')}"
         },
         {
          "type": "text",
@@ -33,21 +42,6 @@
         }
        ],
        "weight": 1
-      },
-      {
-       "type": "text",
-       "text": "@{user.kiosk_status}",
-       "font_size": 11,
-       "font_weight": "bold",
-       "text_color": "#F8FAFC",
-       "background_color": "#1B2740",
-       "corner_radius": 20,
-       "paddings": {
-        "left": 10,
-        "right": 10,
-        "top": 5,
-        "bottom": 5
-       }
       }
      ]
     },
@@ -60,7 +54,7 @@
        "type": "text",
        "text": "Order",
        "font_size": 11,
-       "text_color": "#64748B"
+       "text_color": "#94A3B8"
       },
       {
        "type": "text",
@@ -74,11 +68,11 @@
        "type": "text",
        "text": "·",
        "font_size": 11,
-       "text_color": "#64748B"
+       "text_color": "#94A3B8"
       },
       {
        "type": "text",
-       "text": "@{user.kiosk_item_count} items",
+       "text": "@{toInteger(user.kiosk_item_count)} in cart",
        "font_size": 12,
        "text_color": "#94A3B8"
       },
@@ -86,7 +80,7 @@
        "type": "text",
        "text": "·",
        "font_size": 11,
-       "text_color": "#64748B"
+       "text_color": "#94A3B8"
       },
       {
        "type": "text",
@@ -95,8 +89,24 @@
        "text_color": "#C4B5FD",
        "font_weight": "bold",
        "font_family": "monospace"
+      },
+      {
+       "type": "text",
+       "text": "@{if(user.kiosk_status == 'draft', 'Draft', if(user.kiosk_status == 'submitted', 'Submitted', user.kiosk_status))}",
+       "font_size": 11,
+       "font_weight": "bold",
+       "text_color": "#F8FAFC",
+       "background_color": "#1B2740",
+       "corner_radius": 20,
+       "paddings": {
+        "left": 10,
+        "right": 10,
+        "top": 5,
+        "bottom": 5
+       }
       }
-     ]
+     ],
+     "visibility": "@{if(user.kiosk_order_id == '', 'gone', 'visible')}"
     }
    ]
   },
@@ -145,7 +155,7 @@
      "max_lines": 3
     }
    ],
-   "visibility": "@{if(user.kiosk_status == 'SUBMITTED', 'visible', 'gone')}",
+   "visibility": "@{if(user.kiosk_status == 'submitted', 'visible', 'gone')}",
    "id": "kiosk_customer_submitted"
   },
   {
@@ -204,7 +214,7 @@
          "created_at": "@{format_date(now(), 'yyyy-MM-dd HH:mm:ss')}"
         },
         "output": {
-         "id": "user.kiosk_order_label",
+         "id": "user.kiosk_order_id",
          "status": "user.kiosk_status",
          "direction": "user.kiosk_direction",
          "total_display": "user.kiosk_total",
@@ -217,6 +227,14 @@
         }
        },
        "log_id": "kiosk_new_order"
+      },
+      {
+       "type": "set_variable",
+       "variable_name": "user.kiosk_order_label",
+       "value": {
+        "type": "string",
+        "value": "@{user.kiosk_order_id}"
+       }
       }
      ],
      "background_color": "#1B2740",
@@ -236,7 +254,7 @@
      "text": "Undo remove",
      "font_size": 13,
      "font_weight": "normal",
-     "text_color": "#94A3B8",
+     "text_color": "#334155",
      "corner_radius": 12,
      "actions": [
       {
@@ -272,11 +290,29 @@
         }
        },
        "log_id": "kiosk_undo"
+      },
+      {
+       "type": "set_variable",
+       "variable_name": "user.kiosk_undo_sku",
+       "value": {
+        "type": "string",
+        "value": ""
+       }
+      },
+      {
+       "type": "set_variable",
+       "variable_name": "user.kiosk_undo_label",
+       "value": {
+        "type": "string",
+        "value": ""
+       }
       }
      ],
      "weight": 1,
      "icon": "undo",
-     "id": "kiosk_undo_remove"
+     "id": "kiosk_undo_remove",
+     "background_color": "#E2E8F0",
+     "visibility": "@{if(user.kiosk_undo_sku == '', 'gone', 'visible')}"
     }
    ]
   },
@@ -284,7 +320,7 @@
    "type": "text",
    "text": "Starting a new order keeps the current one saved as a draft.",
    "font_size": 11,
-   "text_color": "#64748B"
+   "text_color": "#94A3B8"
   },
   {
    "type": "container",
@@ -307,10 +343,17 @@
        "type": "text",
        "text": "@{user.catalog_count} available",
        "font_size": 11,
-       "text_color": "#64748B",
+       "text_color": "#94A3B8",
        "weight": 1
       }
      ]
+    },
+    {
+     "type": "text",
+     "text": "Start a new order to add items.",
+     "font_size": 12,
+     "text_color": "#94A3B8",
+     "visibility": "@{if(user.kiosk_order_id == '', 'visible', 'gone')}"
     },
     {
      "type": "json_list",
@@ -348,14 +391,14 @@
               "type": "text",
               "text": "@{item.sku}",
               "font_size": 11,
-              "text_color": "#64748B",
+              "text_color": "#94A3B8",
               "font_family": "monospace"
              },
              {
               "type": "text",
               "text": "·",
               "font_size": 11,
-              "text_color": "#64748B"
+              "text_color": "#94A3B8"
              },
              {
               "type": "text",
@@ -369,13 +412,13 @@
               "type": "text",
               "text": "·",
               "font_size": 11,
-              "text_color": "#64748B"
+              "text_color": "#94A3B8"
              },
              {
               "type": "text",
               "text": "@{item.stock} in stock",
               "font_size": 11,
-              "text_color": "#64748B"
+              "text_color": "#94A3B8"
              }
             ]
            }
@@ -387,7 +430,7 @@
           "text": "Add",
           "font_size": 13,
           "font_weight": "bold",
-          "text_color": "#FFFFFF",
+          "text_color": "#34D399",
           "corner_radius": 12,
           "actions": [
            {
@@ -425,7 +468,15 @@
             "log_id": "kiosk_add_line"
            }
           ],
-          "background_color": "#6D28D9"
+          "background_color": "#1E2A44",
+          "visibility": "@{if(user.kiosk_order_id != '' && user.kiosk_status == 'draft', 'visible', 'gone')}",
+          "border": {
+           "corner_radius": 12,
+           "stroke": {
+            "color": "#34D399",
+            "width": 1
+           }
+          }
          }
         ]
        }
@@ -461,16 +512,16 @@
      "items": [
       {
        "type": "text",
-       "text": "Order lines",
+       "text": "In this order",
        "font_size": 11,
        "text_color": "#94A3B8",
        "font_weight": "bold"
       },
       {
        "type": "text",
-       "text": "@{user.kiosk_line_count} lines",
+       "text": "@{user.kiosk_line_count} @{if(toInteger(user.kiosk_line_count) == 1, 'line', 'lines')}",
        "font_size": 11,
-       "text_color": "#64748B",
+       "text_color": "#94A3B8",
        "weight": 1
       }
      ]
@@ -504,9 +555,9 @@
            },
            {
             "type": "text",
-            "text": "@{item.sku} · $@{item.unit_price} each",
+            "text": "@{item.sku} · $@{item.unit_price_display} each",
             "font_size": 11,
-            "text_color": "#64748B",
+            "text_color": "#94A3B8",
             "font_family": "monospace"
            }
           ],
@@ -516,7 +567,7 @@
           "type": "text",
           "text": "$@{item.line_total}",
           "font_size": 16,
-          "text_color": "#C4B5FD",
+          "text_color": "#F8FAFC",
           "font_weight": "bold",
           "font_family": "monospace"
          }
@@ -538,7 +589,7 @@
             "font_size": 16,
             "font_weight": "bold",
             "text_color": "#F8FAFC",
-            "corner_radius": 12,
+            "corner_radius": 10,
             "actions": [
              {
               "url": "local-db://op/db.set_child_qty",
@@ -562,7 +613,15 @@
               "log_id": "kiosk_qty_down"
              }
             ],
-            "background_color": "#1B2740"
+            "background_color": "#263449",
+            "border": {
+             "corner_radius": 10,
+             "stroke": {
+              "color": "#3B4A63",
+              "width": 1
+             }
+            },
+            "visibility": "@{if(user.kiosk_status == 'draft', 'visible', 'gone')}"
            },
            {
             "type": "text",
@@ -578,7 +637,7 @@
             "font_size": 16,
             "font_weight": "bold",
             "text_color": "#F8FAFC",
-            "corner_radius": 12,
+            "corner_radius": 10,
             "actions": [
              {
               "url": "local-db://op/db.set_child_qty",
@@ -602,16 +661,19 @@
               "log_id": "kiosk_qty_up"
              }
             ],
-            "background_color": "#1B2740"
+            "background_color": "#263449",
+            "border": {
+             "corner_radius": 10,
+             "stroke": {
+              "color": "#3B4A63",
+              "width": 1
+             }
+            },
+            "visibility": "@{if(user.kiosk_status == 'draft', 'visible', 'gone')}"
            }
-          ]
-         },
-         {
-          "type": "container",
-          "orientation": "horizontal",
-          "item_spacing": 0,
-          "items": [],
-          "weight": 1
+          ],
+          "weight": 1,
+          "visibility": "@{if(user.kiosk_order_id != '' && user.kiosk_status == 'draft', 'visible', 'gone')}"
          },
          {
           "type": "button",
@@ -654,7 +716,8 @@
             "log_id": "kiosk_remove_line"
            }
           ],
-          "background_color": "#3F1D24"
+          "background_color": "#3F1D24",
+          "visibility": "@{if(user.kiosk_status == 'draft', 'visible', 'gone')}"
          }
         ]
        }
@@ -779,6 +842,14 @@
    "visibility": "@{if(toInteger(user.kiosk_item_count) == 0, 'visible', 'gone')}"
   },
   {
+   "type": "text",
+   "text": "Submitting locks the order. Add nothing after this.",
+   "font_size": 11,
+   "text_color": "#FBBF24",
+   "id": "kiosk_submit_warn",
+   "visibility": "@{if(user.kiosk_confirm == 'submit', 'visible', 'gone')}"
+  },
+  {
    "type": "button",
    "text": "Submit order",
    "font_size": 15,
@@ -787,28 +858,90 @@
    "corner_radius": 12,
    "actions": [
     {
-     "url": "local-db://op/db.commit",
-     "payload": {
-      "collection": "kiosk_orders",
-      "id": "@{user.kiosk_order_id}",
-      "output": {
-       "id": "user.kiosk_order_label",
-       "status": "user.kiosk_status",
-       "direction": "user.kiosk_direction",
-       "total_display": "user.kiosk_total",
-       "subtotal_display": "user.kiosk_subtotal",
-       "item_count": "user.kiosk_item_count",
-       "line_count": "user.kiosk_line_count",
-       "lines_json": "user.kiosk_lines_json",
-       "payload_json": "user.kiosk_payload_json",
-       "checksum": "user.kiosk_checksum"
-      }
-     },
-     "log_id": "kiosk_submit"
+     "type": "set_variable",
+     "variable_name": "user.kiosk_confirm",
+     "value": {
+      "type": "string",
+      "value": "submit"
+     }
     }
    ],
    "background_color": "#8B5CF6",
-   "id": "kiosk_submit"
+   "id": "kiosk_submit_ask",
+   "visibility": "@{if(user.kiosk_order_id != '' && user.kiosk_status == 'draft' && user.kiosk_confirm == '', 'visible', 'gone')}"
+  },
+  {
+   "type": "container",
+   "orientation": "horizontal",
+   "item_spacing": 10,
+   "visibility": "@{if(user.kiosk_confirm == 'submit' && user.kiosk_order_id != '' && user.kiosk_status == 'draft', 'visible', 'gone')}",
+   "items": [
+    {
+     "type": "button",
+     "text": "Confirm submit",
+     "font_size": 15,
+     "font_weight": "bold",
+     "text_color": "#FFFFFF",
+     "corner_radius": 12,
+     "actions": [
+      {
+       "type": "set_variable",
+       "variable_name": "user.kiosk_notice",
+       "value": {
+        "type": "string",
+        "value": "Order submitted — locked for editing"
+       }
+      },
+      {
+       "url": "local-db://op/db.commit",
+       "payload": {
+        "collection": "kiosk_orders",
+        "id": "@{user.kiosk_order_id}",
+        "output": {
+         "id": "user.kiosk_order_label",
+         "status": "user.kiosk_status",
+         "direction": "user.kiosk_direction",
+         "total_display": "user.kiosk_total",
+         "subtotal_display": "user.kiosk_subtotal",
+         "item_count": "user.kiosk_item_count",
+         "line_count": "user.kiosk_line_count",
+         "lines_json": "user.kiosk_lines_json",
+         "payload_json": "user.kiosk_payload_json",
+         "checksum": "user.kiosk_checksum"
+        }
+       },
+       "log_id": "kiosk_submit"
+      }
+     ],
+     "background_color": "#DC2626",
+     "id": "kiosk_submit",
+     "visibility": "@{if(user.kiosk_confirm == 'submit' && user.kiosk_order_id != '' && user.kiosk_status == 'draft', 'visible', 'gone')}",
+     "log_id": "kiosk_submit",
+     "weight": 1
+    },
+    {
+     "type": "button",
+     "text": "Cancel",
+     "font_size": 14,
+     "font_weight": "normal",
+     "text_color": "#334155",
+     "corner_radius": 12,
+     "background_color": "#E2E8F0",
+     "id": "kiosk_submit_cancel",
+     "weight": 1,
+     "visibility": "@{if(user.kiosk_confirm == 'submit', 'visible', 'gone')}",
+     "actions": [
+      {
+       "type": "set_variable",
+       "variable_name": "user.kiosk_confirm",
+       "value": {
+        "type": "string",
+        "value": ""
+       }
+      }
+     ]
+    }
+   ]
   }
  ]
 }

@@ -67,8 +67,38 @@ object WorkspaceRepository {
         return LoadReport(bundles, failures)
     }
 
-    fun load(id: String, source: WorkspaceSource = ClasspathSource()): WorkspaceBundle =
-        if (isDev()) loadPlain(id, source) else loadEncrypted(id)
+    fun load(
+        id: String,
+        source: WorkspaceSource = ClasspathSource(),
+        mode: String = mode(),
+        workspaceKey: ByteArray? = key(),
+        binarySource: WorkspaceBinarySource = ClasspathBinarySource()
+    ): WorkspaceBundle =
+        if (mode == MODE_DEV) loadPlain(id, source) else loadEncrypted(id, workspaceKey, binarySource)
+
+    private val packagedCache = HashMap<String, WorkspaceBundle?>()
+
+    /**
+     * The bundle this build ships for [id] — decrypted in prod — or null when it is missing or
+     * unreadable. Cached per process: the card layer asks for it once per card otherwise, which
+     * would re-decrypt the whole bundle every time.
+     */
+    fun packagedBundle(
+        id: String,
+        source: WorkspaceSource = ClasspathSource(),
+        mode: String = mode(),
+        workspaceKey: ByteArray? = key(),
+        binarySource: WorkspaceBinarySource = ClasspathBinarySource()
+    ): WorkspaceBundle? {
+        val cacheKey = "$mode:$id"
+        if (packagedCache.containsKey(cacheKey)) return packagedCache[cacheKey]
+        val bundle = runCatching { load(id, source, mode, workspaceKey, binarySource) }.getOrNull()
+        packagedCache[cacheKey] = bundle
+        return bundle
+    }
+
+    /** Drops memoised bundles; tests use it to re-read an edited folder. */
+    fun clearPackagedCache() = packagedCache.clear()
 
     /** Ids listed by `demo/workspaces.json`; missing index means "no workspaces". */
     fun index(source: WorkspaceSource = ClasspathSource()): List<String> {
@@ -85,11 +115,15 @@ object WorkspaceRepository {
     private fun loadPlain(id: String, source: WorkspaceSource): WorkspaceBundle =
         WorkspaceBundleCodec.fromDirectory(source, "demo/$id")
 
-    private fun loadEncrypted(id: String): WorkspaceBundle {
-        val key = key() ?: throw WorkspaceFormatException(
+    private fun loadEncrypted(
+        id: String,
+        workspaceKey: ByteArray?,
+        binarySource: WorkspaceBinarySource
+    ): WorkspaceBundle {
+        val key = workspaceKey ?: throw WorkspaceFormatException(
             "production build has no workspace key; set -PapexWorkspaceKey when building"
         )
-        val blob = ClasspathBinarySource().readBytes("demo/$id/workspace.bin")
+        val blob = binarySource.readBytes("demo/$id/workspace.bin")
             ?: assetBytes("demo/$id/workspace.bin")
             ?: throw WorkspaceFormatException("missing encrypted workspace demo/$id/workspace.bin")
         val plain = runCatching { WorkspaceCipher.decrypt(blob, key) }.getOrElse {

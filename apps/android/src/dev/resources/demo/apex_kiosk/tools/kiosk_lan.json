@@ -33,23 +33,26 @@
         }
        ],
        "weight": 1
-      },
-      {
-       "type": "text",
-       "text": "@{if(user.net_status == '' , 'IDLE', user.net_status)}",
-       "font_size": 11,
-       "font_weight": "bold",
-       "text_color": "#F8FAFC",
-       "background_color": "#1B2740",
-       "corner_radius": 20,
-       "paddings": {
-        "left": 10,
-        "right": 10,
-        "top": 5,
-        "bottom": 5
-       }
       }
      ]
+    },
+    {
+     "type": "text",
+     "text": "@{if(user.net_status == '' , 'IDLE', user.net_status)}",
+     "font_size": 11,
+     "font_weight": "bold",
+     "text_color": "#F8FAFC",
+     "background_color": "#1B2740",
+     "corner_radius": 20,
+     "paddings": {
+      "left": 10,
+      "right": 10,
+      "top": 5,
+      "bottom": 5
+     },
+     "margins": {
+      "top": 6
+     }
     },
     {
      "type": "container",
@@ -295,14 +298,17 @@
      "text": "Stop hub",
      "font_size": 13,
      "font_weight": "normal",
-     "text_color": "#94A3B8",
+     "text_color": "#334155",
      "corner_radius": 12,
      "actions": [
       {
        "url": "tools://net/stop",
        "payload": {
         "output": {
-         "status": "user.net_status"
+         "status": "user.net_status",
+         "lan_url": "user.net_lan_url",
+         "port": "user.net_hub_port",
+         "share_count": "user.net_share_count"
         }
        },
        "log_id": "kiosk_lan_stop"
@@ -349,7 +355,8 @@
       }
      ],
      "weight": 1,
-     "id": "kiosk_lan_stop"
+     "id": "kiosk_lan_stop",
+     "background_color": "#E2E8F0"
     }
    ]
   },
@@ -372,7 +379,7 @@
       },
       {
        "type": "text",
-       "text": "@{user.net_share_count} items",
+       "text": "@{user.net_share_count} @{if(toInteger(user.net_share_count) == 1, 'item', 'items')}",
        "font_size": 11,
        "text_color": "#64748B",
        "weight": 1
@@ -430,7 +437,9 @@
            "status": "user.net_status",
            "id": "user.net_share_id",
            "path": "user.net_share_path",
-           "bytes": "user.net_share_bytes"
+           "bytes": "user.net_share_bytes",
+           "count": "user.net_share_count",
+           "warning": "user.kiosk_notice"
           }
          },
          "log_id": "kiosk_lan_share"
@@ -445,7 +454,7 @@
        "text": "Unshare",
        "font_size": 13,
        "font_weight": "normal",
-       "text_color": "#94A3B8",
+       "text_color": "#334155",
        "corner_radius": 12,
        "actions": [
         {
@@ -469,7 +478,8 @@
         }
        ],
        "weight": 1,
-       "id": "kiosk_lan_unshare"
+       "id": "kiosk_lan_unshare",
+       "background_color": "#E2E8F0"
       }
      ]
     },
@@ -483,7 +493,7 @@
        "text": "Refresh list",
        "font_size": 13,
        "font_weight": "normal",
-       "text_color": "#94A3B8",
+       "text_color": "#334155",
        "corner_radius": 12,
        "actions": [
         {
@@ -498,14 +508,15 @@
         }
        ],
        "weight": 1,
-       "id": "kiosk_lan_list"
+       "id": "kiosk_lan_list",
+       "background_color": "#E2E8F0"
       },
       {
        "type": "button",
        "text": "Fetch /list",
        "font_size": 13,
        "font_weight": "normal",
-       "text_color": "#94A3B8",
+       "text_color": "#334155",
        "corner_radius": 12,
        "actions": [
         {
@@ -523,7 +534,8 @@
         }
        ],
        "weight": 1,
-       "id": "kiosk_lan_fetch"
+       "id": "kiosk_lan_fetch",
+       "background_color": "#E2E8F0"
       }
      ]
     }

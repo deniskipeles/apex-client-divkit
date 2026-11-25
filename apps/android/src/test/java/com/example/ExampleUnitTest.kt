@@ -1013,6 +1013,44 @@ class ExampleUnitTest {
     }
 
     @Test
+    fun libSignal_encryptAdvancesTheRatchetSoCiphertextIsNeverReused() = kotlinx.coroutines.runBlocking {
+        // The card's Encrypt button looked like a no-op on device because every press showed
+        // the same ciphertext. A real Double Ratchet advances the chain key per message, so
+        // two encrypts of the identical plaintext must differ; identical output would mean the
+        // UI was echoing a cached value instead of running the tool.
+        val tenant = "tenant_ratchet_regression"
+        val peer = "acme_peer_01"
+        val payload = """{"order":"#1042","total":"18.50","terminal":"till-07"}"""
+
+        val first = NativeToolsSuite.execute(
+            url = "tools://libsignal/encrypt",
+            payload = buildJsonObject { put("peer_id", peer); put("data", payload) },
+            tenantId = tenant
+        )
+        val second = NativeToolsSuite.execute(
+            url = "tools://libsignal/encrypt",
+            payload = buildJsonObject { put("peer_id", peer); put("data", payload) },
+            tenantId = tenant
+        )
+        val firstCipher = (first.outputVariables["user.signal_ciphertext"] as DivVariableValue.Str).value
+        val secondCipher = (second.outputVariables["user.signal_ciphertext"] as DivVariableValue.Str).value
+
+        assertTrue(firstCipher.isNotBlank())
+        assertTrue(secondCipher.isNotBlank())
+        assertNotEquals("ratchet must not reuse a ciphertext", firstCipher, secondCipher)
+
+        // Both still decrypt back to the exact payload, quotes and punctuation included.
+        listOf(firstCipher, secondCipher).forEach { cipher ->
+            val decrypt = NativeToolsSuite.execute(
+                url = "tools://libsignal/decrypt",
+                payload = buildJsonObject { put("peer_id", peer); put("ciphertext", cipher) },
+                tenantId = tenant
+            )
+            assertEquals(payload, (decrypt.outputVariables["user.signal_plaintext"] as DivVariableValue.Str).value)
+        }
+    }
+
+    @Test
     fun libSignalVerifyIdentity_recordsAndRevokesTrust() = kotlinx.coroutines.runBlocking {
         val tenant = "tenant_verify_hub"
         val peer = "till_07"
@@ -2255,14 +2293,81 @@ class ExampleUnitTest {
     }
 
     @Test
+    fun netHub_stopClearsTheVisibleUrlAndShareReportsTheLiveCount() = kotlinx.coroutines.runBlocking {
+        // The kiosk LAN card maps `lan_url`/`port`/`share_count` straight onto its readouts.
+        // `stop` used to return the port it had just released and no `lan_url`, so the card
+        // kept advertising a URL for a hub that was no longer listening; `share` returned no
+        // count, so "Share order" left "0 shared" on screen.
+        val tenant = "tenant_lan_regression"
+        runCatching { NativeToolsSuite.execute(url = "tools://net/stop", payload = buildJsonObject { }, tenantId = tenant) }
+
+        val serve = NativeToolsSuite.execute(
+            url = "tools://net/serve",
+            payload = buildJsonObject { put("port", 0); put("host", "127.0.0.1") },
+            tenantId = tenant
+        )
+        assertTrue(serve.success)
+        val serveData = serve.resultData.jsonObject
+        assertEquals("SERVING", serveData["status"]!!.jsonPrimitive.content)
+        val servedPort = serveData["port"]!!.jsonPrimitive.int
+        assertTrue("hub should report the port it bound", servedPort > 0)
+
+        // The staged-share map is process-global, so compare against the live count rather
+        // than assuming an empty hub.
+        val before = NativeToolsSuite.execute(url = "tools://net/list", payload = buildJsonObject { }, tenantId = tenant)
+            .resultData.jsonObject["count"]!!.jsonPrimitive.int
+
+        val share = NativeToolsSuite.execute(
+            url = "tools://net/share",
+            payload = buildJsonObject {
+                put("name", "order-1.json")
+                put("payload", """{"id":"1"}""")
+            },
+            tenantId = tenant
+        )
+        assertTrue(share.success)
+        assertEquals("share must report the live count", before + 1, share.resultData.jsonObject["count"]!!.jsonPrimitive.int)
+        val shareId = share.resultData.jsonObject["id"]!!.jsonPrimitive.content
+        runCatching {
+            NativeToolsSuite.execute(
+                url = "tools://net/unshare",
+                payload = buildJsonObject { put("id", shareId) },
+                tenantId = tenant
+            )
+        }
+
+        val stop = try {
+            NativeToolsSuite.execute(url = "tools://net/stop", payload = buildJsonObject { }, tenantId = tenant)
+        } finally {
+            runCatching { NativeToolsSuite.execute(url = "tools://net/stop", payload = buildJsonObject { }, tenantId = tenant) }
+        }
+        assertTrue(stop.success)
+        val stopData = stop.resultData.jsonObject
+        assertEquals("STOPPED", stopData["status"]!!.jsonPrimitive.content)
+        assertEquals("a stopped hub must not keep reporting its old port", 0, stopData["port"]!!.jsonPrimitive.int)
+        assertEquals("", stopData["lan_url"]!!.jsonPrimitive.content)
+        assertEquals(servedPort, stopData["stopped_port"]!!.jsonPrimitive.int)
+
+        // Stopping twice is safe and stays explicit.
+        val stopAgain = NativeToolsSuite.execute(url = "tools://net/stop", payload = buildJsonObject { }, tenantId = tenant)
+        assertEquals("NOT_RUNNING", stopAgain.resultData.jsonObject["status"]!!.jsonPrimitive.content)
+
+        val status = NativeToolsSuite.execute(url = "tools://net/status", payload = buildJsonObject { }, tenantId = tenant)
+        assertEquals("", status.resultData.jsonObject["lan_url"]!!.jsonPrimitive.content)
+        assertEquals(0, status.resultData.jsonObject["port"]!!.jsonPrimitive.int)
+    }
+
+    @Test
     fun demoCards_bindOnlyFieldsTheirToolReturns() = kotlinx.coroutines.runBlocking {
         // A card that maps `status` while the tool returns `state` leaves the bound
         // variable permanently blank: the button appears to do nothing. Compare each
         // action's `output` keys against the fields the handler actually produced.
-        val spec = WorkspaceProvisioner.defaultWorkspaces.first()
+        // Every workspace, not just the first: the kiosk cards were unguarded and shipped a
+        // share button that never updated the visible count.
         val unbound = mutableListOf<String>()
 
-        DemoCardRepository.toolCardOrder.forEach { name ->
+        WorkspaceProvisioner.defaultWorkspaces.forEach { spec ->
+        (spec.toolCardOrder ?: DemoCardRepository.toolCardOrder).forEach { name ->
             val card = DemoCardRepository.toolCard(spec, name) ?: return@forEach
             collectToolActions(card).forEach { action ->
                 val url = action["url"]!!.jsonPrimitive.content
@@ -2284,9 +2389,12 @@ class ExampleUnitTest {
                 if (data["status"]?.jsonPrimitive?.contentOrNull == "DENIED") return@forEach
 
                 mapping.keys.forEach { field ->
-                    if (data[field] == null) unbound.add("$name -> $url: no '$field' in ${data.keys}")
+                    if (data[field] == null) {
+                        unbound.add("${spec.tenantId}/$name -> $url: no '$field' in ${data.keys}")
+                    }
                 }
             }
+        }
         }
         runCatching { NativeToolsSuite.execute(url = "tools://net/stop", payload = buildJsonObject { }) }
 

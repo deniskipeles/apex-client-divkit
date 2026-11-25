@@ -36,7 +36,7 @@ import com.example.enginehost.WorkspaceToolPermissions
  * Includes:
  * - Search bar ("Search terminals, registers, URLs...")
  * - Connected tenant cards with notification badge, cached schema version badge and tools status
- *   pill ("🛠️ 6 tools active" vs "🔒 Tools off (default)")
+ *   pill ("6 tools" vs "Tools off")
  * - Context menu (Workspace Settings, Open Terminal, Disconnect Workspace) opened by
  *   **long-pressing** a tenant card (the former 3-dot overflow button was removed)
  * - Floating `+` FAB to open Connect New Workspace bottom sheet.
@@ -115,6 +115,7 @@ fun TenantLauncherScreen(
             if (filteredWorkspaces.isEmpty()) {
                 EmptyLauncherState(
                     hasSearch = uiState.searchQuery.isNotBlank(),
+                    reason = uiState.workspaceLoadError,
                     onConnectWorkspace = { onShowConnectWorkspaceSheetChange(true) },
                     modifier = Modifier
                         .fillMaxSize()
@@ -216,7 +217,8 @@ fun TenantLauncherScreen(
 private fun EmptyLauncherState(
     hasSearch: Boolean,
     onConnectWorkspace: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    reason: String = ""
 ) {
     val colorScheme = MaterialTheme.colorScheme
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
@@ -246,6 +248,16 @@ private fun EmptyLauncherState(
                 color = colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
             )
+            if (!hasSearch && reason.isNotBlank()) {
+                // A build whose bundles cannot be read used to fail silently with an empty grid.
+                Text(
+                    text = "Workspace bundles could not be loaded — $reason",
+                    fontSize = 12.sp,
+                    color = colorScheme.error,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.testTag("launcher_workspace_load_error")
+                )
+            }
             if (!hasSearch) {
                 Spacer(Modifier.height(4.dp))
                 FilledTonalButton(onClick = onConnectWorkspace) {
@@ -548,7 +560,7 @@ private fun ToolsStatusPill(activeTools: Int) {
             shape = RoundedCornerShape(8.dp)
         ) {
             Text(
-                text = "🛠️ $activeTools tools active",
+                text = "$activeTools tools",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 color = colorScheme.primary,
@@ -561,7 +573,7 @@ private fun ToolsStatusPill(activeTools: Int) {
             shape = RoundedCornerShape(8.dp)
         ) {
             Text(
-                text = "🔒 Tools off (default)",
+                text = "Tools off",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Medium,
                 color = colorScheme.onSurfaceVariant,

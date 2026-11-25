@@ -10,6 +10,7 @@ import engine.db.SchemaOps
 import engine.db.WorkspaceDatabase
 import engine.db.WorkspaceDriverFactory
 import engine.db.WorkspaceManager
+import engine.state.DivVariableValue
 import engine.tools.NativeToolsSuite
 import engine.tools.ToolArgs
 import engine.tools.ToolContext
@@ -117,6 +118,55 @@ class WorkspaceDataPlaneTest {
 
     // ---- child lists and roll-ups -----------------------------------------
 
+    /**
+     * The kiosk order screen renders its cart from `lines_json`, so every write that returns the
+     * order's roll-ups must also carry the projected child rows - otherwise the header shows
+     * "2 in cart" while the list underneath says "No items yet".
+     */
+    @Test
+    fun `a child write returns the projected lines the card renders`() = withWorkspace { db, _ ->
+        val order = db.newDraft()
+        val empty = db.orderRow(order)
+        assertEquals("[]", empty["lines_json"])
+        assertEquals(0, (empty["line_count"] as? Number)?.toInt())
+
+        db.append(order, "P1001", "Mineral Water", 1.50)
+        db.append(order, "P1001", "Mineral Water", 1.50)
+        val merged = db.append(order, "P1008", "Sandwich", 4.00)
+
+        val lines = Json.parseToJsonElement(merged["lines_json"] as String).jsonArray
+        assertEquals(2, lines.size)
+        assertEquals(2, (merged["line_count"] as? Number)?.toInt())
+        // item_count counts units, not rows, so the header reads "3 items".
+        assertEquals(3, (merged["item_count"] as? Number)?.toInt())
+
+        val water = lines.map { it.jsonObject }
+            .first { it["sku"]?.jsonPrimitive?.contentOrNull == "P1001" }
+        assertEquals(2.0, water["quantity"]?.jsonPrimitive?.contentOrNull?.toDouble()!!, 0.001)
+        assertEquals("3.00", water["line_total"]?.jsonPrimitive?.contentOrNull)
+        assertTrue("line rows need an id for the +/- and remove actions",
+            water["id"]?.jsonPrimitive?.contentOrNull?.isNotBlank() == true)
+    }
+
+    /** A brand-new order has no lines yet, so its roll-ups must read 0 / $0.00, not blank. */
+    @Test
+    fun aFreshDraftReportsZeroRollUps() = withWorkspace { db, _ ->
+        val row = db.row(
+            "db.upsert",
+            buildJsonObject {
+                put("collection", "kiosk_orders")
+                put("data", buildJsonObject {
+                    put("direction", "CUSTOMER_REQUEST")
+                    put("status", "draft")
+                    put("terminal_id", "KSK-001")
+                })
+            }
+        )
+        assertEquals(0, (row["item_count"] as? Number)?.toInt())
+        assertEquals("0.00", row["total_display"])
+        assertEquals("0.00", row["subtotal_display"])
+    }
+
     @Test
     fun `adding the same key twice merges the row and doubles the total`() = withWorkspace { db, _ ->
         val order = db.newDraft()
@@ -213,6 +263,95 @@ class WorkspaceDataPlaneTest {
         }
         assertTrue(again.isFailure)
         assertTrue(again.exceptionOrNull()!!.message!!.contains("no longer change"))
+    }
+
+    /**
+     * The card gates Add/Submit/remove on `user.kiosk_status == 'draft'`, so a child write must
+     * return the parent's status. A roll-up that only carried aggregates blanked the variable
+     * and every state-gated control vanished after the first item.
+     */
+    @Test
+    fun `a child write returns the parent status the card gates on`() = withWorkspace { db, _ ->
+        val order = db.newDraft()
+        val added = db.append(order, "P1001", "Mineral Water", 1.50)
+        assertEquals("draft", added["status"])
+        assertEquals("CUSTOMER_REQUEST", added["direction"])
+        assertEquals(order, added["id"])
+
+        val removed = db.row(
+            "db.remove_child",
+            buildJsonObject {
+                put("collection", "kiosk_order_lines")
+                put("id", added["child_id"] as String)
+            }
+        )
+        assertEquals("draft", removed["status"])
+    }
+
+    /** A committed order is read-only: the card hides its controls, the engine must agree. */
+    @Test
+    fun `a committed order refuses further child writes`() = withWorkspace { db, _ ->
+        val order = db.newDraft()
+        val line = db.append(order, "P1001", "Mineral Water", 1.50)
+        db.row("db.commit", buildJsonObject {
+            put("collection", "kiosk_orders")
+            put("id", order)
+        })
+
+        val appended = runCatching { db.append(order, "P1008", "Sandwich", 4.00) }
+        assertTrue(appended.isFailure)
+        assertTrue(appended.exceptionOrNull()!!.message!!.contains("no longer change"))
+
+        val qty = runCatching {
+            db.row(
+                "db.set_child_qty",
+                buildJsonObject {
+                    put("collection", "kiosk_order_lines")
+                    put("id", line["child_id"] as String)
+                    put("quantity", 5)
+                }
+            )
+        }
+        assertTrue(qty.isFailure)
+        assertTrue(qty.exceptionOrNull()!!.message!!.contains("no longer change"))
+
+        val removed = runCatching {
+            db.row(
+                "db.remove_child",
+                buildJsonObject {
+                    put("collection", "kiosk_order_lines")
+                    put("id", line["child_id"] as String)
+                }
+            )
+        }
+        assertTrue(removed.isFailure)
+
+        // The committed roll-up is untouched.
+        assertEquals("1.50", db.orderRow(order)["total_display"])
+        assertEquals(1, db.lines(order).size)
+    }
+
+    /**
+     * `output` maps a write result onto DivKit variables. A column the result does not carry is
+     * left alone instead of being published as an empty string.
+     */
+    @Test
+    fun `output mapping leaves variables alone for columns the row lacks`() {
+        val row = mapOf<String, Any?>("id" to "9", "total_display" to "3.00")
+        val output = buildJsonObject {
+            put("id", "user.kiosk_order_id")
+            put("total_display", "user.kiosk_total")
+            put("status", "user.kiosk_status")
+            put("item_count", "user.kiosk_item_count")
+        }
+        val values = engine.router.rowOutputValues(row, output)
+        assertEquals(setOf("user.kiosk_order_id", "user.kiosk_total"), values.keys)
+        assertEquals(
+            DivVariableValue.Str("3.00"),
+            values["user.kiosk_total"]
+        )
+        assertTrue(engine.router.rowOutputValues(null, output).isEmpty())
+        assertTrue(engine.router.rowOutputValues(row, null).isEmpty())
     }
 
     // ---- transfer packing --------------------------------------------------
