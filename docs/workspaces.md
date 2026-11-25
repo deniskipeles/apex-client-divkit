@@ -77,3 +77,18 @@ Imports are materialised as a full copy of the packaged workspace, so the APK's 
 are never mutated. `DemoCardRepository` prefers the imported copy (hub, catalog, cards,
 variables), and `SduiEngineViewModel.reloadWorkspacePackages()` republishes the list, the card
 stack and the icons.
+
+## Apex Kiosk workspace
+
+`demo/apex_kiosk` is the POS kiosk: four cards on one design system.
+
+| card | flow |
+| --- | --- |
+| `kiosk_customer` | live catalog → order lines (qty steppers, remove + undo) → totals → `Submit order` (locks the draft) |
+| `kiosk_owner` | new/reopen receipt, add and remove lines, close receipt, receipt QR chunk carousel, review submitted customer orders |
+| `kiosk_transfer` | build a QR chunk set from the persisted order, walk chunks, scan/inject them, assemble and verify the checksum |
+| `kiosk_lan` | start/stop the LAN hub, share/unshare the order payload, list shares, fetch `/list` |
+
+Invariants are pinned by `KioskCardContractTest` (declared variables, empty states, required
+buttons, line-row fields, no storage vocabulary in user-facing copy) and by the render+click
+tests in `DemoCardRenderTest`, so a card that stops rendering or loses a button fails the build.
