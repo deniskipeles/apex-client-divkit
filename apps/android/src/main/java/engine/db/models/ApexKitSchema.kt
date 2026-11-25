@@ -175,7 +175,9 @@ data class Collection(
     val id: Long,
     val name: String,
     val schema: CollectionSchema? = null,
-    val index: String? = null
+    val index: String? = null,
+    /** Rows inserted the first time this collection is created, so a workspace ships with data. */
+    val seed: List<JsonObject> = emptyList()
 )
 
 @Serializable

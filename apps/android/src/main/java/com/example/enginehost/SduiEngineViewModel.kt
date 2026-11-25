@@ -73,6 +73,8 @@ data class SduiEngineUiState(
     val workspaces: List<TenantWorkspaceSpec> = WorkspaceProvisioner.defaultWorkspaces,
     val activeWorkspace: TenantWorkspaceSpec = WorkspaceProvisioner.defaultWorkspaces.first(),
     val isWorkspaceOpen: Boolean = false,
+    /** Workspace packages that failed to load, keyed by id. Surfaced in dev tools. */
+    val packageLoadErrors: Map<String, String> = emptyMap(),
     /** True while a remembered workspace is being restored after a cold launch. */
     val isRestoringSession: Boolean = false,
     val themeMode: EngineThemeMode = EngineThemeMode.SYSTEM,
@@ -188,6 +190,7 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
 
     init {
         currentAndroidContext = { context }
+        reloadWorkspaceIcons()
         // Seed the workspace notifications tray so grouping, unread counts and actions render
         // populated on first frame.
         _uiState.update {
@@ -820,6 +823,43 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
             publishActiveCard()
         }
         return cards.map { it.first }
+    }
+
+
+    /**
+     * Re-reads the workspace packages and publishes their icons.
+     *
+     * Dev imports write into `filesDir/workspaces/<id>`, so the list, the card stack and the
+     * icon registry all have to be rebuilt for an import to become visible.
+     */
+    fun reloadWorkspacePackages() {
+        val report = engine.workspace.WorkspaceRepository.loadAll(filesDir = context.filesDir)
+        val specs = report.bundles.map { WorkspaceProvisioner.run { it.toSpec() } }
+        if (specs.isEmpty()) return
+        reloadWorkspaceIcons(report.bundles)
+        _uiState.update { state ->
+            val active = specs.firstOrNull { it.tenantId == state.activeWorkspace.tenantId } ?: specs.first()
+            state.copy(
+                workspaces = specs,
+                activeWorkspace = active,
+                tenantToolsMap = specs.associate { it.tenantId to it.defaultTools },
+                packageLoadErrors = report.failures.associate { it.id to it.reason }
+            )
+        }
+        if (_uiState.value.isWorkspaceOpen) registerCards(_uiState.value.activeWorkspace)
+    }
+
+    private fun reloadWorkspaceIcons(
+        bundles: List<engine.workspace.WorkspaceBundle> =
+            engine.workspace.WorkspaceRepository.loadAll(filesDir = context.filesDir).bundles
+    ) {
+        val icons = LinkedHashMap<String, ByteArray>()
+        bundles.forEach { bundle ->
+            engine.icons.CustomIconRegistry.fromBase64(bundle.icons).forEach { (name, bytes) ->
+                icons[name] = bytes
+            }
+        }
+        engine.icons.CustomIconRegistry.setAll(icons)
     }
 
     /** Mirrors the navigator's visible card into UI state so Compose can render it. */

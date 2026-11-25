@@ -31,6 +31,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.enginehost.EngineThemeMode
 import com.example.enginehost.SduiEngineViewModel
 import com.example.ui.AppSettingsBottomSheet
+import com.example.ui.DevWorkspaceToolsDialog
 import com.example.ui.FileManagerTab
 import com.example.ui.NotificationTrayOverlay
 import com.example.ui.NotificationsTab
@@ -192,6 +193,7 @@ fun SduiPosEngineApp(viewModel: SduiEngineViewModel) {
     var showAppSettingsSheet by remember { mutableStateOf(false) }
     var showConnectWorkspaceSheet by remember { mutableStateOf(false) }
     var showNotifications by remember { mutableStateOf(false) }
+    var showDevTools by remember { mutableStateOf(false) }
     val colorScheme = MaterialTheme.colorScheme
 
     // Keep the branded splash up while a remembered workspace is restored. Rendering the
@@ -315,6 +317,19 @@ fun SduiPosEngineApp(viewModel: SduiEngineViewModel) {
                             )
                         }
 
+                        if (engine.workspace.WorkspaceRepository.isDev()) {
+                            IconButton(
+                                onClick = { showDevTools = true },
+                                modifier = Modifier.testTag("top_bar_dev_tools_button")
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Build,
+                                    contentDescription = "Workspace packages (dev)",
+                                    tint = colorScheme.onSurface
+                                )
+                            }
+                        }
+
                         // 3. App / Engine Settings Gear Button (Opens App Settings with Theme Switching defaulting to System)
                         IconButton(
                             onClick = { showAppSettingsSheet = true },
@@ -420,6 +435,15 @@ fun SduiPosEngineApp(viewModel: SduiEngineViewModel) {
             uiState = uiState,
             viewModel = viewModel,
             onDismiss = { showAppSettingsSheet = false }
+        )
+    }
+
+    if (showDevTools) {
+        DevWorkspaceToolsDialog(
+            workspaces = uiState.workspaces,
+            loadErrors = uiState.packageLoadErrors,
+            onClose = { showDevTools = false },
+            onReload = { viewModel.reloadWorkspacePackages() }
         )
     }
 

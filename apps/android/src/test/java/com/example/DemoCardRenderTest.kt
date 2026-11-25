@@ -159,7 +159,7 @@ class DemoCardRenderTest {
     fun libsignalSafetyNumberIsStackedUnderItsLabel() {
         val card = Json.parseToJsonElement(
             javaClass.classLoader!!
-                .getResourceAsStream("demo/apex/tools/libsignal.json")!!
+                .getResourceAsStream("demo/acme_pos/tools/libsignal.json")!!
                 .bufferedReader()
                 .use { it.readText() }
         ).jsonObject
@@ -217,7 +217,7 @@ class DemoCardRenderTest {
     @Test
     fun kioskCustomerCardRendersCatalogAndOrderLines() {
         val raw = javaClass.classLoader!!
-            .getResourceAsStream("demo/apex-kiosk/tools/kiosk_customer.json")!!
+            .getResourceAsStream("demo/apex_kiosk/tools/kiosk_customer.json")!!
             .bufferedReader()
             .use { it.readText() }
         val card = Json.parseToJsonElement(raw).jsonObject
@@ -297,7 +297,7 @@ class DemoCardRenderTest {
     @Test
     fun kioskTransferBuildsTheQrSetFromThePersistedOrder() {
         val raw = javaClass.classLoader!!
-            .getResourceAsStream("demo/apex-kiosk/tools/kiosk_transfer.json")!!
+            .getResourceAsStream("demo/apex_kiosk/tools/kiosk_transfer.json")!!
             .bufferedReader()
             .use { it.readText() }
         val card = Json.parseToJsonElement(raw).jsonObject
@@ -345,7 +345,7 @@ class DemoCardRenderTest {
     @Test
     fun kioskScanNextQrAppendsTheScannedChunk() {
         val raw = javaClass.classLoader!!
-            .getResourceAsStream("demo/apex-kiosk/tools/kiosk_transfer.json")!!
+            .getResourceAsStream("demo/apex_kiosk/tools/kiosk_transfer.json")!!
             .bufferedReader()
             .use { it.readText() }
         val card = Json.parseToJsonElement(raw).jsonObject
@@ -375,7 +375,7 @@ class DemoCardRenderTest {
     fun kioskAssembleClearsStaleResultSoAFailedTransferCannotReadAsMatch() {
         val card = Json.parseToJsonElement(
             javaClass.classLoader!!
-                .getResourceAsStream("demo/apex-kiosk/tools/kiosk_transfer.json")!!
+                .getResourceAsStream("demo/apex_kiosk/tools/kiosk_transfer.json")!!
                 .bufferedReader()
                 .use { it.readText() }
         ).jsonObject
@@ -416,7 +416,7 @@ class DemoCardRenderTest {
     @Test
     fun kioskAssembleScannedPassesChunksAsAJsonArray() {
         val raw = javaClass.classLoader!!
-            .getResourceAsStream("demo/apex-kiosk/tools/kiosk_transfer.json")!!
+            .getResourceAsStream("demo/apex_kiosk/tools/kiosk_transfer.json")!!
             .bufferedReader()
             .use { it.readText() }
         val card = Json.parseToJsonElement(raw).jsonObject

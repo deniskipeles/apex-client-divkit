@@ -1,0 +1,6 @@
+{
+  "workspaces": [
+    "acme_pos",
+    "apex_kiosk"
+  ]
+}

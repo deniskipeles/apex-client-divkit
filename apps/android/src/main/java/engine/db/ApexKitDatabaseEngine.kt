@@ -34,6 +34,12 @@ class ApexKitDatabaseEngine(val driver: SqlDriver) {
                 if (col.index != null) bindString(3, col.index) else bindNull(3)
             }
             importedCount++
+            if (col.seed.isNotEmpty()) {
+                val existing = countRecords(col.name)
+                if (existing == 0L) {
+                    col.seed.forEach { row -> insertRecord(col.name, row) }
+                }
+            }
         }
         ensureIndexes(listCollections())
         return importedCount

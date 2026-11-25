@@ -1,0 +1,70 @@
+{
+  "id": 1,
+  "name": "orders",
+  "schema": {
+    "fields": {
+      "item_name": {
+        "type": "string",
+        "required": false,
+        "uid": "orders_item_name"
+      },
+      "sku": {
+        "type": "string",
+        "required": false,
+        "uid": "orders_sku"
+      },
+      "price": {
+        "type": "number",
+        "required": false,
+        "uid": "orders_price"
+      },
+      "qty": {
+        "type": "number",
+        "required": false,
+        "uid": "orders_qty"
+      },
+      "terminal_id": {
+        "type": "string",
+        "required": false,
+        "uid": "orders_terminal_id"
+      },
+      "status": {
+        "type": "string",
+        "required": false,
+        "uid": "orders_status"
+      }
+    },
+    "policies": {
+      "read": "public",
+      "create": "public",
+      "update": "public",
+      "delete": "public"
+    }
+  },
+  "seed": [
+    {
+      "item_name": "Wagyu Smash Burger",
+      "sku": "ACM-101",
+      "price": 16.5,
+      "qty": 1,
+      "terminal_id": "POS-TERM-01",
+      "status": "PAID"
+    },
+    {
+      "item_name": "Truffle Parmesan Fries",
+      "sku": "ACM-102",
+      "price": 8.0,
+      "qty": 2,
+      "terminal_id": "POS-TERM-01",
+      "status": "OPEN"
+    },
+    {
+      "item_name": "Artisan Cold Brew",
+      "sku": "ACM-204",
+      "price": 5.5,
+      "qty": 1,
+      "terminal_id": "POS-TERM-01",
+      "status": "OPEN"
+    }
+  ]
+}

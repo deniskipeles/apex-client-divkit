@@ -121,7 +121,7 @@ object DemoCardRepository {
     private fun tools(spec: TenantWorkspaceSpec): String = "${root(spec)}/tools"
 
     private fun order(spec: TenantWorkspaceSpec): List<String> =
-        spec.toolCardOrder ?: toolCardOrder
+        imported(spec)?.cardNames?.takeIf { it.isNotEmpty() } ?: spec.toolCardOrder ?: toolCardOrder
 
     /** All tool cards for [spec], in its card order. Missing resources are skipped. */
     fun toolCards(spec: TenantWorkspaceSpec): List<JsonObject> {
@@ -129,12 +129,24 @@ object DemoCardRepository {
         return order(spec).mapNotNull { name -> readObject("${tools(spec)}/$name.json", values) }
     }
 
+    /**
+     * Imported copy of a workspace, when a dev build has loaded one.
+     *
+     * A runtime import must win over the APK's own resources, otherwise "load" would look
+     * like it worked while the packaged card kept rendering.
+     */
+    private fun imported(spec: TenantWorkspaceSpec): engine.workspace.WorkspaceBundle? {
+        val dir = engine.db.currentAndroidContext?.invoke()?.filesDir ?: return null
+        return engine.workspace.WorkspaceRepository.importedBundle(spec.tenantId, dir)
+    }
+
     /** One tool card by file name (without extension), or null when absent. */
     fun toolCard(spec: TenantWorkspaceSpec, name: String): JsonObject? =
-        readObject("${tools(spec)}/$name.json", placeholders(spec))
+        imported(spec)?.card(name) ?: readObject("${tools(spec)}/$name.json", placeholders(spec))
 
     /** `user.*` variable declarations from the hub card, reused by every pushed card. */
     private fun sharedVariables(spec: TenantWorkspaceSpec): JsonArray? {
+        imported(spec)?.variables?.let { return it }
         val hub = readObject("${root(spec)}/card.json", placeholders(spec)) ?: return null
         return hub["card"]?.jsonObject?.get("variables") as? JsonArray
     }
@@ -147,6 +159,7 @@ object DemoCardRepository {
      * stays small and every tool gets its own screen reachable through `nav://push`.
      */
     fun hubCard(spec: TenantWorkspaceSpec): JsonObject? {
+        imported(spec)?.let { return it.hub }
         val values = placeholders(spec)
         val root = readObject("${root(spec)}/card.json", values) ?: return null
         val catalog = catalogContainer(spec) ?: return root
@@ -191,7 +204,9 @@ object DemoCardRepository {
 
     /** Catalog of `nav://push` entries, one per tool card, driven by `demo/apex/tool_catalog.json`. */
     fun catalogContainer(spec: TenantWorkspaceSpec): JsonObject? {
-        val catalog = readObject("${root(spec)}/tool_catalog.json", placeholders(spec)) ?: return null
+        val catalog = imported(spec)?.catalog
+            ?: readObject("${root(spec)}/tool_catalog.json", placeholders(spec))
+            ?: return null
         val entries = catalog["entries"]?.jsonArray ?: return null
 
         return buildJsonObject {

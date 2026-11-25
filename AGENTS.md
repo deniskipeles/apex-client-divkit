@@ -80,6 +80,32 @@ and the Android `CapabilityContractTest` both assert this.
   `libsqlite3`, so `libsqlite3-dev` (for `sqlite3.h`) must be installed. A Swift 6.x toolchain
   plus `libncurses6` are required; download from swift.org and add its `usr/bin` to `PATH`.
 
+
+## Workspace packages (dev / prod channels)
+
+A workspace is data, not Kotlin. `apps/android/src/dev/resources/demo/<id>/` holds
+`workspace.json` (identity, `tools` flags, `urls`, `cards.order`, `collections.files`),
+`card.json` (hub + every `user.*` variable), `tool_catalog.json`, `tools/<card>.json` and
+`collections/*.json` (schema + `"seed"` rows). `engine/workspace/WorkspaceRepository` loads
+them and `WorkspaceProvisioner.defaultWorkspaces` maps each bundle to a `TenantWorkspaceSpec`,
+so adding a workspace is a folder plus `demo/workspaces.json`, never a Kotlin change.
+
+- Channel `dev` ships the plaintext folders; `prod` ships only
+  `assets/demo/<id>/workspace.bin` (`APXW` | version | nonce | AES-256-GCM(gzip(json))).
+  `encryptWorkspaces` (in `buildSrc`) runs for prod variants and fails without
+  `-PapexWorkspaceKey=<64 hex>` / `APEX_WORKSPACE_KEY`; `BuildConfig.WORKSPACE_KEY` is empty in
+  dev, and `WorkspaceRepository.loadEncrypted` fails closed when it is missing.
+- Tasks are channel-qualified: `testDevDebugUnitTest`, `assembleDevDebug`, `assembleProdDebug`
+  (there is no `testDebugUnitTest`/`assembleDebug` any more).
+- Dev authoring lives in the launcher's `top_bar_dev_tools_button` dialog
+  (`ui/DevWorkspaceTools.kt` + `engine/workspace/DevWorkspaceImport`). Imports materialise the
+  workspace under `filesDir/workspaces/<id>`, shadow the packaged copy (`DemoCardRepository`
+  checks `importedBundle` first), and `unload` deletes the folder.
+- Collection `"seed"` rows are inserted by `ApexKitDatabaseEngine.importTenantSchema` when the
+  collection is empty; that is why the demo workspaces need no Kotlin seed data.
+- Custom icons travel as base64 PNG/JPEG in `icons/icons.json` (dev zip import supported) and
+  land in `engine/icons/CustomIconRegistry`.
+
 ## Tool capability architecture (`tools://*`)
 
 New terminal capabilities must be wired through **all** of these:
