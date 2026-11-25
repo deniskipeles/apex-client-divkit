@@ -628,6 +628,19 @@
               }
             },
             {
+              "type": "button",
+              "id": "nav_sheet_showcase_shortcut",
+              "text": "Open sheet:// showcase",
+              "icon": "dashboard",
+              "background_color": "#8B5CF6",
+              "text_color": "#F8FAFC",
+              "corner_radius": 12,
+              "action": {
+                "log_id": "nav_sheet_showcase",
+                "url": "sheet://present?card_id=sheet_showcase"
+              }
+            },
+            {
               "type": "container",
               "orientation": "vertical",
               "background_color": "#0F172A",

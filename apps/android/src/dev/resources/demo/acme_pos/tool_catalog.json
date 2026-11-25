@@ -25,6 +25,7 @@
     { "file": "native_icons",       "label": "Icon Scheme",  "icon": "palette",    "accent_color": "#D946EF" },
     { "file": "catalog_list",       "label": "Catalog List",        "icon": "product",    "accent_color": "#10B981" },
     { "file": "hourly_chart",       "label": "Hourly Throughput",   "icon": "chart",      "accent_color": "#0284C7" },
-    { "file": "sdui_chart",         "label": "Revenue by SKU",      "icon": "chart",      "accent_color": "#F43F5E" }
+    { "file": "sdui_chart",         "label": "Revenue by SKU",      "icon": "chart",      "accent_color": "#F43F5E" },
+    { "file": "sheet_showcase",     "label": "Sheet showcase",      "icon": "dashboard",  "accent_color": "#8B5CF6" }
   ]
 }

@@ -8,6 +8,8 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -214,6 +216,43 @@ class DemoCardRenderTest {
         }
     }
 
+    private val kioskSpec = WorkspaceProvisioner.defaultWorkspaces.first { it.tenantId == "apex_kiosk" }
+
+    /** Every kiosk card must render and every button must dispatch a real action. */
+    private fun renderAndClickKiosk(cardName: String, minimumButtons: Int) {
+        val card = DemoCardRepository.toolCard(kioskSpec, cardName)
+            ?: error("missing kiosk card asset for '$cardName'")
+        val ids = buttonIds(card)
+        assertTrue("card '$cardName' exposes no buttons", ids.isNotEmpty())
+        assertTrue(
+            "card '$cardName' exposes ${ids.size} buttons, expected at least $minimumButtons",
+            ids.size >= minimumButtons
+        )
+        val dispatched = mutableListOf<String>()
+        render(card, DemoCardRepository.toolCardId(cardName)) { url, _ -> dispatched.add(url) }
+        ids.forEach { id ->
+            composeRule.onNodeWithTag("div_btn_$id").performScrollTo().performClick()
+        }
+        composeRule.waitForIdle()
+        assertTrue("clicking every button on '$cardName' dispatched no actions", dispatched.isNotEmpty())
+        assertTrue(
+            "card '$cardName' dispatched a malformed action: $dispatched",
+            dispatched.all { it.contains("://") }
+        )
+    }
+
+    @Test
+    fun kioskCustomerCardRendersAndDispatches() = renderAndClickKiosk("kiosk_customer", 3)
+
+    @Test
+    fun kioskOwnerCardRendersAndDispatches() = renderAndClickKiosk("kiosk_owner", 5)
+
+    @Test
+    fun kioskTransferCardRendersAndDispatches() = renderAndClickKiosk("kiosk_transfer", 7)
+
+    @Test
+    fun kioskLanCardRendersAndDispatches() = renderAndClickKiosk("kiosk_lan", 6)
+
     @Test
     fun kioskCustomerCardRendersCatalogAndOrderLines() {
         val raw = javaClass.classLoader!!
@@ -237,13 +276,27 @@ class DemoCardRenderTest {
                 )
             )
         )
+        val dispatched = mutableListOf<String>()
         try {
-            render(card, "kiosk_customer") { _, _ -> }
+            render(card, "kiosk_customer") { url, _ -> dispatched.add(url) }
             composeRule.onNodeWithText("Croissant").assertExists()
-            composeRule.onNodeWithText("P1024 · $2.75 · 25 in stock").assertExists()
+            composeRule.onNodeWithText("P1024").assertExists()
+            composeRule.onNodeWithText("25 in stock").assertExists()
+            composeRule.onAllNodesWithText("$2.75").onFirst().assertExists()
+            composeRule.onNodeWithText("Add").assertExists()
             composeRule.onNodeWithText("Coffee").assertExists()
-            composeRule.onNodeWithText("1 × $2.50").assertExists()
-            composeRule.onNodeWithText("Line $2.50").assertExists()
+            composeRule.onNodeWithText("P1012 · $2.50 each").assertExists()
+            composeRule.onNodeWithText("$2.50").assertExists()
+            composeRule.onNodeWithText("Remove").assertExists()
+            composeRule.onNodeWithText("Submit order").assertExists()
+
+            // The row-level Add button is the primary path: it must dispatch a real insert.
+            composeRule.onAllNodesWithText("Add").onFirst().performScrollTo().performClick()
+            composeRule.waitForIdle()
+            assertTrue(
+                "tapping Add on a product dispatched no insert: $dispatched",
+                dispatched.any { it.endsWith("db.append_child") }
+            )
         } finally {
             EngineStateBridge.clear()
         }

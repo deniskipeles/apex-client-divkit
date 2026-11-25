@@ -57,7 +57,8 @@ object DemoCardRepository {
         "native_icons",
         "catalog_list",
         "hourly_chart",
-        "sdui_chart"
+        "sdui_chart",
+        "sheet_showcase"
     )
 
     /** CardRegistry id of the entry hub card — route index 0. */

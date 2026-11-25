@@ -97,12 +97,18 @@ data class SduiEngineUiState(
     val activeCardId: String = "",
     /** Breadcrumb of card ids from the hub down to the active card. */
     val cardStack: List<String> = emptyList(),
+    /** Card id currently presented as a modal bottom sheet through `sheet://present`. */
+    val presentedSheetCardId: String? = null,
     val draftDivKitJson: String = "",
     val lastSignedEnvelopeJson: String = "",
     val lastVerificationStatus: String = "Initializing Ed25519 Verifier...",
     val isEnvelopeVerified: Boolean = true,
     val activeSchemaVersion: CachedSchemaVersion? = null,
     val schemaVersions: List<CachedSchemaVersion> = emptyList(),
+    /** True while a cached schema version is being activated, so the ledger can disable actions. */
+    val isRollingBack: Boolean = false,
+    /** Last rollback failure, shown in the ledger instead of a silent no-op. */
+    val rollbackError: String = "",
     val tenantCachedBadgeMap: Map<String, String> = emptyMap(),
     val opLogs: List<OpLogEntry> = emptyList(),
     val pendingSyncEntries: List<PendingSyncEntry> = emptyList(),
@@ -718,19 +724,47 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
     }
 
     /**
-     * Rolls back (or rolls forward) the active tenant workspace UI to any previously
-     * cached DivKit JSON schema stored in `sdui_schema_versions`.
+     * Rolls back (or forward) the active tenant workspace UI to any cached DivKit JSON schema.
+     *
+     * The chosen row is activated in `sdui_schema_versions`, so the choice survives a relaunch,
+     * and the restored payload replaces the live one. A failure leaves the current UI in place
+     * and reports why — it never claims success.
      */
     fun rollbackToSchemaVersion(targetVersion: CachedSchemaVersion) {
         val spec = _uiState.value.activeWorkspace
+        if (_uiState.value.isRollingBack) return
+        _uiState.update { it.copy(isRollingBack = true, rollbackError = "") }
         viewModelScope.launch {
-            withContext(Dispatchers.IO) {
-                workspaceManager.useDatabase(spec.tenantId) { db ->
-                    db.workspaceQueries.activateSchemaVersionById(targetVersion.versionId)
+            val failure = runCatching {
+                withContext(Dispatchers.IO) {
+                    workspaceManager.useDatabase(spec.tenantId) { db ->
+                        db.workspaceQueries.activateSchemaVersionById(targetVersion.versionId)
+                        val active = db.workspaceQueries.selectActiveSchemaVersion()
+                        check(active?.versionId == targetVersion.versionId) {
+                            "the database did not keep v${targetVersion.schemaVersion} active"
+                        }
+                    }
                 }
-                refreshTenantCachedBadges()
+                withContext(Dispatchers.IO) { refreshTenantCachedBadges() }
+            }.exceptionOrNull()
+
+            if (failure != null) {
+                _uiState.update {
+                    it.copy(
+                        isRollingBack = false,
+                        rollbackError = "Rollback to v${targetVersion.schemaVersion} failed: " +
+                            (failure.message ?: failure::class.simpleName ?: "unknown error"),
+                        statusBannerMessage = "Schema rollback failed for ${spec.tenantId}"
+                    )
+                }
+                logSecurityEvent(
+                    title = "Schema Rollback Failed → v${targetVersion.schemaVersion} (${spec.tenantId})",
+                    detail = failure.message ?: failure::class.java.name,
+                    passed = false
+                )
+                return@launch
             }
-            // Refresh database telemetry and state variables for the rolled-back UI
+
             activeRouter?.handle(
                 "local-db://op/db.query",
                 WorkspaceProvisioner.buildQueryOrdersAction()["payload"]?.jsonObject
@@ -751,10 +785,15 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
             refreshDatabaseTelemetry(spec.tenantId)
             _uiState.update {
                 it.copy(
+                    isRollingBack = false,
+                    rollbackError = "",
                     verifiedDivKitJson = targetVersion.verifiedPayload,
                     draftDivKitJson = targetVersion.verifiedPayload,
                     lastSignedEnvelopeJson = targetVersion.signedEnvelope,
                     activeSchemaVersion = targetVersion.copy(isActive = true),
+                    schemaVersions = it.schemaVersions.map { version ->
+                        version.copy(isActive = version.versionId == targetVersion.versionId)
+                    },
                     lastVerificationStatus = "Rolled back to cached Schema v${targetVersion.schemaVersion} • Ed25519 Verified",
                     isEnvelopeVerified = true,
                     statusBannerMessage = "Rolled back ${spec.tenantId} UI to cached Schema v${targetVersion.schemaVersion}"
@@ -762,7 +801,7 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
             }
             logSecurityEvent(
                 title = "Schema Rollback → v${targetVersion.schemaVersion} (${spec.tenantId})",
-                detail = "Restored cached signed schema (jti=${targetVersion.jti.take(8)}...) from workspace_${spec.tenantId}.db",
+                detail = "Restored cached signed schema (jti=${targetVersion.envelopeJti.take(8)}...) from workspace_${spec.tenantId}.db",
                 passed = true
             )
         }
@@ -895,8 +934,16 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
             NavOp.Pop -> nav.pop()
             is NavOp.Replace -> CardRegistry.card(op.cardId)?.let { nav.replace(CardEntry(op.cardId, it)) }
             is NavOp.Reset -> CardRegistry.card(op.cardId)?.let { nav.reset(CardEntry(op.cardId, it)) }
-            // Sheets are hosted by the Compose navigation host, not the stack.
-            is NavOp.SheetPresent, NavOp.SheetDismiss -> return true
+            // A sheet sits over the stack instead of joining it, so the card underneath keeps
+            // its scroll position and the back stack stays untouched.
+            is NavOp.SheetPresent -> {
+                presentSheet(op.cardId)
+                return true
+            }
+            NavOp.SheetDismiss -> {
+                _uiState.update { it.copy(presentedSheetCardId = null) }
+                return true
+            }
         }
         publishActiveCard()
         val after = nav.current?.id
@@ -938,6 +985,28 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                 "user.signal_verification" to DivVariableValue.Str(status.status)
             )
         }.getOrDefault(emptyMap())
+
+    /**
+     * Presents a registered card as a modal sheet over the workspace.
+     *
+     * Returns false and explains itself when the id is unknown: a typo'd `sheet://` target must
+     * not look like a presented sheet.
+     */
+    fun presentSheet(cardId: String): Boolean {
+        if (CardRegistry.card(cardId) == null) {
+            _uiState.update {
+                it.copy(statusBannerMessage = "Sheet card '$cardId' is not registered")
+            }
+            return false
+        }
+        _uiState.update { it.copy(presentedSheetCardId = cardId) }
+        return true
+    }
+
+    /** Dismisses the presented `sheet://` card, if any. */
+    fun dismissSheet() {
+        _uiState.update { it.copy(presentedSheetCardId = null) }
+    }
 
     /** Pops the active card. No-op on the hub, so the landing card cannot be popped away. */
     fun navigateBack() {
@@ -1543,21 +1612,6 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
             _uiState.update {
                 it.copy(statusBannerMessage = "Cleared offline cache & re-verified baseline schema for ${spec.displayName}")
             }
-        }
-    }
-
-    fun reseedActiveWorkspace() {
-        // Preserves activeRoutePath and activeRouteQueries on refresh!
-        val spec = _uiState.value.activeWorkspace
-        val preservedPath = _uiState.value.activeRoutePath
-        val preservedQueries = _uiState.value.activeRouteQueries
-        switchWorkspace(spec, openDedicatedScreen = _uiState.value.isWorkspaceOpen)
-        _uiState.update {
-            it.copy(
-                activeRoutePath = preservedPath,
-                activeRouteQueries = preservedQueries,
-                statusBannerMessage = "Refreshed ${spec.displayName} (Preserved route $preservedPath)"
-            )
         }
     }
 

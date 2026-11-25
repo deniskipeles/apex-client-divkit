@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.sp
 import com.example.enginehost.SduiEngineUiState
 import com.example.enginehost.SduiEngineViewModel
 import engine.db.CachedSchemaVersion
+import engine.navigation.CardRegistry
 import engine.state.DivVariableValue
 import engine.state.EngineStateBridge
 import engine.ui.EngineScreen
@@ -54,7 +55,7 @@ private enum class ActiveHostOverlay {
     NONE,
     WORKSPACE_SETTINGS,
     SCHEMA_ROLLBACK,
-    SDUI_BUILDER,
+    DEVELOPER_DIAGNOSTICS,
     FILES,
     NOTIFICATIONS
 }
@@ -68,9 +69,8 @@ private enum class ActiveHostOverlay {
  *   opens the AppBar when clicked.
  * - Once opened, the **AppBar remains open unless the active workspace screen is clicked
  *   or the Exit (`< Hub`) button is clicked**.
- * - Includes the Expanded AppBar (Back/Exit, QR, Refresh, Bell, 3-Dot Menu with Refresh Page,
- *   Workspace Settings, Clear Offline Cache, Schema Cache & Rollback, Return to Hub),
- *   Origin-Scoped Public Client ID & cURL Dispatch card, Route Path & URL Queries (Preserved on Refresh),
+ * - Includes the Expanded AppBar (Back/Exit, QR, Bell, 3-Dot Menu with Workspace Settings,
+ *   Clear Offline Cache, Schema Cache & Rollback, Developer diagnostics, Return to Hub).
  *   and Hardware Audio & Haptics tester.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -91,9 +91,6 @@ fun PosTerminalTab(
     var isAppBarExpanded by remember(uiState.activeWorkspace.tenantId) { mutableStateOf(false) }
     var showOverflowMenu by remember { mutableStateOf(false) }
     var activeOverlay by remember { mutableStateOf(ActiveHostOverlay.NONE) }
-    // Host chrome (client id, cURL sample, route debug, hardware tester, schema rollback) is
-    // developer tooling; it must not compete with the tenant card for the operator's screen.
-    var showHostDiagnostics by remember(uiState.activeWorkspace.tenantId) { mutableStateOf(false) }
 
     val spec = uiState.activeWorkspace
     val permissions = uiState.tenantToolsMap[spec.tenantId] ?: spec.defaultTools
@@ -204,472 +201,33 @@ fun PosTerminalTab(
                     }
                 }
 
-                HostDiagnosticsSection(
-                    expanded = showHostDiagnostics,
-                    onToggle = { showHostDiagnostics = !showHostDiagnostics }
-                ) {
-                // B. Public Client ID (Origin-Scoped) & cURL Dispatch Card (Screenshots 7 & 11)
-                Surface(
-                    color = colorScheme.surface,
-                    shape = RoundedCornerShape(16.dp),
-                    border = BorderStroke(1.dp, colorScheme.primary.copy(alpha = 0.6f)),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(
-                        modifier = Modifier.padding(14.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "🔑 PUBLIC CLIENT ID (ORIGIN-SCOPED)",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = colorScheme.onSurfaceVariant
-                            )
-                            Text(
-                                text = "SYNCED TO GATEWAY",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = colorScheme.primary
-                            )
-                        }
+            }
+        }
 
-                        Surface(
-                            color = colorScheme.background,
-                            shape = RoundedCornerShape(10.dp),
-                            border = BorderStroke(1.dp, colorScheme.outline),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                text = spec.publicClientId,
-                                fontSize = 14.sp,
-                                fontFamily = FontFamily.Monospace,
-                                fontWeight = FontWeight.SemiBold,
-                                color = colorScheme.onSurface,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)
-                            )
-                        }
-
-                        Button(
-                            onClick = {
-                                if (!permissions.clipboardAccess) {
-                                    Toast.makeText(
-                                        context,
-                                        "Clipboard Access is OFF in Workspace Settings — enabling copy via host",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                }
-                                copyToSystemClipboard(context, "Public Client ID", spec.publicClientId)
-                            },
-                            shape = RoundedCornerShape(10.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = colorScheme.primary),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(44.dp)
-                                .testTag("copy_public_client_id_button")
-                        ) {
-                            Text(
-                                text = "📋 Copy Client ID",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                        }
-
-                        Text(
-                            text = "Test dispatching to this terminal with cURL:",
-                            fontSize = 11.sp,
-                            color = colorScheme.onSurfaceVariant
-                        )
-
-                        val curlSnippet = remember(spec.publicClientId, uiState.pushGatewayBase) {
-                            """
-                            curl -X POST ${uiState.pushGatewayBase}/api/v1/webhook/fcm/dispatch \
-                              -H "Authorization: Bearer gwk_live_4a8f9c1b2e3d5a7e9f012345" \
-                              -H "Content-Type: application/json" \
-                              -d '{"clientId": "${spec.publicClientId}", "event": "ORDER_READY", "notification": {"title": "Kitchen Alert", "body": "Order #4091 is ready for pick-up!"}}'
-                            """.trimIndent()
-                        }
-
-                        Surface(
-                            color = colorScheme.background,
-                            shape = RoundedCornerShape(10.dp),
-                            border = BorderStroke(1.dp, colorScheme.outline),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                text = curlSnippet,
-                                fontSize = 11.sp,
-                                fontFamily = FontFamily.Monospace,
-                                color = colorScheme.onSurface,
-                                modifier = Modifier.padding(12.dp)
-                            )
-                        }
-                    }
-                }
-
-                // C. Native Android Bridge Security Notice Banner (Screenshots 7 & 11)
-                Surface(
-                    color = colorScheme.primary.copy(alpha = 0.10f),
-                    shape = RoundedCornerShape(14.dp),
-                    border = BorderStroke(1.dp, colorScheme.primary.copy(alpha = 0.4f)),
+        // 1b. `sheet://` card presented over the workspace. The sheet renders the same DivKit
+        //     document the stack would, and dismissing it leaves the stack untouched.
+        val sheetCardId = uiState.presentedSheetCardId
+        val sheetCardJson = sheetCardId?.let { CardRegistry.card(it)?.toString() }
+        if (sheetCardId != null && sheetCardJson != null) {
+            ModalBottomSheet(
+                onDismissRequest = { viewModel.dismissSheet() },
+                containerColor = colorScheme.background,
+                modifier = Modifier.fillMaxHeight(0.85f)
+            ) {
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(14.dp))
-                        .clickable { activeOverlay = ActiveHostOverlay.WORKSPACE_SETTINGS }
+                        .padding(horizontal = 14.dp, vertical = 8.dp)
+                        .testTag("workspace_sheet_host")
                 ) {
-                    Column(
-                        modifier = Modifier.padding(14.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Text(
-                            text = "⚡ Native Android Bridge (${permissions.activeCount}/8 tools active): By default, native bridged tools (Haptics, Beep, Scanner, Biometrics, Clipboard, Push, Realtime) are turned OFF for security. Tap here or open the ⋮ (3-dot menu) at the top and select Workspace Settings.",
-                            fontSize = 12.sp,
-                            color = colorScheme.onSurface
-                        )
-                    }
-                }
-
-                // D. Active Route Path & URL Queries — Preserved on Refresh (Screenshot 1 from earlier turn)
-                Surface(
-                    color = colorScheme.surface,
-                    shape = RoundedCornerShape(16.dp),
-                    border = BorderStroke(1.dp, colorScheme.outline),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(
-                        modifier = Modifier.padding(14.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "🌐 ACTIVE ROUTE PATH & URL QUERIES",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = colorScheme.onSurfaceVariant,
-                                modifier = Modifier.weight(1f)
-                            )
-                            Text(
-                                text = "PRESERVED ON REFRESH",
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = colorScheme.tertiary
-                            )
+                    EngineScreen(
+                        divKitDependencies = divKitDeps,
+                        initialJson = sheetCardJson,
+                        cardId = sheetCardId,
+                        onAction = { url, payload ->
+                            viewModel.dispatchDivKitActionAwait(url, payload)
                         }
-
-                        val fullUrl = buildString {
-                            append(spec.tunnelUrl.trimEnd('/'))
-                            append(uiState.activeRoutePath)
-                            if (uiState.activeRouteQueries != "(none)") {
-                                append("?")
-                                append(uiState.activeRouteQueries)
-                            }
-                        }
-
-                        Surface(
-                            color = colorScheme.background,
-                            shape = RoundedCornerShape(10.dp),
-                            border = BorderStroke(1.dp, colorScheme.outline),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(12.dp),
-                                verticalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Text(
-                                    text = "Full URL: $fullUrl",
-                                    fontSize = 12.sp,
-                                    fontFamily = FontFamily.Monospace,
-                                    color = colorScheme.onSurface
-                                )
-                                Text(
-                                    text = "Path: ${uiState.activeRoutePath}",
-                                    fontSize = 12.sp,
-                                    fontFamily = FontFamily.Monospace,
-                                    color = colorScheme.primary
-                                )
-                                Text(
-                                    text = "Queries: ${uiState.activeRouteQueries}",
-                                    fontSize = 12.sp,
-                                    fontFamily = FontFamily.Monospace,
-                                    color = Color(0xFFF59E0B)
-                                )
-                            }
-                        }
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            RoutePresetButton(
-                                title = "🛒 POS Register 01",
-                                queries = "station=1&cashier=john",
-                                onClick = { viewModel.switchActiveRoute("/register", "station=1&cashier=john") },
-                                modifier = Modifier.weight(1f)
-                            )
-                            RoutePresetButton(
-                                title = "🍳 Kitchen KDS Grill",
-                                queries = "station=grill&priority=urgent",
-                                onClick = { viewModel.switchActiveRoute("/kds", "station=grill&priority=urgent") },
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            RoutePresetButton(
-                                title = "📦 Catalog Stock",
-                                queries = "category=beverage",
-                                onClick = { viewModel.switchActiveRoute("/catalog", "category=beverage") },
-                                modifier = Modifier.weight(1f)
-                            )
-                            RoutePresetButton(
-                                title = "📊 Sales Report",
-                                queries = "date=today&format=summary",
-                                onClick = { viewModel.switchActiveRoute("/reports", "date=today&format=summary") },
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-                    }
-                }
-
-                // E. Hardware capability tester — delegates to the generic tool registry
-                // (tools://beeper/*, tools://haptics/*); no host-side audio/vibration logic.
-                Surface(
-                    color = colorScheme.surface,
-                    shape = RoundedCornerShape(16.dp),
-                    border = BorderStroke(1.dp, colorScheme.outline),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(
-                        modifier = Modifier.padding(14.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "🔊 HARDWARE TOOLS",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = colorScheme.onSurfaceVariant
-                            )
-                            Text(
-                                text = "tools://beeper • tools://haptics",
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = colorScheme.onSurfaceVariant
-                            )
-                        }
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            HardwareTestButton(
-                                title = "🔔 Ring",
-                                subtitle = "beeper/ring",
-                                onClick = {
-                                    triggerBeeper(
-                                        context = context,
-                                        enabled = permissions.hardwareBeeperAudio,
-                                        operation = "ring",
-                                        dispatch = { viewModel.dispatchTool(it) },
-                                        onBlocked = { activeOverlay = ActiveHostOverlay.WORKSPACE_SETTINGS }
-                                    )
-                                },
-                                modifier = Modifier.weight(1f)
-                            )
-                            HardwareTestButton(
-                                title = "⚠️ Alert",
-                                subtitle = "beeper/alert",
-                                onClick = {
-                                    triggerBeeper(
-                                        context = context,
-                                        enabled = permissions.hardwareBeeperAudio,
-                                        operation = "alert",
-                                        dispatch = { viewModel.dispatchTool(it) },
-                                        onBlocked = { activeOverlay = ActiveHostOverlay.WORKSPACE_SETTINGS }
-                                    )
-                                },
-                                modifier = Modifier.weight(1f)
-                            )
-                            HardwareTestButton(
-                                title = "❌ Error",
-                                subtitle = "beeper/error",
-                                onClick = {
-                                    triggerBeeper(
-                                        context = context,
-                                        enabled = permissions.hardwareBeeperAudio,
-                                        operation = "error",
-                                        dispatch = { viewModel.dispatchTool(it) },
-                                        onBlocked = { activeOverlay = ActiveHostOverlay.WORKSPACE_SETTINGS }
-                                    )
-                                },
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            HardwareTestButton(
-                                title = "📳 Tick",
-                                subtitle = "haptics/tick",
-                                onClick = {
-                                    triggerHaptic(
-                                        context = context,
-                                        enabled = permissions.hapticVibration,
-                                        operation = "tick",
-                                        dispatch = { viewModel.dispatchTool(it) },
-                                        onBlocked = { activeOverlay = ActiveHostOverlay.WORKSPACE_SETTINGS }
-                                    )
-                                },
-                                modifier = Modifier.weight(1f)
-                            )
-                            HardwareTestButton(
-                                title = "📳 Click",
-                                subtitle = "haptics/click",
-                                onClick = {
-                                    triggerHaptic(
-                                        context = context,
-                                        enabled = permissions.hapticVibration,
-                                        operation = "click",
-                                        dispatch = { viewModel.dispatchTool(it) },
-                                        onBlocked = { activeOverlay = ActiveHostOverlay.WORKSPACE_SETTINGS }
-                                    )
-                                },
-                                modifier = Modifier.weight(1f)
-                            )
-                            HardwareTestButton(
-                                title = "📳 Heavy",
-                                subtitle = "haptics/heavy",
-                                onClick = {
-                                    triggerHaptic(
-                                        context = context,
-                                        enabled = permissions.hapticVibration,
-                                        operation = "heavy",
-                                        dispatch = { viewModel.dispatchTool(it) },
-                                        onBlocked = { activeOverlay = ActiveHostOverlay.WORKSPACE_SETTINGS }
-                                    )
-                                },
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-                    }
-                }
-
-                // F. Cached Schema Status & Version Rollback Quick Bar + EngineStateBridge
-                Surface(
-                    color = colorScheme.surface,
-                    shape = RoundedCornerShape(12.dp),
-                    border = BorderStroke(1.dp, colorScheme.outline),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(
-                        modifier = Modifier.padding(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "CACHED DIVKIT SCHEMA • ${activeSchemaTag.uppercase()} ACTIVE",
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = colorScheme.primary
-                                )
-                                Text(
-                                    text = uiState.activeSchemaVersion?.changeSummary
-                                        ?: "Cached in SQLite (sdui_schema_versions)",
-                                    fontSize = 11.sp,
-                                    color = colorScheme.onSurfaceVariant,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
-                            Spacer(Modifier.width(8.dp))
-                            FilledTonalButton(
-                                onClick = { activeOverlay = ActiveHostOverlay.SCHEMA_ROLLBACK },
-                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                                modifier = Modifier
-                                    .defaultMinSize(minHeight = 36.dp)
-                                    .testTag("open_schema_rollback_button")
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.History,
-                                    contentDescription = "Schema Rollback",
-                                    modifier = Modifier.size(15.dp)
-                                )
-                                Spacer(Modifier.width(4.dp))
-                                Text(
-                                    text = "Rollback (${uiState.schemaVersions.size})",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
-
-                        HorizontalDivider(color = colorScheme.outline.copy(alpha = 0.5f))
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                "ENGINESTATEBRIDGE (user.* StateFlow)",
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = colorScheme.primary
-                            )
-                            Text(
-                                "Ed25519 Verified • ${bridgeVars.size} vars",
-                                fontSize = 10.sp,
-                                fontFamily = FontFamily.Monospace,
-                                color = colorScheme.tertiary
-                            )
-                        }
-                        bridgeVars.entries
-                            .filter { it.key != "user.orders_json" && it.key != "user.catalog_json" }
-                            .forEach { (k, v) ->
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Text(
-                                        text = k,
-                                        fontSize = 11.sp,
-                                        fontFamily = FontFamily.Monospace,
-                                        color = colorScheme.onSurfaceVariant
-                                    )
-                                    Text(
-                                        text = v.asDisplayString(),
-                                        fontSize = 11.sp,
-                                        fontFamily = FontFamily.Monospace,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = colorScheme.onSurface
-                                    )
-                                }
-                            }
-                        }
-                    }
+                    )
                 }
             }
         }
@@ -811,19 +369,6 @@ fun PosTerminalTab(
                                 )
                             }
 
-                            // Refresh Page Button (`↻`)
-                            IconButton(
-                                onClick = { viewModel.reseedActiveWorkspace() },
-                                modifier = Modifier.size(38.dp).testTag("appbar_refresh_button")
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Refresh,
-                                    contentDescription = "Refresh Page",
-                                    tint = colorScheme.onSurface,
-                                    modifier = Modifier.size(21.dp)
-                                )
-                            }
-
                             // Notification Bell Icon with Red Dot Badge
                             Box {
                                 IconButton(
@@ -866,14 +411,6 @@ fun PosTerminalTab(
                                     onDismissRequest = { showOverflowMenu = false }
                                 ) {
                                     DropdownMenuItem(
-                                        text = { Text("Refresh Page", fontWeight = FontWeight.Medium) },
-                                        leadingIcon = { Icon(Icons.Default.Refresh, contentDescription = null) },
-                                        onClick = {
-                                            showOverflowMenu = false
-                                            viewModel.reseedActiveWorkspace()
-                                        }
-                                    )
-                                    DropdownMenuItem(
                                         text = { Text("Workspace Settings", fontWeight = FontWeight.Medium) },
                                         leadingIcon = { Icon(Icons.Default.Tune, contentDescription = null) },
                                         onClick = {
@@ -904,11 +441,11 @@ fun PosTerminalTab(
                                         }
                                     )
                                     DropdownMenuItem(
-                                        text = { Text("On-the-Fly SDUI Builder") },
-                                        leadingIcon = { Icon(Icons.Default.DynamicForm, contentDescription = null) },
+                                        text = { Text("Developer diagnostics") },
+                                        leadingIcon = { Icon(Icons.Default.Build, contentDescription = null) },
                                         onClick = {
                                             showOverflowMenu = false
-                                            activeOverlay = ActiveHostOverlay.SDUI_BUILDER
+                                            activeOverlay = ActiveHostOverlay.DEVELOPER_DIAGNOSTICS
                                         }
                                     )
                                     DropdownMenuItem(
@@ -984,8 +521,8 @@ fun PosTerminalTab(
                         text = when (activeOverlay) {
                             ActiveHostOverlay.SCHEMA_ROLLBACK ->
                                 "Cached DivKit Schemas & Version Rollback (${spec.tenantId})"
-                            ActiveHostOverlay.SDUI_BUILDER ->
-                                "Receive / Build New DivKit SDUI Schema"
+                            ActiveHostOverlay.DEVELOPER_DIAGNOSTICS ->
+                                "Developer diagnostics (${spec.tenantId})"
                             ActiveHostOverlay.FILES ->
                                 "Workspace Files (${spec.tenantId})"
                             ActiveHostOverlay.NOTIFICATIONS ->
@@ -1005,18 +542,19 @@ fun PosTerminalTab(
                 when (activeOverlay) {
                     ActiveHostOverlay.SCHEMA_ROLLBACK -> SchemaVersionRollbackSheet(
                         uiState = uiState,
-                        onRollback = { targetVersion ->
-                            viewModel.rollbackToSchemaVersion(targetVersion)
-                            activeOverlay = ActiveHostOverlay.NONE
-                        },
-                        onOpenBuilder = {
-                            activeOverlay = ActiveHostOverlay.SDUI_BUILDER
-                        }
+                        onRollback = viewModel::rollbackToSchemaVersion,
+                        onDismiss = { activeOverlay = ActiveHostOverlay.NONE }
                     )
-                    ActiveHostOverlay.SDUI_BUILDER -> SduiBuilderTab(
+                    ActiveHostOverlay.DEVELOPER_DIAGNOSTICS -> DeveloperDiagnosticsSheet(
                         uiState = uiState,
-                        viewModel = viewModel,
-                        onSwitchToTerminalPreview = { activeOverlay = ActiveHostOverlay.NONE }
+                        spec = spec,
+                        permissions = permissions,
+                        onOpenWorkspaceSettings = {
+                            activeOverlay = ActiveHostOverlay.WORKSPACE_SETTINGS
+                        },
+                        onOpenSchemaRollback = {
+                            activeOverlay = ActiveHostOverlay.SCHEMA_ROLLBACK
+                        }
                     )
                     ActiveHostOverlay.FILES -> FileManagerTab(
                         uiState = uiState,
@@ -1030,61 +568,6 @@ fun PosTerminalTab(
                     )
                     else -> Unit
                 }
-            }
-        }
-    }
-}
-
-/**
- * Collapsible host-side developer chrome. Collapsed by default so the tenant card owns the
- * screen; the operator only sees it when they deliberately open diagnostics.
- */
-@Composable
-private fun HostDiagnosticsSection(
-    expanded: Boolean,
-    onToggle: () -> Unit,
-    content: @Composable ColumnScope.() -> Unit
-) {
-    Surface(
-        color = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(12.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable(onClick = onToggle)
-                    .testTag("host_diagnostics_toggle")
-                    .padding(vertical = 6.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Build,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    text = "Developer diagnostics",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.weight(1f)
-                )
-                Text(
-                    text = if (expanded) "Hide" else "Show",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-            if (expanded) {
-                Spacer(Modifier.height(8.dp))
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) { content() }
             }
         }
     }
@@ -1161,161 +644,21 @@ private fun CardStackBreadcrumb(
     }
 }
 
-@Composable
-private fun RoutePresetButton(
-    title: String,
-    queries: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val colorScheme = MaterialTheme.colorScheme
-    Surface(
-        color = colorScheme.background,
-        shape = RoundedCornerShape(12.dp),
-        border = BorderStroke(1.dp, colorScheme.outline),
-        modifier = modifier
-            .defaultMinSize(minHeight = 68.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick)
-    ) {
-        Column(
-            modifier = Modifier.padding(10.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text(
-                text = title,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                color = colorScheme.onSurface,
-                textAlign = TextAlign.Center
-            )
-            Spacer(Modifier.height(2.dp))
-            Text(
-                text = "?$queries",
-                fontSize = 10.sp,
-                fontFamily = FontFamily.Monospace,
-                color = colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-    }
-}
-
-@Composable
-private fun HardwareTestButton(
-    title: String,
-    subtitle: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val colorScheme = MaterialTheme.colorScheme
-    Surface(
-        color = colorScheme.background,
-        shape = RoundedCornerShape(12.dp),
-        border = BorderStroke(1.dp, colorScheme.outline),
-        modifier = modifier
-            .defaultMinSize(minHeight = 62.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick)
-    ) {
-        Column(
-            modifier = Modifier.padding(8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text(
-                text = title,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                color = colorScheme.onSurface,
-                textAlign = TextAlign.Center
-            )
-            Text(
-                text = subtitle,
-                fontSize = 10.sp,
-                fontFamily = FontFamily.Monospace,
-                color = colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center
-            )
-        }
-    }
-}
-
 /**
- * Generic hardware tool invoker for the SDUI host.
+ * Every cached DivKit schema version for the active tenant, with a confirmed rollback.
  *
- * The host never synthesizes audio, drives actuators, or hardcodes frequencies.
- * It only forwards a tool URL to the engine's generic tool registry, which owns
- * every hardware/audio semantic. This keeps the capability surface unopinionated
- * and reusable by any DivKit action (including `tools://beeper/...` in JSON).
- */
-private fun invokeHardwareTool(
-    context: Context,
-    enabled: Boolean,
-    toolUrl: String,
-    deniedEvent: String,
-    disabledMessage: String,
-    onBlocked: () -> Unit,
-    dispatch: (String) -> Unit
-) {
-    if (!enabled) {
-        EngineStateBridge.pushUpdate(
-            "user.last_hardware_event",
-            DivVariableValue.Str("DENIED: $deniedEvent")
-        )
-        Toast.makeText(context, disabledMessage, Toast.LENGTH_SHORT).show()
-        onBlocked()
-        return
-    }
-    dispatch(toolUrl)
-}
-
-private fun triggerBeeper(
-    context: Context,
-    enabled: Boolean,
-    operation: String,
-    dispatch: (String) -> Unit,
-    onBlocked: () -> Unit
-) = invokeHardwareTool(
-    context = context,
-    enabled = enabled,
-    toolUrl = "tools://beeper/$operation",
-    deniedEvent = "Enable 'Hardware Beeper Audio' in Workspace Settings",
-    disabledMessage = "Hardware Beeper Audio is OFF. Enable it in Workspace Settings.",
-    onBlocked = onBlocked,
-    dispatch = dispatch
-)
-
-private fun triggerHaptic(
-    context: Context,
-    enabled: Boolean,
-    operation: String,
-    dispatch: (String) -> Unit,
-    onBlocked: () -> Unit
-) = invokeHardwareTool(
-    context = context,
-    enabled = enabled,
-    toolUrl = "tools://haptics/$operation",
-    deniedEvent = "Enable 'Haptic Vibration' in Workspace Settings",
-    disabledMessage = "Haptic Vibration is OFF. Enable it in Workspace Settings.",
-    onBlocked = onBlocked,
-    dispatch = dispatch
-)
-
-/**
- * Displays all cached DivKit JSON schema versions stored in `sdui_schema_versions`
- * for the active tenant and allows one-click version rollback.
+ * Rollback activates the chosen `sdui_schema_versions` row, re-renders the restored payload and
+ * keeps it active across relaunches: [com.example.enginehost.SduiEngineViewModel.needsDemoCardRefresh]
+ * refuses to overwrite a rolled-back row, so the choice survives a cold start.
  */
 @Composable
 fun SchemaVersionRollbackSheet(
     uiState: SduiEngineUiState,
     onRollback: (CachedSchemaVersion) -> Unit,
-    onOpenBuilder: () -> Unit
+    onDismiss: () -> Unit
 ) {
     val colorScheme = MaterialTheme.colorScheme
+    var pendingRollback by remember { mutableStateOf<CachedSchemaVersion?>(null) }
 
     Column(
         modifier = Modifier
@@ -1335,35 +678,87 @@ fun SchemaVersionRollbackSheet(
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Text(
-                    text = "PERSISTENT SCHEMA CACHE & ROLLBACK LEDGER",
+                    text = "SCHEMA VERSION LEDGER",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     color = colorScheme.primary
                 )
                 Text(
-                    text = "A tenant is initiated when its signed DivKit JSON schema is received. Every verified schema is stored in SQLite (workspace_${uiState.activeWorkspace.tenantId}.db → sdui_schema_versions). When a new schema arrives, it is cached as a new version so you can roll back at any time.",
+                    text = "Every verified DivKit schema for this workspace is kept in its database. " +
+                        "Rolling back activates an older version immediately and keeps it active after a relaunch.",
                     fontSize = 12.sp,
                     color = colorScheme.onSurfaceVariant
                 )
+                Text(
+                    text = "${uiState.schemaVersions.size} cached version(s) • active " +
+                        (uiState.activeSchemaVersion?.let { "v${it.schemaVersion}" } ?: "none"),
+                    fontSize = 11.sp,
+                    fontFamily = FontFamily.Monospace,
+                    color = colorScheme.tertiary
+                )
+            }
+        }
+
+        if (uiState.isRollingBack) {
+            Surface(
+                color = colorScheme.primary.copy(alpha = 0.12f),
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier.fillMaxWidth().testTag("schema_rollback_progress")
+            ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                    Text(
+                        text = "Activating cached schema…",
+                        fontSize = 12.sp,
+                        color = colorScheme.onSurface
+                    )
+                }
+            }
+        }
+
+        if (uiState.rollbackError.isNotBlank()) {
+            Surface(
+                color = colorScheme.error.copy(alpha = 0.12f),
+                shape = RoundedCornerShape(10.dp),
+                border = BorderStroke(1.dp, colorScheme.error),
+                modifier = Modifier.fillMaxWidth().testTag("schema_rollback_error")
+            ) {
+                Text(
+                    text = uiState.rollbackError,
+                    fontSize = 12.sp,
+                    color = colorScheme.error,
+                    modifier = Modifier.padding(12.dp)
+                )
+            }
+        }
+
+        if (uiState.schemaVersions.isEmpty()) {
+            Surface(
+                color = colorScheme.surface,
+                shape = RoundedCornerShape(12.dp),
+                border = BorderStroke(1.dp, colorScheme.outline),
+                modifier = Modifier.fillMaxWidth().testTag("schema_rollback_empty_state")
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Text(
-                        text = "${uiState.schemaVersions.size} Cached Versions in SQLite",
-                        fontSize = 11.sp,
-                        fontFamily = FontFamily.Monospace,
-                        color = colorScheme.tertiary
+                        text = "No cached versions yet",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = colorScheme.onSurface
                     )
-                    FilledTonalButton(
-                        onClick = onOpenBuilder,
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                    ) {
-                        Icon(Icons.Default.AddCircleOutline, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(Modifier.width(6.dp))
-                        Text("Receive New Schema Version", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    }
+                    Text(
+                        text = "This workspace is still running its bundled schema. Verified schemas " +
+                            "appear here as soon as the workspace is provisioned or a new one is received.",
+                        fontSize = 12.sp,
+                        color = colorScheme.onSurfaceVariant
+                    )
                 }
             }
         }
@@ -1413,7 +808,7 @@ fun SchemaVersionRollbackSheet(
                                     color = colorScheme.onSurface
                                 )
                                 Text(
-                                    text = "version_id=#${ver.versionId} • jti=${ver.envelopeJti}",
+                                    text = "jti=${ver.envelopeJti}",
                                     fontSize = 10.sp,
                                     fontFamily = FontFamily.Monospace,
                                     color = colorScheme.onSurfaceVariant
@@ -1437,20 +832,21 @@ fun SchemaVersionRollbackSheet(
                             }
                         } else {
                             Button(
-                                onClick = { onRollback(ver) },
+                                onClick = { pendingRollback = ver },
+                                enabled = !uiState.isRollingBack,
                                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
                                 modifier = Modifier
-                                    .defaultMinSize(minHeight = 38.dp)
+                                    .defaultMinSize(minHeight = 44.dp)
                                     .testTag("rollback_to_v_${ver.schemaVersion}_button")
                             ) {
                                 Icon(
                                     Icons.Default.Restore,
-                                    contentDescription = "Rollback to v${ver.schemaVersion}",
+                                    contentDescription = "Roll back to v${ver.schemaVersion}",
                                     modifier = Modifier.size(15.dp)
                                 )
                                 Spacer(Modifier.width(4.dp))
                                 Text(
-                                    text = "Rollback to v${ver.schemaVersion}",
+                                    text = "Roll back",
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -1459,7 +855,7 @@ fun SchemaVersionRollbackSheet(
                     }
 
                     Text(
-                        text = "Payload size: ${ver.divkitJson.length} bytes • Cached in workspace_${uiState.activeWorkspace.tenantId}.db",
+                        text = "${ver.divkitJson.length} bytes • cached ${relativeCacheAge(ver.receivedAt)}",
                         fontSize = 11.sp,
                         fontFamily = FontFamily.Monospace,
                         color = colorScheme.onSurfaceVariant
@@ -1467,5 +863,45 @@ fun SchemaVersionRollbackSheet(
                 }
             }
         }
+
+        TextButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
+            Text("Close", fontWeight = FontWeight.Bold)
+        }
     }
+
+    pendingRollback?.let { target ->
+        AlertDialog(
+            onDismissRequest = { pendingRollback = null },
+            title = { Text("Roll back to v${target.schemaVersion}?") },
+            text = {
+                Text(
+                    "The workspace will switch to the schema cached at v${target.schemaVersion} " +
+                        "(${target.changeSummary}). The current version stays cached, so you can roll forward again."
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        pendingRollback = null
+                        onRollback(target)
+                    },
+                    modifier = Modifier.testTag("confirm_schema_rollback_button")
+                ) { Text("Roll back") }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingRollback = null }) { Text("Cancel") }
+            }
+        )
+    }
+}
+
+/** "12 min ago" style age for the cached row, or "just now" for a fresh seed. */
+private fun relativeCacheAge(receivedAt: Long): String {
+    val delta = System.currentTimeMillis() - receivedAt
+    if (delta < 60_000) return "just now"
+    val minutes = delta / 60_000
+    if (minutes < 60) return "$minutes min ago"
+    val hours = minutes / 60
+    if (hours < 24) return "$hours h ago"
+    return "${hours / 24} d ago"
 }

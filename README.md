@@ -37,9 +37,10 @@ A Server-Driven UI (SDUI) application engine that uses **DivKit** for dynamic, o
      - **Push Gateway Base (FCM & SDUI Schema Vault)**: Configurable App Engine Owner gateway endpoint (`https://kipeles-apexkit.hf.space/tenant/apexapp-push`).
      - **Hardware Device ID & FCM Push Token**: With one-tap **Copy** buttons (`ClipboardManager`), **Re-sync FCM**, and **Reconnect WS** actions.
 3. **Full-Screen Self-Contained Tenant Workspace & Standout Pill**:
-   - Clicking any tenant card opens a **dedicated full-screen workspace** for that tenant with all screen space available to its dynamically rendered DivKit UI (`EngineScreen` -> `DivView`), plus interactive **Public Client ID (`pk_live_...`) & cURL Webhook Dispatch**, **Active Route Path & URL Queries (Preserved on Refresh)**, and **Hardware Audio & Haptics Tester**.
+   - Clicking any tenant card opens a **dedicated full-screen workspace** for that tenant with all screen space available to its dynamically rendered DivKit UI (`EngineScreen` -> `DivView`). Developer chrome is no longer stacked under the card: the **Public Client ID (`pk_live_...`) & cURL Webhook Dispatch** card, the native-bridge permission notice and the **schema version ledger** live in **`⋮` → Developer diagnostics**.
+   - **`sheet://` cards**: `sheet://present?card_id=<id>` presents any registered card in a modal bottom sheet above the workspace (the stack underneath is untouched) and `sheet://dismiss` closes it. `demo/acme_pos/tools/sheet_showcase.json` is the reference card, reachable from the hub's **Open sheet:// showcase** button.
    - **Standout Pill (Top-Center)**: A high-contrast, zero-shadow pill (`workspace_standout_pill`) sits at the top-center of the workspace, visible across both Light and Dark themes without shadowing any workspace content.
-   - **Persistent AppBar on Pill Click**: Clicking the standout pill opens the top AppBar overlay (`< Hub` back button, QR Scanner, Refresh `↻`, Notification Bell, and `⋮` menu with `Refresh Page`, `Workspace Settings`, `Clear Offline Cache`, `Schema Cache & Rollback`, `On-the-Fly SDUI Builder`, `Workspace Files`, `Notifications`, and `Return to Hub`), which **remains open unless the active workspace screen is clicked or the exit button is clicked**.
+   - **Persistent AppBar on Pill Click**: Clicking the standout pill opens the top AppBar overlay (`< Hub` back button, QR Scanner, Notification Bell, and `⋮` menu with `Workspace Settings`, `Clear Offline Cache`, `Schema Cache & Rollback`, `Developer diagnostics`, `Workspace Files`, `Notifications`, and `Return to Hub`), which **remains open unless the active workspace screen is clicked or the exit button is clicked**. There is no manual "Refresh Page" and no on-the-fly builder: the active schema is the cached, signed one and rollback is the only way to change it.
 
 ---
 
@@ -84,7 +85,7 @@ apps/android/                               # Self-contained Gradle project (app
       ui/TenantLauncherScreen.kt            # 2-column grid / 1-column list launcher, search & + FAB
       ui/EngineModalsAndSheets.kt           # App Settings, Connect Workspace & Workspace Settings sheets
       ui/PosTerminalTab.kt                  # Dedicated tenant workspace, standout pill, AppBar & rollback sheet
-      ui/SduiBuilderTab.kt                  # Interactive DivKit component & chart builder, JSON editor & rollback
+      ui/DeveloperDiagnosticsSheet.kt       # Client id + cURL, bridge permissions and schema ledger (⋮ menu)
       ui/FileManagerTab.kt                  # Workspace file manager: folder browser, preview & file ops
       ui/SecurityAndKmpTab.kt               # Zero-trust threat simulator & engine code browser
   src/test/java/com/example/contract/       # Cross-platform contract tests (fixtures, envelope, capabilities)
