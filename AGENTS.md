@@ -170,7 +170,9 @@ tenant too:
   block reads, and `add(...)` the block into the card's item list.
 - `SduiEngineViewModel` — seed the same variables in the `EngineStateBridge.pushBatch(...)`
   reset so the card renders populated before the first tool call.
-- `SduiBuilderTab` — expose an inject button for the block in the on-the-fly builder.
+- `SduiEngineViewModel` + `DeveloperDiagnosticsSheet` — the workspace's developer surface is a
+  `⋮ → Developer diagnostics` overlay, not a block under the card. There is no on-the-fly builder
+  and no manual refresh; the signed cached schema is the only source of truth.
 - `DivKitMultiplatform.resolveIcon(name)` — map any new `icon` names to a Material icon; the
   demo also showcases the `icons://native/<name>` scheme via `buildNativeIconSchemeBlock`.
 
