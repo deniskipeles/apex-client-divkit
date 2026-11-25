@@ -29,6 +29,7 @@ cd "${SCRIPT_DIR}"
 
 # Default parameters
 BUILD_MODE="debug"
+CHANNEL="both"
 DO_CLEAN=false
 OUTPUT_DIR="${SCRIPT_DIR}/dist-apks"
 
@@ -44,6 +45,8 @@ Options:
   --debug          Build debug APKs (default)
   --release        Build minified, signed release APKs (R8 + ProGuard)
   --all            Build both debug and release APK suites
+  --channel NAME   Build one channel only: dev (plaintext workspaces), prod (encrypted) or both
+                   (default: both)
   --clean          Run Gradle clean before building
   --output-dir DIR Custom directory for output APKs (default: ./dist-apks)
   -h, --help       Show this help message
@@ -73,6 +76,14 @@ while [[ $# -gt 0 ]]; do
             OUTPUT_DIR="$2"
             shift 2
             ;;
+        --channel)
+            CHANNEL="${2:-}"
+            case "${CHANNEL}" in
+                dev|prod|both) ;;
+                *) die "--channel expects dev, prod or both (got '${CHANNEL:-}')" ;;
+            esac
+            shift 2
+            ;;
         -h|--help)
             print_usage
             exit 0
@@ -90,6 +101,13 @@ echo "=================================================================="
 echo "    DivKit SDUI POS Engine — Multi-Architecture APK Builder"
 echo "=================================================================="
 echo -e "${RESET}"
+
+# The prod channel encrypts `assets/demo/<id>/workspace.bin`, so its Gradle task fails without a
+# key. Forward one when the caller supplies it (CI reads it from a repository secret).
+GRADLE_ARGS=()
+if [[ -n "${APEX_WORKSPACE_KEY:-}" ]]; then
+    GRADLE_ARGS+=("-PapexWorkspaceKey=${APEX_WORKSPACE_KEY}")
+fi
 
 # ------------------------------------------------------------------------------
 # 0. Toolchain Bootstrap Helpers
@@ -723,15 +741,27 @@ if [[ "${DO_CLEAN}" == true ]]; then
     TASKS+=("clean")
 fi
 
+variant_task() {
+    # variant_task <debug|release> — the channel-qualified assemble task, or the
+    # build-type aggregate when both channels are wanted.
+    local build_type="$1" capital
+    capital="$(tr '[:lower:]' '[:upper:]' <<< "${build_type:0:1}")${build_type:1}"
+    case "${CHANNEL}" in
+        dev)  echo "assembleDev${capital}" ;;
+        prod) echo "assembleProd${capital}" ;;
+        *)    echo "assemble${capital}" ;;
+    esac
+}
+
 case "${BUILD_MODE}" in
     debug)
-        TASKS+=("assembleDebug")
+        TASKS+=("$(variant_task debug)")
         ;;
     release)
-        TASKS+=("assembleRelease")
+        TASKS+=("$(variant_task release)")
         ;;
     all)
-        TASKS+=("assembleDebug" "assembleRelease")
+        TASKS+=("$(variant_task debug)" "$(variant_task release)")
         ;;
 esac
 
@@ -739,7 +769,7 @@ echo ""
 info "Executing Gradle build tasks: ${TASKS[*]} ..."
 echo ""
 
-"${GRADLE_CMD}" "${TASKS[@]}"
+"${GRADLE_CMD}" "${TASKS[@]}" "${GRADLE_ARGS[@]}"
 
 echo ""
 success "Gradle compilation and packaging completed successfully!"
@@ -749,7 +779,23 @@ success "Gradle compilation and packaging completed successfully!"
 # ------------------------------------------------------------------------------
 mkdir -p "${OUTPUT_DIR}"
 
+# Variants are channel-qualified (`dev`/`prod`), so the APKs land in
+# build/outputs/apk/<channel>/<buildType>. The flat paths are kept for older trees.
 SEARCH_DIRS=()
+SEARCH_CHANNELS=()
+case "${CHANNEL}" in
+    both) SEARCH_CHANNELS=("dev" "prod") ;;
+    *)    SEARCH_CHANNELS=("${CHANNEL}") ;;
+esac
+for channel in "${SEARCH_CHANNELS[@]}"; do
+    if [[ "${BUILD_MODE}" == "debug" || "${BUILD_MODE}" == "all" ]]; then
+        SEARCH_DIRS+=("${SCRIPT_DIR}/build/outputs/apk/${channel}/debug")
+    fi
+    if [[ "${BUILD_MODE}" == "release" || "${BUILD_MODE}" == "all" ]]; then
+        SEARCH_DIRS+=("${SCRIPT_DIR}/build/outputs/apk/${channel}/release")
+    fi
+done
+# Flat paths predate the channel flavours; kept so an older tree still harvests.
 if [[ "${BUILD_MODE}" == "debug" || "${BUILD_MODE}" == "all" ]]; then
     SEARCH_DIRS+=("${SCRIPT_DIR}/build/outputs/apk/debug")
 fi
