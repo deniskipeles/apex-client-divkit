@@ -39,6 +39,13 @@ and is never overwritten, and only missing SDK packages are installed. `local.pr
 keystore `my-upload-key.jks` uses `storepass123`). R8 itself runs fine without them —
 only `packageRelease` fails when the passwords are unset.
 
+The prod channel also needs `APEX_WORKSPACE_KEY` (64 hex chars) or `-PapexWorkspaceKey=…`;
+without it `encryptWorkspaces` fails the build. `build-apks.sh` forwards the env var as a
+Gradle property, and the release workflow reads the `APEX_WORKSPACE_KEY` secret — minting a
+per-run key when the secret is absent so the pipeline still ships encrypted bundles.
+`build-apks.sh --channel prod` builds only the prod variants; the release workflow uses it so
+the plaintext dev APKs are never published.
+
 To provision the toolchains by hand instead (e.g. to share them across projects):
 
 ```bash

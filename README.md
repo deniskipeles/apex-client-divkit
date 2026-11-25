@@ -361,11 +361,15 @@ cd apps/android
 # Build debug APK suite (arm64-v8a, armeabi-v7a, x86_64, universal)
 ./build-apks.sh
 
-# Build minified production release APKs with R8 and resource shrinking
-./build-apks.sh --release
+# Build minified production release APKs with R8 and resource shrinking.
+# The prod channel encrypts the workspace bundles, so it needs a key:
+APEX_WORKSPACE_KEY=$(python3 -c 'import secrets;print(secrets.token_hex(32))') ./build-apks.sh --release --channel prod
 
 # Build both debug and release suites into a custom directory
 ./build-apks.sh --all --output-dir ./my-apks
+
+# `--channel dev|prod|both` (default both) narrows the build; releases publish prod only,
+# because the dev channel ships plaintext workspace JSON on purpose.
 ```
 
 Artifacts are automatically harvested to `./dist-apks/` with a verified `checksums.sha256` manifest.

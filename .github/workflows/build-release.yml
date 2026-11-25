@@ -62,6 +62,25 @@ jobs:
           chmod +x gradlew
           chmod +x build-apks.sh
 
+      # The prod channel ships `assets/demo/<id>/workspace.bin` encrypted with AES-256-GCM and
+      # refuses to build without a key. Forward the repository secret when it exists; otherwise
+      # mint a per-run key so the pipeline still produces installable (encrypted) APKs. The key is
+      # embedded in the APK's BuildConfig, so it never leaves the artifact.
+      - name: Resolve workspace encryption key
+        env:
+          SECRET_KEY: ${{ secrets.APEX_WORKSPACE_KEY }}
+        run: |
+          if [ -n "${SECRET_KEY:-}" ]; then
+            echo "Using the APEX_WORKSPACE_KEY repository secret."
+            echo "::add-mask::${SECRET_KEY}"
+            echo "APEX_WORKSPACE_KEY=${SECRET_KEY}" >> "$GITHUB_ENV"
+          else
+            echo "::warning::APEX_WORKSPACE_KEY is not set; generating a per-run workspace key. Add the repository secret to keep release keys stable across builds."
+            KEY="$(python3 -c 'import secrets; print(secrets.token_hex(32))')"
+            echo "::add-mask::${KEY}"
+            echo "APEX_WORKSPACE_KEY=${KEY}" >> "$GITHUB_ENV"
+          fi
+
       - name: Compile and Package Release APKs
         working-directory: apps/android
         env:
@@ -69,9 +88,10 @@ jobs:
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD || 'storepass123' }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD || 'storepass123' }}
         run: |
-          # Executes the automated build engine in --release mode:
-          # Produces arm64-v8a, armeabi-v7a, x86_64, and universal APKs + checksums.sha256 in ./dist-apks/
-          ./build-apks.sh --release --output-dir "${{ github.workspace }}/dist-apks"
+          # Executes the automated build engine in --release mode for the prod channel only:
+          # produces arm64-v8a, armeabi-v7a, x86_64, and universal APKs + checksums.sha256 in ./dist-apks/
+          # The dev channel is plaintext on purpose, so it must never be published as a release.
+          ./build-apks.sh --release --channel prod --output-dir "${{ github.workspace }}/dist-apks"
 
       - name: Display Artifacts & Checksums
         run: |
@@ -87,7 +107,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: divkit-sdui-pos-arm64-v8a-${{ github.ref_name }}
-          path: dist-apks/*-arm64-v8a-release.apk
+          path: dist-apks/*-prod-arm64-v8a-release.apk
           if-no-files-found: error
           retention-days: 30
 
@@ -95,7 +115,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: divkit-sdui-pos-armeabi-v7a-${{ github.ref_name }}
-          path: dist-apks/*-armeabi-v7a-release.apk
+          path: dist-apks/*-prod-armeabi-v7a-release.apk
           if-no-files-found: error
           retention-days: 30
 
@@ -103,7 +123,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: divkit-sdui-pos-x86_64-${{ github.ref_name }}
-          path: dist-apks/*-x86_64-release.apk
+          path: dist-apks/*-prod-x86_64-release.apk
           if-no-files-found: error
           retention-days: 30
 
@@ -111,7 +131,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: divkit-sdui-pos-universal-${{ github.ref_name }}
-          path: dist-apks/*-universal-release.apk
+          path: dist-apks/*-prod-universal-release.apk
           if-no-files-found: error
           retention-days: 30
 
