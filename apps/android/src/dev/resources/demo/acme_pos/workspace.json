@@ -1,0 +1,72 @@
+{
+  "format": "apex.workspace/1",
+  "id": "acme_pos",
+  "title": "Apex POS Terminal",
+  "subtitle": "DivKit SDUI showcase",
+  "terminal": "POS-TERM-01",
+  "accent": "#0284C7",
+  "mode": "HYBRID",
+  "capabilities": [
+    "scanner",
+    "printer",
+    "nfc",
+    "cash_drawer",
+    "haptics",
+    "beeper"
+  ],
+  "tools": {
+    "hapticVibration": true,
+    "hardwareBeeperAudio": true,
+    "cameraBarcodeScanner": true,
+    "supervisorBiometricAuth": true,
+    "clipboardAccess": true,
+    "backgroundAlertsPush": true,
+    "offlinePageCaching": true,
+    "realtimeEngineWsSse": true
+  },
+  "urls": {
+    "tunnel": "https://apex-terminal.local/",
+    "lan": "http://192.168.1.10:8080",
+    "client_id": "pk_live_bdbc75560c43b6605370bf4a"
+  },
+  "unread": 4,
+  "hub": "card.json",
+  "catalog": "tool_catalog.json",
+  "collections": {
+    "dir": "collections",
+    "files": [
+      "inventory.json",
+      "orders.json",
+      "cust_history.json"
+    ]
+  },
+  "cards": {
+    "dir": "tools",
+    "order": [
+      "local_db",
+      "scanner",
+      "code_generate",
+      "codec",
+      "camera",
+      "mobilenet",
+      "u2net",
+      "image_manipulation",
+      "embedding",
+      "libsignal",
+      "biometrics",
+      "haptics",
+      "beeper",
+      "clipboard_push",
+      "offline_cache",
+      "realtime_ws",
+      "net",
+      "print",
+      "screen",
+      "files",
+      "native_icons",
+      "catalog_list",
+      "hourly_chart",
+      "sdui_chart"
+    ]
+  }
+}

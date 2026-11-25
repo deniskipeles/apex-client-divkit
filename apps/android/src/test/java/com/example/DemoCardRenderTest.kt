@@ -159,7 +159,7 @@ class DemoCardRenderTest {
     fun libsignalSafetyNumberIsStackedUnderItsLabel() {
         val card = Json.parseToJsonElement(
             javaClass.classLoader!!
-                .getResourceAsStream("demo/apex/tools/libsignal.json")!!
+                .getResourceAsStream("demo/acme_pos/tools/libsignal.json")!!
                 .bufferedReader()
                 .use { it.readText() }
         ).jsonObject
@@ -217,7 +217,7 @@ class DemoCardRenderTest {
     @Test
     fun kioskCustomerCardRendersCatalogAndOrderLines() {
         val raw = javaClass.classLoader!!
-            .getResourceAsStream("demo/apex-kiosk/tools/kiosk_customer.json")!!
+            .getResourceAsStream("demo/apex_kiosk/tools/kiosk_customer.json")!!
             .bufferedReader()
             .use { it.readText() }
         val card = Json.parseToJsonElement(raw).jsonObject
@@ -297,7 +297,7 @@ class DemoCardRenderTest {
     @Test
     fun kioskTransferBuildsTheQrSetFromThePersistedOrder() {
         val raw = javaClass.classLoader!!
-            .getResourceAsStream("demo/apex-kiosk/tools/kiosk_transfer.json")!!
+            .getResourceAsStream("demo/apex_kiosk/tools/kiosk_transfer.json")!!
             .bufferedReader()
             .use { it.readText() }
         val card = Json.parseToJsonElement(raw).jsonObject
@@ -317,10 +317,10 @@ class DemoCardRenderTest {
             composeRule.onNodeWithTag("div_btn_kiosk_build_qr_set").performScrollTo().performClick()
             composeRule.waitForIdle()
 
-            // The card must load the persisted draft, export it, chunk it, then render chunk 0.
+            // The card must read the persisted order, pack it, chunk it, then render chunk 0.
             val order = listOf(
-                "local-db://op/kiosk.load",
-                "local-db://op/kiosk.export",
+                "local-db://op/db.query",
+                "local-db://op/doc.pack",
                 "tools://codec/json/chunk",
                 "tools://code-generate/generate"
             )
@@ -345,7 +345,7 @@ class DemoCardRenderTest {
     @Test
     fun kioskScanNextQrAppendsTheScannedChunk() {
         val raw = javaClass.classLoader!!
-            .getResourceAsStream("demo/apex-kiosk/tools/kiosk_transfer.json")!!
+            .getResourceAsStream("demo/apex_kiosk/tools/kiosk_transfer.json")!!
             .bufferedReader()
             .use { it.readText() }
         val card = Json.parseToJsonElement(raw).jsonObject
@@ -375,7 +375,7 @@ class DemoCardRenderTest {
     fun kioskAssembleClearsStaleResultSoAFailedTransferCannotReadAsMatch() {
         val card = Json.parseToJsonElement(
             javaClass.classLoader!!
-                .getResourceAsStream("demo/apex-kiosk/tools/kiosk_transfer.json")!!
+                .getResourceAsStream("demo/apex_kiosk/tools/kiosk_transfer.json")!!
                 .bufferedReader()
                 .use { it.readText() }
         ).jsonObject
@@ -416,7 +416,7 @@ class DemoCardRenderTest {
     @Test
     fun kioskAssembleScannedPassesChunksAsAJsonArray() {
         val raw = javaClass.classLoader!!
-            .getResourceAsStream("demo/apex-kiosk/tools/kiosk_transfer.json")!!
+            .getResourceAsStream("demo/apex_kiosk/tools/kiosk_transfer.json")!!
             .bufferedReader()
             .use { it.readText() }
         val card = Json.parseToJsonElement(raw).jsonObject

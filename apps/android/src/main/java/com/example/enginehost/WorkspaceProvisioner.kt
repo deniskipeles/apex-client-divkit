@@ -52,8 +52,10 @@ data class TenantWorkspaceSpec(
     val accentHex: String,
     val mode: EngineConfig.Mode,
     val capabilities: Set<String>,
-    val defaultProducts: List<SeedProduct>,
-    val defaultOrders: List<SeedOrder>,
+    val defaultProducts: List<SeedProduct> = emptyList(),
+    val defaultOrders: List<SeedOrder> = emptyList(),
+    /** Collection documents shipped by the workspace package (schemas + seed rows). */
+    val collections: List<JsonObject> = emptyList(),
     val isBuiltInDemo: Boolean = false,
     val tunnelUrl: String = "https://apexkit-pos.trycloudflare.com",
     val localLanUrl: String = "http://192.168.1.42:8080",
@@ -93,80 +95,45 @@ object WorkspaceProvisioner {
      * native tool suite. Additional tenants are connected at runtime through the
      * Connect Workspace flow rather than being shipped as static demos.
      */
-    val defaultWorkspaces: List<TenantWorkspaceSpec> = listOf(
-        TenantWorkspaceSpec(
-            tenantId = "acme_pos",
-            displayName = "Apex POS Terminal",
-            terminalCode = "POS-TERM-01",
-            subtitle = "DivKit SDUI showcase",
-            accentHex = "#0284C7",
-            mode = EngineConfig.Mode.HYBRID,
-            capabilities = setOf("scanner", "printer", "nfc", "cash_drawer", "haptics", "beeper"),
-            isBuiltInDemo = true,
-            tunnelUrl = "https://apex-terminal.local/",
-            localLanUrl = "http://192.168.1.10:8080",
-            publicClientId = "pk_live_bdbc75560c43b6605370bf4a",
-            unreadCount = 4,
+    val defaultWorkspaces: List<TenantWorkspaceSpec>
+        get() = engine.workspace.WorkspaceRepository.loadAll().bundles.map { it.toSpec() }
+
+    /** Maps a data-defined workspace onto the runtime spec the engine already understands. */
+    fun engine.workspace.WorkspaceBundle.toSpec(): TenantWorkspaceSpec {
+        val toolsJson = tools
+        fun flag(name: String) = (toolsJson[name] as? JsonPrimitive)?.contentOrNull?.toBooleanStrictOrNull() ?: false
+        val urlsJson = urls
+        return TenantWorkspaceSpec(
+            tenantId = id,
+            displayName = title,
+            terminalCode = terminal,
+            subtitle = subtitle,
+            accentHex = accent,
+            mode = runCatching { EngineConfig.Mode.valueOf(mode.uppercase()) }.getOrDefault(EngineConfig.Mode.HYBRID),
+            capabilities = capabilities.toSet(),
+            defaultProducts = emptyList(),
+            defaultOrders = emptyList(),
+            collections = collections,
+            isBuiltInDemo = origin == "builtin",
+            tunnelUrl = (urlsJson["tunnel"] as? JsonPrimitive)?.contentOrNull ?: "",
+            localLanUrl = (urlsJson["lan"] as? JsonPrimitive)?.contentOrNull ?: "",
+            publicClientId = (urlsJson["client_id"] as? JsonPrimitive)?.contentOrNull
+                ?: "pk_live_bdbc75560c43b6605370bf4a",
+            unreadCount = unread,
             defaultTools = WorkspaceToolPermissions(
-                hapticVibration = true,
-                hardwareBeeperAudio = true,
-                cameraBarcodeScanner = true,
-                supervisorBiometricAuth = true,
-                clipboardAccess = true,
-                backgroundAlertsPush = true,
-                offlinePageCaching = true,
-                realtimeEngineWsSse = true
+                hapticVibration = flag("hapticVibration"),
+                hardwareBeeperAudio = flag("hardwareBeeperAudio"),
+                cameraBarcodeScanner = flag("cameraBarcodeScanner"),
+                supervisorBiometricAuth = flag("supervisorBiometricAuth"),
+                clipboardAccess = flag("clipboardAccess"),
+                backgroundAlertsPush = flag("backgroundAlertsPush"),
+                offlinePageCaching = flag("offlinePageCaching"),
+                realtimeEngineWsSse = flag("realtimeEngineWsSse")
             ),
-            defaultProducts = listOf(
-                SeedProduct("Wagyu Smash Burger", "ACM-101", 16.50, 42, "Entrees", "#0284C7"),
-                SeedProduct("Truffle Parmesan Fries", "ACM-102", 8.00, 65, "Sides", "#0D9488"),
-                SeedProduct("Artisan Cold Brew", "ACM-204", 5.50, 88, "Beverages", "#4F46E5"),
-                SeedProduct("Wood-Fired Margherita", "ACM-109", 18.00, 29, "Pizza", "#D97706")
-            ),
-            defaultOrders = listOf(
-                SeedOrder("Wagyu Smash Burger", "ACM-101", 16.50, 1, "POS-TERM-01", "PAID"),
-                SeedOrder("Truffle Parmesan Fries", "ACM-102", 8.00, 2, "POS-TERM-01", "OPEN"),
-                SeedOrder("Artisan Cold Brew", "ACM-204", 5.50, 1, "POS-TERM-01", "OPEN")
-            )
-        ),
-        TenantWorkspaceSpec(
-            tenantId = "apex_kiosk",
-            displayName = "APEX KIOSK",
-            terminalCode = "KSK-001",
-            subtitle = "Orders, receipts, QR & LAN",
-            accentHex = "#7C3AED",
-            mode = EngineConfig.Mode.HYBRID,
-            capabilities = setOf("scanner", "printer", "haptics", "beeper", "clipboard"),
-            isBuiltInDemo = true,
-            tunnelUrl = "https://apex-kiosk.local/",
-            localLanUrl = "http://192.168.1.20:8089",
-            publicClientId = "pk_live_bdbc75560c43b6605370bf4a",
-            unreadCount = 2,
-            defaultTools = WorkspaceToolPermissions(
-                hapticVibration = true,
-                hardwareBeeperAudio = true,
-                cameraBarcodeScanner = true,
-                clipboardAccess = true,
-                backgroundAlertsPush = true,
-                offlinePageCaching = true,
-                realtimeEngineWsSse = true
-            ),
-            defaultProducts = listOf(
-                SeedProduct("Mineral Water", "P1001", 1.50, 120, "Drinks", "#0EA5E9"),
-                SeedProduct("Sandwich", "P1008", 4.00, 40, "Food", "#F59E0B"),
-                SeedProduct("Coffee", "P1012", 2.50, 80, "Drinks", "#8B5CF6"),
-                SeedProduct("Chocolate Bar", "P1015", 1.75, 60, "Snacks", "#EC4899"),
-                SeedProduct("Fresh Juice", "P1020", 3.25, 35, "Drinks", "#10B981"),
-                SeedProduct("Croissant", "P1024", 2.75, 25, "Bakery", "#F97316")
-            ),
-            defaultOrders = listOf(
-                SeedOrder("Mineral Water", "P1001", 1.50, 2, "KSK-001", "OPEN"),
-                SeedOrder("Sandwich", "P1008", 4.00, 1, "KSK-001", "PAID")
-            ),
-            demoRoot = "demo/apex-kiosk",
-            toolCardOrder = listOf("kiosk_customer", "kiosk_owner", "kiosk_transfer", "kiosk_lan")
+            demoRoot = "demo/$id",
+            toolCardOrder = cardNames
         )
-    )
+    }
 
     /**
      * Creates signed [EngineConfig] and verifies it through [PayloadVerifier]
@@ -218,13 +185,30 @@ object WorkspaceProvisioner {
 
         // Collections are INSERT OR REPLACE'd by import, which would cascade-delete
         // existing records, so only import when the tenant schema is absent.
-        val demoCollections = DemoCollectionRepository.load()
-        val missingCollection = demoCollections?.names?.any { apexEngine.getCollection(it) == null } == true
+        val demoCollections = spec.collections.takeIf { it.isNotEmpty() }
+            ?: DemoCollectionRepository.load(spec.tenantId)?.let { loaded ->
+                loaded.schemaPayload["schema"]!!.jsonObject["collections"]!!.jsonArray
+                    .mapNotNull { it as? JsonObject }
+            }
+        val collectionNames = demoCollections?.mapNotNull { (it["name"] as? JsonPrimitive)?.contentOrNull }.orEmpty()
+        val missingCollection = demoCollections != null &&
+            collectionNames.any { apexEngine.getCollection(it) == null }
         if (demoCollections != null && missingCollection) {
-            registry.execute("db.import_schema", db, ws, demoCollections.schemaPayload)
+            registry.execute(
+                "db.import_schema",
+                db,
+                ws,
+                buildJsonObject {
+                    putJsonObject("schema") {
+                        putJsonArray("collections") { demoCollections.forEach { add(it) } }
+                    }
+                }
+            )
         }
 
-        // Check if inventory is empty; if so, seed via EngineRegistry
+        // Workspaces that declare collection seeds need no Kotlin-side demo data.
+        if (demoCollections != null) return
+
         val invCount = (registry.execute(
             "db.count",
             db,
@@ -246,8 +230,6 @@ object WorkspaceProvisioner {
                             put("item_name", prod.name)
                             put("sku", prod.sku)
                             put("price", prod.price)
-                            // Cards cannot format numbers, so the 2-decimal money string
-                            // travels with the record alongside the numeric price.
                             put("price_display", String.format(java.util.Locale.US, "%.2f", prod.price))
                             put("stock", prod.stock)
                             put("category", prod.category)

@@ -131,6 +131,22 @@ packages/divkit-subset/
   schema.json                               # Permitted DivKit component subset
 ```
 
+## Workspace packages: dev and production channels
+
+Every workspace is data. `apps/android/src/dev/resources/demo/<workspace-id>/` holds
+`workspace.json` (identity, capabilities, card order, collections), `card.json` (hub),
+`tool_catalog.json`, `tools/*.json` and `collections/*.json` (schema + `seed` rows). No Kotlin
+constant describes a tenant any more; `WorkspaceRepository` loads the folders at startup.
+
+| channel | command | ships | runtime import |
+| --- | --- | --- | --- |
+| `dev` | `./gradlew assembleDevDebug` | plaintext JSON | DivKit card, collection schema, icon `.zip` |
+| `prod` | `./gradlew assembleProdDebug -PapexWorkspaceKey=<64 hex>` | `assets/demo/<id>/workspace.bin` (AES-256-GCM) | refused |
+
+The prod channel fails the build without a key, and the app refuses to load a prod workspace
+without one. The dev-only launcher button (**Workspace packages**) loads a card, a collection
+schema or an icon zip into a workspace and unloads it again; see `docs/workspaces.md`.
+
 ## Custom DivKit Chart Components (`sdui_chart`)
 
 Tenants can declare interactive charts directly inside their signed DivKit JSON schema using `"type": "custom"` with `"custom_type": "sdui_chart"` (or `"bar_chart"`, `"line_chart"`, `"area_chart"`, `"donut_chart"`, `"pie_chart"`):

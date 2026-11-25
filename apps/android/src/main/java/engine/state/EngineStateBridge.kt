@@ -19,16 +19,17 @@ object EngineStateBridge {
     val state: StateFlow<Map<String, DivVariableValue>> = _state.asStateFlow()
 
     /**
-     * Variable names must be `user.*` to prevent a compromised payload from
-     * overwriting engine/system variables (e.g., `engine.error`).
+     * Names must satisfy [WorkspaceVariableScope]: a scoped name in a non-reserved scope.
+     * The scope vocabulary belongs to the workspace, not to this class, so a new workspace
+     * needs no code change here.
      */
     fun pushUpdate(name: String, value: DivVariableValue) {
-        require(name.startsWith("user.")) { "Variable must be user.*-namespaced: $name" }
+        WorkspaceVariableScope.requireValid(name)
         _state.update { it + (name to value) }
     }
 
     fun pushBatch(updates: Map<String, DivVariableValue>) {
-        updates.keys.forEach { require(it.startsWith("user.")) { "Variable must be user.*: $it" } }
+        updates.keys.forEach { WorkspaceVariableScope.requireValid(it) }
         _state.update { it + updates }
     }
 

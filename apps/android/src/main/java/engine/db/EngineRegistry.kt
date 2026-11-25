@@ -198,133 +198,181 @@ class EngineRegistry(
                     val userUid = payload["auth_uid"]?.jsonPrimitive?.longOrNull ?: 0L
                     val claims = Claims(uid = userUid, role = userRole)
 
+                    SchemaOps.deleteRefusal(apexEngine, col, recordId)?.let { refusal ->
+                        throw IllegalStateException(refusal)
+                    }
                     val deleted = apexEngine.deleteRecord(col, recordId, claims)
                     OpResult.Count(if (deleted) 1L else 0L)
                 }
 
-                // Kiosk order plane: header + lines stay consistent because every mutation
-                // recomputes the stored totals from the persisted line rows.
-                "kiosk.create", "kiosk.new" -> {
-                    val cart = KioskOps.createOrder(
+                // Generic, schema-interpreting operations. None of these know what a product
+                // or an order is: validation, roll-ups, lookups, delete guards and transfer
+                // packing all read their rules from the collection schema.
+                "db.upsert", "records.upsert" -> {
+                    val collection = payload["collection"]?.jsonPrimitive?.contentOrNull
+                        ?: payload["table"]?.jsonPrimitive?.contentOrNull
+                        ?: error("Missing 'collection' parameter")
+                    val data = (payload["data"] ?: payload["values"])?.jsonObject
+                        ?: error("Missing 'data' parameter")
+                    val result = SchemaOps.upsert(
                         apexEngine,
-                        direction = payload["direction"]?.jsonPrimitive?.contentOrNull ?: KioskOps.DIRECTION_CUSTOMER,
-                        terminalId = payload["terminal_id"]?.jsonPrimitive?.contentOrNull ?: "KIOSK",
-                        customerName = payload["customer_name"]?.jsonPrimitive?.contentOrNull ?: "",
-                        now = clock()
+                        collection,
+                        data,
+                        payload["id"]?.jsonPrimitive?.contentOrNull
                     )
-                    OpResult.Row(KioskOps.row(cart))
-                }
-
-                "kiosk.add_line", "kiosk.add" -> {
-                    val orderId = requireOrderId(payload)
-                    val sku = payload["sku"]?.jsonPrimitive?.contentOrNull
-                        ?: error("Missing 'sku' parameter")
-                    val cart = KioskOps.addLine(
-                        apexEngine,
-                        orderId = orderId,
-                        sku = sku,
-                        itemName = payload["item_name"]?.jsonPrimitive?.contentOrNull ?: sku,
-                        unitPrice = payload.number("unit_price"),
-                        quantity = payload.number("quantity").toInt().takeIf { it > 0 } ?: 1,
-                        now = clock()
-                    )
-                    OpResult.Row(KioskOps.row(cart) + mapOf("sku" to sku))
-                }
-
-                "kiosk.set_qty" -> {
-                    val cart = KioskOps.setQuantity(
-                        apexEngine,
-                        orderId = requireOrderId(payload),
-                        lineId = payload["line_id"]?.jsonPrimitive?.contentOrNull
-                            ?: error("Missing 'line_id' parameter"),
-                        quantity = payload.number("quantity").toInt(),
-                        now = clock()
-                    )
-                    OpResult.Row(KioskOps.row(cart))
-                }
-
-                "kiosk.remove_line", "kiosk.remove" -> {
-                    val orderId = requireOrderId(payload)
-                    val lineId = payload["line_id"]?.jsonPrimitive?.contentOrNull
-                        ?: error("Missing 'line_id' parameter")
-                    val before = KioskOps.load(apexEngine, orderId)
-                    val removed = before?.lines?.firstOrNull { it.id == lineId }
-                    val cart = KioskOps.removeLine(apexEngine, orderId, lineId, clock())
-                    val undo = removed?.let {
-                        buildJsonObject {
-                            put("sku", it.sku)
-                            put("item_name", it.itemName)
-                            put("unit_price", it.unitPrice)
-                            put("quantity", it.quantity)
-                        }
-                    } ?: JsonObject(emptyMap())
                     OpResult.Row(
-                        KioskOps.row(cart) + mapOf(
-                            "removed_sku" to (removed?.sku ?: ""),
-                            "removed_name" to (removed?.itemName ?: ""),
-                            "removed_quantity" to (removed?.quantity?.toLong() ?: 0L),
-                            "removed_unit_price" to (removed?.unitPrice ?: 0.0),
-                            "removed_unit_price_display" to KioskOps.format(removed?.unitPrice ?: 0.0),
-                            "undo_json" to undo.toString()
+                        flattenRecord(result.data) + mapOf(
+                            "id" to result.id,
+                            "ok" to result.ok,
+                            "errors_json" to JsonObject(
+                                result.errors.mapValues { JsonPrimitive(it.value) }
+                            ).toString(),
+                            "error_count" to result.errors.size
                         )
                     )
                 }
 
-                "kiosk.clear" -> {
-                    OpResult.Row(KioskOps.row(KioskOps.clearOrder(apexEngine, requireOrderId(payload), clock())))
+                "db.append_child" -> {
+                    val collection = payload["collection"]?.jsonPrimitive?.contentOrNull
+                        ?: error("Missing 'collection' parameter")
+                    val parentId = payload["parent_id"]?.jsonPrimitive?.contentOrNull
+                        ?: error("Missing 'parent_id' parameter")
+                    val data = (payload["data"] ?: payload["values"])?.jsonObject
+                        ?: error("Missing 'data' parameter")
+                    val result = SchemaOps.appendChild(apexEngine, collection, parentId, data)
+                    OpResult.Row(
+                        flattenRecord(result.child) + result.parent + mapOf(
+                            "parent_id" to result.parentId,
+                            "child_id" to result.childId
+                        )
+                    )
                 }
 
-                "kiosk.submit" -> {
-                    OpResult.Row(KioskOps.row(KioskOps.submit(apexEngine, requireOrderId(payload), clock())))
+                "db.set_child_qty" -> {
+                    val collection = payload["collection"]?.jsonPrimitive?.contentOrNull
+                        ?: error("Missing 'collection' parameter")
+                    val id = payload["id"]?.jsonPrimitive?.contentOrNull
+                        ?: error("Missing 'id' parameter")
+                    val quantity = payload["quantity"]?.jsonPrimitive?.intOrNull
+                        ?: error("Missing 'quantity' parameter")
+                    val result = SchemaOps.setChildQuantity(apexEngine, collection, id, quantity)
+                    OpResult.Row(
+                        flattenRecord(result.child) + result.parent + mapOf(
+                            "parent_id" to result.parentId,
+                            "child_id" to id,
+                            "undo_json" to result.removedJson
+                        )
+                    )
                 }
 
-                "kiosk.load" -> {
-                    val orderId = payload["order_id"]?.jsonPrimitive?.contentOrNull
-                    val cart = if (!orderId.isNullOrBlank()) {
-                        KioskOps.load(apexEngine, orderId)
-                    } else {
-                        KioskOps.latest(apexEngine, payload["direction"]?.jsonPrimitive?.contentOrNull)
-                    }
-                    if (cart == null) {
+                "db.remove_child" -> {
+                    val collection = payload["collection"]?.jsonPrimitive?.contentOrNull
+                        ?: error("Missing 'collection' parameter")
+                    val id = payload["id"]?.jsonPrimitive?.contentOrNull
+                        ?: error("Missing 'id' parameter")
+                    val result = SchemaOps.removeChild(apexEngine, collection, id)
+                    OpResult.Row(
+                        flattenRecord(result.child) + result.parent + mapOf(
+                            "parent_id" to result.parentId,
+                            "undo_json" to result.removedJson
+                        )
+                    )
+                }
+
+                "db.commit" -> {
+                    val collection = payload["collection"]?.jsonPrimitive?.contentOrNull
+                        ?: payload["table"]?.jsonPrimitive?.contentOrNull
+                        ?: error("Missing 'collection' parameter")
+                    val id = payload["id"]?.jsonPrimitive?.contentOrNull
+                        ?: payload["record_id"]?.jsonPrimitive?.contentOrNull
+                        ?: error("Missing 'id' parameter")
+                    OpResult.Row(SchemaOps.commit(apexEngine, collection, id))
+                }
+
+                "lookup.resolve", "records.resolve" -> {
+                    val collection = payload["collection"]?.jsonPrimitive?.contentOrNull
+                        ?: error("Missing 'collection' parameter")
+                    val value = payload["value"]?.jsonPrimitive?.contentOrNull
+                        ?: payload["raw"]?.jsonPrimitive?.contentOrNull
+                        ?: error("Missing 'value' parameter")
+                    val hit = SchemaOps.lookup(
+                        apexEngine,
+                        collection,
+                        value,
+                        payload["field"]?.jsonPrimitive?.contentOrNull
+                    )
+                    if (hit == null) {
                         OpResult.Row(
-                            KioskOps.row(
-                                KioskOps.Cart(
-                                    orderId = "",
-                                    direction = payload["direction"]?.jsonPrimitive?.contentOrNull
-                                        ?: KioskOps.DIRECTION_CUSTOMER,
-                                    status = "NO_ORDER",
-                                    terminalId = "",
-                                    customerName = "",
-                                    createdAt = "",
-                                    lines = emptyList()
-                                )
+                            mapOf(
+                                "ok" to false,
+                                "value" to value,
+                                "reason" to "No record matches $value"
                             )
                         )
                     } else {
-                        OpResult.Row(KioskOps.row(cart))
+                        OpResult.Row(
+                            flattenRecord(hit) + mapOf(
+                                "ok" to true,
+                                "value" to value,
+                                "record_json" to hit.toString()
+                            )
+                        )
                     }
                 }
 
-                "kiosk.list", "kiosk.orders" -> {
-                    val carts = KioskOps.recent(
-                        apexEngine,
-                        direction = payload["direction"]?.jsonPrimitive?.contentOrNull,
-                        status = payload["status"]?.jsonPrimitive?.contentOrNull,
-                        limit = payload["limit"]?.jsonPrimitive?.intOrNull ?: 10
-                    )
+                "doc.pack", "doc.chunk" -> {
+                    val collection = payload["collection"]?.jsonPrimitive?.contentOrNull
+                        ?: error("Missing 'collection' parameter")
+                    val id = payload["id"]?.jsonPrimitive?.contentOrNull
+                        ?: payload["record_id"]?.jsonPrimitive?.contentOrNull
+                        ?: error("Missing 'id' parameter")
+                    val chunkBytes = payload["chunk_bytes"]?.jsonPrimitive?.intOrNull
+                    val packed = SchemaOps.pack(apexEngine, collection, id, chunkBytes)
                     OpResult.Row(
                         mapOf(
-                            "orders_json" to KioskOps.listJson(carts),
-                            "order_count" to carts.size.toLong(),
-                            "orders_total_display" to KioskOps.format(carts.sumOf { it.total })
+                            "id" to packed.headerId,
+                            "payload_json" to packed.payload,
+                            "checksum" to packed.checksum,
+                            "chunks_json" to buildJsonArray { packed.chunks.forEach { add(it) } }.toString(),
+                            "chunk_count" to packed.chunks.size,
+                            "chunk_bytes" to packed.chunkBytes
                         )
                     )
                 }
 
-                "kiosk.export" -> {
-                    val cart = KioskOps.load(apexEngine, requireOrderId(payload))
-                        ?: error("Order does not exist")
-                    OpResult.Row(KioskOps.row(cart))
+                "doc.append" -> {
+                    val chunks = readChunks(payload)
+                    val chunk = payload["chunk"]?.jsonPrimitive?.contentOrNull
+                        ?: error("Missing 'chunk' parameter")
+                    val result = SchemaOps.append(chunks, chunk)
+                    OpResult.Row(
+                        mapOf(
+                            "accepted" to result.accepted,
+                            "corrupt" to result.corrupt,
+                            "reason" to (result.reason ?: ""),
+                            "chunks_json" to buildJsonArray { result.chunks.forEach { add(it) } }.toString(),
+                            "chunk_count" to result.chunks.size
+                        )
+                    )
+                }
+
+                "doc.unpack", "doc.assemble" -> {
+                    val chunks = readChunks(payload)
+                    val checksum = payload["checksum"]?.jsonPrimitive?.contentOrNull
+                    val result = SchemaOps.unpack(chunks, checksum)
+                    val parsed = result.payload?.let {
+                        runCatching { Json.parseToJsonElement(it).jsonObject }.getOrNull()
+                    }
+                    OpResult.Row(
+                        (parsed?.let { flattenRecord(it) } ?: emptyMap()) + mapOf(
+                            "ok" to result.ok,
+                            "payload_json" to (result.payload ?: ""),
+                            "checksum_ok" to result.checksumOk,
+                            "missing_json" to buildJsonArray { result.missing.forEach { add(it) } }.toString(),
+                            "reason" to (result.reason ?: ""),
+                            "chunk_count" to chunks.size
+                        )
+                    )
                 }
 
                 else -> throw SecurityException("Unknown operation: $opName")
@@ -372,14 +420,36 @@ class EngineRegistry(
         return out
     }
 
+
+    private fun readChunks(payload: JsonObject): List<String> {
+        val raw = payload["chunks_json"] ?: payload["chunks"]
+        val array = when (raw) {
+            is JsonArray -> raw
+            is JsonPrimitive -> runCatching { Json.parseToJsonElement(raw.content) as JsonArray }.getOrNull()
+            else -> null
+        } ?: return emptyList()
+        return array.mapNotNull { it.jsonPrimitive.contentOrNull?.takeIf { text -> text.isNotBlank() } }
+    }
+
+    /** Row shape expected by the output mapping: scalars stay scalars, nested values stay JSON. */
+    private fun flattenRecord(data: JsonObject): Map<String, Any?> =
+        data.mapValues { (_, value) ->
+            when (value) {
+                is JsonPrimitive -> when {
+                    value.isString -> value.content
+                    value.content == "true" || value.content == "false" -> value.content.toBoolean()
+                    value.doubleOrNull != null -> value.doubleOrNull as Any
+                    else -> value.content
+                }
+                else -> value.toString()
+            }
+        }
+
     private fun JsonElement.asScalar(): Any? = when (this) {
         is JsonPrimitive -> contentOrNull
         else -> toString()
     }
 
-    private fun requireOrderId(payload: JsonObject): String =
-        payload["order_id"]?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() }
-            ?: error("Missing 'order_id' parameter")
 
     private fun JsonObject.number(field: String): Double {
         val el = this[field] as? JsonPrimitive ?: return 0.0

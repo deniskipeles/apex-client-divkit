@@ -1,3 +1,4 @@
+import java.io.File
 import com.google.gms.googleservices.GoogleServicesPlugin.MissingGoogleServicesStrategy
 
 plugins {
@@ -55,6 +56,28 @@ android {
       reset()
       include("arm64-v8a", "armeabi-v7a", "x86_64")
       isUniversalApk = true
+    }
+  }
+
+
+  // Two channels, one codebase.
+  //
+  // * dev  — ships the plaintext `demo/<id>/workspace.json` folders and allows runtime
+  //          import of DivKit cards, collection schemas and icon packs.
+  // * prod — ships only `demo/<id>/workspace.bin` (AES-256-GCM, key injected at build time)
+  //          and refuses plaintext, so a release APK cannot be edited on device.
+  flavorDimensions += "channel"
+  productFlavors {
+    create("dev") {
+      dimension = "channel"
+      versionNameSuffix = "-dev"
+      buildConfigField("String", "WORKSPACE_MODE", "\"dev\"")
+      buildConfigField("String", "WORKSPACE_KEY", "\"\"")
+    }
+    create("prod") {
+      dimension = "channel"
+      buildConfigField("String", "WORKSPACE_MODE", "\"prod\"")
+      buildConfigField("String", "WORKSPACE_KEY", "\"${workspaceKey()}\"")
     }
   }
 
@@ -170,4 +193,37 @@ configurations.all {
   // newer protobuf, so pin to the version libsignal requires; MediaPipe's proto layer
   // still works at this version.
   resolutionStrategy.force(libs.protobuf.javalite)
+}
+
+// ---- workspace packaging (dev plaintext -> prod encrypted) -----------------------------
+
+/**
+ * Workspace encryption key for production builds.
+ *
+ * Supplied with `-PapexWorkspaceKey=<64 hex chars>` or `APEX_WORKSPACE_KEY`. Never commit a
+ * key: the prod channel fails the build when it is missing.
+ */
+fun workspaceKey(): String =
+    (providers.gradleProperty("apexWorkspaceKey").orNull
+        ?: System.getenv("APEX_WORKSPACE_KEY")
+        ?: "").trim()
+
+fun requireWorkspaceKey(): String = workspaceKey().ifBlank {
+    throw GradleException(
+        "production workspace build needs a key: -PapexWorkspaceKey=<64 hex chars> or APEX_WORKSPACE_KEY"
+    )
+}
+
+val encryptWorkspaces = tasks.register<EncryptWorkspacesTask>("encryptWorkspaces") {
+    group = "build"
+    description = "Encrypts dev workspace folders for the production channel."
+    input.set(layout.projectDirectory.dir("src/dev/resources/demo"))
+    outputDir.set(layout.buildDirectory.dir("generated/workspace"))
+    workspaceKey.set(requireWorkspaceKey())
+}
+
+androidComponents {
+    onVariants(selector().withFlavor("channel" to "prod")) { variant ->
+        variant.sources.assets?.addGeneratedSourceDirectory(encryptWorkspaces, EncryptWorkspacesTask::outputDir)
+    }
 }

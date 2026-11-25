@@ -2229,7 +2229,7 @@ class ExampleUnitTest {
 
     @Test
     fun kioskDemoCards_supplyTheArgumentsTheirToolsRequire() = kotlinx.coroutines.runBlocking {
-        val spec = WorkspaceProvisioner.defaultWorkspaces.first { it.demoRoot.contains("kiosk") }
+        val spec = WorkspaceProvisioner.defaultWorkspaces.first { it.demoRoot.contains("apex_kiosk") }
         val missingArgument = Regex("""(missing \S+ argument|requires a \S+)""", RegexOption.IGNORE_CASE)
         val deadEnds = mutableListOf<String>()
 
@@ -2405,7 +2405,7 @@ class ExampleUnitTest {
         )
         cards.forEach { cardName ->
             val json = javaClass.classLoader!!
-                .getResourceAsStream("demo/apex/tools/$cardName.json")!!
+                .getResourceAsStream("demo/acme_pos/tools/$cardName.json")!!
                 .bufferedReader().use { it.readText() }
             val card = Json.parseToJsonElement(json)
             fun visit(node: JsonElement) {
@@ -2442,7 +2442,7 @@ class ExampleUnitTest {
         val jargon = listOf("sdui_chart", "user.", "Vico", "KoalaPlot", "DivKit", "Swift Charts")
         listOf("hourly_chart", "sdui_chart").forEach { card ->
             val json = javaClass.classLoader!!
-                .getResourceAsStream("demo/apex/tools/$card.json")!!
+                .getResourceAsStream("demo/acme_pos/tools/$card.json")!!
                 .bufferedReader().use { it.readText() }
             val subtitle = Regex("\"subtitle\"\\s*:\\s*\"([^\"]*)\"").find(json)!!.groupValues[1]
             jargon.forEach { term ->
@@ -2460,7 +2460,7 @@ class ExampleUnitTest {
         val offenders = mutableListOf<String>()
         listOf("screen", "scanner", "libsignal", "local_db", "net").forEach { card ->
             val json = javaClass.classLoader!!
-                .getResourceAsStream("demo/apex/tools/$card.json")!!
+                .getResourceAsStream("demo/acme_pos/tools/$card.json")!!
                 .bufferedReader().use { it.readText() }
             Regex("\"text\"\\s*:\\s*\"([^\"]*)\"").findAll(json).forEach { m ->
                 if (m.groupValues[1].endsWith("\\n")) offenders += "$card: ${m.groupValues[1]}"
@@ -2473,7 +2473,7 @@ class ExampleUnitTest {
     fun scannerCard_threeUpButtonLabelsFitTheirRow() {
         val root = Json.parseToJsonElement(
             javaClass.classLoader!!
-                .getResourceAsStream("demo/apex/tools/scanner.json")!!
+                .getResourceAsStream("demo/acme_pos/tools/scanner.json")!!
                 .bufferedReader()
                 .use { it.readText() }
         )
@@ -2507,7 +2507,7 @@ class ExampleUnitTest {
     fun demoCard_defaultsDoNotFabricateHardwareOrMlResults() {
         val card = Json.parseToJsonElement(
             javaClass.classLoader!!
-                .getResourceAsStream("demo/apex/card.json")!!
+                .getResourceAsStream("demo/acme_pos/card.json")!!
                 .bufferedReader()
                 .use { it.readText() }
         ).jsonObject

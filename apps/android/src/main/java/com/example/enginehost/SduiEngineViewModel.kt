@@ -13,7 +13,6 @@ import engine.crypto.currentTimeMillis
 import engine.db.ApexKitDatabaseEngine
 import engine.db.CachedSchemaVersion
 import engine.db.EngineRegistry
-import engine.db.KioskOps
 import engine.db.OpLogEntry
 import engine.db.PendingSyncEntry
 import engine.db.WorkspaceDriverFactory
@@ -74,6 +73,8 @@ data class SduiEngineUiState(
     val workspaces: List<TenantWorkspaceSpec> = WorkspaceProvisioner.defaultWorkspaces,
     val activeWorkspace: TenantWorkspaceSpec = WorkspaceProvisioner.defaultWorkspaces.first(),
     val isWorkspaceOpen: Boolean = false,
+    /** Workspace packages that failed to load, keyed by id. Surfaced in dev tools. */
+    val packageLoadErrors: Map<String, String> = emptyMap(),
     /** True while a remembered workspace is being restored after a cold launch. */
     val isRestoringSession: Boolean = false,
     val themeMode: EngineThemeMode = EngineThemeMode.SYSTEM,
@@ -189,6 +190,7 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
 
     init {
         currentAndroidContext = { context }
+        reloadWorkspaceIcons()
         // Seed the workspace notifications tray so grouping, unread counts and actions render
         // populated on first frame.
         _uiState.update {
@@ -522,7 +524,6 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                 var allCachedVersions: List<CachedSchemaVersion> = emptyList()
                 var catalogJson = "[]"
                 var catalogCount = spec.defaultProducts.size.toLong()
-                var kioskSeed: Map<String, DivVariableValue> = emptyMap()
                 withContext(Dispatchers.IO) {
                     ensureTenantInitiatedWithCachedSchema(spec)
                     workspaceManager.useDatabase(spec.tenantId) { db ->
@@ -544,11 +545,6 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                                 }
                             }
                         }.toString()
-                        kioskSeed = seedKioskVariables(
-                            ApexKitDatabaseEngine(db.driver),
-                            spec,
-                            KioskOps.DIRECTION_CUSTOMER
-                        )
                     }
                 }
 
@@ -636,8 +632,7 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                         "user.icon_name" to DivVariableValue.Str("cart"),
                         "user.icon_material" to DivVariableValue.Str("ShoppingCart"),
                         "user.icon_category" to DivVariableValue.Str("Commerce"),
-                        "user.kiosk_notice" to DivVariableValue.Str("Ready — no action yet")
-                    ) + kioskSeed + seedSignalVariables(spec)
+                    ) + seedSignalVariables(spec)
                 )
 
                 // 6. Load the stored/cached verified DivKit JSON schema for this tenant
@@ -649,22 +644,7 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                 // 7. Execute initial queries via EngineRouter so DivKit variables (`user.orders_json`, counts) are populated.
                 //    These hit SQLite, so keep them off the main thread.
                 withContext(Dispatchers.IO) {
-                    router.handle(
-                        "local-db://op/db.query",
-                        WorkspaceProvisioner.buildQueryOrdersAction()["payload"]?.jsonObject
-                    )
-                    router.handle(
-                        "local-db://op/db.count",
-                        WorkspaceProvisioner.buildCountOrdersAction()["payload"]?.jsonObject
-                    )
-                    router.handle(
-                        "local-db://op/db.query",
-                        WorkspaceProvisioner.buildCatalogQueryAction()["payload"]?.jsonObject
-                    )
-                    router.handle(
-                        "local-db://op/db.count",
-                        WorkspaceProvisioner.buildCatalogCountAction()["payload"]?.jsonObject
-                    )
+                    runSeedOps(router, spec)
                 }
 
                 _uiState.update {
@@ -697,6 +677,36 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                 }
             } finally {
                 onFinished?.invoke()
+            }
+        }
+    }
+
+
+    /** Runs the operations a workspace manifest declares before its cards render. */
+    private suspend fun runSeedOps(router: EngineRouter, spec: TenantWorkspaceSpec) {
+        DemoCardRepository.seedOps(spec).forEach { entry ->
+            val url = entry["url"]?.jsonPrimitive?.contentOrNull ?: return@forEach
+            val payload = entry["payload"]?.jsonObject
+            runCatching { router.handle(url, payload) }
+        }
+    }
+
+
+    /**
+     * Cards may declare `seed_ops`; they run when the card is pushed so a reopened screen
+     * shows persisted state instead of placeholders. Nothing here is workspace-specific.
+     */
+    private fun runCardSeedOps(cardId: String) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                val card = CardRegistry.card(cardId) ?: return@withContext
+                val ops = card["seed_ops"]?.jsonArray ?: return@withContext
+                ops.forEach { entry ->
+                    val url = (entry as? JsonObject)?.get("url")?.jsonPrimitive?.contentOrNull
+                        ?: return@forEach
+                    val payload = entry["payload"]?.jsonObject
+                    runCatching { activeRouter?.handle(url, payload) }
+                }
             }
         }
     }
@@ -815,6 +825,43 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
         return cards.map { it.first }
     }
 
+
+    /**
+     * Re-reads the workspace packages and publishes their icons.
+     *
+     * Dev imports write into `filesDir/workspaces/<id>`, so the list, the card stack and the
+     * icon registry all have to be rebuilt for an import to become visible.
+     */
+    fun reloadWorkspacePackages() {
+        val report = engine.workspace.WorkspaceRepository.loadAll(filesDir = context.filesDir)
+        val specs = report.bundles.map { WorkspaceProvisioner.run { it.toSpec() } }
+        if (specs.isEmpty()) return
+        reloadWorkspaceIcons(report.bundles)
+        _uiState.update { state ->
+            val active = specs.firstOrNull { it.tenantId == state.activeWorkspace.tenantId } ?: specs.first()
+            state.copy(
+                workspaces = specs,
+                activeWorkspace = active,
+                tenantToolsMap = specs.associate { it.tenantId to it.defaultTools },
+                packageLoadErrors = report.failures.associate { it.id to it.reason }
+            )
+        }
+        if (_uiState.value.isWorkspaceOpen) registerCards(_uiState.value.activeWorkspace)
+    }
+
+    private fun reloadWorkspaceIcons(
+        bundles: List<engine.workspace.WorkspaceBundle> =
+            engine.workspace.WorkspaceRepository.loadAll(filesDir = context.filesDir).bundles
+    ) {
+        val icons = LinkedHashMap<String, ByteArray>()
+        bundles.forEach { bundle ->
+            engine.icons.CustomIconRegistry.fromBase64(bundle.icons).forEach { (name, bytes) ->
+                icons[name] = bytes
+            }
+        }
+        engine.icons.CustomIconRegistry.setAll(icons)
+    }
+
     /** Mirrors the navigator's visible card into UI state so Compose can render it. */
     private fun publishActiveCard() {
         val current = navigator?.current
@@ -843,7 +890,7 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
         when (op) {
             is NavOp.Push -> CardRegistry.card(op.cardId)?.let {
                 nav.push(CardEntry(op.cardId, it))
-                maybeSeedKioskContext(op.cardId)
+                runCardSeedOps(op.cardId)
             }
             NavOp.Pop -> nav.pop()
             is NavOp.Replace -> CardRegistry.card(op.cardId)?.let { nav.replace(CardEntry(op.cardId, it)) }
@@ -866,58 +913,7 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
      * card that was just pushed decides which persisted draft is loaded into it. Without this
      * the receipt card would render the customer's cart.
      */
-    private fun maybeSeedKioskContext(cardId: String) {
-        val direction = when (cardId) {
-            "tool_kiosk_owner" -> KioskOps.DIRECTION_OWNER
-            "tool_kiosk_customer" -> KioskOps.DIRECTION_CUSTOMER
-            else -> return
-        }
-        val spec = _uiState.value.activeWorkspace
-        viewModelScope.launch {
-            val batch = withContext(Dispatchers.IO) {
-                runCatching {
-                    workspaceManager.useDatabase(spec.tenantId) { db ->
-                        seedKioskVariables(ApexKitDatabaseEngine(db.driver), spec, direction)
-                    }
-                }.getOrDefault(emptyMap())
-            }
-            if (batch.isNotEmpty()) EngineStateBridge.pushBatch(batch)
-        }
-    }
 
-    /**
-     * Publishes the persisted draft for [direction] so reopening a kiosk card shows real
-     * SQLite state instead of empty placeholders. A missing draft is created once, which is
-     * a real record the operator can then edit.
-     */
-    private fun seedKioskVariables(
-        engine: ApexKitDatabaseEngine,
-        spec: TenantWorkspaceSpec,
-        direction: String
-    ): Map<String, DivVariableValue> {
-        if (engine.getCollection(KioskOps.ORDERS) == null) return emptyMap()
-        val cart = runCatching {
-            KioskOps.latestOrCreate(engine, direction, spec.terminalCode)
-        }.getOrNull() ?: return emptyMap()
-        val submitted = runCatching {
-            KioskOps.recent(engine, KioskOps.DIRECTION_CUSTOMER, "SUBMITTED", 5)
-        }.getOrDefault(emptyList())
-        return mapOf(
-            "user.kiosk_order_id" to DivVariableValue.Str(cart.orderId),
-            "user.kiosk_order_label" to DivVariableValue.Str(cart.label),
-            "user.kiosk_status" to DivVariableValue.Str(cart.status),
-            "user.kiosk_direction" to DivVariableValue.Str(cart.direction),
-            "user.kiosk_total" to DivVariableValue.Str(KioskOps.format(cart.total)),
-            "user.kiosk_subtotal" to DivVariableValue.Str(KioskOps.format(cart.subtotal)),
-            "user.kiosk_item_count" to DivVariableValue.Str(cart.itemCount.toString()),
-            "user.kiosk_line_count" to DivVariableValue.Str(cart.lines.size.toString()),
-            "user.kiosk_lines_json" to DivVariableValue.Str(KioskOps.linesJson(cart)),
-            "user.kiosk_payload_json" to DivVariableValue.Str(KioskOps.exportPayload(cart)),
-            "user.kiosk_checksum" to DivVariableValue.Str(KioskOps.checksum(KioskOps.exportPayload(cart))),
-            "user.kiosk_orders_json" to DivVariableValue.Str(KioskOps.listJson(submitted)),
-            "user.kiosk_order_count" to DivVariableValue.IntVal(submitted.size.toLong())
-        )
-    }
 
     /**
      * Reports the persisted Signal session so a reopened card does not claim NO_SESSION while

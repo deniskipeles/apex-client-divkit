@@ -20,8 +20,11 @@ import kotlinx.serialization.json.putJsonObject
  * resources do not expose directory listings in every runtime (notably inside an APK).
  */
 object DemoCollectionRepository {
-    private const val ROOT = "demo/workspace/collections"
-    private const val INDEX = "$ROOT/index.json"
+
+    /** Workspace whose packaged collections are read when no id is supplied. */
+    const val DEFAULT_WORKSPACE = "acme_pos"
+
+    private fun root(workspaceId: String) = "demo/$workspaceId/collections"
 
     data class Loaded(
         val version: Int,
@@ -29,15 +32,16 @@ object DemoCollectionRepository {
         val schemaPayload: JsonObject
     )
 
-    fun load(): Loaded? {
-        val index = readObject(INDEX) ?: return null
+    fun load(workspaceId: String = DEFAULT_WORKSPACE): Loaded? {
+        val root = root(workspaceId)
+        val index = readObject("$root/index.json") ?: return null
         val files = index["collections"]?.jsonArray
             ?.mapNotNull { it.jsonPrimitive.contentOrNull }
             .orEmpty()
         if (files.isEmpty()) return null
 
         val collections = files.mapNotNull { file ->
-            readObject("$ROOT/$file")
+            readObject("$root/$file")
         }
         if (collections.isEmpty()) return null
 

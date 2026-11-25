@@ -1,0 +1,34 @@
+{
+  "title": "Workflows",
+  "subtitle": "Pick one to begin.",
+  "entries": [
+    {
+      "file": "kiosk_customer",
+      "label": "Customer order",
+      "icon": "product",
+      "accent_color": "#0F766E",
+      "subtitle": "Build and place an order"
+    },
+    {
+      "file": "kiosk_owner",
+      "label": "Owner receipt",
+      "icon": "printer",
+      "accent_color": "#0F766E",
+      "subtitle": "Start from a receipt"
+    },
+    {
+      "file": "kiosk_transfer",
+      "label": "Send by QR",
+      "icon": "qr_code",
+      "accent_color": "#0F766E",
+      "subtitle": "Move the order to another device"
+    },
+    {
+      "file": "kiosk_lan",
+      "label": "Share on the network",
+      "icon": "globe",
+      "accent_color": "#0F766E",
+      "subtitle": "Same Wi-Fi, one code"
+    }
+  ]
+}
