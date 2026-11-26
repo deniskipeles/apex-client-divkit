@@ -5,6 +5,7 @@ import com.example.enginehost.SduiOnFlyBuilder
 import com.example.enginehost.TenantWorkspaceSpec
 import com.example.enginehost.WorkspaceProvisioner
 import com.example.enginehost.demo.DemoCardRepository
+import engine.navigation.CardRegistry
 import com.example.enginehost.sortedByUsage
 import engine.db.CachedSchemaVersion
 import engine.config.EngineConfig
@@ -2460,6 +2461,38 @@ class ExampleUnitTest {
         walk(card)
         return found
     }
+
+    @Test
+    fun demoHubCards_navigateToRegisteredCards() {
+        // Guards the class of bug where a hub links `nav://push?id=local_db` while the host
+        // registers the card as `tool_local_db`, so the button is a silent no-op on device.
+        CardRegistry.clear()
+        try {
+            WorkspaceProvisioner.defaultWorkspaces.forEach { spec ->
+                val stack = DemoCardRepository.cardStack(spec)
+                stack.forEach { (id, doc) -> CardRegistry.register(id, doc) }
+                val targets = stack.flatMap { (_, doc) ->
+                    Regex("""nav://push\?id=([A-Za-z0-9_\-]+)""")
+                        .findAll(doc.toString())
+                        .map { it.groupValues[1] }
+                        .toList()
+                }.distinct()
+                val deadEnds = targets.filter { CardRegistry.card(it) == null }
+                assertTrue(
+                    "${spec.tenantId}: hub links to unregistered cards $deadEnds",
+                    deadEnds.isEmpty()
+                )
+            }
+            // Dev-server authored workspaces link a card by file name; the registry resolves
+            // that spelling against the host's `tool_<file>` key.
+            CardRegistry.register("tool_local_db", buildJsonObject { put("type", "div-container") })
+            assertNotNull(CardRegistry.card("local_db"))
+            assertNotNull(CardRegistry.card("tool_local_db"))
+        } finally {
+            CardRegistry.clear()
+        }
+    }
+
 
     @Test
     fun demoToolOutputMappings_referenceFieldsTheToolsActuallyReturn() {

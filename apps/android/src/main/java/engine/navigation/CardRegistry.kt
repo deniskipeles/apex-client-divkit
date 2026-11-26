@@ -23,8 +23,13 @@ object CardRegistry {
         cards[id] = data
     }
 
+    /**
+     * Host-registered cards are keyed `tool_<file>` (`DemoCardRepository.toolCardId`) while a
+     * dev-server authored hub links them by file name (`nav://push?id=local_db`); resolve both
+     * spellings so such a link is not a silent no-op.
+     */
     @Synchronized
-    fun card(id: String): JsonObject? = cards[id]
+    fun card(id: String): JsonObject? = cards[id] ?: cards["tool_$id"]
 
     @Synchronized
     fun has(id: String): Boolean = cards.containsKey(id)
