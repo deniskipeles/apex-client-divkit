@@ -14,7 +14,7 @@ export const WORKSPACES: WorkspaceDefinition[] = [motorbike, apexToolsTest, apex
  * A folder that is not listed here is hand-authored and must not be overwritten without
  * `--force`.
  */
-export const ANDROID_OWNED: ReadonlySet<string> = new Set(['apex_kiosk', 'apex_tools_test'])
+export const ANDROID_OWNED: ReadonlySet<string> = new Set(['apex_kiosk', 'apex_tools_test', 'motorbike'])
 
 export function workspaceBySlug(slug: string): WorkspaceDefinition | undefined {
   return WORKSPACES.find((workspace) => workspace.slug === slug)
