@@ -1,0 +1,4520 @@
+{
+ "meta": {
+  "slug": "apex-tools-test",
+  "manifestId": "apex_tools_test",
+  "title": "APEX TOOLS",
+  "subtitle": "Capability harness for every native tool",
+  "accent": "#0EA5E9",
+  "terminal": "TOOLS-001",
+  "android": true
+ },
+ "manifest": {
+  "format": "apex.workspace/1",
+  "id": "apex_tools_test",
+  "title": "APEX TOOLS",
+  "subtitle": "Capability harness for every native tool",
+  "terminal": "TOOLS-001",
+  "accent": "#0EA5E9",
+  "mode": "NATIVE",
+  "capabilities": [
+   "scanner",
+   "printer",
+   "haptics",
+   "beeper",
+   "clipboard"
+  ],
+  "tools": {
+   "hapticVibration": true,
+   "hardwareBeeperAudio": true,
+   "cameraBarcodeScanner": true,
+   "clipboardAccess": true,
+   "backgroundAlertsPush": true,
+   "offlinePageCaching": true,
+   "realtimeEngineWsSse": true
+  },
+  "urls": {
+   "tunnel": "https://apex-tools.local/",
+   "lan": "http://192.168.1.30:8089",
+   "client_id": "pk_test_apex_tools"
+  },
+  "unread": 0,
+  "hub": "card.json",
+  "catalog": "tool_catalog.json",
+  "collections": {
+   "dir": "collections",
+   "files": [
+    "samples.json"
+   ]
+  },
+  "cards": {
+   "dir": "tools",
+   "order": [
+    "local_db",
+    "scanner",
+    "code_generate",
+    "haptics",
+    "clipboard",
+    "net",
+    "print",
+    "files",
+    "data_views"
+   ]
+  }
+ },
+ "hub": {
+  "card": {
+   "log_id": "apex_tools_test_hub",
+   "variables": [
+    {
+     "name": "user.workspace_title",
+     "type": "string",
+     "value": "APEX TOOLS"
+    },
+    {
+     "name": "user.tools_status",
+     "type": "string",
+     "value": "Idle"
+    },
+    {
+     "name": "user.tools_result",
+     "type": "string",
+     "value": ""
+    },
+    {
+     "name": "user.tools_error",
+     "type": "string",
+     "value": ""
+    },
+    {
+     "name": "user.haptic_state",
+     "type": "string",
+     "value": "idle"
+    },
+    {
+     "name": "user.beep_state",
+     "type": "string",
+     "value": "idle"
+    },
+    {
+     "name": "user.clipboard_content",
+     "type": "string",
+     "value": ""
+    },
+    {
+     "name": "user.code_image_uri",
+     "type": "string",
+     "value": ""
+    },
+    {
+     "name": "user.code_format",
+     "type": "string",
+     "value": ""
+    },
+    {
+     "name": "user.file_preview",
+     "type": "string",
+     "value": ""
+    },
+    {
+     "name": "user.files_json",
+     "type": "string",
+     "value": "[]"
+    },
+    {
+     "name": "user.net_status",
+     "type": "string",
+     "value": "stopped"
+    },
+    {
+     "name": "user.net_url",
+     "type": "string",
+     "value": ""
+    },
+    {
+     "name": "user.net_shares_json",
+     "type": "string",
+     "value": "[]"
+    },
+    {
+     "name": "user.print_state",
+     "type": "string",
+     "value": "idle"
+    },
+    {
+     "name": "user.screen_state",
+     "type": "string",
+     "value": "idle"
+    },
+    {
+     "name": "user.samples_json",
+     "type": "string",
+     "value": "[]"
+    },
+    {
+     "name": "user.samples_count",
+     "type": "integer",
+     "value": 0
+    }
+   ],
+   "states": [
+    {
+     "state_id": 0,
+     "div": {
+      "type": "container",
+      "orientation": "vertical",
+      "items": [
+       {
+        "type": "container",
+        "orientation": "vertical",
+        "items": [
+         {
+          "type": "text",
+          "text": "APEX TOOLS",
+          "font_size": 26,
+          "font_weight": "bold",
+          "text_color": "#F8FAFC"
+         },
+         {
+          "type": "text",
+          "text": "Every capability, one harness workspace",
+          "font_size": 12,
+          "font_weight": "regular",
+          "text_color": "#94A3B8"
+         }
+        ],
+        "paddings": {
+         "left": 16,
+         "top": 32,
+         "right": 16,
+         "bottom": 0
+        }
+       },
+       {
+        "type": "container",
+        "orientation": "horizontal",
+        "items": [
+         {
+          "type": "container",
+          "orientation": "vertical",
+          "item_spacing": 4,
+          "paddings": {
+           "left": 12,
+           "top": 8,
+           "right": 12,
+           "bottom": 8
+          },
+          "background_color": "#16233A",
+          "border": {
+           "corner_radius": 12,
+           "stroke": {
+            "color": "#1E293B",
+            "width": 1
+           }
+          },
+          "items": [
+           {
+            "type": "text",
+            "text": "SAMPLES",
+            "font_size": 11,
+            "font_weight": "bold",
+            "text_color": "#94A3B8"
+           },
+           {
+            "type": "text",
+            "text": "@{user.samples_count}",
+            "font_size": 18,
+            "font_weight": "bold",
+            "text_color": "#34D399"
+           }
+          ],
+          "width": {
+           "type": "match_parent"
+          },
+          "id": "metric_samples"
+         },
+         {
+          "type": "container",
+          "orientation": "vertical",
+          "item_spacing": 4,
+          "paddings": {
+           "left": 12,
+           "top": 8,
+           "right": 12,
+           "bottom": 8
+          },
+          "background_color": "#16233A",
+          "border": {
+           "corner_radius": 12,
+           "stroke": {
+            "color": "#1E293B",
+            "width": 1
+           }
+          },
+          "items": [
+           {
+            "type": "text",
+            "text": "STATUS",
+            "font_size": 11,
+            "font_weight": "bold",
+            "text_color": "#94A3B8"
+           },
+           {
+            "type": "text",
+            "text": "@{user.tools_status}",
+            "font_size": 18,
+            "font_weight": "bold",
+            "text_color": "#F8FAFC"
+           }
+          ],
+          "width": {
+           "type": "match_parent"
+          },
+          "id": "metric_status"
+         }
+        ],
+        "item_spacing": 8,
+        "paddings": {
+         "left": 16,
+         "top": 0,
+         "right": 16,
+         "bottom": 0
+        }
+       },
+       {
+        "type": "container",
+        "orientation": "vertical",
+        "items": [
+         {
+          "type": "button",
+          "text": "Local DB",
+          "font_size": 14,
+          "font_weight": "bold",
+          "text_color": "#FFFFFF",
+          "background_color": "#7C3AED",
+          "corner_radius": 12,
+          "height": {
+           "type": "fixed",
+           "value": 44
+          },
+          "width": {
+           "type": "match_parent"
+          },
+          "actions": [
+           {
+            "url": "nav://push?id=local_db"
+           }
+          ],
+          "id": "nav_local_db"
+         },
+         {
+          "type": "button",
+          "text": "Scanner",
+          "font_size": 14,
+          "font_weight": "bold",
+          "text_color": "#F8FAFC",
+          "background_color": "#16233A",
+          "corner_radius": 12,
+          "height": {
+           "type": "fixed",
+           "value": 44
+          },
+          "width": {
+           "type": "match_parent"
+          },
+          "actions": [
+           {
+            "url": "nav://push?id=scanner"
+           }
+          ],
+          "border": {
+           "corner_radius": 12,
+           "stroke": {
+            "color": "#1E293B",
+            "width": 1
+           }
+          },
+          "id": "nav_scanner"
+         },
+         {
+          "type": "button",
+          "text": "Code generator",
+          "font_size": 14,
+          "font_weight": "bold",
+          "text_color": "#F8FAFC",
+          "background_color": "#16233A",
+          "corner_radius": 12,
+          "height": {
+           "type": "fixed",
+           "value": 44
+          },
+          "width": {
+           "type": "match_parent"
+          },
+          "actions": [
+           {
+            "url": "nav://push?id=code_generate"
+           }
+          ],
+          "border": {
+           "corner_radius": 12,
+           "stroke": {
+            "color": "#1E293B",
+            "width": 1
+           }
+          },
+          "id": "nav_code_generate"
+         },
+         {
+          "type": "button",
+          "text": "Haptics and beeper",
+          "font_size": 14,
+          "font_weight": "bold",
+          "text_color": "#F8FAFC",
+          "background_color": "#16233A",
+          "corner_radius": 12,
+          "height": {
+           "type": "fixed",
+           "value": 44
+          },
+          "width": {
+           "type": "match_parent"
+          },
+          "actions": [
+           {
+            "url": "nav://push?id=haptics"
+           }
+          ],
+          "border": {
+           "corner_radius": 12,
+           "stroke": {
+            "color": "#1E293B",
+            "width": 1
+           }
+          },
+          "id": "nav_haptics"
+         },
+         {
+          "type": "button",
+          "text": "Clipboard",
+          "font_size": 14,
+          "font_weight": "bold",
+          "text_color": "#F8FAFC",
+          "background_color": "#16233A",
+          "corner_radius": 12,
+          "height": {
+           "type": "fixed",
+           "value": 44
+          },
+          "width": {
+           "type": "match_parent"
+          },
+          "actions": [
+           {
+            "url": "nav://push?id=clipboard"
+           }
+          ],
+          "border": {
+           "corner_radius": 12,
+           "stroke": {
+            "color": "#1E293B",
+            "width": 1
+           }
+          },
+          "id": "nav_clipboard"
+         },
+         {
+          "type": "button",
+          "text": "Network",
+          "font_size": 14,
+          "font_weight": "bold",
+          "text_color": "#F8FAFC",
+          "background_color": "#16233A",
+          "corner_radius": 12,
+          "height": {
+           "type": "fixed",
+           "value": 44
+          },
+          "width": {
+           "type": "match_parent"
+          },
+          "actions": [
+           {
+            "url": "nav://push?id=net"
+           }
+          ],
+          "border": {
+           "corner_radius": 12,
+           "stroke": {
+            "color": "#1E293B",
+            "width": 1
+           }
+          },
+          "id": "nav_net"
+         },
+         {
+          "type": "button",
+          "text": "Printer",
+          "font_size": 14,
+          "font_weight": "bold",
+          "text_color": "#F8FAFC",
+          "background_color": "#16233A",
+          "corner_radius": 12,
+          "height": {
+           "type": "fixed",
+           "value": 44
+          },
+          "width": {
+           "type": "match_parent"
+          },
+          "actions": [
+           {
+            "url": "nav://push?id=print"
+           }
+          ],
+          "border": {
+           "corner_radius": 12,
+           "stroke": {
+            "color": "#1E293B",
+            "width": 1
+           }
+          },
+          "id": "nav_print"
+         },
+         {
+          "type": "button",
+          "text": "Files and screen",
+          "font_size": 14,
+          "font_weight": "bold",
+          "text_color": "#F8FAFC",
+          "background_color": "#16233A",
+          "corner_radius": 12,
+          "height": {
+           "type": "fixed",
+           "value": 44
+          },
+          "width": {
+           "type": "match_parent"
+          },
+          "actions": [
+           {
+            "url": "nav://push?id=files"
+           }
+          ],
+          "border": {
+           "corner_radius": 12,
+           "stroke": {
+            "color": "#1E293B",
+            "width": 1
+           }
+          },
+          "id": "nav_files"
+         },
+         {
+          "type": "button",
+          "text": "Data views",
+          "font_size": 14,
+          "font_weight": "bold",
+          "text_color": "#F8FAFC",
+          "background_color": "#16233A",
+          "corner_radius": 12,
+          "height": {
+           "type": "fixed",
+           "value": 44
+          },
+          "width": {
+           "type": "match_parent"
+          },
+          "actions": [
+           {
+            "url": "nav://push?id=data_views"
+           }
+          ],
+          "border": {
+           "corner_radius": 12,
+           "stroke": {
+            "color": "#1E293B",
+            "width": 1
+           }
+          },
+          "id": "nav_data_views"
+         }
+        ],
+        "item_spacing": 8,
+        "paddings": {
+         "left": 16,
+         "top": 8,
+         "right": 16,
+         "bottom": 0
+        }
+       }
+      ],
+      "item_spacing": 8,
+      "paddings": {
+       "left": 0,
+       "top": 0,
+       "right": 0,
+       "bottom": 16
+      }
+     }
+    }
+   ]
+  }
+ },
+ "catalog": {
+  "title": "Harness",
+  "subtitle": "Every capability, one card each.",
+  "entries": [
+   {
+    "file": "local_db",
+    "label": "Local DB",
+    "icon": "database",
+    "accent_color": "#0EA5E9",
+    "subtitle": "SQLite insert/query/count/delete"
+   },
+   {
+    "file": "scanner",
+    "label": "Scanner",
+    "icon": "scan",
+    "accent_color": "#0EA5E9",
+    "subtitle": "Scan and OCR"
+   },
+   {
+    "file": "code_generate",
+    "label": "Code generator",
+    "icon": "qr_code",
+    "accent_color": "#0EA5E9",
+    "subtitle": "QR, EAN-13, Code 128"
+   },
+   {
+    "file": "haptics",
+    "label": "Haptics and beeper",
+    "icon": "haptics",
+    "accent_color": "#0EA5E9",
+    "subtitle": "Patterns and tones"
+   },
+   {
+    "file": "clipboard",
+    "label": "Clipboard",
+    "icon": "clipboard",
+    "accent_color": "#0EA5E9",
+    "subtitle": "Copy, paste, clear"
+   },
+   {
+    "file": "net",
+    "label": "Network",
+    "icon": "globe",
+    "accent_color": "#0EA5E9",
+    "subtitle": "HTTP and LAN hub"
+   },
+   {
+    "file": "print",
+    "label": "Printer",
+    "icon": "printer",
+    "accent_color": "#0EA5E9",
+    "subtitle": "ESC/POS over Bluetooth"
+   },
+   {
+    "file": "files",
+    "label": "Files and screen",
+    "icon": "folder",
+    "accent_color": "#0EA5E9",
+    "subtitle": "Sandbox files, capture"
+   },
+   {
+    "file": "data_views",
+    "label": "Data views",
+    "icon": "chart",
+    "accent_color": "#0EA5E9",
+    "subtitle": "Chart and list blocks"
+   }
+  ]
+ },
+ "collections": {
+  "samples.json": {
+   "id": 1,
+   "name": "samples",
+   "schema": {
+    "fields": {
+     "name": {
+      "type": "string",
+      "required": false,
+      "uid": "samples_name"
+     },
+     "note": {
+      "type": "string",
+      "required": false,
+      "uid": "samples_note"
+     }
+    }
+   },
+   "seed": [
+    {
+     "name": "Probe item",
+     "note": "seed"
+    },
+    {
+     "name": "Second probe",
+     "note": "seed"
+    }
+   ]
+  }
+ },
+ "cards": {
+  "local_db": {
+   "card": {
+    "log_id": "apex_tools_test_local_db",
+    "variables": [
+     {
+      "name": "user.workspace_title",
+      "type": "string",
+      "value": "APEX TOOLS"
+     },
+     {
+      "name": "user.tools_status",
+      "type": "string",
+      "value": "Idle"
+     },
+     {
+      "name": "user.tools_result",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.tools_error",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.haptic_state",
+      "type": "string",
+      "value": "idle"
+     },
+     {
+      "name": "user.beep_state",
+      "type": "string",
+      "value": "idle"
+     },
+     {
+      "name": "user.clipboard_content",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.code_image_uri",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.code_format",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.file_preview",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.files_json",
+      "type": "string",
+      "value": "[]"
+     },
+     {
+      "name": "user.net_status",
+      "type": "string",
+      "value": "stopped"
+     },
+     {
+      "name": "user.net_url",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.net_shares_json",
+      "type": "string",
+      "value": "[]"
+     },
+     {
+      "name": "user.print_state",
+      "type": "string",
+      "value": "idle"
+     },
+     {
+      "name": "user.screen_state",
+      "type": "string",
+      "value": "idle"
+     },
+     {
+      "name": "user.samples_json",
+      "type": "string",
+      "value": "[]"
+     },
+     {
+      "name": "user.samples_count",
+      "type": "integer",
+      "value": 0
+     }
+    ],
+    "states": [
+     {
+      "state_id": 0,
+      "div": {
+       "type": "container",
+       "orientation": "vertical",
+       "items": [
+        {
+         "type": "container",
+         "orientation": "horizontal",
+         "items": [
+          {
+           "type": "button",
+           "text": "Back",
+           "font_size": 12,
+           "font_weight": "bold",
+           "text_color": "#F8FAFC",
+           "background_color": "#16233A",
+           "corner_radius": 12,
+           "height": {
+            "type": "fixed",
+            "value": 40
+           },
+           "width": {
+            "type": "fixed",
+            "value": 80
+           },
+           "actions": [
+            {
+             "url": "nav://pop"
+            }
+           ],
+           "border": {
+            "corner_radius": 12,
+            "stroke": {
+             "color": "#1E293B",
+             "width": 1
+            }
+           },
+           "id": "btn_back"
+          },
+          {
+           "type": "container",
+           "orientation": "vertical",
+           "items": [
+            {
+             "type": "text",
+             "text": "Local DB",
+             "font_size": 18,
+             "font_weight": "bold",
+             "text_color": "#F8FAFC"
+            },
+            {
+             "type": "text",
+             "text": "SQLite data plane: insert, query, count, delete",
+             "font_size": 12,
+             "font_weight": "regular",
+             "text_color": "#94A3B8"
+            }
+           ],
+           "weight": 1
+          }
+         ],
+         "item_spacing": 8,
+         "paddings": {
+          "left": 16,
+          "top": 32,
+          "right": 16,
+          "bottom": 8
+         }
+        },
+        {
+         "type": "container",
+         "orientation": "vertical",
+         "items": [
+          {
+           "type": "container",
+           "orientation": "vertical",
+           "items": [
+            {
+             "type": "text",
+             "text": "Last result",
+             "font_size": 11,
+             "font_weight": "bold",
+             "text_color": "#94A3B8"
+            },
+            {
+             "type": "text",
+             "text": "@{user.tools_result}",
+             "font_size": 14,
+             "font_weight": "bold",
+             "text_color": "#34D399"
+            },
+            {
+             "type": "inline_banner",
+             "custom_props": {
+              "text": "@{user.tools_error == '' ? 'No errors' : user.tools_error}",
+              "tone": "warn"
+             }
+            }
+           ],
+           "item_spacing": 8,
+           "background_color": "#111C2E",
+           "paddings": {
+            "left": 12,
+            "top": 12,
+            "right": 12,
+            "bottom": 12
+           },
+           "border": {
+            "corner_radius": 16,
+            "stroke": {
+             "color": "#1E293B",
+             "width": 1
+            }
+           }
+          },
+          {
+           "type": "container",
+           "orientation": "vertical",
+           "items": [
+            {
+             "type": "button",
+             "text": "Insert sample",
+             "font_size": 12,
+             "font_weight": "bold",
+             "text_color": "#F8FAFC",
+             "background_color": "#16233A",
+             "corner_radius": 12,
+             "height": {
+              "type": "fixed",
+              "value": 44
+             },
+             "width": {
+              "type": "match_parent"
+             },
+             "actions": [
+              {
+               "url": "local-db://op/db.insert",
+               "payload": {
+                "collection": "samples",
+                "data": {
+                 "name": "Probe item",
+                 "note": "inserted from card"
+                },
+                "output": {
+                 "id": "user.tools_result"
+                }
+               }
+              }
+             ],
+             "border": {
+              "corner_radius": 12,
+              "stroke": {
+               "color": "#1E293B",
+               "width": 1
+              }
+             },
+             "id": "db_insert"
+            },
+            {
+             "type": "button",
+             "text": "Query samples",
+             "font_size": 12,
+             "font_weight": "bold",
+             "text_color": "#F8FAFC",
+             "background_color": "#16233A",
+             "corner_radius": 12,
+             "height": {
+              "type": "fixed",
+              "value": 44
+             },
+             "width": {
+              "type": "match_parent"
+             },
+             "actions": [
+              {
+               "url": "local-db://op/db.query",
+               "payload": {
+                "collection": "samples",
+                "order_by": "id",
+                "limit": 50,
+                "output": {
+                 "_json": "user.samples_json"
+                }
+               }
+              }
+             ],
+             "border": {
+              "corner_radius": 12,
+              "stroke": {
+               "color": "#1E293B",
+               "width": 1
+              }
+             },
+             "id": "db_query"
+            },
+            {
+             "type": "button",
+             "text": "Count samples",
+             "font_size": 12,
+             "font_weight": "bold",
+             "text_color": "#F8FAFC",
+             "background_color": "#16233A",
+             "corner_radius": 12,
+             "height": {
+              "type": "fixed",
+              "value": 44
+             },
+             "width": {
+              "type": "match_parent"
+             },
+             "actions": [
+              {
+               "url": "local-db://op/db.count",
+               "payload": {
+                "collection": "samples",
+                "output": {
+                 "count": "user.samples_count"
+                }
+               }
+              }
+             ],
+             "border": {
+              "corner_radius": 12,
+              "stroke": {
+               "color": "#1E293B",
+               "width": 1
+              }
+             },
+             "id": "db_count"
+            },
+            {
+             "type": "button",
+             "text": "Delete inserted",
+             "font_size": 12,
+             "font_weight": "bold",
+             "text_color": "#F8FAFC",
+             "background_color": "#16233A",
+             "corner_radius": 12,
+             "height": {
+              "type": "fixed",
+              "value": 44
+             },
+             "width": {
+              "type": "match_parent"
+             },
+             "actions": [
+              {
+               "url": "local-db://op/db.delete",
+               "payload": {
+                "collection": "samples",
+                "where": {
+                 "note": "inserted from card"
+                },
+                "output": {
+                 "deleted": "user.tools_result"
+                }
+               }
+              }
+             ],
+             "border": {
+              "corner_radius": 12,
+              "stroke": {
+               "color": "#1E293B",
+               "width": 1
+              }
+             },
+             "id": "db_delete"
+            }
+           ],
+           "item_spacing": 8,
+           "background_color": "#111C2E",
+           "paddings": {
+            "left": 12,
+            "top": 12,
+            "right": 12,
+            "bottom": 12
+           },
+           "border": {
+            "corner_radius": 16,
+            "stroke": {
+             "color": "#1E293B",
+             "width": 1
+            }
+           }
+          }
+         ],
+         "item_spacing": 12,
+         "paddings": {
+          "left": 16,
+          "top": 0,
+          "right": 16,
+          "bottom": 0
+         }
+        }
+       ],
+       "item_spacing": 8,
+       "paddings": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 16
+       }
+      }
+     }
+    ]
+   }
+  },
+  "scanner": {
+   "card": {
+    "log_id": "apex_tools_test_scanner",
+    "variables": [
+     {
+      "name": "user.workspace_title",
+      "type": "string",
+      "value": "APEX TOOLS"
+     },
+     {
+      "name": "user.tools_status",
+      "type": "string",
+      "value": "Idle"
+     },
+     {
+      "name": "user.tools_result",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.tools_error",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.haptic_state",
+      "type": "string",
+      "value": "idle"
+     },
+     {
+      "name": "user.beep_state",
+      "type": "string",
+      "value": "idle"
+     },
+     {
+      "name": "user.clipboard_content",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.code_image_uri",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.code_format",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.file_preview",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.files_json",
+      "type": "string",
+      "value": "[]"
+     },
+     {
+      "name": "user.net_status",
+      "type": "string",
+      "value": "stopped"
+     },
+     {
+      "name": "user.net_url",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.net_shares_json",
+      "type": "string",
+      "value": "[]"
+     },
+     {
+      "name": "user.print_state",
+      "type": "string",
+      "value": "idle"
+     },
+     {
+      "name": "user.screen_state",
+      "type": "string",
+      "value": "idle"
+     },
+     {
+      "name": "user.samples_json",
+      "type": "string",
+      "value": "[]"
+     },
+     {
+      "name": "user.samples_count",
+      "type": "integer",
+      "value": 0
+     }
+    ],
+    "states": [
+     {
+      "state_id": 0,
+      "div": {
+       "type": "container",
+       "orientation": "vertical",
+       "items": [
+        {
+         "type": "container",
+         "orientation": "horizontal",
+         "items": [
+          {
+           "type": "button",
+           "text": "Back",
+           "font_size": 12,
+           "font_weight": "bold",
+           "text_color": "#F8FAFC",
+           "background_color": "#16233A",
+           "corner_radius": 12,
+           "height": {
+            "type": "fixed",
+            "value": 40
+           },
+           "width": {
+            "type": "fixed",
+            "value": 80
+           },
+           "actions": [
+            {
+             "url": "nav://pop"
+            }
+           ],
+           "border": {
+            "corner_radius": 12,
+            "stroke": {
+             "color": "#1E293B",
+             "width": 1
+            }
+           },
+           "id": "btn_back"
+          },
+          {
+           "type": "container",
+           "orientation": "vertical",
+           "items": [
+            {
+             "type": "text",
+             "text": "Scanner",
+             "font_size": 18,
+             "font_weight": "bold",
+             "text_color": "#F8FAFC"
+            },
+            {
+             "type": "text",
+             "text": "Camera scan, OCR and format checks",
+             "font_size": 12,
+             "font_weight": "regular",
+             "text_color": "#94A3B8"
+            }
+           ],
+           "weight": 1
+          }
+         ],
+         "item_spacing": 8,
+         "paddings": {
+          "left": 16,
+          "top": 32,
+          "right": 16,
+          "bottom": 8
+         }
+        },
+        {
+         "type": "container",
+         "orientation": "vertical",
+         "items": [
+          {
+           "type": "container",
+           "orientation": "vertical",
+           "items": [
+            {
+             "type": "text",
+             "text": "Scan status",
+             "font_size": 11,
+             "font_weight": "bold",
+             "text_color": "#94A3B8"
+            },
+            {
+             "type": "text",
+             "text": "@{user.tools_status}",
+             "font_size": 14,
+             "font_weight": "bold",
+             "text_color": "#34D399"
+            },
+            {
+             "type": "inline_banner",
+             "custom_props": {
+              "text": "@{user.tools_error == '' ? 'No errors' : user.tools_error}",
+              "tone": "warn"
+             }
+            }
+           ],
+           "item_spacing": 8,
+           "background_color": "#111C2E",
+           "paddings": {
+            "left": 12,
+            "top": 12,
+            "right": 12,
+            "bottom": 12
+           },
+           "border": {
+            "corner_radius": 16,
+            "stroke": {
+             "color": "#1E293B",
+             "width": 1
+            }
+           }
+          },
+          {
+           "type": "container",
+           "orientation": "vertical",
+           "items": [
+            {
+             "type": "button",
+             "text": "Scan barcode",
+             "font_size": 12,
+             "font_weight": "bold",
+             "text_color": "#F8FAFC",
+             "background_color": "#16233A",
+             "corner_radius": 12,
+             "height": {
+              "type": "fixed",
+              "value": 44
+             },
+             "width": {
+              "type": "match_parent"
+             },
+             "actions": [
+              {
+               "url": "tools://scanner/scan",
+               "payload": {
+                "output": {
+                 "status": "user.tools_status",
+                 "value": "user.tools_result"
+                }
+               }
+              }
+             ],
+             "border": {
+              "corner_radius": 12,
+              "stroke": {
+               "color": "#1E293B",
+               "width": 1
+              }
+             },
+             "id": "scan_any"
+            },
+            {
+             "type": "button",
+             "text": "Read text (OCR)",
+             "font_size": 12,
+             "font_weight": "bold",
+             "text_color": "#F8FAFC",
+             "background_color": "#16233A",
+             "corner_radius": 12,
+             "height": {
+              "type": "fixed",
+              "value": 44
+             },
+             "width": {
+              "type": "match_parent"
+             },
+             "actions": [
+              {
+               "url": "tools://scanner/ocr",
+               "payload": {
+                "output": {
+                 "status": "user.tools_status",
+                 "text": "user.tools_result"
+                }
+               }
+              }
+             ],
+             "border": {
+              "corner_radius": 12,
+              "stroke": {
+               "color": "#1E293B",
+               "width": 1
+              }
+             },
+             "id": "scan_ocr"
+            },
+            {
+             "type": "button",
+             "text": "Scan EAN-13 only",
+             "font_size": 12,
+             "font_weight": "bold",
+             "text_color": "#F8FAFC",
+             "background_color": "#16233A",
+             "corner_radius": 12,
+             "height": {
+              "type": "fixed",
+              "value": 44
+             },
+             "width": {
+              "type": "match_parent"
+             },
+             "actions": [
+              {
+               "url": "tools://scanner/scan",
+               "payload": {
+                "options": {
+                 "format": "EAN_13"
+                },
+                "output": {
+                 "status": "user.tools_status",
+                 "value": "user.tools_result"
+                }
+               }
+              }
+             ],
+             "border": {
+              "corner_radius": 12,
+              "stroke": {
+               "color": "#1E293B",
+               "width": 1
+              }
+             },
+             "id": "scan_ean"
+            }
+           ],
+           "item_spacing": 8,
+           "background_color": "#111C2E",
+           "paddings": {
+            "left": 12,
+            "top": 12,
+            "right": 12,
+            "bottom": 12
+           },
+           "border": {
+            "corner_radius": 16,
+            "stroke": {
+             "color": "#1E293B",
+             "width": 1
+            }
+           }
+          }
+         ],
+         "item_spacing": 12,
+         "paddings": {
+          "left": 16,
+          "top": 0,
+          "right": 16,
+          "bottom": 0
+         }
+        }
+       ],
+       "item_spacing": 8,
+       "paddings": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 16
+       }
+      }
+     }
+    ]
+   }
+  },
+  "code_generate": {
+   "card": {
+    "log_id": "apex_tools_test_code_generate",
+    "variables": [
+     {
+      "name": "user.workspace_title",
+      "type": "string",
+      "value": "APEX TOOLS"
+     },
+     {
+      "name": "user.tools_status",
+      "type": "string",
+      "value": "Idle"
+     },
+     {
+      "name": "user.tools_result",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.tools_error",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.haptic_state",
+      "type": "string",
+      "value": "idle"
+     },
+     {
+      "name": "user.beep_state",
+      "type": "string",
+      "value": "idle"
+     },
+     {
+      "name": "user.clipboard_content",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.code_image_uri",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.code_format",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.file_preview",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.files_json",
+      "type": "string",
+      "value": "[]"
+     },
+     {
+      "name": "user.net_status",
+      "type": "string",
+      "value": "stopped"
+     },
+     {
+      "name": "user.net_url",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.net_shares_json",
+      "type": "string",
+      "value": "[]"
+     },
+     {
+      "name": "user.print_state",
+      "type": "string",
+      "value": "idle"
+     },
+     {
+      "name": "user.screen_state",
+      "type": "string",
+      "value": "idle"
+     },
+     {
+      "name": "user.samples_json",
+      "type": "string",
+      "value": "[]"
+     },
+     {
+      "name": "user.samples_count",
+      "type": "integer",
+      "value": 0
+     }
+    ],
+    "states": [
+     {
+      "state_id": 0,
+      "div": {
+       "type": "container",
+       "orientation": "vertical",
+       "items": [
+        {
+         "type": "container",
+         "orientation": "horizontal",
+         "items": [
+          {
+           "type": "button",
+           "text": "Back",
+           "font_size": 12,
+           "font_weight": "bold",
+           "text_color": "#F8FAFC",
+           "background_color": "#16233A",
+           "corner_radius": 12,
+           "height": {
+            "type": "fixed",
+            "value": 40
+           },
+           "width": {
+            "type": "fixed",
+            "value": 80
+           },
+           "actions": [
+            {
+             "url": "nav://pop"
+            }
+           ],
+           "border": {
+            "corner_radius": 12,
+            "stroke": {
+             "color": "#1E293B",
+             "width": 1
+            }
+           },
+           "id": "btn_back"
+          },
+          {
+           "type": "container",
+           "orientation": "vertical",
+           "items": [
+            {
+             "type": "text",
+             "text": "Code generator",
+             "font_size": 18,
+             "font_weight": "bold",
+             "text_color": "#F8FAFC"
+            },
+            {
+             "type": "text",
+             "text": "QR, EAN-13 and Code 128 rendered on device",
+             "font_size": 12,
+             "font_weight": "regular",
+             "text_color": "#94A3B8"
+            }
+           ],
+           "weight": 1
+          }
+         ],
+         "item_spacing": 8,
+         "paddings": {
+          "left": 16,
+          "top": 32,
+          "right": 16,
+          "bottom": 8
+         }
+        },
+        {
+         "type": "container",
+         "orientation": "vertical",
+         "items": [
+          {
+           "type": "container",
+           "orientation": "vertical",
+           "items": [
+            {
+             "type": "text",
+             "text": "Generated symbol",
+             "font_size": 11,
+             "font_weight": "bold",
+             "text_color": "#94A3B8"
+            },
+            {
+             "type": "text",
+             "text": "@{user.code_format == '' ? 'none yet' : user.code_format}",
+             "font_size": 14,
+             "font_weight": "bold",
+             "text_color": "#34D399"
+            },
+            {
+             "type": "inline_banner",
+             "custom_props": {
+              "text": "@{user.tools_error == '' ? 'No errors' : user.tools_error}",
+              "tone": "warn"
+             }
+            }
+           ],
+           "item_spacing": 8,
+           "background_color": "#111C2E",
+           "paddings": {
+            "left": 12,
+            "top": 12,
+            "right": 12,
+            "bottom": 12
+           },
+           "border": {
+            "corner_radius": 16,
+            "stroke": {
+             "color": "#1E293B",
+             "width": 1
+            }
+           }
+          },
+          {
+           "type": "container",
+           "orientation": "vertical",
+           "items": [
+            {
+             "type": "text",
+             "text": "Rendered symbol",
+             "font_size": 11,
+             "font_weight": "bold",
+             "text_color": "#94A3B8"
+            },
+            {
+             "type": "image",
+             "image_url": "@{user.code_image_uri}",
+             "height": {
+              "type": "fixed",
+              "value": 180
+             },
+             "scale": "fit",
+             "id": "code_image"
+            }
+           ],
+           "item_spacing": 8,
+           "background_color": "#111C2E",
+           "paddings": {
+            "left": 12,
+            "top": 12,
+            "right": 12,
+            "bottom": 12
+           },
+           "border": {
+            "corner_radius": 16,
+            "stroke": {
+             "color": "#1E293B",
+             "width": 1
+            }
+           }
+          },
+          {
+           "type": "container",
+           "orientation": "vertical",
+           "items": [
+            {
+             "type": "button",
+             "text": "Generate QR",
+             "font_size": 12,
+             "font_weight": "bold",
+             "text_color": "#F8FAFC",
+             "background_color": "#16233A",
+             "corner_radius": 12,
+             "height": {
+              "type": "fixed",
+              "value": 44
+             },
+             "width": {
+              "type": "match_parent"
+             },
+             "actions": [
+              {
+               "url": "tools://code-generate/generate",
+               "payload": {
+                "options": {
+                 "content": "apexpos://tools/probe?terminal=TEST-1",
+                 "format": "qr",
+                 "width": "512",
+                 "ec_level": "M"
+                },
+                "output": {
+                 "uri": "user.code_image_uri",
+                 "format": "user.code_format",
+                 "kind": "user.code_kind"
+                }
+               }
+              }
+             ],
+             "border": {
+              "corner_radius": 12,
+              "stroke": {
+               "color": "#1E293B",
+               "width": 1
+              }
+             },
+             "id": "gen_qr"
+            },
+            {
+             "type": "button",
+             "text": "Generate EAN-13",
+             "font_size": 12,
+             "font_weight": "bold",
+             "text_color": "#F8FAFC",
+             "background_color": "#16233A",
+             "corner_radius": 12,
+             "height": {
+              "type": "fixed",
+              "value": 44
+             },
+             "width": {
+              "type": "match_parent"
+             },
+             "actions": [
+              {
+               "url": "tools://code-generate/barcode",
+               "payload": {
+                "options": {
+                 "content": "9780201633610",
+                 "format": "EAN_13",
+                 "width": "400",
+                 "height": "160"
+                },
+                "output": {
+                 "uri": "user.code_image_uri",
+                 "format": "user.code_format",
+                 "kind": "user.code_kind"
+                }
+               }
+              }
+             ],
+             "border": {
+              "corner_radius": 12,
+              "stroke": {
+               "color": "#1E293B",
+               "width": 1
+              }
+             },
+             "id": "gen_ean"
+            },
+            {
+             "type": "button",
+             "text": "Generate Code 128",
+             "font_size": 12,
+             "font_weight": "bold",
+             "text_color": "#F8FAFC",
+             "background_color": "#16233A",
+             "corner_radius": 12,
+             "height": {
+              "type": "fixed",
+              "value": 44
+             },
+             "width": {
+              "type": "match_parent"
+             },
+             "actions": [
+              {
+               "url": "tools://code-generate/barcode",
+               "payload": {
+                "options": {
+                 "content": "APEX-TOOLS-0001",
+                 "format": "CODE_128",
+                 "width": "600",
+                 "height": "180"
+                },
+                "output": {
+                 "uri": "user.code_image_uri",
+                 "format": "user.code_format",
+                 "kind": "user.code_kind"
+                }
+               }
+              }
+             ],
+             "border": {
+              "corner_radius": 12,
+              "stroke": {
+               "color": "#1E293B",
+               "width": 1
+              }
+             },
+             "id": "gen_code128"
+            }
+           ],
+           "item_spacing": 8,
+           "background_color": "#111C2E",
+           "paddings": {
+            "left": 12,
+            "top": 12,
+            "right": 12,
+            "bottom": 12
+           },
+           "border": {
+            "corner_radius": 16,
+            "stroke": {
+             "color": "#1E293B",
+             "width": 1
+            }
+           }
+          }
+         ],
+         "item_spacing": 12,
+         "paddings": {
+          "left": 16,
+          "top": 0,
+          "right": 16,
+          "bottom": 0
+         }
+        }
+       ],
+       "item_spacing": 8,
+       "paddings": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 16
+       }
+      }
+     }
+    ]
+   }
+  },
+  "haptics": {
+   "card": {
+    "log_id": "apex_tools_test_haptics",
+    "variables": [
+     {
+      "name": "user.workspace_title",
+      "type": "string",
+      "value": "APEX TOOLS"
+     },
+     {
+      "name": "user.tools_status",
+      "type": "string",
+      "value": "Idle"
+     },
+     {
+      "name": "user.tools_result",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.tools_error",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.haptic_state",
+      "type": "string",
+      "value": "idle"
+     },
+     {
+      "name": "user.beep_state",
+      "type": "string",
+      "value": "idle"
+     },
+     {
+      "name": "user.clipboard_content",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.code_image_uri",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.code_format",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.file_preview",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.files_json",
+      "type": "string",
+      "value": "[]"
+     },
+     {
+      "name": "user.net_status",
+      "type": "string",
+      "value": "stopped"
+     },
+     {
+      "name": "user.net_url",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.net_shares_json",
+      "type": "string",
+      "value": "[]"
+     },
+     {
+      "name": "user.print_state",
+      "type": "string",
+      "value": "idle"
+     },
+     {
+      "name": "user.screen_state",
+      "type": "string",
+      "value": "idle"
+     },
+     {
+      "name": "user.samples_json",
+      "type": "string",
+      "value": "[]"
+     },
+     {
+      "name": "user.samples_count",
+      "type": "integer",
+      "value": 0
+     }
+    ],
+    "states": [
+     {
+      "state_id": 0,
+      "div": {
+       "type": "container",
+       "orientation": "vertical",
+       "items": [
+        {
+         "type": "container",
+         "orientation": "horizontal",
+         "items": [
+          {
+           "type": "button",
+           "text": "Back",
+           "font_size": 12,
+           "font_weight": "bold",
+           "text_color": "#F8FAFC",
+           "background_color": "#16233A",
+           "corner_radius": 12,
+           "height": {
+            "type": "fixed",
+            "value": 40
+           },
+           "width": {
+            "type": "fixed",
+            "value": 80
+           },
+           "actions": [
+            {
+             "url": "nav://pop"
+            }
+           ],
+           "border": {
+            "corner_radius": 12,
+            "stroke": {
+             "color": "#1E293B",
+             "width": 1
+            }
+           },
+           "id": "btn_back"
+          },
+          {
+           "type": "container",
+           "orientation": "vertical",
+           "items": [
+            {
+             "type": "text",
+             "text": "Haptics and beeper",
+             "font_size": 18,
+             "font_weight": "bold",
+             "text_color": "#F8FAFC"
+            },
+            {
+             "type": "text",
+             "text": "Vibration patterns and tone sequences",
+             "font_size": 12,
+             "font_weight": "regular",
+             "text_color": "#94A3B8"
+            }
+           ],
+           "weight": 1
+          }
+         ],
+         "item_spacing": 8,
+         "paddings": {
+          "left": 16,
+          "top": 32,
+          "right": 16,
+          "bottom": 8
+         }
+        },
+        {
+         "type": "container",
+         "orientation": "vertical",
+         "items": [
+          {
+           "type": "container",
+           "orientation": "vertical",
+           "items": [
+            {
+             "type": "text",
+             "text": "Haptic / beeper state",
+             "font_size": 11,
+             "font_weight": "bold",
+             "text_color": "#94A3B8"
+            },
+            {
+             "type": "text",
+             "text": "@{user.haptic_state + ' / ' + user.beep_state}",
+             "font_size": 14,
+             "font_weight": "bold",
+             "text_color": "#34D399"
+            },
+            {
+             "type": "inline_banner",
+             "custom_props": {
+              "text": "@{user.tools_error == '' ? 'No errors' : user.tools_error}",
+              "tone": "warn"
+             }
+            }
+           ],
+           "item_spacing": 8,
+           "background_color": "#111C2E",
+           "paddings": {
+            "left": 12,
+            "top": 12,
+            "right": 12,
+            "bottom": 12
+           },
+           "border": {
+            "corner_radius": 16,
+            "stroke": {
+             "color": "#1E293B",
+             "width": 1
+            }
+           }
+          },
+          {
+           "type": "container",
+           "orientation": "vertical",
+           "items": [
+            {
+             "type": "container",
+             "orientation": "horizontal",
+             "items": [
+              {
+               "type": "button",
+               "text": "Click",
+               "font_size": 12,
+               "font_weight": "bold",
+               "text_color": "#F8FAFC",
+               "background_color": "#16233A",
+               "corner_radius": 12,
+               "height": {
+                "type": "fixed",
+                "value": 44
+               },
+               "width": {
+                "type": "match_parent"
+               },
+               "actions": [
+                {
+                 "url": "tools://haptics/click",
+                 "payload": {
+                  "output": {
+                   "status": "user.haptic_state"
+                  }
+                 }
+                }
+               ],
+               "border": {
+                "corner_radius": 12,
+                "stroke": {
+                 "color": "#1E293B",
+                 "width": 1
+                }
+               },
+               "id": "haptic_click"
+              },
+              {
+               "type": "button",
+               "text": "Success",
+               "font_size": 12,
+               "font_weight": "bold",
+               "text_color": "#F8FAFC",
+               "background_color": "#16233A",
+               "corner_radius": 12,
+               "height": {
+                "type": "fixed",
+                "value": 44
+               },
+               "width": {
+                "type": "match_parent"
+               },
+               "actions": [
+                {
+                 "url": "tools://haptics/success",
+                 "payload": {
+                  "output": {
+                   "status": "user.haptic_state"
+                  }
+                 }
+                }
+               ],
+               "border": {
+                "corner_radius": 12,
+                "stroke": {
+                 "color": "#1E293B",
+                 "width": 1
+                }
+               },
+               "id": "haptic_success"
+              }
+             ],
+             "item_spacing": 8
+            },
+            {
+             "type": "container",
+             "orientation": "horizontal",
+             "items": [
+              {
+               "type": "button",
+               "text": "Warning",
+               "font_size": 12,
+               "font_weight": "bold",
+               "text_color": "#F8FAFC",
+               "background_color": "#16233A",
+               "corner_radius": 12,
+               "height": {
+                "type": "fixed",
+                "value": 44
+               },
+               "width": {
+                "type": "match_parent"
+               },
+               "actions": [
+                {
+                 "url": "tools://haptics/warning",
+                 "payload": {
+                  "output": {
+                   "status": "user.haptic_state"
+                  }
+                 }
+                }
+               ],
+               "border": {
+                "corner_radius": 12,
+                "stroke": {
+                 "color": "#1E293B",
+                 "width": 1
+                }
+               },
+               "id": "haptic_warning"
+              },
+              {
+               "type": "button",
+               "text": "Stop",
+               "font_size": 12,
+               "font_weight": "bold",
+               "text_color": "#F8FAFC",
+               "background_color": "#16233A",
+               "corner_radius": 12,
+               "height": {
+                "type": "fixed",
+                "value": 44
+               },
+               "width": {
+                "type": "match_parent"
+               },
+               "actions": [
+                {
+                 "url": "tools://haptics/stop",
+                 "payload": {
+                  "output": {
+                   "status": "user.haptic_state"
+                  }
+                 }
+                }
+               ],
+               "border": {
+                "corner_radius": 12,
+                "stroke": {
+                 "color": "#1E293B",
+                 "width": 1
+                }
+               },
+               "id": "haptic_stop"
+              }
+             ],
+             "item_spacing": 8
+            },
+            {
+             "type": "container",
+             "orientation": "horizontal",
+             "items": [
+              {
+               "type": "button",
+               "text": "Tone",
+               "font_size": 12,
+               "font_weight": "bold",
+               "text_color": "#F8FAFC",
+               "background_color": "#16233A",
+               "corner_radius": 12,
+               "height": {
+                "type": "fixed",
+                "value": 44
+               },
+               "width": {
+                "type": "match_parent"
+               },
+               "actions": [
+                {
+                 "url": "tools://beeper/tone",
+                 "payload": {
+                  "options": {
+                   "frequency": "880",
+                   "duration_ms": "150"
+                  },
+                  "output": {
+                   "status": "user.beep_state"
+                  }
+                 }
+                }
+               ],
+               "border": {
+                "corner_radius": 12,
+                "stroke": {
+                 "color": "#1E293B",
+                 "width": 1
+                }
+               },
+               "id": "beep_tone"
+              },
+              {
+               "type": "button",
+               "text": "Silence",
+               "font_size": 12,
+               "font_weight": "bold",
+               "text_color": "#F8FAFC",
+               "background_color": "#16233A",
+               "corner_radius": 12,
+               "height": {
+                "type": "fixed",
+                "value": 44
+               },
+               "width": {
+                "type": "match_parent"
+               },
+               "actions": [
+                {
+                 "url": "tools://beeper/stop",
+                 "payload": {
+                  "output": {
+                   "status": "user.beep_state"
+                  }
+                 }
+                }
+               ],
+               "border": {
+                "corner_radius": 12,
+                "stroke": {
+                 "color": "#1E293B",
+                 "width": 1
+                }
+               },
+               "id": "beep_stop"
+              }
+             ],
+             "item_spacing": 8
+            }
+           ],
+           "item_spacing": 8,
+           "background_color": "#111C2E",
+           "paddings": {
+            "left": 12,
+            "top": 12,
+            "right": 12,
+            "bottom": 12
+           },
+           "border": {
+            "corner_radius": 16,
+            "stroke": {
+             "color": "#1E293B",
+             "width": 1
+            }
+           }
+          }
+         ],
+         "item_spacing": 12,
+         "paddings": {
+          "left": 16,
+          "top": 0,
+          "right": 16,
+          "bottom": 0
+         }
+        }
+       ],
+       "item_spacing": 8,
+       "paddings": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 16
+       }
+      }
+     }
+    ]
+   }
+  },
+  "clipboard": {
+   "card": {
+    "log_id": "apex_tools_test_clipboard",
+    "variables": [
+     {
+      "name": "user.workspace_title",
+      "type": "string",
+      "value": "APEX TOOLS"
+     },
+     {
+      "name": "user.tools_status",
+      "type": "string",
+      "value": "Idle"
+     },
+     {
+      "name": "user.tools_result",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.tools_error",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.haptic_state",
+      "type": "string",
+      "value": "idle"
+     },
+     {
+      "name": "user.beep_state",
+      "type": "string",
+      "value": "idle"
+     },
+     {
+      "name": "user.clipboard_content",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.code_image_uri",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.code_format",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.file_preview",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.files_json",
+      "type": "string",
+      "value": "[]"
+     },
+     {
+      "name": "user.net_status",
+      "type": "string",
+      "value": "stopped"
+     },
+     {
+      "name": "user.net_url",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.net_shares_json",
+      "type": "string",
+      "value": "[]"
+     },
+     {
+      "name": "user.print_state",
+      "type": "string",
+      "value": "idle"
+     },
+     {
+      "name": "user.screen_state",
+      "type": "string",
+      "value": "idle"
+     },
+     {
+      "name": "user.samples_json",
+      "type": "string",
+      "value": "[]"
+     },
+     {
+      "name": "user.samples_count",
+      "type": "integer",
+      "value": 0
+     }
+    ],
+    "states": [
+     {
+      "state_id": 0,
+      "div": {
+       "type": "container",
+       "orientation": "vertical",
+       "items": [
+        {
+         "type": "container",
+         "orientation": "horizontal",
+         "items": [
+          {
+           "type": "button",
+           "text": "Back",
+           "font_size": 12,
+           "font_weight": "bold",
+           "text_color": "#F8FAFC",
+           "background_color": "#16233A",
+           "corner_radius": 12,
+           "height": {
+            "type": "fixed",
+            "value": 40
+           },
+           "width": {
+            "type": "fixed",
+            "value": 80
+           },
+           "actions": [
+            {
+             "url": "nav://pop"
+            }
+           ],
+           "border": {
+            "corner_radius": 12,
+            "stroke": {
+             "color": "#1E293B",
+             "width": 1
+            }
+           },
+           "id": "btn_back"
+          },
+          {
+           "type": "container",
+           "orientation": "vertical",
+           "items": [
+            {
+             "type": "text",
+             "text": "Clipboard",
+             "font_size": 18,
+             "font_weight": "bold",
+             "text_color": "#F8FAFC"
+            },
+            {
+             "type": "text",
+             "text": "Copy, paste and clear the system clipboard",
+             "font_size": 12,
+             "font_weight": "regular",
+             "text_color": "#94A3B8"
+            }
+           ],
+           "weight": 1
+          }
+         ],
+         "item_spacing": 8,
+         "paddings": {
+          "left": 16,
+          "top": 32,
+          "right": 16,
+          "bottom": 8
+         }
+        },
+        {
+         "type": "container",
+         "orientation": "vertical",
+         "items": [
+          {
+           "type": "container",
+           "orientation": "vertical",
+           "items": [
+            {
+             "type": "text",
+             "text": "Clipboard content",
+             "font_size": 11,
+             "font_weight": "bold",
+             "text_color": "#94A3B8"
+            },
+            {
+             "type": "text",
+             "text": "@{user.clipboard_content == '' ? 'empty' : user.clipboard_content}",
+             "font_size": 14,
+             "font_weight": "bold",
+             "text_color": "#34D399"
+            },
+            {
+             "type": "inline_banner",
+             "custom_props": {
+              "text": "@{user.tools_error == '' ? 'No errors' : user.tools_error}",
+              "tone": "warn"
+             }
+            }
+           ],
+           "item_spacing": 8,
+           "background_color": "#111C2E",
+           "paddings": {
+            "left": 12,
+            "top": 12,
+            "right": 12,
+            "bottom": 12
+           },
+           "border": {
+            "corner_radius": 16,
+            "stroke": {
+             "color": "#1E293B",
+             "width": 1
+            }
+           }
+          },
+          {
+           "type": "container",
+           "orientation": "vertical",
+           "items": [
+            {
+             "type": "button",
+             "text": "Copy receipt text",
+             "font_size": 12,
+             "font_weight": "bold",
+             "text_color": "#F8FAFC",
+             "background_color": "#16233A",
+             "corner_radius": 12,
+             "height": {
+              "type": "fixed",
+              "value": 44
+             },
+             "width": {
+              "type": "match_parent"
+             },
+             "actions": [
+              {
+               "url": "tools://clipboard/copy",
+               "payload": {
+                "options": {
+                 "text": "APEX TOOLS - receipt #0001"
+                },
+                "output": {
+                 "text": "user.clipboard_content",
+                 "length": "user.clipboard_length"
+                }
+               }
+              }
+             ],
+             "border": {
+              "corner_radius": 12,
+              "stroke": {
+               "color": "#1E293B",
+               "width": 1
+              }
+             },
+             "id": "clip_copy"
+            },
+            {
+             "type": "button",
+             "text": "Paste",
+             "font_size": 12,
+             "font_weight": "bold",
+             "text_color": "#F8FAFC",
+             "background_color": "#16233A",
+             "corner_radius": 12,
+             "height": {
+              "type": "fixed",
+              "value": 44
+             },
+             "width": {
+              "type": "match_parent"
+             },
+             "actions": [
+              {
+               "url": "tools://clipboard/paste",
+               "payload": {
+                "output": {
+                 "text": "user.clipboard_content"
+                }
+               }
+              }
+             ],
+             "border": {
+              "corner_radius": 12,
+              "stroke": {
+               "color": "#1E293B",
+               "width": 1
+              }
+             },
+             "id": "clip_paste"
+            },
+            {
+             "type": "button",
+             "text": "Clear",
+             "font_size": 12,
+             "font_weight": "bold",
+             "text_color": "#F8FAFC",
+             "background_color": "#16233A",
+             "corner_radius": 12,
+             "height": {
+              "type": "fixed",
+              "value": 44
+             },
+             "width": {
+              "type": "match_parent"
+             },
+             "actions": [
+              {
+               "url": "tools://clipboard/clear",
+               "payload": {
+                "output": {
+                 "status": "user.tools_status"
+                }
+               }
+              }
+             ],
+             "border": {
+              "corner_radius": 12,
+              "stroke": {
+               "color": "#1E293B",
+               "width": 1
+              }
+             },
+             "id": "clip_clear"
+            }
+           ],
+           "item_spacing": 8,
+           "background_color": "#111C2E",
+           "paddings": {
+            "left": 12,
+            "top": 12,
+            "right": 12,
+            "bottom": 12
+           },
+           "border": {
+            "corner_radius": 16,
+            "stroke": {
+             "color": "#1E293B",
+             "width": 1
+            }
+           }
+          }
+         ],
+         "item_spacing": 12,
+         "paddings": {
+          "left": 16,
+          "top": 0,
+          "right": 16,
+          "bottom": 0
+         }
+        }
+       ],
+       "item_spacing": 8,
+       "paddings": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 16
+       }
+      }
+     }
+    ]
+   }
+  },
+  "net": {
+   "card": {
+    "log_id": "apex_tools_test_net",
+    "variables": [
+     {
+      "name": "user.workspace_title",
+      "type": "string",
+      "value": "APEX TOOLS"
+     },
+     {
+      "name": "user.tools_status",
+      "type": "string",
+      "value": "Idle"
+     },
+     {
+      "name": "user.tools_result",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.tools_error",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.haptic_state",
+      "type": "string",
+      "value": "idle"
+     },
+     {
+      "name": "user.beep_state",
+      "type": "string",
+      "value": "idle"
+     },
+     {
+      "name": "user.clipboard_content",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.code_image_uri",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.code_format",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.file_preview",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.files_json",
+      "type": "string",
+      "value": "[]"
+     },
+     {
+      "name": "user.net_status",
+      "type": "string",
+      "value": "stopped"
+     },
+     {
+      "name": "user.net_url",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.net_shares_json",
+      "type": "string",
+      "value": "[]"
+     },
+     {
+      "name": "user.print_state",
+      "type": "string",
+      "value": "idle"
+     },
+     {
+      "name": "user.screen_state",
+      "type": "string",
+      "value": "idle"
+     },
+     {
+      "name": "user.samples_json",
+      "type": "string",
+      "value": "[]"
+     },
+     {
+      "name": "user.samples_count",
+      "type": "integer",
+      "value": 0
+     }
+    ],
+    "states": [
+     {
+      "state_id": 0,
+      "div": {
+       "type": "container",
+       "orientation": "vertical",
+       "items": [
+        {
+         "type": "container",
+         "orientation": "horizontal",
+         "items": [
+          {
+           "type": "button",
+           "text": "Back",
+           "font_size": 12,
+           "font_weight": "bold",
+           "text_color": "#F8FAFC",
+           "background_color": "#16233A",
+           "corner_radius": 12,
+           "height": {
+            "type": "fixed",
+            "value": 40
+           },
+           "width": {
+            "type": "fixed",
+            "value": 80
+           },
+           "actions": [
+            {
+             "url": "nav://pop"
+            }
+           ],
+           "border": {
+            "corner_radius": 12,
+            "stroke": {
+             "color": "#1E293B",
+             "width": 1
+            }
+           },
+           "id": "btn_back"
+          },
+          {
+           "type": "container",
+           "orientation": "vertical",
+           "items": [
+            {
+             "type": "text",
+             "text": "Network",
+             "font_size": 18,
+             "font_weight": "bold",
+             "text_color": "#F8FAFC"
+            },
+            {
+             "type": "text",
+             "text": "HTTP fetch plus the LAN share hub",
+             "font_size": 12,
+             "font_weight": "regular",
+             "text_color": "#94A3B8"
+            }
+           ],
+           "weight": 1
+          }
+         ],
+         "item_spacing": 8,
+         "paddings": {
+          "left": 16,
+          "top": 32,
+          "right": 16,
+          "bottom": 8
+         }
+        },
+        {
+         "type": "container",
+         "orientation": "vertical",
+         "items": [
+          {
+           "type": "container",
+           "orientation": "vertical",
+           "items": [
+            {
+             "type": "text",
+             "text": "Hub state",
+             "font_size": 11,
+             "font_weight": "bold",
+             "text_color": "#94A3B8"
+            },
+            {
+             "type": "text",
+             "text": "@{user.net_status + (user.net_url == '' ? '' : ' - ' + user.net_url)}",
+             "font_size": 14,
+             "font_weight": "bold",
+             "text_color": "#34D399"
+            },
+            {
+             "type": "inline_banner",
+             "custom_props": {
+              "text": "@{user.tools_error == '' ? 'No errors' : user.tools_error}",
+              "tone": "warn"
+             }
+            }
+           ],
+           "item_spacing": 8,
+           "background_color": "#111C2E",
+           "paddings": {
+            "left": 12,
+            "top": 12,
+            "right": 12,
+            "bottom": 12
+           },
+           "border": {
+            "corner_radius": 16,
+            "stroke": {
+             "color": "#1E293B",
+             "width": 1
+            }
+           }
+          },
+          {
+           "type": "json_list",
+           "data_var": "user.net_shares_json",
+           "empty_text": "No shares on the hub",
+           "row_card": {
+            "type": "container",
+            "orientation": "horizontal",
+            "items": [
+             {
+              "type": "text",
+              "text": "@{item.title}",
+              "font_size": 12,
+              "font_weight": "regular",
+              "text_color": "#F8FAFC",
+              "width": {
+               "type": "match_parent"
+              }
+             },
+             {
+              "type": "text",
+              "text": "@{item.id}",
+              "font_size": 11,
+              "font_weight": "regular",
+              "text_color": "#94A3B8"
+             }
+            ],
+            "background_color": "#16233A",
+            "paddings": {
+             "left": 8,
+             "top": 8,
+             "right": 8,
+             "bottom": 8
+            },
+            "border": {
+             "corner_radius": 12
+            }
+           },
+           "id": "net_shares_list"
+          },
+          {
+           "type": "container",
+           "orientation": "vertical",
+           "items": [
+            {
+             "type": "button",
+             "text": "GET example.com",
+             "font_size": 12,
+             "font_weight": "bold",
+             "text_color": "#F8FAFC",
+             "background_color": "#16233A",
+             "corner_radius": 12,
+             "height": {
+              "type": "fixed",
+              "value": 44
+             },
+             "width": {
+              "type": "match_parent"
+             },
+             "actions": [
+              {
+               "url": "tools://net/get",
+               "payload": {
+                "options": {
+                 "url": "https://example.com"
+                },
+                "output": {
+                 "status": "user.tools_status",
+                 "body": "user.tools_result"
+                }
+               }
+              }
+             ],
+             "border": {
+              "corner_radius": 12,
+              "stroke": {
+               "color": "#1E293B",
+               "width": 1
+              }
+             },
+             "id": "net_get"
+            },
+            {
+             "type": "button",
+             "text": "Start hub",
+             "font_size": 12,
+             "font_weight": "bold",
+             "text_color": "#F8FAFC",
+             "background_color": "#16233A",
+             "corner_radius": 12,
+             "height": {
+              "type": "fixed",
+              "value": 44
+             },
+             "width": {
+              "type": "match_parent"
+             },
+             "actions": [
+              {
+               "url": "tools://net/serve",
+               "payload": {
+                "options": {
+                 "port": "8089"
+                },
+                "output": {
+                 "status": "user.net_status",
+                 "url": "user.net_url",
+                 "id": "user.net_share_id"
+                }
+               }
+              }
+             ],
+             "border": {
+              "corner_radius": 12,
+              "stroke": {
+               "color": "#1E293B",
+               "width": 1
+              }
+             },
+             "id": "net_serve"
+            },
+            {
+             "type": "button",
+             "text": "Hub status",
+             "font_size": 12,
+             "font_weight": "bold",
+             "text_color": "#F8FAFC",
+             "background_color": "#16233A",
+             "corner_radius": 12,
+             "height": {
+              "type": "fixed",
+              "value": 44
+             },
+             "width": {
+              "type": "match_parent"
+             },
+             "actions": [
+              {
+               "url": "tools://net/status",
+               "payload": {
+                "output": {
+                 "status": "user.net_status",
+                 "url": "user.net_url"
+                }
+               }
+              }
+             ],
+             "border": {
+              "corner_radius": 12,
+              "stroke": {
+               "color": "#1E293B",
+               "width": 1
+              }
+             },
+             "id": "net_status"
+            },
+            {
+             "type": "button",
+             "text": "Share sample",
+             "font_size": 12,
+             "font_weight": "bold",
+             "text_color": "#F8FAFC",
+             "background_color": "#16233A",
+             "corner_radius": 12,
+             "height": {
+              "type": "fixed",
+              "value": 44
+             },
+             "width": {
+              "type": "match_parent"
+             },
+             "actions": [
+              {
+               "url": "tools://net/share",
+               "payload": {
+                "options": {
+                 "title": "Probe item",
+                 "payload": "{\"sku\":\"P1001\",\"price\":1.5}"
+                },
+                "output": {
+                 "id": "user.net_share_id",
+                 "count": "user.net_share_count"
+                }
+               }
+              }
+             ],
+             "border": {
+              "corner_radius": 12,
+              "stroke": {
+               "color": "#1E293B",
+               "width": 1
+              }
+             },
+             "id": "net_share"
+            },
+            {
+             "type": "button",
+             "text": "List shares",
+             "font_size": 12,
+             "font_weight": "bold",
+             "text_color": "#F8FAFC",
+             "background_color": "#16233A",
+             "corner_radius": 12,
+             "height": {
+              "type": "fixed",
+              "value": 44
+             },
+             "width": {
+              "type": "match_parent"
+             },
+             "actions": [
+              {
+               "url": "tools://net/list",
+               "payload": {
+                "output": {
+                 "_json": "user.net_shares_json"
+                }
+               }
+              }
+             ],
+             "border": {
+              "corner_radius": 12,
+              "stroke": {
+               "color": "#1E293B",
+               "width": 1
+              }
+             },
+             "id": "net_list"
+            },
+            {
+             "type": "button",
+             "text": "Stop hub",
+             "font_size": 12,
+             "font_weight": "bold",
+             "text_color": "#F8FAFC",
+             "background_color": "#16233A",
+             "corner_radius": 12,
+             "height": {
+              "type": "fixed",
+              "value": 44
+             },
+             "width": {
+              "type": "match_parent"
+             },
+             "actions": [
+              {
+               "url": "tools://net/stop",
+               "payload": {
+                "output": {
+                 "status": "user.net_status"
+                }
+               }
+              }
+             ],
+             "border": {
+              "corner_radius": 12,
+              "stroke": {
+               "color": "#1E293B",
+               "width": 1
+              }
+             },
+             "id": "net_stop"
+            }
+           ],
+           "item_spacing": 8,
+           "background_color": "#111C2E",
+           "paddings": {
+            "left": 12,
+            "top": 12,
+            "right": 12,
+            "bottom": 12
+           },
+           "border": {
+            "corner_radius": 16,
+            "stroke": {
+             "color": "#1E293B",
+             "width": 1
+            }
+           }
+          }
+         ],
+         "item_spacing": 12,
+         "paddings": {
+          "left": 16,
+          "top": 0,
+          "right": 16,
+          "bottom": 0
+         }
+        }
+       ],
+       "item_spacing": 8,
+       "paddings": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 16
+       }
+      }
+     }
+    ]
+   }
+  },
+  "print": {
+   "card": {
+    "log_id": "apex_tools_test_print",
+    "variables": [
+     {
+      "name": "user.workspace_title",
+      "type": "string",
+      "value": "APEX TOOLS"
+     },
+     {
+      "name": "user.tools_status",
+      "type": "string",
+      "value": "Idle"
+     },
+     {
+      "name": "user.tools_result",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.tools_error",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.haptic_state",
+      "type": "string",
+      "value": "idle"
+     },
+     {
+      "name": "user.beep_state",
+      "type": "string",
+      "value": "idle"
+     },
+     {
+      "name": "user.clipboard_content",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.code_image_uri",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.code_format",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.file_preview",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.files_json",
+      "type": "string",
+      "value": "[]"
+     },
+     {
+      "name": "user.net_status",
+      "type": "string",
+      "value": "stopped"
+     },
+     {
+      "name": "user.net_url",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.net_shares_json",
+      "type": "string",
+      "value": "[]"
+     },
+     {
+      "name": "user.print_state",
+      "type": "string",
+      "value": "idle"
+     },
+     {
+      "name": "user.screen_state",
+      "type": "string",
+      "value": "idle"
+     },
+     {
+      "name": "user.samples_json",
+      "type": "string",
+      "value": "[]"
+     },
+     {
+      "name": "user.samples_count",
+      "type": "integer",
+      "value": 0
+     }
+    ],
+    "states": [
+     {
+      "state_id": 0,
+      "div": {
+       "type": "container",
+       "orientation": "vertical",
+       "items": [
+        {
+         "type": "container",
+         "orientation": "horizontal",
+         "items": [
+          {
+           "type": "button",
+           "text": "Back",
+           "font_size": 12,
+           "font_weight": "bold",
+           "text_color": "#F8FAFC",
+           "background_color": "#16233A",
+           "corner_radius": 12,
+           "height": {
+            "type": "fixed",
+            "value": 40
+           },
+           "width": {
+            "type": "fixed",
+            "value": 80
+           },
+           "actions": [
+            {
+             "url": "nav://pop"
+            }
+           ],
+           "border": {
+            "corner_radius": 12,
+            "stroke": {
+             "color": "#1E293B",
+             "width": 1
+            }
+           },
+           "id": "btn_back"
+          },
+          {
+           "type": "container",
+           "orientation": "vertical",
+           "items": [
+            {
+             "type": "text",
+             "text": "Printer",
+             "font_size": 18,
+             "font_weight": "bold",
+             "text_color": "#F8FAFC"
+            },
+            {
+             "type": "text",
+             "text": "Bluetooth ESC/POS pairing and test print",
+             "font_size": 12,
+             "font_weight": "regular",
+             "text_color": "#94A3B8"
+            }
+           ],
+           "weight": 1
+          }
+         ],
+         "item_spacing": 8,
+         "paddings": {
+          "left": 16,
+          "top": 32,
+          "right": 16,
+          "bottom": 8
+         }
+        },
+        {
+         "type": "container",
+         "orientation": "vertical",
+         "items": [
+          {
+           "type": "container",
+           "orientation": "vertical",
+           "items": [
+            {
+             "type": "text",
+             "text": "Printer state",
+             "font_size": 11,
+             "font_weight": "bold",
+             "text_color": "#94A3B8"
+            },
+            {
+             "type": "text",
+             "text": "@{user.print_state}",
+             "font_size": 14,
+             "font_weight": "bold",
+             "text_color": "#34D399"
+            },
+            {
+             "type": "inline_banner",
+             "custom_props": {
+              "text": "@{user.tools_error == '' ? 'No errors' : user.tools_error}",
+              "tone": "warn"
+             }
+            }
+           ],
+           "item_spacing": 8,
+           "background_color": "#111C2E",
+           "paddings": {
+            "left": 12,
+            "top": 12,
+            "right": 12,
+            "bottom": 12
+           },
+           "border": {
+            "corner_radius": 16,
+            "stroke": {
+             "color": "#1E293B",
+             "width": 1
+            }
+           }
+          },
+          {
+           "type": "container",
+           "orientation": "vertical",
+           "items": [
+            {
+             "type": "button",
+             "text": "Scan printers",
+             "font_size": 12,
+             "font_weight": "bold",
+             "text_color": "#F8FAFC",
+             "background_color": "#16233A",
+             "corner_radius": 12,
+             "height": {
+              "type": "fixed",
+              "value": 44
+             },
+             "width": {
+              "type": "match_parent"
+             },
+             "actions": [
+              {
+               "url": "tools://print/scan",
+               "payload": {
+                "output": {
+                 "status": "user.print_state",
+                 "_json": "user.print_devices_json"
+                }
+               }
+              }
+             ],
+             "border": {
+              "corner_radius": 12,
+              "stroke": {
+               "color": "#1E293B",
+               "width": 1
+              }
+             },
+             "id": "print_scan"
+            },
+            {
+             "type": "button",
+             "text": "Connect",
+             "font_size": 12,
+             "font_weight": "bold",
+             "text_color": "#F8FAFC",
+             "background_color": "#16233A",
+             "corner_radius": 12,
+             "height": {
+              "type": "fixed",
+              "value": 44
+             },
+             "width": {
+              "type": "match_parent"
+             },
+             "actions": [
+              {
+               "url": "tools://print/connect",
+               "payload": {
+                "options": {
+                 "address": "00:11:22:33:44:55"
+                },
+                "output": {
+                 "status": "user.print_state"
+                }
+               }
+              }
+             ],
+             "border": {
+              "corner_radius": 12,
+              "stroke": {
+               "color": "#1E293B",
+               "width": 1
+              }
+             },
+             "id": "print_connect"
+            },
+            {
+             "type": "button",
+             "text": "Test print",
+             "font_size": 12,
+             "font_weight": "bold",
+             "text_color": "#F8FAFC",
+             "background_color": "#16233A",
+             "corner_radius": 12,
+             "height": {
+              "type": "fixed",
+              "value": 44
+             },
+             "width": {
+              "type": "match_parent"
+             },
+             "actions": [
+              {
+               "url": "tools://print/print",
+               "payload": {
+                "options": {
+                 "address": "00:11:22:33:44:55",
+                 "text": "APEX TOOLS TEST PRINT"
+                },
+                "output": {
+                 "status": "user.print_state"
+                }
+               }
+              }
+             ],
+             "border": {
+              "corner_radius": 12,
+              "stroke": {
+               "color": "#1E293B",
+               "width": 1
+              }
+             },
+             "id": "print_test"
+            },
+            {
+             "type": "button",
+             "text": "Disconnect",
+             "font_size": 12,
+             "font_weight": "bold",
+             "text_color": "#F8FAFC",
+             "background_color": "#16233A",
+             "corner_radius": 12,
+             "height": {
+              "type": "fixed",
+              "value": 44
+             },
+             "width": {
+              "type": "match_parent"
+             },
+             "actions": [
+              {
+               "url": "tools://print/disconnect",
+               "payload": {
+                "output": {
+                 "status": "user.print_state"
+                }
+               }
+              }
+             ],
+             "border": {
+              "corner_radius": 12,
+              "stroke": {
+               "color": "#1E293B",
+               "width": 1
+              }
+             },
+             "id": "print_disconnect"
+            }
+           ],
+           "item_spacing": 8,
+           "background_color": "#111C2E",
+           "paddings": {
+            "left": 12,
+            "top": 12,
+            "right": 12,
+            "bottom": 12
+           },
+           "border": {
+            "corner_radius": 16,
+            "stroke": {
+             "color": "#1E293B",
+             "width": 1
+            }
+           }
+          }
+         ],
+         "item_spacing": 12,
+         "paddings": {
+          "left": 16,
+          "top": 0,
+          "right": 16,
+          "bottom": 0
+         }
+        }
+       ],
+       "item_spacing": 8,
+       "paddings": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 16
+       }
+      }
+     }
+    ]
+   }
+  },
+  "files": {
+   "card": {
+    "log_id": "apex_tools_test_files",
+    "variables": [
+     {
+      "name": "user.workspace_title",
+      "type": "string",
+      "value": "APEX TOOLS"
+     },
+     {
+      "name": "user.tools_status",
+      "type": "string",
+      "value": "Idle"
+     },
+     {
+      "name": "user.tools_result",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.tools_error",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.haptic_state",
+      "type": "string",
+      "value": "idle"
+     },
+     {
+      "name": "user.beep_state",
+      "type": "string",
+      "value": "idle"
+     },
+     {
+      "name": "user.clipboard_content",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.code_image_uri",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.code_format",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.file_preview",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.files_json",
+      "type": "string",
+      "value": "[]"
+     },
+     {
+      "name": "user.net_status",
+      "type": "string",
+      "value": "stopped"
+     },
+     {
+      "name": "user.net_url",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.net_shares_json",
+      "type": "string",
+      "value": "[]"
+     },
+     {
+      "name": "user.print_state",
+      "type": "string",
+      "value": "idle"
+     },
+     {
+      "name": "user.screen_state",
+      "type": "string",
+      "value": "idle"
+     },
+     {
+      "name": "user.samples_json",
+      "type": "string",
+      "value": "[]"
+     },
+     {
+      "name": "user.samples_count",
+      "type": "integer",
+      "value": 0
+     }
+    ],
+    "states": [
+     {
+      "state_id": 0,
+      "div": {
+       "type": "container",
+       "orientation": "vertical",
+       "items": [
+        {
+         "type": "container",
+         "orientation": "horizontal",
+         "items": [
+          {
+           "type": "button",
+           "text": "Back",
+           "font_size": 12,
+           "font_weight": "bold",
+           "text_color": "#F8FAFC",
+           "background_color": "#16233A",
+           "corner_radius": 12,
+           "height": {
+            "type": "fixed",
+            "value": 40
+           },
+           "width": {
+            "type": "fixed",
+            "value": 80
+           },
+           "actions": [
+            {
+             "url": "nav://pop"
+            }
+           ],
+           "border": {
+            "corner_radius": 12,
+            "stroke": {
+             "color": "#1E293B",
+             "width": 1
+            }
+           },
+           "id": "btn_back"
+          },
+          {
+           "type": "container",
+           "orientation": "vertical",
+           "items": [
+            {
+             "type": "text",
+             "text": "Files and screen",
+             "font_size": 18,
+             "font_weight": "bold",
+             "text_color": "#F8FAFC"
+            },
+            {
+             "type": "text",
+             "text": "Workspace sandbox files and screen capture",
+             "font_size": 12,
+             "font_weight": "regular",
+             "text_color": "#94A3B8"
+            }
+           ],
+           "weight": 1
+          }
+         ],
+         "item_spacing": 8,
+         "paddings": {
+          "left": 16,
+          "top": 32,
+          "right": 16,
+          "bottom": 8
+         }
+        },
+        {
+         "type": "container",
+         "orientation": "vertical",
+         "items": [
+          {
+           "type": "container",
+           "orientation": "vertical",
+           "items": [
+            {
+             "type": "text",
+             "text": "File preview",
+             "font_size": 11,
+             "font_weight": "bold",
+             "text_color": "#94A3B8"
+            },
+            {
+             "type": "text",
+             "text": "@{user.file_preview == '' ? 'no file yet' : user.file_preview}",
+             "font_size": 14,
+             "font_weight": "bold",
+             "text_color": "#34D399"
+            },
+            {
+             "type": "inline_banner",
+             "custom_props": {
+              "text": "@{user.tools_error == '' ? 'No errors' : user.tools_error}",
+              "tone": "warn"
+             }
+            }
+           ],
+           "item_spacing": 8,
+           "background_color": "#111C2E",
+           "paddings": {
+            "left": 12,
+            "top": 12,
+            "right": 12,
+            "bottom": 12
+           },
+           "border": {
+            "corner_radius": 16,
+            "stroke": {
+             "color": "#1E293B",
+             "width": 1
+            }
+           }
+          },
+          {
+           "type": "json_list",
+           "data_var": "user.files_json",
+           "empty_text": "No files in the sandbox",
+           "row_card": {
+            "type": "container",
+            "orientation": "horizontal",
+            "items": [
+             {
+              "type": "text",
+              "text": "@{item.name}",
+              "font_size": 12,
+              "font_weight": "regular",
+              "text_color": "#F8FAFC",
+              "width": {
+               "type": "match_parent"
+              }
+             },
+             {
+              "type": "text",
+              "text": "@{item.bytes} B",
+              "font_size": 11,
+              "font_weight": "regular",
+              "text_color": "#94A3B8"
+             }
+            ],
+            "background_color": "#16233A",
+            "paddings": {
+             "left": 8,
+             "top": 8,
+             "right": 8,
+             "bottom": 8
+            },
+            "border": {
+             "corner_radius": 12
+            }
+           },
+           "id": "files_list"
+          },
+          {
+           "type": "container",
+           "orientation": "vertical",
+           "items": [
+            {
+             "type": "button",
+             "text": "Write file",
+             "font_size": 12,
+             "font_weight": "bold",
+             "text_color": "#F8FAFC",
+             "background_color": "#16233A",
+             "corner_radius": 12,
+             "height": {
+              "type": "fixed",
+              "value": 44
+             },
+             "width": {
+              "type": "match_parent"
+             },
+             "actions": [
+              {
+               "url": "tools://files/write",
+               "payload": {
+                "options": {
+                 "path": "notes/probe.txt",
+                 "content": "APEX TOOLS PROBE"
+                },
+                "output": {
+                 "path": "user.file_path",
+                 "bytes": "user.file_bytes"
+                }
+               }
+              }
+             ],
+             "border": {
+              "corner_radius": 12,
+              "stroke": {
+               "color": "#1E293B",
+               "width": 1
+              }
+             },
+             "id": "files_write"
+            },
+            {
+             "type": "button",
+             "text": "Read file",
+             "font_size": 12,
+             "font_weight": "bold",
+             "text_color": "#F8FAFC",
+             "background_color": "#16233A",
+             "corner_radius": 12,
+             "height": {
+              "type": "fixed",
+              "value": 44
+             },
+             "width": {
+              "type": "match_parent"
+             },
+             "actions": [
+              {
+               "url": "tools://files/read",
+               "payload": {
+                "options": {
+                 "path": "notes/probe.txt"
+                },
+                "output": {
+                 "text": "user.file_preview",
+                 "path": "user.file_path"
+                }
+               }
+              }
+             ],
+             "border": {
+              "corner_radius": 12,
+              "stroke": {
+               "color": "#1E293B",
+               "width": 1
+              }
+             },
+             "id": "files_read"
+            },
+            {
+             "type": "button",
+             "text": "List files",
+             "font_size": 12,
+             "font_weight": "bold",
+             "text_color": "#F8FAFC",
+             "background_color": "#16233A",
+             "corner_radius": 12,
+             "height": {
+              "type": "fixed",
+              "value": 44
+             },
+             "width": {
+              "type": "match_parent"
+             },
+             "actions": [
+              {
+               "url": "tools://files/list",
+               "payload": {
+                "options": {
+                 "path": "notes"
+                },
+                "output": {
+                 "_json": "user.files_json"
+                }
+               }
+              }
+             ],
+             "border": {
+              "corner_radius": 12,
+              "stroke": {
+               "color": "#1E293B",
+               "width": 1
+              }
+             },
+             "id": "files_list"
+            },
+            {
+             "type": "button",
+             "text": "Delete file",
+             "font_size": 12,
+             "font_weight": "bold",
+             "text_color": "#F8FAFC",
+             "background_color": "#16233A",
+             "corner_radius": 12,
+             "height": {
+              "type": "fixed",
+              "value": 44
+             },
+             "width": {
+              "type": "match_parent"
+             },
+             "actions": [
+              {
+               "url": "tools://files/delete",
+               "payload": {
+                "options": {
+                 "path": "notes/probe.txt"
+                },
+                "output": {
+                 "status": "user.tools_status"
+                }
+               }
+              }
+             ],
+             "border": {
+              "corner_radius": 12,
+              "stroke": {
+               "color": "#1E293B",
+               "width": 1
+              }
+             },
+             "id": "files_delete"
+            },
+            {
+             "type": "button",
+             "text": "Keep awake",
+             "font_size": 12,
+             "font_weight": "bold",
+             "text_color": "#F8FAFC",
+             "background_color": "#16233A",
+             "corner_radius": 12,
+             "height": {
+              "type": "fixed",
+              "value": 44
+             },
+             "width": {
+              "type": "match_parent"
+             },
+             "actions": [
+              {
+               "url": "tools://screen/keep_awake",
+               "payload": {
+                "options": {
+                 "enabled": "true"
+                },
+                "output": {
+                 "status": "user.screen_state"
+                }
+               }
+              }
+             ],
+             "border": {
+              "corner_radius": 12,
+              "stroke": {
+               "color": "#1E293B",
+               "width": 1
+              }
+             },
+             "id": "screen_awake"
+            },
+            {
+             "type": "button",
+             "text": "Screenshot",
+             "font_size": 12,
+             "font_weight": "bold",
+             "text_color": "#F8FAFC",
+             "background_color": "#16233A",
+             "corner_radius": 12,
+             "height": {
+              "type": "fixed",
+              "value": 44
+             },
+             "width": {
+              "type": "match_parent"
+             },
+             "actions": [
+              {
+               "url": "tools://screen/screenshot",
+               "payload": {
+                "output": {
+                 "uri": "user.screen_uri",
+                 "status": "user.screen_state"
+                }
+               }
+              }
+             ],
+             "border": {
+              "corner_radius": 12,
+              "stroke": {
+               "color": "#1E293B",
+               "width": 1
+              }
+             },
+             "id": "screen_shot"
+            },
+            {
+             "type": "button",
+             "text": "Start recording",
+             "font_size": 12,
+             "font_weight": "bold",
+             "text_color": "#F8FAFC",
+             "background_color": "#16233A",
+             "corner_radius": 12,
+             "height": {
+              "type": "fixed",
+              "value": 44
+             },
+             "width": {
+              "type": "match_parent"
+             },
+             "actions": [
+              {
+               "url": "tools://screen/record_start",
+               "payload": {
+                "output": {
+                 "status": "user.screen_state"
+                }
+               }
+              }
+             ],
+             "border": {
+              "corner_radius": 12,
+              "stroke": {
+               "color": "#1E293B",
+               "width": 1
+              }
+             },
+             "id": "screen_record"
+            },
+            {
+             "type": "button",
+             "text": "Stop recording",
+             "font_size": 12,
+             "font_weight": "bold",
+             "text_color": "#F8FAFC",
+             "background_color": "#16233A",
+             "corner_radius": 12,
+             "height": {
+              "type": "fixed",
+              "value": 44
+             },
+             "width": {
+              "type": "match_parent"
+             },
+             "actions": [
+              {
+               "url": "tools://screen/record_stop",
+               "payload": {
+                "output": {
+                 "uri": "user.screen_video_uri",
+                 "status": "user.screen_state"
+                }
+               }
+              }
+             ],
+             "border": {
+              "corner_radius": 12,
+              "stroke": {
+               "color": "#1E293B",
+               "width": 1
+              }
+             },
+             "id": "screen_stop"
+            }
+           ],
+           "item_spacing": 8,
+           "background_color": "#111C2E",
+           "paddings": {
+            "left": 12,
+            "top": 12,
+            "right": 12,
+            "bottom": 12
+           },
+           "border": {
+            "corner_radius": 16,
+            "stroke": {
+             "color": "#1E293B",
+             "width": 1
+            }
+           }
+          }
+         ],
+         "item_spacing": 12,
+         "paddings": {
+          "left": 16,
+          "top": 0,
+          "right": 16,
+          "bottom": 0
+         }
+        }
+       ],
+       "item_spacing": 8,
+       "paddings": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 16
+       }
+      }
+     }
+    ]
+   }
+  },
+  "data_views": {
+   "card": {
+    "log_id": "apex_tools_test_data_views",
+    "variables": [
+     {
+      "name": "user.workspace_title",
+      "type": "string",
+      "value": "APEX TOOLS"
+     },
+     {
+      "name": "user.tools_status",
+      "type": "string",
+      "value": "Idle"
+     },
+     {
+      "name": "user.tools_result",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.tools_error",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.haptic_state",
+      "type": "string",
+      "value": "idle"
+     },
+     {
+      "name": "user.beep_state",
+      "type": "string",
+      "value": "idle"
+     },
+     {
+      "name": "user.clipboard_content",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.code_image_uri",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.code_format",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.file_preview",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.files_json",
+      "type": "string",
+      "value": "[]"
+     },
+     {
+      "name": "user.net_status",
+      "type": "string",
+      "value": "stopped"
+     },
+     {
+      "name": "user.net_url",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.net_shares_json",
+      "type": "string",
+      "value": "[]"
+     },
+     {
+      "name": "user.print_state",
+      "type": "string",
+      "value": "idle"
+     },
+     {
+      "name": "user.screen_state",
+      "type": "string",
+      "value": "idle"
+     },
+     {
+      "name": "user.samples_json",
+      "type": "string",
+      "value": "[]"
+     },
+     {
+      "name": "user.samples_count",
+      "type": "integer",
+      "value": 0
+     }
+    ],
+    "states": [
+     {
+      "state_id": 0,
+      "div": {
+       "type": "container",
+       "orientation": "vertical",
+       "items": [
+        {
+         "type": "container",
+         "orientation": "horizontal",
+         "items": [
+          {
+           "type": "button",
+           "text": "Back",
+           "font_size": 12,
+           "font_weight": "bold",
+           "text_color": "#F8FAFC",
+           "background_color": "#16233A",
+           "corner_radius": 12,
+           "height": {
+            "type": "fixed",
+            "value": 40
+           },
+           "width": {
+            "type": "fixed",
+            "value": 80
+           },
+           "actions": [
+            {
+             "url": "nav://pop"
+            }
+           ],
+           "border": {
+            "corner_radius": 12,
+            "stroke": {
+             "color": "#1E293B",
+             "width": 1
+            }
+           },
+           "id": "btn_back"
+          },
+          {
+           "type": "container",
+           "orientation": "vertical",
+           "items": [
+            {
+             "type": "text",
+             "text": "Data views",
+             "font_size": 18,
+             "font_weight": "bold",
+             "text_color": "#F8FAFC"
+            },
+            {
+             "type": "text",
+             "text": "Chart and list blocks over the samples collection",
+             "font_size": 12,
+             "font_weight": "regular",
+             "text_color": "#94A3B8"
+            }
+           ],
+           "weight": 1
+          }
+         ],
+         "item_spacing": 8,
+         "paddings": {
+          "left": 16,
+          "top": 32,
+          "right": 16,
+          "bottom": 8
+         }
+        },
+        {
+         "type": "container",
+         "orientation": "vertical",
+         "items": [
+          {
+           "type": "custom",
+           "custom_type": "sdui_chart",
+           "custom_props": {
+            "chart_type": "donut",
+            "title": "SAMPLES BY ID",
+            "subtitle": "Live from user.samples_json",
+            "label_field": "name",
+            "value_field": "id",
+            "value_prefix": "",
+            "value_suffix": "",
+            "accent_color": "#38BDF8",
+            "height": 220,
+            "show_grid": true,
+            "show_legend": true,
+            "interactive": true,
+            "data_var": "user.samples_json"
+           },
+           "id": "samples_chart"
+          },
+          {
+           "type": "container",
+           "orientation": "vertical",
+           "items": [
+            {
+             "type": "text",
+             "text": "SAMPLES",
+             "font_size": 11,
+             "font_weight": "bold",
+             "text_color": "#94A3B8"
+            },
+            {
+             "type": "json_list",
+             "data_var": "user.samples_json",
+             "empty_text": "Query the samples collection first",
+             "row_card": {
+              "type": "container",
+              "orientation": "horizontal",
+              "items": [
+               {
+                "type": "text",
+                "text": "@{item.name}",
+                "font_size": 12,
+                "font_weight": "regular",
+                "text_color": "#F8FAFC",
+                "width": {
+                 "type": "match_parent"
+                }
+               },
+               {
+                "type": "text",
+                "text": "#@{item.id}",
+                "font_size": 11,
+                "font_weight": "regular",
+                "text_color": "#34D399"
+               }
+              ],
+              "background_color": "#16233A",
+              "paddings": {
+               "left": 8,
+               "top": 8,
+               "right": 8,
+               "bottom": 8
+              },
+              "border": {
+               "corner_radius": 12
+              }
+             },
+             "id": "samples_list"
+            },
+            {
+             "type": "button",
+             "text": "Refresh samples",
+             "font_size": 14,
+             "font_weight": "bold",
+             "text_color": "#F8FAFC",
+             "background_color": "#16233A",
+             "corner_radius": 12,
+             "height": {
+              "type": "fixed",
+              "value": 44
+             },
+             "width": {
+              "type": "match_parent"
+             },
+             "actions": [
+              {
+               "url": "local-db://op/db.query",
+               "payload": {
+                "collection": "samples",
+                "order_by": "id",
+                "limit": 50,
+                "output": {
+                 "_json": "user.samples_json"
+                }
+               }
+              }
+             ],
+             "border": {
+              "corner_radius": 12,
+              "stroke": {
+               "color": "#1E293B",
+               "width": 1
+              }
+             },
+             "id": "refresh_samples"
+            }
+           ],
+           "item_spacing": 8,
+           "background_color": "#111C2E",
+           "paddings": {
+            "left": 12,
+            "top": 12,
+            "right": 12,
+            "bottom": 12
+           },
+           "border": {
+            "corner_radius": 16,
+            "stroke": {
+             "color": "#1E293B",
+             "width": 1
+            }
+           }
+          }
+         ],
+         "item_spacing": 12,
+         "paddings": {
+          "left": 16,
+          "top": 0,
+          "right": 16,
+          "bottom": 0
+         }
+        }
+       ],
+       "item_spacing": 8,
+       "paddings": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 16
+       }
+      }
+     }
+    ]
+   }
+  }
+ },
+ "order": [
+  "local_db",
+  "scanner",
+  "code_generate",
+  "haptics",
+  "clipboard",
+  "net",
+  "print",
+  "files",
+  "data_views"
+ ]
+}

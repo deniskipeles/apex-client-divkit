@@ -1,0 +1,38 @@
+{
+  "name": "@apex/dev-server",
+  "version": "0.3.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/ensure-client.mjs && nitro dev",
+    "client:build": "vite build",
+    "schemas:build": "node scripts/build-schemas.mjs",
+    "build": "node scripts/build-workspaces.mjs && vite build && node scripts/build-schemas.mjs && nitro build",
+    "build:static": "node scripts/build-workspaces.mjs && vite build && node scripts/build-schemas.mjs && nitro build --preset static",
+    "build:pages": "node scripts/build-workspaces.mjs && vite build && node scripts/build-schemas.mjs && nitro build --preset cloudflare_pages",
+    "start": "node .output/server/index.mjs",
+    "typecheck": "tsc --noEmit",
+    "workspaces:build": "node scripts/build-workspaces.mjs",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@apex/pos-ui": "workspace:*",
+    "@divkitframework/divkit": "^33.10.0",
+    "@divkitframework/jsonbuilder": "^33.10.0",
+    "devices.css": "0.2.0",
+    "h3": "^1.15.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.5",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^6.3.0",
+    "nitropack": "^2.13.6",
+    "tailwindcss": "^4",
+    "typescript": "^5",
+    "vite": "^8.3.6",
+    "vitest": "^2.1.0"
+  }
+}

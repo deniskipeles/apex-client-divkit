@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "noImplicitAny": false,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "types": ["vite/client"]
+  },
+  "include": [
+    "client/src",
+    "client/vite-env.d.ts",
+    "server",
+    "workspace",
+    "scripts",
+    "nitro.config.ts",
+    "vite.config.ts"
+  ],
+  "exclude": ["node_modules", "public", ".output", "dist", ".nitro"]
+}

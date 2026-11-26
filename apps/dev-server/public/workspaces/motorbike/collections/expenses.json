@@ -1,0 +1,24 @@
+{
+ "id": 2,
+ "name": "expenses",
+ "schema": {
+  "fields": {
+   "kind": {
+    "type": "string",
+    "required": false,
+    "uid": "expenses_kind"
+   },
+   "amount": {
+    "type": "number",
+    "required": false,
+    "uid": "expenses_amount"
+   },
+   "note": {
+    "type": "string",
+    "required": false,
+    "uid": "expenses_note"
+   }
+  }
+ },
+ "seed": []
+}

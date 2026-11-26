@@ -1,0 +1,499 @@
+{
+ "card": {
+  "log_id": "apex_tools_test_hub",
+  "variables": [
+   {
+    "name": "user.workspace_title",
+    "type": "string",
+    "value": "APEX TOOLS"
+   },
+   {
+    "name": "user.tools_status",
+    "type": "string",
+    "value": "Idle"
+   },
+   {
+    "name": "user.tools_result",
+    "type": "string",
+    "value": ""
+   },
+   {
+    "name": "user.tools_error",
+    "type": "string",
+    "value": ""
+   },
+   {
+    "name": "user.haptic_state",
+    "type": "string",
+    "value": "idle"
+   },
+   {
+    "name": "user.beep_state",
+    "type": "string",
+    "value": "idle"
+   },
+   {
+    "name": "user.clipboard_content",
+    "type": "string",
+    "value": ""
+   },
+   {
+    "name": "user.code_image_uri",
+    "type": "string",
+    "value": ""
+   },
+   {
+    "name": "user.code_format",
+    "type": "string",
+    "value": ""
+   },
+   {
+    "name": "user.file_preview",
+    "type": "string",
+    "value": ""
+   },
+   {
+    "name": "user.files_json",
+    "type": "string",
+    "value": "[]"
+   },
+   {
+    "name": "user.net_status",
+    "type": "string",
+    "value": "stopped"
+   },
+   {
+    "name": "user.net_url",
+    "type": "string",
+    "value": ""
+   },
+   {
+    "name": "user.net_shares_json",
+    "type": "string",
+    "value": "[]"
+   },
+   {
+    "name": "user.print_state",
+    "type": "string",
+    "value": "idle"
+   },
+   {
+    "name": "user.screen_state",
+    "type": "string",
+    "value": "idle"
+   },
+   {
+    "name": "user.samples_json",
+    "type": "string",
+    "value": "[]"
+   },
+   {
+    "name": "user.samples_count",
+    "type": "integer",
+    "value": 0
+   }
+  ],
+  "states": [
+   {
+    "state_id": 0,
+    "div": {
+     "type": "container",
+     "orientation": "vertical",
+     "items": [
+      {
+       "type": "container",
+       "orientation": "vertical",
+       "items": [
+        {
+         "type": "text",
+         "text": "APEX TOOLS",
+         "font_size": 26,
+         "font_weight": "bold",
+         "text_color": "#F8FAFC"
+        },
+        {
+         "type": "text",
+         "text": "Every capability, one harness workspace",
+         "font_size": 12,
+         "font_weight": "regular",
+         "text_color": "#94A3B8"
+        }
+       ],
+       "paddings": {
+        "left": 16,
+        "top": 32,
+        "right": 16,
+        "bottom": 0
+       }
+      },
+      {
+       "type": "container",
+       "orientation": "horizontal",
+       "items": [
+        {
+         "type": "container",
+         "orientation": "vertical",
+         "item_spacing": 4,
+         "paddings": {
+          "left": 12,
+          "top": 8,
+          "right": 12,
+          "bottom": 8
+         },
+         "background_color": "#16233A",
+         "border": {
+          "corner_radius": 12,
+          "stroke": {
+           "color": "#1E293B",
+           "width": 1
+          }
+         },
+         "items": [
+          {
+           "type": "text",
+           "text": "SAMPLES",
+           "font_size": 11,
+           "font_weight": "bold",
+           "text_color": "#94A3B8"
+          },
+          {
+           "type": "text",
+           "text": "@{user.samples_count}",
+           "font_size": 18,
+           "font_weight": "bold",
+           "text_color": "#34D399"
+          }
+         ],
+         "width": {
+          "type": "match_parent"
+         },
+         "id": "metric_samples"
+        },
+        {
+         "type": "container",
+         "orientation": "vertical",
+         "item_spacing": 4,
+         "paddings": {
+          "left": 12,
+          "top": 8,
+          "right": 12,
+          "bottom": 8
+         },
+         "background_color": "#16233A",
+         "border": {
+          "corner_radius": 12,
+          "stroke": {
+           "color": "#1E293B",
+           "width": 1
+          }
+         },
+         "items": [
+          {
+           "type": "text",
+           "text": "STATUS",
+           "font_size": 11,
+           "font_weight": "bold",
+           "text_color": "#94A3B8"
+          },
+          {
+           "type": "text",
+           "text": "@{user.tools_status}",
+           "font_size": 18,
+           "font_weight": "bold",
+           "text_color": "#F8FAFC"
+          }
+         ],
+         "width": {
+          "type": "match_parent"
+         },
+         "id": "metric_status"
+        }
+       ],
+       "item_spacing": 8,
+       "paddings": {
+        "left": 16,
+        "top": 0,
+        "right": 16,
+        "bottom": 0
+       }
+      },
+      {
+       "type": "container",
+       "orientation": "vertical",
+       "items": [
+        {
+         "type": "button",
+         "text": "Local DB",
+         "font_size": 14,
+         "font_weight": "bold",
+         "text_color": "#FFFFFF",
+         "background_color": "#7C3AED",
+         "corner_radius": 12,
+         "height": {
+          "type": "fixed",
+          "value": 44
+         },
+         "width": {
+          "type": "match_parent"
+         },
+         "actions": [
+          {
+           "url": "nav://push?id=local_db"
+          }
+         ],
+         "id": "nav_local_db"
+        },
+        {
+         "type": "button",
+         "text": "Scanner",
+         "font_size": 14,
+         "font_weight": "bold",
+         "text_color": "#F8FAFC",
+         "background_color": "#16233A",
+         "corner_radius": 12,
+         "height": {
+          "type": "fixed",
+          "value": 44
+         },
+         "width": {
+          "type": "match_parent"
+         },
+         "actions": [
+          {
+           "url": "nav://push?id=scanner"
+          }
+         ],
+         "border": {
+          "corner_radius": 12,
+          "stroke": {
+           "color": "#1E293B",
+           "width": 1
+          }
+         },
+         "id": "nav_scanner"
+        },
+        {
+         "type": "button",
+         "text": "Code generator",
+         "font_size": 14,
+         "font_weight": "bold",
+         "text_color": "#F8FAFC",
+         "background_color": "#16233A",
+         "corner_radius": 12,
+         "height": {
+          "type": "fixed",
+          "value": 44
+         },
+         "width": {
+          "type": "match_parent"
+         },
+         "actions": [
+          {
+           "url": "nav://push?id=code_generate"
+          }
+         ],
+         "border": {
+          "corner_radius": 12,
+          "stroke": {
+           "color": "#1E293B",
+           "width": 1
+          }
+         },
+         "id": "nav_code_generate"
+        },
+        {
+         "type": "button",
+         "text": "Haptics and beeper",
+         "font_size": 14,
+         "font_weight": "bold",
+         "text_color": "#F8FAFC",
+         "background_color": "#16233A",
+         "corner_radius": 12,
+         "height": {
+          "type": "fixed",
+          "value": 44
+         },
+         "width": {
+          "type": "match_parent"
+         },
+         "actions": [
+          {
+           "url": "nav://push?id=haptics"
+          }
+         ],
+         "border": {
+          "corner_radius": 12,
+          "stroke": {
+           "color": "#1E293B",
+           "width": 1
+          }
+         },
+         "id": "nav_haptics"
+        },
+        {
+         "type": "button",
+         "text": "Clipboard",
+         "font_size": 14,
+         "font_weight": "bold",
+         "text_color": "#F8FAFC",
+         "background_color": "#16233A",
+         "corner_radius": 12,
+         "height": {
+          "type": "fixed",
+          "value": 44
+         },
+         "width": {
+          "type": "match_parent"
+         },
+         "actions": [
+          {
+           "url": "nav://push?id=clipboard"
+          }
+         ],
+         "border": {
+          "corner_radius": 12,
+          "stroke": {
+           "color": "#1E293B",
+           "width": 1
+          }
+         },
+         "id": "nav_clipboard"
+        },
+        {
+         "type": "button",
+         "text": "Network",
+         "font_size": 14,
+         "font_weight": "bold",
+         "text_color": "#F8FAFC",
+         "background_color": "#16233A",
+         "corner_radius": 12,
+         "height": {
+          "type": "fixed",
+          "value": 44
+         },
+         "width": {
+          "type": "match_parent"
+         },
+         "actions": [
+          {
+           "url": "nav://push?id=net"
+          }
+         ],
+         "border": {
+          "corner_radius": 12,
+          "stroke": {
+           "color": "#1E293B",
+           "width": 1
+          }
+         },
+         "id": "nav_net"
+        },
+        {
+         "type": "button",
+         "text": "Printer",
+         "font_size": 14,
+         "font_weight": "bold",
+         "text_color": "#F8FAFC",
+         "background_color": "#16233A",
+         "corner_radius": 12,
+         "height": {
+          "type": "fixed",
+          "value": 44
+         },
+         "width": {
+          "type": "match_parent"
+         },
+         "actions": [
+          {
+           "url": "nav://push?id=print"
+          }
+         ],
+         "border": {
+          "corner_radius": 12,
+          "stroke": {
+           "color": "#1E293B",
+           "width": 1
+          }
+         },
+         "id": "nav_print"
+        },
+        {
+         "type": "button",
+         "text": "Files and screen",
+         "font_size": 14,
+         "font_weight": "bold",
+         "text_color": "#F8FAFC",
+         "background_color": "#16233A",
+         "corner_radius": 12,
+         "height": {
+          "type": "fixed",
+          "value": 44
+         },
+         "width": {
+          "type": "match_parent"
+         },
+         "actions": [
+          {
+           "url": "nav://push?id=files"
+          }
+         ],
+         "border": {
+          "corner_radius": 12,
+          "stroke": {
+           "color": "#1E293B",
+           "width": 1
+          }
+         },
+         "id": "nav_files"
+        },
+        {
+         "type": "button",
+         "text": "Data views",
+         "font_size": 14,
+         "font_weight": "bold",
+         "text_color": "#F8FAFC",
+         "background_color": "#16233A",
+         "corner_radius": 12,
+         "height": {
+          "type": "fixed",
+          "value": 44
+         },
+         "width": {
+          "type": "match_parent"
+         },
+         "actions": [
+          {
+           "url": "nav://push?id=data_views"
+          }
+         ],
+         "border": {
+          "corner_radius": 12,
+          "stroke": {
+           "color": "#1E293B",
+           "width": 1
+          }
+         },
+         "id": "nav_data_views"
+        }
+       ],
+       "item_spacing": 8,
+       "paddings": {
+        "left": 16,
+        "top": 8,
+        "right": 16,
+        "bottom": 0
+       }
+      }
+     ],
+     "item_spacing": 8,
+     "paddings": {
+      "left": 0,
+      "top": 0,
+      "right": 0,
+      "bottom": 16
+     }
+    }
+   }
+  ]
+ }
+}

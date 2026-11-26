@@ -1,6 +1,7 @@
 {
   "workspaces": [
     "acme_pos",
-    "apex_kiosk"
+    "apex_kiosk",
+    "apex_tools_test"
   ]
 }

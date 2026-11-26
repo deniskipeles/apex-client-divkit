@@ -5,6 +5,8 @@ This guide adds **two independent applications** that consume the same `packages
 
 - `apps/web` — a Nitro-backed cloud dashboard.
 - `apps/desktop` — a Tauri v2 point-of-sale app with a Rust tool bridge.
+- `apps/dev-server` — a Nitro + Vite DivKit playground (added later; it shares the workspace and
+  the tooling, not `pos-ui`/`contract`).
 
 The two apps share only the render layer and the contract. **Neither app renders the other's
 UI.** The native mobile apps (`apps/android`, `apps/ios`) are untouched.
@@ -51,6 +53,7 @@ packages/
 packages:
   - apps/web
   - apps/desktop
+  - apps/dev-server
   - packages/pos-ui
   - packages/contract
 ```
@@ -63,8 +66,10 @@ Add a root `package.json` so the whole workspace can be driven from one place:
   "private": true,
   "packageManager": "pnpm@9.15.0",
   "scripts": {
-    "typecheck": "pnpm -r --filter './packages/*' --filter './apps/web' --filter './apps/desktop' run typecheck",
+    "typecheck": "pnpm -r --filter './packages/*' --filter './apps/web' --filter './apps/desktop' --filter './apps/dev-server' run typecheck",
     "test:web": "pnpm -C apps/web exec vitest run",
+    "dev:dev-server": "pnpm -C apps/dev-server run dev",
+    "build:dev-server": "pnpm -C apps/dev-server run build",
     "build:web": "pnpm -C apps/web run build",
     "build:desktop:web": "pnpm -C apps/desktop run build:web",
     "test:desktop": "cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml --lib",
@@ -85,6 +90,12 @@ apps/desktop/src-tauri/gen
 # --- apps/web (Nitro) ---
 apps/web/.nitro
 apps/web/.output
+
+# --- apps/dev-server (Nitro + Vite) ---
+apps/dev-server/.nitro
+apps/dev-server/.output
+apps/dev-server/dist
+apps/dev-server/node_modules
 
 # --- pnpm workspace ---
 node_modules/
@@ -894,7 +905,7 @@ librsvg) or `cargo check` fails at `tauri-build`.
 Run these from the repository root; all must pass.
 
 ```bash
-pnpm install --frozen-lockfile          # 5 workspace projects resolve
+pnpm install --frozen-lockfile          # 6 workspace projects resolve
 
 pnpm -C packages/pos-ui  exec tsc --noEmit   # shared render layer typechecks
 pnpm -C apps/web         exec tsc --noEmit   # dashboard typechecks
@@ -903,6 +914,9 @@ pnpm -C apps/desktop     exec tsc --noEmit   # POS frontend typechecks
 pnpm -C apps/web exec vitest run             # 29 tests: fixtures, server libs, pos-ui
 pnpm -C apps/web run build                   # vite build + nitro build
 pnpm -C apps/desktop run build:web           # vite build
+
+pnpm -C apps/dev-server run typecheck        # playground typechecks
+pnpm -C apps/dev-server run build            # SPA + schemas + nitro build (.output/)
 
 cargo check --manifest-path apps/desktop/src-tauri/Cargo.toml   # 0 warnings
 cargo test  --manifest-path apps/desktop/src-tauri/Cargo.toml --lib   # routing guard

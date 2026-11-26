@@ -118,6 +118,12 @@ apps/desktop/                               # Tauri v2 point-of-sale terminal (R
   src-tauri/src/tools/                      # capability dispatch (route + per-family modules)
   src-tauri/capabilities/default.json       # deny-by-default permission grants
 
+apps/dev-server/                            # Boda DivKit playground: Nitro API + Vite SPA for live card authoring
+  client/                                   # Vite + React SPA: device simulator, variables inspector, event log
+  server/routes/api/                        # h3 routes: /api/health, /api/schemas, /api/schemas/[id]
+  server/utils/schemas/                     # Pure-JS DivKit card generators (boda-driver, waiter-terminal, custom-components-demo)
+  scripts/                                  # ensure-client (dev boot guard) + build-schemas (static snapshots)
+
 packages/pos-ui/                            # Shared DivKit render layer consumed by both apps
   src/DivKitView.tsx                        # @divkitframework/react wrapper + tools:// dispatch
   src/customBlocks/                         # sdui_chart / sdui_signature / sdui_numpad blocks

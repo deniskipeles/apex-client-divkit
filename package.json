@@ -3,11 +3,15 @@
   "private": true,
   "packageManager": "pnpm@9.15.0",
   "scripts": {
-    "typecheck": "pnpm -r --filter './packages/*' --filter './apps/web' --filter './apps/desktop' run typecheck",
+    "typecheck": "pnpm -r --filter './packages/*' --filter './apps/web' --filter './apps/desktop' --filter './apps/dev-server' run typecheck",
     "test:web": "pnpm -C apps/web exec vitest run",
+    "dev:dev-server": "pnpm -C apps/dev-server run dev",
+    "build:dev-server": "pnpm -C apps/dev-server run build",
     "build:web": "pnpm -C apps/web run build",
     "build:desktop:web": "pnpm -C apps/desktop run build:web",
     "test:desktop": "cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml --lib",
-    "check:desktop": "cargo check --manifest-path apps/desktop/src-tauri/Cargo.toml"
+    "check:desktop": "cargo check --manifest-path apps/desktop/src-tauri/Cargo.toml",
+    "workspaces:build": "pnpm -C apps/dev-server run workspaces:build",
+    "test:dev-server": "pnpm -C apps/dev-server run test"
   }
 }

@@ -1,5 +1,6 @@
 packages:
   - apps/web
   - apps/desktop
+  - apps/dev-server
   - packages/pos-ui
   - packages/contract

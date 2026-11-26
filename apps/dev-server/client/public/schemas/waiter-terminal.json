@@ -1,0 +1,2589 @@
+{
+  "meta": {
+    "id": "waiter-terminal",
+    "name": "Waiter Terminal",
+    "icon": "🍽️",
+    "tagline": "Table-side ordering terminal for restaurant staff",
+    "accent": "amber",
+    "tags": [
+      "DivState nav",
+      "cart state",
+      "submit actions"
+    ],
+    "states": [
+      "tables",
+      "menu",
+      "cart",
+      "sent"
+    ],
+    "showcases": [
+      "table grid + menu picker",
+      "cart lines with integer-cents totals",
+      "order submit flow with sent state"
+    ]
+  },
+  "schema": {
+    "templates": {},
+    "card": {
+      "log_id": "sdui_waiter_app",
+      "variables": [
+        {
+          "type": "string",
+          "name": "active_tab",
+          "value": "tables"
+        },
+        {
+          "type": "string",
+          "name": "selected_table",
+          "value": "None"
+        },
+        {
+          "type": "number",
+          "name": "qty_burger",
+          "value": 0
+        },
+        {
+          "type": "number",
+          "name": "qty_pizza",
+          "value": 0
+        },
+        {
+          "type": "number",
+          "name": "qty_salad",
+          "value": 0
+        },
+        {
+          "type": "number",
+          "name": "last_order_count",
+          "value": 0
+        }
+      ],
+      "states": [
+        {
+          "state_id": 0,
+          "div": {
+            "type": "container",
+            "background": [
+              {
+                "type": "solid",
+                "color": "#F1F5F9"
+              }
+            ],
+            "height": {
+              "type": "match_parent"
+            },
+            "items": [
+              {
+                "type": "container",
+                "background": [
+                  {
+                    "type": "gradient",
+                    "colors": [
+                      "#312E81",
+                      "#4F46E5",
+                      "#7C3AED"
+                    ],
+                    "angle": 135
+                  }
+                ],
+                "items": [
+                  {
+                    "type": "text",
+                    "font_size": 10,
+                    "font_weight": "bold",
+                    "letter_spacing": 2,
+                    "text": "TABLE SERVICE",
+                    "text_color": "#A5B4FC"
+                  },
+                  {
+                    "type": "text",
+                    "font_size": 24,
+                    "font_weight": "bold",
+                    "margins": {
+                      "top": 4
+                    },
+                    "text": "Waiter Terminal",
+                    "text_color": "#FFFFFF"
+                  },
+                  {
+                    "type": "text",
+                    "font_size": 13,
+                    "margins": {
+                      "top": 6
+                    },
+                    "text": "No table selected yet — pick one below",
+                    "text_color": "#C7D2FE",
+                    "visibility": "@{selected_table == 'None' ? 'visible' : 'gone'}"
+                  },
+                  {
+                    "type": "container",
+                    "content_alignment_vertical": "center",
+                    "items": [
+                      {
+                        "type": "text",
+                        "font_size": 13,
+                        "text": "Now serving:",
+                        "text_color": "#C7D2FE",
+                        "width": {
+                          "type": "wrap_content"
+                        }
+                      },
+                      {
+                        "type": "text",
+                        "font_size": 13,
+                        "font_weight": "bold",
+                        "margins": {
+                          "left": 6
+                        },
+                        "text": "@{selected_table}",
+                        "text_color": "#FFFFFF",
+                        "width": {
+                          "type": "wrap_content"
+                        }
+                      }
+                    ],
+                    "margins": {
+                      "top": 6
+                    },
+                    "orientation": "horizontal",
+                    "visibility": "@{selected_table == 'None' ? 'gone' : 'visible'}",
+                    "width": {
+                      "type": "wrap_content"
+                    }
+                  }
+                ],
+                "orientation": "vertical",
+                "paddings": {
+                  "left": 20,
+                  "right": 20,
+                  "top": 22,
+                  "bottom": 18
+                },
+                "width": {
+                  "type": "match_parent"
+                }
+              },
+              {
+                "type": "container",
+                "height": {
+                  "type": "match_parent"
+                },
+                "items": [
+                  {
+                    "type": "state",
+                    "default_state_id": "tables",
+                    "height": {
+                      "type": "match_parent"
+                    },
+                    "id": "main_navigation_view",
+                    "state_id_variable": "active_tab",
+                    "states": [
+                      {
+                        "state_id": "tables",
+                        "div": {
+                          "type": "container",
+                          "height": {
+                            "type": "match_parent"
+                          },
+                          "items": [
+                            {
+                              "type": "text",
+                              "font_size": 20,
+                              "font_weight": "bold",
+                              "text": "Floor plan",
+                              "text_color": "#0F172A"
+                            },
+                            {
+                              "type": "text",
+                              "font_size": 13,
+                              "margins": {
+                                "top": 2,
+                                "bottom": 14
+                              },
+                              "text": "Pick a table to start an order",
+                              "text_color": "#64748B"
+                            },
+                            {
+                              "type": "container",
+                              "items": [
+                                {
+                                  "type": "container",
+                                  "actions": [
+                                    {
+                                      "log_id": "select_table_1",
+                                      "url": "div-action://set_variable?name=selected_table&value=Table 1"
+                                    },
+                                    {
+                                      "log_id": "goto_menu_1",
+                                      "url": "div-action://set_variable?name=active_tab&value=menu"
+                                    }
+                                  ],
+                                  "background": [
+                                    {
+                                      "type": "solid",
+                                      "color": "@{selected_table == 'Table 1' ? '#EEF2FF' : '#FFFFFF'}"
+                                    }
+                                  ],
+                                  "border": {
+                                    "corner_radius": 18,
+                                    "stroke": {
+                                      "color": "@{selected_table == 'Table 1' ? '#4F46E5' : '#E2E8F0'}",
+                                      "width": 2
+                                    }
+                                  },
+                                  "content_alignment_horizontal": "center",
+                                  "content_alignment_vertical": "center",
+                                  "height": {
+                                    "type": "fixed",
+                                    "value": 148
+                                  },
+                                  "items": [
+                                    {
+                                      "type": "image",
+                                      "height": {
+                                        "type": "fixed",
+                                        "value": 44
+                                      },
+                                      "image_url": "@{selected_table == 'Table 1' ? 'https://img.icons8.com/ios-filled/100/4F46E5/table.png' : 'https://img.icons8.com/ios/100/94A3B8/table.png'}",
+                                      "width": {
+                                        "type": "fixed",
+                                        "value": 44
+                                      }
+                                    },
+                                    {
+                                      "type": "text",
+                                      "font_size": 17,
+                                      "font_weight": "bold",
+                                      "margins": {
+                                        "top": 10
+                                      },
+                                      "text": "Table 1",
+                                      "text_color": "@{selected_table == 'Table 1' ? '#4F46E5' : '#0F172A'}",
+                                      "width": {
+                                        "type": "wrap_content"
+                                      }
+                                    },
+                                    {
+                                      "type": "container",
+                                      "background": [
+                                        {
+                                          "type": "solid",
+                                          "color": "@{selected_table == 'Table 1' ? '#4F46E5' : '#F1F5F9'}"
+                                        }
+                                      ],
+                                      "border": {
+                                        "corner_radius": 20
+                                      },
+                                      "items": [
+                                        {
+                                          "type": "text",
+                                          "font_size": 10,
+                                          "font_weight": "bold",
+                                          "text": "@{selected_table == 'Table 1' ? 'SELECTED' : 'AVAILABLE'}",
+                                          "text_color": "@{selected_table == 'Table 1' ? '#FFFFFF' : '#64748B'}",
+                                          "width": {
+                                            "type": "wrap_content"
+                                          }
+                                        }
+                                      ],
+                                      "margins": {
+                                        "top": 8
+                                      },
+                                      "paddings": {
+                                        "left": 10,
+                                        "right": 10,
+                                        "top": 3,
+                                        "bottom": 3
+                                      },
+                                      "width": {
+                                        "type": "wrap_content"
+                                      }
+                                    }
+                                  ],
+                                  "margins": {
+                                    "left": 5,
+                                    "right": 5,
+                                    "bottom": 10
+                                  },
+                                  "orientation": "vertical",
+                                  "width": {
+                                    "type": "match_parent",
+                                    "weight": 1
+                                  }
+                                },
+                                {
+                                  "type": "container",
+                                  "actions": [
+                                    {
+                                      "log_id": "select_table_2",
+                                      "url": "div-action://set_variable?name=selected_table&value=Table 2"
+                                    },
+                                    {
+                                      "log_id": "goto_menu_2",
+                                      "url": "div-action://set_variable?name=active_tab&value=menu"
+                                    }
+                                  ],
+                                  "background": [
+                                    {
+                                      "type": "solid",
+                                      "color": "@{selected_table == 'Table 2' ? '#EEF2FF' : '#FFFFFF'}"
+                                    }
+                                  ],
+                                  "border": {
+                                    "corner_radius": 18,
+                                    "stroke": {
+                                      "color": "@{selected_table == 'Table 2' ? '#4F46E5' : '#E2E8F0'}",
+                                      "width": 2
+                                    }
+                                  },
+                                  "content_alignment_horizontal": "center",
+                                  "content_alignment_vertical": "center",
+                                  "height": {
+                                    "type": "fixed",
+                                    "value": 148
+                                  },
+                                  "items": [
+                                    {
+                                      "type": "image",
+                                      "height": {
+                                        "type": "fixed",
+                                        "value": 44
+                                      },
+                                      "image_url": "@{selected_table == 'Table 2' ? 'https://img.icons8.com/ios-filled/100/4F46E5/table.png' : 'https://img.icons8.com/ios/100/94A3B8/table.png'}",
+                                      "width": {
+                                        "type": "fixed",
+                                        "value": 44
+                                      }
+                                    },
+                                    {
+                                      "type": "text",
+                                      "font_size": 17,
+                                      "font_weight": "bold",
+                                      "margins": {
+                                        "top": 10
+                                      },
+                                      "text": "Table 2",
+                                      "text_color": "@{selected_table == 'Table 2' ? '#4F46E5' : '#0F172A'}",
+                                      "width": {
+                                        "type": "wrap_content"
+                                      }
+                                    },
+                                    {
+                                      "type": "container",
+                                      "background": [
+                                        {
+                                          "type": "solid",
+                                          "color": "@{selected_table == 'Table 2' ? '#4F46E5' : '#F1F5F9'}"
+                                        }
+                                      ],
+                                      "border": {
+                                        "corner_radius": 20
+                                      },
+                                      "items": [
+                                        {
+                                          "type": "text",
+                                          "font_size": 10,
+                                          "font_weight": "bold",
+                                          "text": "@{selected_table == 'Table 2' ? 'SELECTED' : 'AVAILABLE'}",
+                                          "text_color": "@{selected_table == 'Table 2' ? '#FFFFFF' : '#64748B'}",
+                                          "width": {
+                                            "type": "wrap_content"
+                                          }
+                                        }
+                                      ],
+                                      "margins": {
+                                        "top": 8
+                                      },
+                                      "paddings": {
+                                        "left": 10,
+                                        "right": 10,
+                                        "top": 3,
+                                        "bottom": 3
+                                      },
+                                      "width": {
+                                        "type": "wrap_content"
+                                      }
+                                    }
+                                  ],
+                                  "margins": {
+                                    "left": 5,
+                                    "right": 5,
+                                    "bottom": 10
+                                  },
+                                  "orientation": "vertical",
+                                  "width": {
+                                    "type": "match_parent",
+                                    "weight": 1
+                                  }
+                                }
+                              ],
+                              "orientation": "horizontal",
+                              "width": {
+                                "type": "match_parent"
+                              }
+                            },
+                            {
+                              "type": "container",
+                              "items": [
+                                {
+                                  "type": "container",
+                                  "actions": [
+                                    {
+                                      "log_id": "select_table_3",
+                                      "url": "div-action://set_variable?name=selected_table&value=Table 3"
+                                    },
+                                    {
+                                      "log_id": "goto_menu_3",
+                                      "url": "div-action://set_variable?name=active_tab&value=menu"
+                                    }
+                                  ],
+                                  "background": [
+                                    {
+                                      "type": "solid",
+                                      "color": "@{selected_table == 'Table 3' ? '#EEF2FF' : '#FFFFFF'}"
+                                    }
+                                  ],
+                                  "border": {
+                                    "corner_radius": 18,
+                                    "stroke": {
+                                      "color": "@{selected_table == 'Table 3' ? '#4F46E5' : '#E2E8F0'}",
+                                      "width": 2
+                                    }
+                                  },
+                                  "content_alignment_horizontal": "center",
+                                  "content_alignment_vertical": "center",
+                                  "height": {
+                                    "type": "fixed",
+                                    "value": 148
+                                  },
+                                  "items": [
+                                    {
+                                      "type": "image",
+                                      "height": {
+                                        "type": "fixed",
+                                        "value": 44
+                                      },
+                                      "image_url": "@{selected_table == 'Table 3' ? 'https://img.icons8.com/ios-filled/100/4F46E5/table.png' : 'https://img.icons8.com/ios/100/94A3B8/table.png'}",
+                                      "width": {
+                                        "type": "fixed",
+                                        "value": 44
+                                      }
+                                    },
+                                    {
+                                      "type": "text",
+                                      "font_size": 17,
+                                      "font_weight": "bold",
+                                      "margins": {
+                                        "top": 10
+                                      },
+                                      "text": "Table 3",
+                                      "text_color": "@{selected_table == 'Table 3' ? '#4F46E5' : '#0F172A'}",
+                                      "width": {
+                                        "type": "wrap_content"
+                                      }
+                                    },
+                                    {
+                                      "type": "container",
+                                      "background": [
+                                        {
+                                          "type": "solid",
+                                          "color": "@{selected_table == 'Table 3' ? '#4F46E5' : '#F1F5F9'}"
+                                        }
+                                      ],
+                                      "border": {
+                                        "corner_radius": 20
+                                      },
+                                      "items": [
+                                        {
+                                          "type": "text",
+                                          "font_size": 10,
+                                          "font_weight": "bold",
+                                          "text": "@{selected_table == 'Table 3' ? 'SELECTED' : 'AVAILABLE'}",
+                                          "text_color": "@{selected_table == 'Table 3' ? '#FFFFFF' : '#64748B'}",
+                                          "width": {
+                                            "type": "wrap_content"
+                                          }
+                                        }
+                                      ],
+                                      "margins": {
+                                        "top": 8
+                                      },
+                                      "paddings": {
+                                        "left": 10,
+                                        "right": 10,
+                                        "top": 3,
+                                        "bottom": 3
+                                      },
+                                      "width": {
+                                        "type": "wrap_content"
+                                      }
+                                    }
+                                  ],
+                                  "margins": {
+                                    "left": 5,
+                                    "right": 5,
+                                    "bottom": 10
+                                  },
+                                  "orientation": "vertical",
+                                  "width": {
+                                    "type": "match_parent",
+                                    "weight": 1
+                                  }
+                                },
+                                {
+                                  "type": "container",
+                                  "actions": [
+                                    {
+                                      "log_id": "select_table_4",
+                                      "url": "div-action://set_variable?name=selected_table&value=Table 4"
+                                    },
+                                    {
+                                      "log_id": "goto_menu_4",
+                                      "url": "div-action://set_variable?name=active_tab&value=menu"
+                                    }
+                                  ],
+                                  "background": [
+                                    {
+                                      "type": "solid",
+                                      "color": "@{selected_table == 'Table 4' ? '#EEF2FF' : '#FFFFFF'}"
+                                    }
+                                  ],
+                                  "border": {
+                                    "corner_radius": 18,
+                                    "stroke": {
+                                      "color": "@{selected_table == 'Table 4' ? '#4F46E5' : '#E2E8F0'}",
+                                      "width": 2
+                                    }
+                                  },
+                                  "content_alignment_horizontal": "center",
+                                  "content_alignment_vertical": "center",
+                                  "height": {
+                                    "type": "fixed",
+                                    "value": 148
+                                  },
+                                  "items": [
+                                    {
+                                      "type": "image",
+                                      "height": {
+                                        "type": "fixed",
+                                        "value": 44
+                                      },
+                                      "image_url": "@{selected_table == 'Table 4' ? 'https://img.icons8.com/ios-filled/100/4F46E5/table.png' : 'https://img.icons8.com/ios/100/94A3B8/table.png'}",
+                                      "width": {
+                                        "type": "fixed",
+                                        "value": 44
+                                      }
+                                    },
+                                    {
+                                      "type": "text",
+                                      "font_size": 17,
+                                      "font_weight": "bold",
+                                      "margins": {
+                                        "top": 10
+                                      },
+                                      "text": "Table 4",
+                                      "text_color": "@{selected_table == 'Table 4' ? '#4F46E5' : '#0F172A'}",
+                                      "width": {
+                                        "type": "wrap_content"
+                                      }
+                                    },
+                                    {
+                                      "type": "container",
+                                      "background": [
+                                        {
+                                          "type": "solid",
+                                          "color": "@{selected_table == 'Table 4' ? '#4F46E5' : '#F1F5F9'}"
+                                        }
+                                      ],
+                                      "border": {
+                                        "corner_radius": 20
+                                      },
+                                      "items": [
+                                        {
+                                          "type": "text",
+                                          "font_size": 10,
+                                          "font_weight": "bold",
+                                          "text": "@{selected_table == 'Table 4' ? 'SELECTED' : 'AVAILABLE'}",
+                                          "text_color": "@{selected_table == 'Table 4' ? '#FFFFFF' : '#64748B'}",
+                                          "width": {
+                                            "type": "wrap_content"
+                                          }
+                                        }
+                                      ],
+                                      "margins": {
+                                        "top": 8
+                                      },
+                                      "paddings": {
+                                        "left": 10,
+                                        "right": 10,
+                                        "top": 3,
+                                        "bottom": 3
+                                      },
+                                      "width": {
+                                        "type": "wrap_content"
+                                      }
+                                    }
+                                  ],
+                                  "margins": {
+                                    "left": 5,
+                                    "right": 5,
+                                    "bottom": 10
+                                  },
+                                  "orientation": "vertical",
+                                  "width": {
+                                    "type": "match_parent",
+                                    "weight": 1
+                                  }
+                                }
+                              ],
+                              "orientation": "horizontal",
+                              "width": {
+                                "type": "match_parent"
+                              }
+                            },
+                            {
+                              "type": "container",
+                              "actions": [
+                                {
+                                  "log_id": "open_menu",
+                                  "url": "div-action://set_variable?name=active_tab&value=menu",
+                                  "enabled": "@{selected_table != 'None'}"
+                                }
+                              ],
+                              "background": [
+                                {
+                                  "type": "solid",
+                                  "color": "@{selected_table == 'None' ? '#CBD5E1' : '#4F46E5'}"
+                                }
+                              ],
+                              "border": {
+                                "corner_radius": 14
+                              },
+                              "content_alignment_horizontal": "center",
+                              "content_alignment_vertical": "center",
+                              "height": {
+                                "type": "fixed",
+                                "value": 52
+                              },
+                              "items": [
+                                {
+                                  "type": "text",
+                                  "font_size": 15,
+                                  "font_weight": "bold",
+                                  "text": "Select a table first",
+                                  "text_color": "#FFFFFF",
+                                  "visibility": "@{selected_table == 'None' ? 'visible' : 'gone'}",
+                                  "width": {
+                                    "type": "wrap_content"
+                                  }
+                                },
+                                {
+                                  "type": "container",
+                                  "content_alignment_vertical": "center",
+                                  "items": [
+                                    {
+                                      "type": "text",
+                                      "font_size": 15,
+                                      "font_weight": "bold",
+                                      "text": "Open menu for",
+                                      "text_color": "#FFFFFF",
+                                      "width": {
+                                        "type": "wrap_content"
+                                      }
+                                    },
+                                    {
+                                      "type": "text",
+                                      "font_size": 15,
+                                      "font_weight": "bold",
+                                      "margins": {
+                                        "left": 6
+                                      },
+                                      "text": "@{selected_table}",
+                                      "text_color": "#FFFFFF",
+                                      "width": {
+                                        "type": "wrap_content"
+                                      }
+                                    }
+                                  ],
+                                  "orientation": "horizontal",
+                                  "visibility": "@{selected_table == 'None' ? 'gone' : 'visible'}",
+                                  "width": {
+                                    "type": "wrap_content"
+                                  }
+                                }
+                              ],
+                              "margins": {
+                                "top": 6
+                              },
+                              "orientation": "horizontal",
+                              "width": {
+                                "type": "match_parent"
+                              }
+                            }
+                          ],
+                          "orientation": "vertical",
+                          "paddings": {
+                            "left": 16,
+                            "right": 16,
+                            "top": 18
+                          },
+                          "width": {
+                            "type": "match_parent"
+                          }
+                        }
+                      },
+                      {
+                        "state_id": "menu",
+                        "div": {
+                          "type": "container",
+                          "height": {
+                            "type": "match_parent"
+                          },
+                          "items": [
+                            {
+                              "type": "container",
+                              "content_alignment_vertical": "center",
+                              "items": [
+                                {
+                                  "type": "container",
+                                  "actions": [
+                                    {
+                                      "log_id": "back_to_tables",
+                                      "url": "div-action://set_variable?name=active_tab&value=tables"
+                                    }
+                                  ],
+                                  "background": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#FFFFFF"
+                                    }
+                                  ],
+                                  "border": {
+                                    "corner_radius": 12,
+                                    "stroke": {
+                                      "color": "#E2E8F0",
+                                      "width": 1
+                                    }
+                                  },
+                                  "content_alignment_horizontal": "center",
+                                  "content_alignment_vertical": "center",
+                                  "height": {
+                                    "type": "fixed",
+                                    "value": 40
+                                  },
+                                  "items": [
+                                    {
+                                      "type": "text",
+                                      "font_size": 18,
+                                      "font_weight": "bold",
+                                      "text": "←",
+                                      "text_color": "#0F172A"
+                                    }
+                                  ],
+                                  "width": {
+                                    "type": "fixed",
+                                    "value": 40
+                                  }
+                                },
+                                {
+                                  "type": "container",
+                                  "items": [
+                                    {
+                                      "type": "text",
+                                      "font_size": 20,
+                                      "font_weight": "bold",
+                                      "margins": {
+                                        "left": 12
+                                      },
+                                      "text": "Menu",
+                                      "text_color": "#0F172A"
+                                    }
+                                  ],
+                                  "width": {
+                                    "type": "match_parent",
+                                    "weight": 1
+                                  }
+                                },
+                                {
+                                  "type": "container",
+                                  "background": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#EEF2FF"
+                                    }
+                                  ],
+                                  "border": {
+                                    "corner_radius": 12
+                                  },
+                                  "items": [
+                                    {
+                                      "type": "text",
+                                      "font_size": 12,
+                                      "font_weight": "bold",
+                                      "text": "@{selected_table}",
+                                      "text_color": "#4F46E5",
+                                      "width": {
+                                        "type": "wrap_content"
+                                      }
+                                    }
+                                  ],
+                                  "paddings": {
+                                    "left": 10,
+                                    "right": 10,
+                                    "top": 6,
+                                    "bottom": 6
+                                  },
+                                  "visibility": "@{selected_table == 'None' ? 'gone' : 'visible'}",
+                                  "width": {
+                                    "type": "wrap_content"
+                                  }
+                                }
+                              ],
+                              "margins": {
+                                "bottom": 10
+                              },
+                              "orientation": "horizontal",
+                              "width": {
+                                "type": "match_parent"
+                              }
+                            },
+                            {
+                              "type": "container",
+                              "background": [
+                                {
+                                  "type": "solid",
+                                  "color": "#FFFFFF"
+                                }
+                              ],
+                              "border": {
+                                "corner_radius": 16,
+                                "stroke": {
+                                  "color": "#E2E8F0",
+                                  "width": 1
+                                }
+                              },
+                              "content_alignment_vertical": "center",
+                              "items": [
+                                {
+                                  "type": "image",
+                                  "border": {
+                                    "corner_radius": 12
+                                  },
+                                  "height": {
+                                    "type": "fixed",
+                                    "value": 56
+                                  },
+                                  "image_url": "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=200&h=200&fit=crop",
+                                  "margins": {
+                                    "right": 10
+                                  },
+                                  "width": {
+                                    "type": "fixed",
+                                    "value": 56
+                                  }
+                                },
+                                {
+                                  "type": "container",
+                                  "items": [
+                                    {
+                                      "type": "text",
+                                      "font_size": 15,
+                                      "font_weight": "bold",
+                                      "text": "Classic Cheeseburger",
+                                      "text_color": "#0F172A"
+                                    },
+                                    {
+                                      "type": "text",
+                                      "font_size": 11,
+                                      "margins": {
+                                        "top": 2,
+                                        "bottom": 5
+                                      },
+                                      "max_lines": 2,
+                                      "text": "Angus beef, cheddar, lettuce, tomato.",
+                                      "text_color": "#64748B"
+                                    },
+                                    {
+                                      "type": "text",
+                                      "font_size": 15,
+                                      "font_weight": "bold",
+                                      "text": "@{'$' + toString(toInteger((toInteger(qty_burger * 1299)) / 100)) + '.' + (((toInteger(qty_burger * 1299)) - toInteger((toInteger(qty_burger * 1299)) / 100) * 100) < 10 ? '0' + toString(((toInteger(qty_burger * 1299)) - toInteger((toInteger(qty_burger * 1299)) / 100) * 100)) : toString(((toInteger(qty_burger * 1299)) - toInteger((toInteger(qty_burger * 1299)) / 100) * 100)))}",
+                                      "text_color": "#059669"
+                                    }
+                                  ],
+                                  "margins": {
+                                    "right": 6
+                                  },
+                                  "orientation": "vertical",
+                                  "width": {
+                                    "type": "match_parent",
+                                    "weight": 1
+                                  }
+                                },
+                                {
+                                  "type": "container",
+                                  "content_alignment_horizontal": "center",
+                                  "content_alignment_vertical": "center",
+                                  "items": [
+                                    {
+                                      "type": "container",
+                                      "content_alignment_vertical": "center",
+                                      "items": [
+                                        {
+                                          "type": "container",
+                                          "actions": [
+                                            {
+                                              "log_id": "minus_burger",
+                                              "url": "div-action://set_variable?name=qty_burger&value=@{qty_burger > 0 ? qty_burger - 1 : 0}"
+                                            }
+                                          ],
+                                          "background": [
+                                            {
+                                              "type": "solid",
+                                              "color": "#FEE2E2"
+                                            }
+                                          ],
+                                          "border": {
+                                            "corner_radius": 10
+                                          },
+                                          "content_alignment_horizontal": "center",
+                                          "content_alignment_vertical": "center",
+                                          "height": {
+                                            "type": "fixed",
+                                            "value": 32
+                                          },
+                                          "items": [
+                                            {
+                                              "type": "text",
+                                              "font_size": 18,
+                                              "font_weight": "bold",
+                                              "text": "−",
+                                              "text_color": "#EF4444"
+                                            }
+                                          ],
+                                          "width": {
+                                            "type": "fixed",
+                                            "value": 32
+                                          }
+                                        },
+                                        {
+                                          "type": "text",
+                                          "font_size": 16,
+                                          "font_weight": "bold",
+                                          "text": "@{qty_burger}",
+                                          "text_alignment_horizontal": "center",
+                                          "width": {
+                                            "type": "fixed",
+                                            "value": 34
+                                          }
+                                        },
+                                        {
+                                          "type": "container",
+                                          "actions": [
+                                            {
+                                              "log_id": "plus_burger",
+                                              "url": "div-action://set_variable?name=qty_burger&value=@{qty_burger + 1}"
+                                            }
+                                          ],
+                                          "background": [
+                                            {
+                                              "type": "solid",
+                                              "color": "#4F46E5"
+                                            }
+                                          ],
+                                          "border": {
+                                            "corner_radius": 10
+                                          },
+                                          "content_alignment_horizontal": "center",
+                                          "content_alignment_vertical": "center",
+                                          "height": {
+                                            "type": "fixed",
+                                            "value": 32
+                                          },
+                                          "items": [
+                                            {
+                                              "type": "text",
+                                              "font_size": 18,
+                                              "font_weight": "bold",
+                                              "text": "+",
+                                              "text_color": "#FFFFFF"
+                                            }
+                                          ],
+                                          "width": {
+                                            "type": "fixed",
+                                            "value": 32
+                                          }
+                                        }
+                                      ],
+                                      "orientation": "horizontal",
+                                      "visibility": "@{qty_burger > 0 ? 'visible' : 'gone'}"
+                                    },
+                                    {
+                                      "type": "container",
+                                      "actions": [
+                                        {
+                                          "log_id": "add_burger",
+                                          "url": "div-action://set_variable?name=qty_burger&value=1"
+                                        }
+                                      ],
+                                      "background": [
+                                        {
+                                          "type": "solid",
+                                          "color": "#EEF2FF"
+                                        }
+                                      ],
+                                      "border": {
+                                        "corner_radius": 12
+                                      },
+                                      "content_alignment_vertical": "center",
+                                      "height": {
+                                        "type": "fixed",
+                                        "value": 34
+                                      },
+                                      "items": [
+                                        {
+                                          "type": "text",
+                                          "font_size": 12,
+                                          "font_weight": "bold",
+                                          "text": "+ ADD",
+                                          "text_color": "#4F46E5"
+                                        }
+                                      ],
+                                      "paddings": {
+                                        "left": 14,
+                                        "right": 14
+                                      },
+                                      "visibility": "@{qty_burger > 0 ? 'gone' : 'visible'}",
+                                      "width": {
+                                        "type": "wrap_content"
+                                      }
+                                    }
+                                  ],
+                                  "width": {
+                                    "type": "fixed",
+                                    "value": 112
+                                  }
+                                }
+                              ],
+                              "margins": {
+                                "bottom": 8
+                              },
+                              "orientation": "horizontal",
+                              "paddings": {
+                                "left": 8,
+                                "right": 8,
+                                "top": 8,
+                                "bottom": 8
+                              },
+                              "width": {
+                                "type": "match_parent"
+                              }
+                            },
+                            {
+                              "type": "container",
+                              "background": [
+                                {
+                                  "type": "solid",
+                                  "color": "#FFFFFF"
+                                }
+                              ],
+                              "border": {
+                                "corner_radius": 16,
+                                "stroke": {
+                                  "color": "#E2E8F0",
+                                  "width": 1
+                                }
+                              },
+                              "content_alignment_vertical": "center",
+                              "items": [
+                                {
+                                  "type": "image",
+                                  "border": {
+                                    "corner_radius": 12
+                                  },
+                                  "height": {
+                                    "type": "fixed",
+                                    "value": 56
+                                  },
+                                  "image_url": "https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=200&h=200&fit=crop",
+                                  "margins": {
+                                    "right": 10
+                                  },
+                                  "width": {
+                                    "type": "fixed",
+                                    "value": 56
+                                  }
+                                },
+                                {
+                                  "type": "container",
+                                  "items": [
+                                    {
+                                      "type": "text",
+                                      "font_size": 15,
+                                      "font_weight": "bold",
+                                      "text": "Margherita Pizza",
+                                      "text_color": "#0F172A"
+                                    },
+                                    {
+                                      "type": "text",
+                                      "font_size": 11,
+                                      "margins": {
+                                        "top": 2,
+                                        "bottom": 5
+                                      },
+                                      "max_lines": 2,
+                                      "text": "Fresh mozzarella, tomato sauce, basil.",
+                                      "text_color": "#64748B"
+                                    },
+                                    {
+                                      "type": "text",
+                                      "font_size": 15,
+                                      "font_weight": "bold",
+                                      "text": "@{'$' + toString(toInteger((toInteger(qty_pizza * 1550)) / 100)) + '.' + (((toInteger(qty_pizza * 1550)) - toInteger((toInteger(qty_pizza * 1550)) / 100) * 100) < 10 ? '0' + toString(((toInteger(qty_pizza * 1550)) - toInteger((toInteger(qty_pizza * 1550)) / 100) * 100)) : toString(((toInteger(qty_pizza * 1550)) - toInteger((toInteger(qty_pizza * 1550)) / 100) * 100)))}",
+                                      "text_color": "#059669"
+                                    }
+                                  ],
+                                  "margins": {
+                                    "right": 6
+                                  },
+                                  "orientation": "vertical",
+                                  "width": {
+                                    "type": "match_parent",
+                                    "weight": 1
+                                  }
+                                },
+                                {
+                                  "type": "container",
+                                  "content_alignment_horizontal": "center",
+                                  "content_alignment_vertical": "center",
+                                  "items": [
+                                    {
+                                      "type": "container",
+                                      "content_alignment_vertical": "center",
+                                      "items": [
+                                        {
+                                          "type": "container",
+                                          "actions": [
+                                            {
+                                              "log_id": "minus_pizza",
+                                              "url": "div-action://set_variable?name=qty_pizza&value=@{qty_pizza > 0 ? qty_pizza - 1 : 0}"
+                                            }
+                                          ],
+                                          "background": [
+                                            {
+                                              "type": "solid",
+                                              "color": "#FEE2E2"
+                                            }
+                                          ],
+                                          "border": {
+                                            "corner_radius": 10
+                                          },
+                                          "content_alignment_horizontal": "center",
+                                          "content_alignment_vertical": "center",
+                                          "height": {
+                                            "type": "fixed",
+                                            "value": 32
+                                          },
+                                          "items": [
+                                            {
+                                              "type": "text",
+                                              "font_size": 18,
+                                              "font_weight": "bold",
+                                              "text": "−",
+                                              "text_color": "#EF4444"
+                                            }
+                                          ],
+                                          "width": {
+                                            "type": "fixed",
+                                            "value": 32
+                                          }
+                                        },
+                                        {
+                                          "type": "text",
+                                          "font_size": 16,
+                                          "font_weight": "bold",
+                                          "text": "@{qty_pizza}",
+                                          "text_alignment_horizontal": "center",
+                                          "width": {
+                                            "type": "fixed",
+                                            "value": 34
+                                          }
+                                        },
+                                        {
+                                          "type": "container",
+                                          "actions": [
+                                            {
+                                              "log_id": "plus_pizza",
+                                              "url": "div-action://set_variable?name=qty_pizza&value=@{qty_pizza + 1}"
+                                            }
+                                          ],
+                                          "background": [
+                                            {
+                                              "type": "solid",
+                                              "color": "#4F46E5"
+                                            }
+                                          ],
+                                          "border": {
+                                            "corner_radius": 10
+                                          },
+                                          "content_alignment_horizontal": "center",
+                                          "content_alignment_vertical": "center",
+                                          "height": {
+                                            "type": "fixed",
+                                            "value": 32
+                                          },
+                                          "items": [
+                                            {
+                                              "type": "text",
+                                              "font_size": 18,
+                                              "font_weight": "bold",
+                                              "text": "+",
+                                              "text_color": "#FFFFFF"
+                                            }
+                                          ],
+                                          "width": {
+                                            "type": "fixed",
+                                            "value": 32
+                                          }
+                                        }
+                                      ],
+                                      "orientation": "horizontal",
+                                      "visibility": "@{qty_pizza > 0 ? 'visible' : 'gone'}"
+                                    },
+                                    {
+                                      "type": "container",
+                                      "actions": [
+                                        {
+                                          "log_id": "add_pizza",
+                                          "url": "div-action://set_variable?name=qty_pizza&value=1"
+                                        }
+                                      ],
+                                      "background": [
+                                        {
+                                          "type": "solid",
+                                          "color": "#EEF2FF"
+                                        }
+                                      ],
+                                      "border": {
+                                        "corner_radius": 12
+                                      },
+                                      "content_alignment_vertical": "center",
+                                      "height": {
+                                        "type": "fixed",
+                                        "value": 34
+                                      },
+                                      "items": [
+                                        {
+                                          "type": "text",
+                                          "font_size": 12,
+                                          "font_weight": "bold",
+                                          "text": "+ ADD",
+                                          "text_color": "#4F46E5"
+                                        }
+                                      ],
+                                      "paddings": {
+                                        "left": 14,
+                                        "right": 14
+                                      },
+                                      "visibility": "@{qty_pizza > 0 ? 'gone' : 'visible'}",
+                                      "width": {
+                                        "type": "wrap_content"
+                                      }
+                                    }
+                                  ],
+                                  "width": {
+                                    "type": "fixed",
+                                    "value": 112
+                                  }
+                                }
+                              ],
+                              "margins": {
+                                "bottom": 8
+                              },
+                              "orientation": "horizontal",
+                              "paddings": {
+                                "left": 8,
+                                "right": 8,
+                                "top": 8,
+                                "bottom": 8
+                              },
+                              "width": {
+                                "type": "match_parent"
+                              }
+                            },
+                            {
+                              "type": "container",
+                              "background": [
+                                {
+                                  "type": "solid",
+                                  "color": "#FFFFFF"
+                                }
+                              ],
+                              "border": {
+                                "corner_radius": 16,
+                                "stroke": {
+                                  "color": "#E2E8F0",
+                                  "width": 1
+                                }
+                              },
+                              "content_alignment_vertical": "center",
+                              "items": [
+                                {
+                                  "type": "image",
+                                  "border": {
+                                    "corner_radius": 12
+                                  },
+                                  "height": {
+                                    "type": "fixed",
+                                    "value": 56
+                                  },
+                                  "image_url": "https://images.unsplash.com/photo-1550304943-4f24f54ddde9?w=200&h=200&fit=crop",
+                                  "margins": {
+                                    "right": 10
+                                  },
+                                  "width": {
+                                    "type": "fixed",
+                                    "value": 56
+                                  }
+                                },
+                                {
+                                  "type": "container",
+                                  "items": [
+                                    {
+                                      "type": "text",
+                                      "font_size": 15,
+                                      "font_weight": "bold",
+                                      "text": "Caesar Salad",
+                                      "text_color": "#0F172A"
+                                    },
+                                    {
+                                      "type": "text",
+                                      "font_size": 11,
+                                      "margins": {
+                                        "top": 2,
+                                        "bottom": 5
+                                      },
+                                      "max_lines": 2,
+                                      "text": "Romaine, croutons, parmesan, Caesar dressing.",
+                                      "text_color": "#64748B"
+                                    },
+                                    {
+                                      "type": "text",
+                                      "font_size": 15,
+                                      "font_weight": "bold",
+                                      "text": "@{'$' + toString(toInteger((toInteger(qty_salad * 800)) / 100)) + '.' + (((toInteger(qty_salad * 800)) - toInteger((toInteger(qty_salad * 800)) / 100) * 100) < 10 ? '0' + toString(((toInteger(qty_salad * 800)) - toInteger((toInteger(qty_salad * 800)) / 100) * 100)) : toString(((toInteger(qty_salad * 800)) - toInteger((toInteger(qty_salad * 800)) / 100) * 100)))}",
+                                      "text_color": "#059669"
+                                    }
+                                  ],
+                                  "margins": {
+                                    "right": 6
+                                  },
+                                  "orientation": "vertical",
+                                  "width": {
+                                    "type": "match_parent",
+                                    "weight": 1
+                                  }
+                                },
+                                {
+                                  "type": "container",
+                                  "content_alignment_horizontal": "center",
+                                  "content_alignment_vertical": "center",
+                                  "items": [
+                                    {
+                                      "type": "container",
+                                      "content_alignment_vertical": "center",
+                                      "items": [
+                                        {
+                                          "type": "container",
+                                          "actions": [
+                                            {
+                                              "log_id": "minus_salad",
+                                              "url": "div-action://set_variable?name=qty_salad&value=@{qty_salad > 0 ? qty_salad - 1 : 0}"
+                                            }
+                                          ],
+                                          "background": [
+                                            {
+                                              "type": "solid",
+                                              "color": "#FEE2E2"
+                                            }
+                                          ],
+                                          "border": {
+                                            "corner_radius": 10
+                                          },
+                                          "content_alignment_horizontal": "center",
+                                          "content_alignment_vertical": "center",
+                                          "height": {
+                                            "type": "fixed",
+                                            "value": 32
+                                          },
+                                          "items": [
+                                            {
+                                              "type": "text",
+                                              "font_size": 18,
+                                              "font_weight": "bold",
+                                              "text": "−",
+                                              "text_color": "#EF4444"
+                                            }
+                                          ],
+                                          "width": {
+                                            "type": "fixed",
+                                            "value": 32
+                                          }
+                                        },
+                                        {
+                                          "type": "text",
+                                          "font_size": 16,
+                                          "font_weight": "bold",
+                                          "text": "@{qty_salad}",
+                                          "text_alignment_horizontal": "center",
+                                          "width": {
+                                            "type": "fixed",
+                                            "value": 34
+                                          }
+                                        },
+                                        {
+                                          "type": "container",
+                                          "actions": [
+                                            {
+                                              "log_id": "plus_salad",
+                                              "url": "div-action://set_variable?name=qty_salad&value=@{qty_salad + 1}"
+                                            }
+                                          ],
+                                          "background": [
+                                            {
+                                              "type": "solid",
+                                              "color": "#4F46E5"
+                                            }
+                                          ],
+                                          "border": {
+                                            "corner_radius": 10
+                                          },
+                                          "content_alignment_horizontal": "center",
+                                          "content_alignment_vertical": "center",
+                                          "height": {
+                                            "type": "fixed",
+                                            "value": 32
+                                          },
+                                          "items": [
+                                            {
+                                              "type": "text",
+                                              "font_size": 18,
+                                              "font_weight": "bold",
+                                              "text": "+",
+                                              "text_color": "#FFFFFF"
+                                            }
+                                          ],
+                                          "width": {
+                                            "type": "fixed",
+                                            "value": 32
+                                          }
+                                        }
+                                      ],
+                                      "orientation": "horizontal",
+                                      "visibility": "@{qty_salad > 0 ? 'visible' : 'gone'}"
+                                    },
+                                    {
+                                      "type": "container",
+                                      "actions": [
+                                        {
+                                          "log_id": "add_salad",
+                                          "url": "div-action://set_variable?name=qty_salad&value=1"
+                                        }
+                                      ],
+                                      "background": [
+                                        {
+                                          "type": "solid",
+                                          "color": "#EEF2FF"
+                                        }
+                                      ],
+                                      "border": {
+                                        "corner_radius": 12
+                                      },
+                                      "content_alignment_vertical": "center",
+                                      "height": {
+                                        "type": "fixed",
+                                        "value": 34
+                                      },
+                                      "items": [
+                                        {
+                                          "type": "text",
+                                          "font_size": 12,
+                                          "font_weight": "bold",
+                                          "text": "+ ADD",
+                                          "text_color": "#4F46E5"
+                                        }
+                                      ],
+                                      "paddings": {
+                                        "left": 14,
+                                        "right": 14
+                                      },
+                                      "visibility": "@{qty_salad > 0 ? 'gone' : 'visible'}",
+                                      "width": {
+                                        "type": "wrap_content"
+                                      }
+                                    }
+                                  ],
+                                  "width": {
+                                    "type": "fixed",
+                                    "value": 112
+                                  }
+                                }
+                              ],
+                              "margins": {
+                                "bottom": 8
+                              },
+                              "orientation": "horizontal",
+                              "paddings": {
+                                "left": 8,
+                                "right": 8,
+                                "top": 8,
+                                "bottom": 8
+                              },
+                              "width": {
+                                "type": "match_parent"
+                              }
+                            }
+                          ],
+                          "orientation": "vertical",
+                          "paddings": {
+                            "left": 16,
+                            "right": 16,
+                            "top": 8
+                          },
+                          "width": {
+                            "type": "match_parent"
+                          }
+                        }
+                      },
+                      {
+                        "state_id": "cart",
+                        "div": {
+                          "type": "container",
+                          "height": {
+                            "type": "match_parent"
+                          },
+                          "items": [
+                            {
+                              "type": "container",
+                              "content_alignment_vertical": "center",
+                              "items": [
+                                {
+                                  "type": "container",
+                                  "actions": [
+                                    {
+                                      "log_id": "back_to_menu",
+                                      "url": "div-action://set_variable?name=active_tab&value=menu"
+                                    }
+                                  ],
+                                  "background": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#FFFFFF"
+                                    }
+                                  ],
+                                  "border": {
+                                    "corner_radius": 12,
+                                    "stroke": {
+                                      "color": "#E2E8F0",
+                                      "width": 1
+                                    }
+                                  },
+                                  "content_alignment_horizontal": "center",
+                                  "content_alignment_vertical": "center",
+                                  "height": {
+                                    "type": "fixed",
+                                    "value": 40
+                                  },
+                                  "items": [
+                                    {
+                                      "type": "text",
+                                      "font_size": 18,
+                                      "font_weight": "bold",
+                                      "text": "←",
+                                      "text_color": "#0F172A"
+                                    }
+                                  ],
+                                  "width": {
+                                    "type": "fixed",
+                                    "value": 40
+                                  }
+                                },
+                                {
+                                  "type": "container",
+                                  "items": [
+                                    {
+                                      "type": "text",
+                                      "font_size": 20,
+                                      "font_weight": "bold",
+                                      "margins": {
+                                        "left": 12
+                                      },
+                                      "text": "Your order",
+                                      "text_color": "#0F172A"
+                                    }
+                                  ],
+                                  "width": {
+                                    "type": "match_parent",
+                                    "weight": 1
+                                  }
+                                },
+                                {
+                                  "type": "container",
+                                  "background": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#EEF2FF"
+                                    }
+                                  ],
+                                  "border": {
+                                    "corner_radius": 12
+                                  },
+                                  "items": [
+                                    {
+                                      "type": "text",
+                                      "font_size": 12,
+                                      "font_weight": "bold",
+                                      "text": "@{selected_table}",
+                                      "text_color": "#4F46E5",
+                                      "width": {
+                                        "type": "wrap_content"
+                                      }
+                                    }
+                                  ],
+                                  "paddings": {
+                                    "left": 10,
+                                    "right": 10,
+                                    "top": 6,
+                                    "bottom": 6
+                                  },
+                                  "visibility": "@{selected_table == 'None' ? 'gone' : 'visible'}",
+                                  "width": {
+                                    "type": "wrap_content"
+                                  }
+                                }
+                              ],
+                              "margins": {
+                                "bottom": 10
+                              },
+                              "orientation": "horizontal",
+                              "width": {
+                                "type": "match_parent"
+                              }
+                            },
+                            {
+                              "type": "container",
+                              "background": [
+                                {
+                                  "type": "solid",
+                                  "color": "#FFFFFF"
+                                }
+                              ],
+                              "border": {
+                                "corner_radius": 20,
+                                "stroke": {
+                                  "color": "#E2E8F0",
+                                  "width": 1
+                                }
+                              },
+                              "items": [
+                                {
+                                  "type": "text",
+                                  "font_size": 13,
+                                  "margins": {
+                                    "top": 2
+                                  },
+                                  "text": "Nothing here yet — add dishes from the Menu tab.",
+                                  "text_color": "#94A3B8",
+                                  "visibility": "@{qty_burger + qty_pizza + qty_salad > 0 ? 'gone' : 'visible'}"
+                                },
+                                {
+                                  "type": "container",
+                                  "content_alignment_vertical": "center",
+                                  "items": [
+                                    {
+                                      "type": "text",
+                                      "font_size": 14,
+                                      "text": "Classic Cheeseburger",
+                                      "text_color": "#334155",
+                                      "width": {
+                                        "type": "match_parent",
+                                        "weight": 1
+                                      }
+                                    },
+                                    {
+                                      "type": "container",
+                                      "background": [
+                                        {
+                                          "type": "solid",
+                                          "color": "#EEF2FF"
+                                        }
+                                      ],
+                                      "border": {
+                                        "corner_radius": 8
+                                      },
+                                      "items": [
+                                        {
+                                          "type": "text",
+                                          "font_size": 12,
+                                          "font_weight": "bold",
+                                          "text": "@{qty_burger}",
+                                          "text_color": "#4F46E5",
+                                          "width": {
+                                            "type": "wrap_content"
+                                          }
+                                        }
+                                      ],
+                                      "paddings": {
+                                        "left": 8,
+                                        "right": 8,
+                                        "top": 2,
+                                        "bottom": 2
+                                      },
+                                      "width": {
+                                        "type": "wrap_content"
+                                      }
+                                    },
+                                    {
+                                      "type": "text",
+                                      "font_size": 14,
+                                      "font_weight": "bold",
+                                      "margins": {
+                                        "left": 10
+                                      },
+                                      "text": "@{'$' + toString(toInteger((toInteger(qty_burger * 1299)) / 100)) + '.' + (((toInteger(qty_burger * 1299)) - toInteger((toInteger(qty_burger * 1299)) / 100) * 100) < 10 ? '0' + toString(((toInteger(qty_burger * 1299)) - toInteger((toInteger(qty_burger * 1299)) / 100) * 100)) : toString(((toInteger(qty_burger * 1299)) - toInteger((toInteger(qty_burger * 1299)) / 100) * 100)))}",
+                                      "text_color": "#0F172A",
+                                      "width": {
+                                        "type": "wrap_content"
+                                      }
+                                    }
+                                  ],
+                                  "margins": {
+                                    "top": 10
+                                  },
+                                  "orientation": "horizontal",
+                                  "visibility": "@{qty_burger > 0 ? 'visible' : 'gone'}",
+                                  "width": {
+                                    "type": "match_parent"
+                                  }
+                                },
+                                {
+                                  "type": "container",
+                                  "content_alignment_vertical": "center",
+                                  "items": [
+                                    {
+                                      "type": "text",
+                                      "font_size": 14,
+                                      "text": "Margherita Pizza",
+                                      "text_color": "#334155",
+                                      "width": {
+                                        "type": "match_parent",
+                                        "weight": 1
+                                      }
+                                    },
+                                    {
+                                      "type": "container",
+                                      "background": [
+                                        {
+                                          "type": "solid",
+                                          "color": "#EEF2FF"
+                                        }
+                                      ],
+                                      "border": {
+                                        "corner_radius": 8
+                                      },
+                                      "items": [
+                                        {
+                                          "type": "text",
+                                          "font_size": 12,
+                                          "font_weight": "bold",
+                                          "text": "@{qty_pizza}",
+                                          "text_color": "#4F46E5",
+                                          "width": {
+                                            "type": "wrap_content"
+                                          }
+                                        }
+                                      ],
+                                      "paddings": {
+                                        "left": 8,
+                                        "right": 8,
+                                        "top": 2,
+                                        "bottom": 2
+                                      },
+                                      "width": {
+                                        "type": "wrap_content"
+                                      }
+                                    },
+                                    {
+                                      "type": "text",
+                                      "font_size": 14,
+                                      "font_weight": "bold",
+                                      "margins": {
+                                        "left": 10
+                                      },
+                                      "text": "@{'$' + toString(toInteger((toInteger(qty_pizza * 1550)) / 100)) + '.' + (((toInteger(qty_pizza * 1550)) - toInteger((toInteger(qty_pizza * 1550)) / 100) * 100) < 10 ? '0' + toString(((toInteger(qty_pizza * 1550)) - toInteger((toInteger(qty_pizza * 1550)) / 100) * 100)) : toString(((toInteger(qty_pizza * 1550)) - toInteger((toInteger(qty_pizza * 1550)) / 100) * 100)))}",
+                                      "text_color": "#0F172A",
+                                      "width": {
+                                        "type": "wrap_content"
+                                      }
+                                    }
+                                  ],
+                                  "margins": {
+                                    "top": 10
+                                  },
+                                  "orientation": "horizontal",
+                                  "visibility": "@{qty_pizza > 0 ? 'visible' : 'gone'}",
+                                  "width": {
+                                    "type": "match_parent"
+                                  }
+                                },
+                                {
+                                  "type": "container",
+                                  "content_alignment_vertical": "center",
+                                  "items": [
+                                    {
+                                      "type": "text",
+                                      "font_size": 14,
+                                      "text": "Caesar Salad",
+                                      "text_color": "#334155",
+                                      "width": {
+                                        "type": "match_parent",
+                                        "weight": 1
+                                      }
+                                    },
+                                    {
+                                      "type": "container",
+                                      "background": [
+                                        {
+                                          "type": "solid",
+                                          "color": "#EEF2FF"
+                                        }
+                                      ],
+                                      "border": {
+                                        "corner_radius": 8
+                                      },
+                                      "items": [
+                                        {
+                                          "type": "text",
+                                          "font_size": 12,
+                                          "font_weight": "bold",
+                                          "text": "@{qty_salad}",
+                                          "text_color": "#4F46E5",
+                                          "width": {
+                                            "type": "wrap_content"
+                                          }
+                                        }
+                                      ],
+                                      "paddings": {
+                                        "left": 8,
+                                        "right": 8,
+                                        "top": 2,
+                                        "bottom": 2
+                                      },
+                                      "width": {
+                                        "type": "wrap_content"
+                                      }
+                                    },
+                                    {
+                                      "type": "text",
+                                      "font_size": 14,
+                                      "font_weight": "bold",
+                                      "margins": {
+                                        "left": 10
+                                      },
+                                      "text": "@{'$' + toString(toInteger((toInteger(qty_salad * 800)) / 100)) + '.' + (((toInteger(qty_salad * 800)) - toInteger((toInteger(qty_salad * 800)) / 100) * 100) < 10 ? '0' + toString(((toInteger(qty_salad * 800)) - toInteger((toInteger(qty_salad * 800)) / 100) * 100)) : toString(((toInteger(qty_salad * 800)) - toInteger((toInteger(qty_salad * 800)) / 100) * 100)))}",
+                                      "text_color": "#0F172A",
+                                      "width": {
+                                        "type": "wrap_content"
+                                      }
+                                    }
+                                  ],
+                                  "margins": {
+                                    "top": 10
+                                  },
+                                  "orientation": "horizontal",
+                                  "visibility": "@{qty_salad > 0 ? 'visible' : 'gone'}",
+                                  "width": {
+                                    "type": "match_parent"
+                                  }
+                                },
+                                {
+                                  "type": "container",
+                                  "background": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#EEF2FF"
+                                    }
+                                  ],
+                                  "height": {
+                                    "type": "fixed",
+                                    "value": 1
+                                  },
+                                  "margins": {
+                                    "top": 12
+                                  },
+                                  "visibility": "@{qty_burger + qty_pizza + qty_salad > 0 ? 'visible' : 'gone'}",
+                                  "width": {
+                                    "type": "match_parent"
+                                  }
+                                },
+                                {
+                                  "type": "container",
+                                  "content_alignment_vertical": "center",
+                                  "items": [
+                                    {
+                                      "type": "container",
+                                      "items": [
+                                        {
+                                          "type": "text",
+                                          "font_size": 15,
+                                          "font_weight": "bold",
+                                          "text": "Total",
+                                          "text_color": "#0F172A"
+                                        },
+                                        {
+                                          "type": "text",
+                                          "font_size": 11,
+                                          "margins": {
+                                            "top": 1
+                                          },
+                                          "text": "Incl. 8% tax",
+                                          "text_color": "#94A3B8"
+                                        }
+                                      ],
+                                      "orientation": "vertical",
+                                      "width": {
+                                        "type": "match_parent",
+                                        "weight": 1
+                                      }
+                                    },
+                                    {
+                                      "type": "text",
+                                      "font_size": 20,
+                                      "font_weight": "bold",
+                                      "text": "@{'$' + toString(toInteger((toInteger(toInteger((qty_burger * 1299 + qty_pizza * 1550 + qty_salad * 800) * 108 / 100 + 0.5))) / 100)) + '.' + (((toInteger(toInteger((qty_burger * 1299 + qty_pizza * 1550 + qty_salad * 800) * 108 / 100 + 0.5))) - toInteger((toInteger(toInteger((qty_burger * 1299 + qty_pizza * 1550 + qty_salad * 800) * 108 / 100 + 0.5))) / 100) * 100) < 10 ? '0' + toString(((toInteger(toInteger((qty_burger * 1299 + qty_pizza * 1550 + qty_salad * 800) * 108 / 100 + 0.5))) - toInteger((toInteger(toInteger((qty_burger * 1299 + qty_pizza * 1550 + qty_salad * 800) * 108 / 100 + 0.5))) / 100) * 100)) : toString(((toInteger(toInteger((qty_burger * 1299 + qty_pizza * 1550 + qty_salad * 800) * 108 / 100 + 0.5))) - toInteger((toInteger(toInteger((qty_burger * 1299 + qty_pizza * 1550 + qty_salad * 800) * 108 / 100 + 0.5))) / 100) * 100)))}",
+                                      "text_color": "#059669",
+                                      "width": {
+                                        "type": "wrap_content"
+                                      }
+                                    }
+                                  ],
+                                  "margins": {
+                                    "top": 10
+                                  },
+                                  "orientation": "horizontal",
+                                  "width": {
+                                    "type": "match_parent"
+                                  }
+                                }
+                              ],
+                              "orientation": "vertical",
+                              "paddings": {
+                                "left": 16,
+                                "right": 16,
+                                "top": 16,
+                                "bottom": 16
+                              },
+                              "width": {
+                                "type": "match_parent"
+                              }
+                            },
+                            {
+                              "type": "container",
+                              "actions": [
+                                {
+                                  "log_id": "submit_order",
+                                  "type": "submit",
+                                  "method": "POST",
+                                  "url": "https://your-api.com/order?table=@{selected_table}&burger=@{qty_burger}&pizza=@{qty_pizza}&salad=@{qty_salad}",
+                                  "enabled": "@{qty_burger + qty_pizza + qty_salad > 0}"
+                                },
+                                {
+                                  "log_id": "save_order_count",
+                                  "url": "div-action://set_variable?name=last_order_count&value=@{qty_burger + qty_pizza + qty_salad}",
+                                  "enabled": "@{qty_burger + qty_pizza + qty_salad > 0}"
+                                },
+                                {
+                                  "log_id": "reset_burger",
+                                  "url": "div-action://set_variable?name=qty_burger&value=0",
+                                  "enabled": "@{qty_burger + qty_pizza + qty_salad > 0}"
+                                },
+                                {
+                                  "log_id": "reset_pizza",
+                                  "url": "div-action://set_variable?name=qty_pizza&value=0",
+                                  "enabled": "@{qty_burger + qty_pizza + qty_salad > 0}"
+                                },
+                                {
+                                  "log_id": "reset_salad",
+                                  "url": "div-action://set_variable?name=qty_salad&value=0",
+                                  "enabled": "@{qty_burger + qty_pizza + qty_salad > 0}"
+                                },
+                                {
+                                  "log_id": "goto_sent",
+                                  "url": "div-action://set_variable?name=active_tab&value=sent",
+                                  "enabled": "@{qty_burger + qty_pizza + qty_salad > 0}"
+                                }
+                              ],
+                              "background": [
+                                {
+                                  "type": "solid",
+                                  "color": "@{qty_burger + qty_pizza + qty_salad > 0 ? '#4F46E5' : '#CBD5E1'}"
+                                }
+                              ],
+                              "border": {
+                                "corner_radius": 14
+                              },
+                              "content_alignment_horizontal": "center",
+                              "content_alignment_vertical": "center",
+                              "height": {
+                                "type": "fixed",
+                                "value": 52
+                              },
+                              "items": [
+                                {
+                                  "type": "image",
+                                  "height": {
+                                    "type": "fixed",
+                                    "value": 20
+                                  },
+                                  "image_url": "https://img.icons8.com/ios-filled/50/FFFFFF/waiter.png",
+                                  "margins": {
+                                    "right": 8
+                                  },
+                                  "width": {
+                                    "type": "fixed",
+                                    "value": 20
+                                  }
+                                },
+                                {
+                                  "type": "text",
+                                  "font_size": 16,
+                                  "font_weight": "bold",
+                                  "text": "Send to Kitchen",
+                                  "text_color": "#FFFFFF",
+                                  "width": {
+                                    "type": "wrap_content"
+                                  }
+                                }
+                              ],
+                              "margins": {
+                                "top": 14
+                              },
+                              "orientation": "horizontal",
+                              "width": {
+                                "type": "match_parent"
+                              }
+                            }
+                          ],
+                          "orientation": "vertical",
+                          "paddings": {
+                            "left": 16,
+                            "right": 16,
+                            "top": 12
+                          },
+                          "width": {
+                            "type": "match_parent"
+                          }
+                        }
+                      },
+                      {
+                        "state_id": "sent",
+                        "div": {
+                          "type": "container",
+                          "content_alignment_horizontal": "center",
+                          "height": {
+                            "type": "match_parent"
+                          },
+                          "items": [
+                            {
+                              "type": "container",
+                              "background": [
+                                {
+                                  "type": "solid",
+                                  "color": "#D1FAE5"
+                                }
+                              ],
+                              "border": {
+                                "corner_radius": 48
+                              },
+                              "content_alignment_horizontal": "center",
+                              "content_alignment_vertical": "center",
+                              "height": {
+                                "type": "fixed",
+                                "value": 96
+                              },
+                              "items": [
+                                {
+                                  "type": "text",
+                                  "font_size": 44,
+                                  "font_weight": "bold",
+                                  "text": "✓",
+                                  "text_color": "#059669"
+                                }
+                              ],
+                              "width": {
+                                "type": "fixed",
+                                "value": 96
+                              }
+                            },
+                            {
+                              "type": "text",
+                              "font_size": 24,
+                              "font_weight": "bold",
+                              "margins": {
+                                "top": 20
+                              },
+                              "text": "Order sent!",
+                              "text_color": "#0F172A",
+                              "width": {
+                                "type": "wrap_content"
+                              }
+                            },
+                            {
+                              "type": "text",
+                              "font_size": 14,
+                              "margins": {
+                                "top": 6
+                              },
+                              "text": "The kitchen is preparing it right now.",
+                              "text_color": "#64748B",
+                              "width": {
+                                "type": "wrap_content"
+                              }
+                            },
+                            {
+                              "type": "container",
+                              "background": [
+                                {
+                                  "type": "solid",
+                                  "color": "#EEF2FF"
+                                }
+                              ],
+                              "border": {
+                                "corner_radius": 14
+                              },
+                              "content_alignment_vertical": "center",
+                              "items": [
+                                {
+                                  "type": "text",
+                                  "font_size": 13,
+                                  "font_weight": "bold",
+                                  "text": "@{last_order_count}",
+                                  "text_color": "#4F46E5",
+                                  "width": {
+                                    "type": "wrap_content"
+                                  }
+                                },
+                                {
+                                  "type": "text",
+                                  "font_size": 13,
+                                  "font_weight": "bold",
+                                  "text": " items on the way",
+                                  "text_color": "#4F46E5",
+                                  "width": {
+                                    "type": "wrap_content"
+                                  }
+                                }
+                              ],
+                              "margins": {
+                                "top": 16
+                              },
+                              "orientation": "horizontal",
+                              "paddings": {
+                                "left": 14,
+                                "right": 14,
+                                "top": 8,
+                                "bottom": 8
+                              },
+                              "visibility": "@{last_order_count > 0 ? 'visible' : 'gone'}",
+                              "width": {
+                                "type": "wrap_content"
+                              }
+                            },
+                            {
+                              "type": "container",
+                              "actions": [
+                                {
+                                  "log_id": "new_order",
+                                  "url": "div-action://set_variable?name=active_tab&value=tables"
+                                }
+                              ],
+                              "background": [
+                                {
+                                  "type": "solid",
+                                  "color": "#EEF2FF"
+                                }
+                              ],
+                              "border": {
+                                "corner_radius": 14
+                              },
+                              "content_alignment_horizontal": "center",
+                              "content_alignment_vertical": "center",
+                              "height": {
+                                "type": "fixed",
+                                "value": 50
+                              },
+                              "items": [
+                                {
+                                  "type": "text",
+                                  "font_size": 15,
+                                  "font_weight": "bold",
+                                  "text": "Start new order",
+                                  "text_color": "#4F46E5",
+                                  "width": {
+                                    "type": "wrap_content"
+                                  }
+                                }
+                              ],
+                              "margins": {
+                                "top": 28
+                              },
+                              "orientation": "horizontal",
+                              "width": {
+                                "type": "match_parent"
+                              }
+                            }
+                          ],
+                          "orientation": "vertical",
+                          "paddings": {
+                            "left": 24,
+                            "right": 24,
+                            "top": 44
+                          },
+                          "width": {
+                            "type": "match_parent"
+                          }
+                        }
+                      }
+                    ],
+                    "width": {
+                      "type": "match_parent"
+                    }
+                  }
+                ],
+                "orientation": "vertical",
+                "width": {
+                  "type": "match_parent"
+                }
+              },
+              {
+                "type": "container",
+                "background": [
+                  {
+                    "type": "solid",
+                    "color": "#FFFFFF"
+                  }
+                ],
+                "border": {
+                  "stroke": {
+                    "color": "#E2E8F0",
+                    "width": 1
+                  }
+                },
+                "content_alignment_vertical": "center",
+                "height": {
+                  "type": "fixed",
+                  "value": 64
+                },
+                "items": [
+                  {
+                    "type": "container",
+                    "actions": [
+                      {
+                        "log_id": "nav_tables",
+                        "url": "div-action://set_variable?name=active_tab&value=tables"
+                      }
+                    ],
+                    "content_alignment_horizontal": "center",
+                    "content_alignment_vertical": "center",
+                    "height": {
+                      "type": "fixed",
+                      "value": 64
+                    },
+                    "items": [
+                      {
+                        "type": "container",
+                        "background": [
+                          {
+                            "type": "solid",
+                            "color": "@{active_tab == 'tables' ? '#EEF2FF' : '#00FFFFFF'}"
+                          }
+                        ],
+                        "border": {
+                          "corner_radius": 14
+                        },
+                        "content_alignment_vertical": "center",
+                        "items": [
+                          {
+                            "type": "image",
+                            "height": {
+                              "type": "fixed",
+                              "value": 20
+                            },
+                            "image_url": "@{active_tab == 'tables' ? 'https://img.icons8.com/ios-filled/50/4F46E5/table.png' : 'https://img.icons8.com/ios/50/94A3B8/table.png'}",
+                            "margins": {
+                              "right": 7
+                            },
+                            "width": {
+                              "type": "fixed",
+                              "value": 20
+                            }
+                          },
+                          {
+                            "type": "text",
+                            "font_size": 13,
+                            "font_weight": "bold",
+                            "text": "Tables",
+                            "text_color": "@{active_tab == 'tables' ? '#4F46E5' : '#94A3B8'}",
+                            "width": {
+                              "type": "wrap_content"
+                            }
+                          }
+                        ],
+                        "orientation": "horizontal",
+                        "paddings": {
+                          "left": 16,
+                          "right": 16,
+                          "top": 9,
+                          "bottom": 9
+                        },
+                        "width": {
+                          "type": "wrap_content"
+                        }
+                      }
+                    ],
+                    "width": {
+                      "type": "match_parent",
+                      "weight": 1
+                    }
+                  },
+                  {
+                    "type": "container",
+                    "background": [
+                      {
+                        "type": "solid",
+                        "color": "#E2E8F0"
+                      }
+                    ],
+                    "height": {
+                      "type": "fixed",
+                      "value": 28
+                    },
+                    "width": {
+                      "type": "fixed",
+                      "value": 1
+                    }
+                  },
+                  {
+                    "type": "container",
+                    "actions": [
+                      {
+                        "log_id": "nav_menu",
+                        "url": "div-action://set_variable?name=active_tab&value=menu"
+                      }
+                    ],
+                    "content_alignment_horizontal": "center",
+                    "content_alignment_vertical": "center",
+                    "height": {
+                      "type": "fixed",
+                      "value": 64
+                    },
+                    "items": [
+                      {
+                        "type": "container",
+                        "background": [
+                          {
+                            "type": "solid",
+                            "color": "@{active_tab == 'menu' ? '#EEF2FF' : '#00FFFFFF'}"
+                          }
+                        ],
+                        "border": {
+                          "corner_radius": 14
+                        },
+                        "content_alignment_vertical": "center",
+                        "items": [
+                          {
+                            "type": "image",
+                            "height": {
+                              "type": "fixed",
+                              "value": 20
+                            },
+                            "image_url": "@{active_tab == 'menu' ? 'https://img.icons8.com/ios-filled/50/4F46E5/restaurant-menu.png' : 'https://img.icons8.com/ios/50/94A3B8/restaurant-menu.png'}",
+                            "margins": {
+                              "right": 7
+                            },
+                            "width": {
+                              "type": "fixed",
+                              "value": 20
+                            }
+                          },
+                          {
+                            "type": "text",
+                            "font_size": 13,
+                            "font_weight": "bold",
+                            "text": "Menu",
+                            "text_color": "@{active_tab == 'menu' ? '#4F46E5' : '#94A3B8'}",
+                            "width": {
+                              "type": "wrap_content"
+                            }
+                          }
+                        ],
+                        "orientation": "horizontal",
+                        "paddings": {
+                          "left": 16,
+                          "right": 16,
+                          "top": 9,
+                          "bottom": 9
+                        },
+                        "width": {
+                          "type": "wrap_content"
+                        }
+                      }
+                    ],
+                    "width": {
+                      "type": "match_parent",
+                      "weight": 1
+                    }
+                  },
+                  {
+                    "type": "container",
+                    "background": [
+                      {
+                        "type": "solid",
+                        "color": "#E2E8F0"
+                      }
+                    ],
+                    "height": {
+                      "type": "fixed",
+                      "value": 28
+                    },
+                    "width": {
+                      "type": "fixed",
+                      "value": 1
+                    }
+                  },
+                  {
+                    "type": "container",
+                    "actions": [
+                      {
+                        "log_id": "nav_cart",
+                        "url": "div-action://set_variable?name=active_tab&value=cart"
+                      }
+                    ],
+                    "content_alignment_horizontal": "center",
+                    "content_alignment_vertical": "center",
+                    "height": {
+                      "type": "fixed",
+                      "value": 64
+                    },
+                    "items": [
+                      {
+                        "type": "container",
+                        "background": [
+                          {
+                            "type": "solid",
+                            "color": "@{active_tab == 'cart' ? '#EEF2FF' : '#00FFFFFF'}"
+                          }
+                        ],
+                        "border": {
+                          "corner_radius": 14
+                        },
+                        "content_alignment_vertical": "center",
+                        "items": [
+                          {
+                            "type": "image",
+                            "height": {
+                              "type": "fixed",
+                              "value": 20
+                            },
+                            "image_url": "@{active_tab == 'cart' ? 'https://img.icons8.com/ios-filled/50/4F46E5/shopping-cart.png' : 'https://img.icons8.com/ios/50/94A3B8/shopping-cart.png'}",
+                            "margins": {
+                              "right": 7
+                            },
+                            "width": {
+                              "type": "fixed",
+                              "value": 20
+                            }
+                          },
+                          {
+                            "type": "text",
+                            "font_size": 13,
+                            "font_weight": "bold",
+                            "text": "Cart",
+                            "text_color": "@{active_tab == 'cart' ? '#4F46E5' : '#94A3B8'}",
+                            "width": {
+                              "type": "wrap_content"
+                            }
+                          },
+                          {
+                            "type": "container",
+                            "background": [
+                              {
+                                "type": "solid",
+                                "color": "#4F46E5"
+                              }
+                            ],
+                            "border": {
+                              "corner_radius": 10
+                            },
+                            "items": [
+                              {
+                                "type": "text",
+                                "font_size": 10,
+                                "font_weight": "bold",
+                                "text": "@{qty_burger + qty_pizza + qty_salad}",
+                                "text_color": "#FFFFFF",
+                                "width": {
+                                  "type": "wrap_content"
+                                }
+                              }
+                            ],
+                            "margins": {
+                              "left": 6
+                            },
+                            "paddings": {
+                              "left": 5,
+                              "right": 5,
+                              "top": 1,
+                              "bottom": 1
+                            },
+                            "visibility": "@{qty_burger + qty_pizza + qty_salad > 0 ? 'visible' : 'gone'}",
+                            "width": {
+                              "type": "wrap_content"
+                            }
+                          }
+                        ],
+                        "orientation": "horizontal",
+                        "paddings": {
+                          "left": 16,
+                          "right": 16,
+                          "top": 9,
+                          "bottom": 9
+                        },
+                        "width": {
+                          "type": "wrap_content"
+                        }
+                      }
+                    ],
+                    "width": {
+                      "type": "match_parent",
+                      "weight": 1
+                    }
+                  }
+                ],
+                "orientation": "horizontal",
+                "width": {
+                  "type": "match_parent"
+                }
+              }
+            ],
+            "orientation": "vertical",
+            "width": {
+              "type": "match_parent"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "sizeKb": 35.2
+}

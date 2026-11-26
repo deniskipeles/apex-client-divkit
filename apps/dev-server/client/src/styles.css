@@ -1,0 +1,153 @@
+@import 'tailwindcss';
+
+/* ------------------------------------------------------------------ */
+/* Design tokens (dark forest + emerald, matches the boda brand)       */
+/* ------------------------------------------------------------------ */
+@theme {
+  --color-canvas: #070b09;
+  --color-canvas-soft: #0a0f0c;
+  --color-panel: rgba(255, 255, 255, 0.04);
+  --color-panel-line: rgba(255, 255, 255, 0.09);
+  --color-ink: #e7ece9;
+  --color-ink-dim: #9aa8a0;
+  --color-ink-faint: #64706a;
+  --color-brand: #10b981;
+  --color-brand-deep: #064e3b;
+  --color-brand-soft: rgba(16, 185, 129, 0.12);
+  --color-amber-brand: #f59e0b;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas,
+    'Liberation Mono', monospace;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background-color: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none;
+}
+
+/* ------------------------------------------------------------------ */
+/* Ambient glows + dotted backdrop for the simulator stage             */
+/* ------------------------------------------------------------------ */
+.stage-dots {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+  background-size: 18px 18px;
+}
+
+/* ------------------------------------------------------------------ */
+/* Scrollbars                                                          */
+/* ------------------------------------------------------------------ */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.24);
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ------------------------------------------------------------------ */
+/* devices.css bridge — make .device-screen host live DOM              */
+/* (the library styles it for <img>; we keep geometry, add host rules) */
+/* ------------------------------------------------------------------ */
+.device .device-screen {
+  overflow: hidden;
+}
+.device-screen-live {
+  position: relative !important;
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+/* keep DivKit's own background from clashing with the device radius */
+.device-screen-live > .divkit-root,
+.device-screen-live > div {
+  height: 100%;
+}
+
+/* the device frame scales via transform — disable pointer scaling issues */
+.device-scale-wrap {
+  will-change: transform;
+  transform-origin: center center;
+}
+
+/* ------------------------------------------------------------------ */
+/* DivKit host sizing (grid root must fill the screen host)            */
+/* ------------------------------------------------------------------ */
+.divkit-host {
+  height: 100%;
+  width: 100%;
+  display: block;
+}
+
+/* ------------------------------------------------------------------ */
+/* JSON syntax highlighting                                            */
+/* ------------------------------------------------------------------ */
+.json-view {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.65;
+  tab-size: 2;
+}
+.json-view .j-key {
+  color: #7dd3fc;
+}
+.json-view .j-str {
+  color: #86efac;
+}
+.json-view .j-num {
+  color: #fcd34d;
+}
+.json-view .j-bool {
+  color: #f0abfc;
+}
+.json-view .j-null {
+  color: #f0abfc;
+}
+/* expression tokens inside strings — show DivKit @{...} refs in violet */
+.json-view .j-expr {
+  color: #c4b5fd;
+}
+
+/* ------------------------------------------------------------------ */
+/* Small utilities                                                     */
+/* ------------------------------------------------------------------ */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.fade-up {
+  animation: fade-up 0.28s ease both;
+}

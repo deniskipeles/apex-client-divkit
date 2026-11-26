@@ -1,0 +1,28 @@
+{
+ "id": 1,
+ "name": "samples",
+ "schema": {
+  "fields": {
+   "name": {
+    "type": "string",
+    "required": false,
+    "uid": "samples_name"
+   },
+   "note": {
+    "type": "string",
+    "required": false,
+    "uid": "samples_note"
+   }
+  }
+ },
+ "seed": [
+  {
+   "name": "Probe item",
+   "note": "seed"
+  },
+  {
+   "name": "Second probe",
+   "note": "seed"
+  }
+ ]
+}

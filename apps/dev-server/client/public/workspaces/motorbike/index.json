@@ -1,0 +1,1963 @@
+{
+ "meta": {
+  "slug": "motorbike",
+  "manifestId": "motorbike",
+  "title": "BODA BODA",
+  "subtitle": "Work & payments for motorcycle-taxi riders",
+  "accent": "#F59E0B",
+  "terminal": "BODA-001",
+  "android": false
+ },
+ "manifest": {
+  "format": "apex.workspace/1",
+  "id": "motorbike",
+  "title": "BODA BODA",
+  "subtitle": "Work & payments for motorcycle-taxi riders",
+  "terminal": "BODA-001",
+  "accent": "#F59E0B",
+  "mode": "NATIVE",
+  "capabilities": [
+   "haptics",
+   "clipboard"
+  ],
+  "tools": {
+   "hapticVibration": true,
+   "clipboardAccess": true,
+   "offlinePageCaching": true
+  },
+  "unread": 1,
+  "hub": "card.json",
+  "catalog": "tool_catalog.json",
+  "collections": {
+   "dir": "collections",
+   "files": [
+    "trips.json",
+    "expenses.json",
+    "handovers.json"
+   ]
+  },
+  "cards": {
+   "dir": "tools",
+   "order": [
+    "trip",
+    "earnings",
+    "expenses",
+    "handover"
+   ]
+  }
+ },
+ "hub": {
+  "card": {
+   "log_id": "motorbike_hub",
+   "variables": [
+    {
+     "name": "user.workspace_title",
+     "type": "string",
+     "value": "BODA BODA"
+    },
+    {
+     "name": "user.rider_name",
+     "type": "string",
+     "value": "Rider"
+    },
+    {
+     "name": "user.earnings_today",
+     "type": "string",
+     "value": "0"
+    },
+    {
+     "name": "user.trip_count",
+     "type": "integer",
+     "value": 0
+    },
+    {
+     "name": "user.net_profit",
+     "type": "string",
+     "value": "0"
+    },
+    {
+     "name": "user.fare_input",
+     "type": "string",
+     "value": "150"
+    },
+    {
+     "name": "user.payment_method",
+     "type": "string",
+     "value": "M-Pesa"
+    },
+    {
+     "name": "user.route_input",
+     "type": "string",
+     "value": ""
+    },
+    {
+     "name": "user.weekly_json",
+     "type": "string",
+     "value": "[{\"day\":\"Mon\",\"fare\":1240},{\"day\":\"Tue\",\"fare\":980},{\"day\":\"Wed\",\"fare\":1610},{\"day\":\"Thu\",\"fare\":1050},{\"day\":\"Fri\",\"fare\":1870},{\"day\":\"Sat\",\"fare\":2240},{\"day\":\"Sun\",\"fare\":0}]"
+    },
+    {
+     "name": "user.trips_json",
+     "type": "string",
+     "value": "[{\"id\":\"t1\",\"day\":\"Sat\",\"fare\":350,\"payment\":\"M-Pesa\",\"route\":\"Kawangware → CBD\"},{\"id\":\"t2\",\"day\":\"Sat\",\"fare\":220,\"payment\":\"Cash\",\"route\":\"Westlands → Parklands\"},{\"id\":\"t3\",\"day\":\"Fri\",\"fare\":480,\"payment\":\"M-Pesa\",\"route\":\"CBD → Karen\"}]"
+    },
+    {
+     "name": "user.expenses_json",
+     "type": "string",
+     "value": "[]"
+    },
+    {
+     "name": "user.handover_status",
+     "type": "string",
+     "value": "NOT_STARTED"
+    },
+    {
+     "name": "user.trip_modal",
+     "type": "boolean",
+     "value": false
+    },
+    {
+     "name": "user.last_action",
+     "type": "string",
+     "value": "Ready"
+    }
+   ],
+   "states": [
+    {
+     "state_id": 0,
+     "div": {
+      "type": "container",
+      "orientation": "vertical",
+      "items": [
+       {
+        "type": "container",
+        "orientation": "horizontal",
+        "items": [
+         {
+          "type": "container",
+          "orientation": "vertical",
+          "items": [
+           {
+            "type": "text",
+            "text": "BODA BODA",
+            "font_size": 26,
+            "font_weight": "bold",
+            "text_color": "#F8FAFC",
+            "max_lines": 2
+           },
+           {
+            "type": "text",
+            "text": "Every trip, fare and fuel cost — in one place",
+            "font_size": 12,
+            "font_weight": "regular",
+            "text_color": "#94A3B8",
+            "max_lines": 2
+           }
+          ],
+          "weight": 1
+         }
+        ],
+        "item_spacing": 8,
+        "paddings": {
+         "left": 16,
+         "top": 32,
+         "right": 16,
+         "bottom": 8
+        }
+       },
+       {
+        "type": "container",
+        "orientation": "horizontal",
+        "items": [
+         {
+          "type": "container",
+          "orientation": "vertical",
+          "item_spacing": 4,
+          "paddings": {
+           "left": 12,
+           "top": 8,
+           "right": 12,
+           "bottom": 8
+          },
+          "background_color": "#16233A",
+          "border": {
+           "corner_radius": 12,
+           "stroke": {
+            "color": "#1E293B",
+            "width": 1
+           }
+          },
+          "items": [
+           {
+            "type": "text",
+            "text": "TODAY",
+            "font_size": 11,
+            "font_weight": "bold",
+            "text_color": "#94A3B8"
+           },
+           {
+            "type": "text",
+            "text": "@{'KES ' + user.earnings_today}",
+            "font_size": 18,
+            "font_weight": "bold",
+            "text_color": "#34D399"
+           }
+          ],
+          "width": {
+           "type": "match_parent"
+          },
+          "id": "metric_today"
+         },
+         {
+          "type": "container",
+          "orientation": "vertical",
+          "item_spacing": 4,
+          "paddings": {
+           "left": 12,
+           "top": 8,
+           "right": 12,
+           "bottom": 8
+          },
+          "background_color": "#16233A",
+          "border": {
+           "corner_radius": 12,
+           "stroke": {
+            "color": "#1E293B",
+            "width": 1
+           }
+          },
+          "items": [
+           {
+            "type": "text",
+            "text": "TRIPS",
+            "font_size": 11,
+            "font_weight": "bold",
+            "text_color": "#94A3B8"
+           },
+           {
+            "type": "text",
+            "text": "@{user.trip_count}",
+            "font_size": 18,
+            "font_weight": "bold",
+            "text_color": "#F8FAFC"
+           }
+          ],
+          "width": {
+           "type": "match_parent"
+          },
+          "id": "metric_trips"
+         },
+         {
+          "type": "container",
+          "orientation": "vertical",
+          "item_spacing": 4,
+          "paddings": {
+           "left": 12,
+           "top": 8,
+           "right": 12,
+           "bottom": 8
+          },
+          "background_color": "#16233A",
+          "border": {
+           "corner_radius": 12,
+           "stroke": {
+            "color": "#1E293B",
+            "width": 1
+           }
+          },
+          "items": [
+           {
+            "type": "text",
+            "text": "NET",
+            "font_size": 11,
+            "font_weight": "bold",
+            "text_color": "#94A3B8"
+           },
+           {
+            "type": "text",
+            "text": "@{'KES ' + user.net_profit}",
+            "font_size": 18,
+            "font_weight": "bold",
+            "text_color": "#F8FAFC"
+           }
+          ],
+          "width": {
+           "type": "match_parent"
+          },
+          "id": "metric_net"
+         }
+        ],
+        "item_spacing": 8,
+        "paddings": {
+         "left": 16,
+         "top": 4,
+         "right": 16,
+         "bottom": 8
+        }
+       },
+       {
+        "type": "container",
+        "orientation": "vertical",
+        "items": [
+         {
+          "type": "custom",
+          "custom_type": "sdui_chart",
+          "custom_props": {
+           "chart_type": "bar",
+           "title": "THIS WEEK",
+           "subtitle": "Fares per day",
+           "label_field": "day",
+           "value_field": "fare",
+           "value_prefix": "KES ",
+           "value_suffix": "",
+           "accent_color": "#38BDF8",
+           "height": 190,
+           "show_grid": true,
+           "show_legend": true,
+           "interactive": true,
+           "data_var": "user.weekly_json"
+          },
+          "id": "chart_week"
+         },
+         {
+          "type": "inline_banner",
+          "custom_props": {
+           "text": "@{'Last action: ' + user.last_action}",
+           "tone": "info"
+          },
+          "id": "banner_last"
+         }
+        ],
+        "item_spacing": 8,
+        "paddings": {
+         "left": 16,
+         "top": 0,
+         "right": 16,
+         "bottom": 0
+        }
+       },
+       {
+        "type": "container",
+        "orientation": "vertical",
+        "items": [
+         {
+          "type": "button",
+          "text": "Record a trip",
+          "font_size": 14,
+          "font_weight": "bold",
+          "text_color": "#FFFFFF",
+          "background_color": "#7C3AED",
+          "corner_radius": 12,
+          "height": {
+           "type": "fixed",
+           "value": 44
+          },
+          "width": {
+           "type": "match_parent"
+          },
+          "actions": [
+           {
+            "url": "nav://push?id=trip"
+           }
+          ],
+          "id": "nav_trip"
+         },
+         {
+          "type": "button",
+          "text": "Earnings",
+          "font_size": 14,
+          "font_weight": "bold",
+          "text_color": "#F8FAFC",
+          "background_color": "#16233A",
+          "corner_radius": 12,
+          "height": {
+           "type": "fixed",
+           "value": 44
+          },
+          "width": {
+           "type": "match_parent"
+          },
+          "actions": [
+           {
+            "url": "nav://push?id=earnings"
+           }
+          ],
+          "border": {
+           "corner_radius": 12,
+           "stroke": {
+            "color": "#1E293B",
+            "width": 1
+           }
+          },
+          "id": "nav_earnings"
+         },
+         {
+          "type": "button",
+          "text": "Expenses",
+          "font_size": 14,
+          "font_weight": "bold",
+          "text_color": "#F8FAFC",
+          "background_color": "#16233A",
+          "corner_radius": 12,
+          "height": {
+           "type": "fixed",
+           "value": 44
+          },
+          "width": {
+           "type": "match_parent"
+          },
+          "actions": [
+           {
+            "url": "nav://push?id=expenses"
+           }
+          ],
+          "border": {
+           "corner_radius": 12,
+           "stroke": {
+            "color": "#1E293B",
+            "width": 1
+           }
+          },
+          "id": "nav_expenses"
+         },
+         {
+          "type": "button",
+          "text": "Handover",
+          "font_size": 14,
+          "font_weight": "bold",
+          "text_color": "#F8FAFC",
+          "background_color": "#16233A",
+          "corner_radius": 12,
+          "height": {
+           "type": "fixed",
+           "value": 44
+          },
+          "width": {
+           "type": "match_parent"
+          },
+          "actions": [
+           {
+            "url": "nav://push?id=handover"
+           }
+          ],
+          "border": {
+           "corner_radius": 12,
+           "stroke": {
+            "color": "#1E293B",
+            "width": 1
+           }
+          },
+          "id": "nav_handover"
+         }
+        ],
+        "item_spacing": 8,
+        "paddings": {
+         "left": 16,
+         "top": 8,
+         "right": 16,
+         "bottom": 0
+        }
+       }
+      ],
+      "item_spacing": 8,
+      "paddings": {
+       "left": 0,
+       "top": 0,
+       "right": 0,
+       "bottom": 16
+      }
+     }
+    }
+   ]
+  }
+ },
+ "catalog": {
+  "title": "Today",
+  "subtitle": "Pick a workflow to begin.",
+  "entries": [
+   {
+    "file": "trip",
+    "label": "Record a trip",
+    "icon": "add_circle",
+    "accent_color": "#F59E0B",
+    "subtitle": "Fare, route and payment"
+   },
+   {
+    "file": "earnings",
+    "label": "Earnings",
+    "icon": "trending_up",
+    "accent_color": "#F59E0B",
+    "subtitle": "Fares by day"
+   },
+   {
+    "file": "expenses",
+    "label": "Expenses",
+    "icon": "receipt",
+    "accent_color": "#F59E0B",
+    "subtitle": "Fuel and repairs"
+   },
+   {
+    "file": "handover",
+    "label": "Handover",
+    "icon": "check_circle",
+    "accent_color": "#F59E0B",
+    "subtitle": "Close the day"
+   }
+  ]
+ },
+ "collections": {
+  "trips.json": {
+   "id": 1,
+   "name": "trips",
+   "schema": {
+    "fields": {
+     "day": {
+      "type": "string",
+      "required": false,
+      "uid": "trips_day"
+     },
+     "fare": {
+      "type": "number",
+      "required": false,
+      "uid": "trips_fare"
+     },
+     "payment": {
+      "type": "string",
+      "required": false,
+      "uid": "trips_payment"
+     },
+     "route": {
+      "type": "string",
+      "required": false,
+      "uid": "trips_route"
+     }
+    }
+   },
+   "seed": [
+    {
+     "id": "t1",
+     "day": "Sat",
+     "fare": 350,
+     "payment": "M-Pesa",
+     "route": "Kawangware → CBD"
+    },
+    {
+     "id": "t2",
+     "day": "Sat",
+     "fare": 220,
+     "payment": "Cash",
+     "route": "Westlands → Parklands"
+    },
+    {
+     "id": "t3",
+     "day": "Fri",
+     "fare": 480,
+     "payment": "M-Pesa",
+     "route": "CBD → Karen"
+    }
+   ]
+  },
+  "expenses.json": {
+   "id": 2,
+   "name": "expenses",
+   "schema": {
+    "fields": {
+     "kind": {
+      "type": "string",
+      "required": false,
+      "uid": "expenses_kind"
+     },
+     "amount": {
+      "type": "number",
+      "required": false,
+      "uid": "expenses_amount"
+     },
+     "note": {
+      "type": "string",
+      "required": false,
+      "uid": "expenses_note"
+     }
+    }
+   },
+   "seed": []
+  },
+  "handovers.json": {
+   "id": 3,
+   "name": "handovers",
+   "schema": {
+    "fields": {
+     "status": {
+      "type": "string",
+      "required": false,
+      "uid": "handovers_status"
+     },
+     "signature": {
+      "type": "string",
+      "required": false,
+      "uid": "handovers_signature"
+     }
+    }
+   },
+   "seed": []
+  }
+ },
+ "cards": {
+  "trip": {
+   "card": {
+    "log_id": "motorbike_trip",
+    "variables": [
+     {
+      "name": "user.workspace_title",
+      "type": "string",
+      "value": "BODA BODA"
+     },
+     {
+      "name": "user.rider_name",
+      "type": "string",
+      "value": "Rider"
+     },
+     {
+      "name": "user.earnings_today",
+      "type": "string",
+      "value": "0"
+     },
+     {
+      "name": "user.trip_count",
+      "type": "integer",
+      "value": 0
+     },
+     {
+      "name": "user.net_profit",
+      "type": "string",
+      "value": "0"
+     },
+     {
+      "name": "user.fare_input",
+      "type": "string",
+      "value": "150"
+     },
+     {
+      "name": "user.payment_method",
+      "type": "string",
+      "value": "M-Pesa"
+     },
+     {
+      "name": "user.route_input",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.weekly_json",
+      "type": "string",
+      "value": "[{\"day\":\"Mon\",\"fare\":1240},{\"day\":\"Tue\",\"fare\":980},{\"day\":\"Wed\",\"fare\":1610},{\"day\":\"Thu\",\"fare\":1050},{\"day\":\"Fri\",\"fare\":1870},{\"day\":\"Sat\",\"fare\":2240},{\"day\":\"Sun\",\"fare\":0}]"
+     },
+     {
+      "name": "user.trips_json",
+      "type": "string",
+      "value": "[{\"id\":\"t1\",\"day\":\"Sat\",\"fare\":350,\"payment\":\"M-Pesa\",\"route\":\"Kawangware → CBD\"},{\"id\":\"t2\",\"day\":\"Sat\",\"fare\":220,\"payment\":\"Cash\",\"route\":\"Westlands → Parklands\"},{\"id\":\"t3\",\"day\":\"Fri\",\"fare\":480,\"payment\":\"M-Pesa\",\"route\":\"CBD → Karen\"}]"
+     },
+     {
+      "name": "user.expenses_json",
+      "type": "string",
+      "value": "[]"
+     },
+     {
+      "name": "user.handover_status",
+      "type": "string",
+      "value": "NOT_STARTED"
+     },
+     {
+      "name": "user.trip_modal",
+      "type": "boolean",
+      "value": false
+     },
+     {
+      "name": "user.last_action",
+      "type": "string",
+      "value": "Ready"
+     }
+    ],
+    "states": [
+     {
+      "state_id": 0,
+      "div": {
+       "type": "container",
+       "orientation": "vertical",
+       "items": [
+        {
+         "type": "container",
+         "orientation": "horizontal",
+         "items": [
+          {
+           "type": "button",
+           "text": "Back",
+           "font_size": 12,
+           "font_weight": "bold",
+           "text_color": "#F8FAFC",
+           "background_color": "#16233A",
+           "corner_radius": 12,
+           "height": {
+            "type": "fixed",
+            "value": 40
+           },
+           "width": {
+            "type": "fixed",
+            "value": 80
+           },
+           "actions": [
+            {
+             "url": "nav://pop"
+            }
+           ],
+           "border": {
+            "corner_radius": 12,
+            "stroke": {
+             "color": "#1E293B",
+             "width": 1
+            }
+           },
+           "id": "btn_back"
+          },
+          {
+           "type": "container",
+           "orientation": "vertical",
+           "items": [
+            {
+             "type": "text",
+             "text": "Record a trip",
+             "font_size": 26,
+             "font_weight": "bold",
+             "text_color": "#F8FAFC",
+             "max_lines": 2
+            },
+            {
+             "type": "text",
+             "text": "Fare, route and payment method",
+             "font_size": 12,
+             "font_weight": "regular",
+             "text_color": "#94A3B8",
+             "max_lines": 2
+            }
+           ],
+           "weight": 1
+          }
+         ],
+         "item_spacing": 8,
+         "paddings": {
+          "left": 16,
+          "top": 32,
+          "right": 16,
+          "bottom": 8
+         }
+        },
+        {
+         "type": "container",
+         "orientation": "vertical",
+         "items": [
+          {
+           "type": "container",
+           "orientation": "vertical",
+           "items": [
+            {
+             "type": "text",
+             "text": "FARE",
+             "font_size": 11,
+             "font_weight": "bold",
+             "text_color": "#94A3B8"
+            },
+            {
+             "type": "text",
+             "text": "@{'KES ' + user.fare_input}",
+             "font_size": 26,
+             "font_weight": "bold",
+             "text_color": "#34D399",
+             "id": "trip_fare"
+            },
+            {
+             "type": "custom",
+             "custom_type": "sdui_numpad",
+             "custom_props": {
+              "variable": "user.fare_input",
+              "label": "Amount"
+             },
+             "id": "trip_numpad"
+            },
+            {
+             "type": "container",
+             "orientation": "horizontal",
+             "items": [
+              {
+               "type": "button",
+               "text": "100",
+               "font_size": 12,
+               "font_weight": "bold",
+               "text_color": "#F8FAFC",
+               "background_color": "#16233A",
+               "corner_radius": 12,
+               "height": {
+                "type": "fixed",
+                "value": 40
+               },
+               "width": {
+                "type": "match_parent"
+               },
+               "actions": [
+                {
+                 "url": "div-action://set_variable?name=user.fare_input&value=100"
+                }
+               ],
+               "border": {
+                "corner_radius": 12,
+                "stroke": {
+                 "color": "#1E293B",
+                 "width": 1
+                }
+               },
+               "id": "fare_100"
+              },
+              {
+               "type": "button",
+               "text": "150",
+               "font_size": 12,
+               "font_weight": "bold",
+               "text_color": "#F8FAFC",
+               "background_color": "#16233A",
+               "corner_radius": 12,
+               "height": {
+                "type": "fixed",
+                "value": 40
+               },
+               "width": {
+                "type": "match_parent"
+               },
+               "actions": [
+                {
+                 "url": "div-action://set_variable?name=user.fare_input&value=150"
+                }
+               ],
+               "border": {
+                "corner_radius": 12,
+                "stroke": {
+                 "color": "#1E293B",
+                 "width": 1
+                }
+               },
+               "id": "fare_150"
+              },
+              {
+               "type": "button",
+               "text": "200",
+               "font_size": 12,
+               "font_weight": "bold",
+               "text_color": "#F8FAFC",
+               "background_color": "#16233A",
+               "corner_radius": 12,
+               "height": {
+                "type": "fixed",
+                "value": 40
+               },
+               "width": {
+                "type": "match_parent"
+               },
+               "actions": [
+                {
+                 "url": "div-action://set_variable?name=user.fare_input&value=200"
+                }
+               ],
+               "border": {
+                "corner_radius": 12,
+                "stroke": {
+                 "color": "#1E293B",
+                 "width": 1
+                }
+               },
+               "id": "fare_200"
+              },
+              {
+               "type": "button",
+               "text": "300",
+               "font_size": 12,
+               "font_weight": "bold",
+               "text_color": "#F8FAFC",
+               "background_color": "#16233A",
+               "corner_radius": 12,
+               "height": {
+                "type": "fixed",
+                "value": 40
+               },
+               "width": {
+                "type": "match_parent"
+               },
+               "actions": [
+                {
+                 "url": "div-action://set_variable?name=user.fare_input&value=300"
+                }
+               ],
+               "border": {
+                "corner_radius": 12,
+                "stroke": {
+                 "color": "#1E293B",
+                 "width": 1
+                }
+               },
+               "id": "fare_300"
+              }
+             ],
+             "item_spacing": 8
+            }
+           ],
+           "item_spacing": 8,
+           "background_color": "#111C2E",
+           "paddings": {
+            "left": 12,
+            "top": 12,
+            "right": 12,
+            "bottom": 12
+           },
+           "border": {
+            "corner_radius": 16,
+            "stroke": {
+             "color": "#1E293B",
+             "width": 1
+            }
+           }
+          },
+          {
+           "type": "container",
+           "orientation": "vertical",
+           "items": [
+            {
+             "type": "text",
+             "text": "PAYMENT",
+             "font_size": 11,
+             "font_weight": "bold",
+             "text_color": "#94A3B8"
+            },
+            {
+             "type": "segmented",
+             "custom_props": {
+              "items": [
+               {
+                "value": "Cash",
+                "label": "Cash",
+                "actions": [
+                 {
+                  "url": "div-action://set_variable?name=user.payment_method&value=Cash"
+                 }
+                ]
+               },
+               {
+                "value": "M-Pesa",
+                "label": "M-Pesa",
+                "actions": [
+                 {
+                  "url": "div-action://set_variable?name=user.payment_method&value=M-Pesa"
+                 }
+                ]
+               },
+               {
+                "value": "Fuel advance",
+                "label": "Fuel advance",
+                "actions": [
+                 {
+                  "url": "div-action://set_variable?name=user.payment_method&value=Fuel%20advance"
+                 }
+                ]
+               }
+              ],
+              "active_value": "M-Pesa"
+             },
+             "id": "trip_payment"
+            },
+            {
+             "type": "text_field",
+             "custom_props": {
+              "label": "Route",
+              "variable": "user.route_input",
+              "placeholder": "Kawangware → CBD"
+             },
+             "id": "trip_route"
+            }
+           ],
+           "item_spacing": 8,
+           "background_color": "#111C2E",
+           "paddings": {
+            "left": 12,
+            "top": 12,
+            "right": 12,
+            "bottom": 12
+           },
+           "border": {
+            "corner_radius": 16,
+            "stroke": {
+             "color": "#1E293B",
+             "width": 1
+            }
+           }
+          }
+         ],
+         "item_spacing": 12,
+         "paddings": {
+          "left": 16,
+          "top": 0,
+          "right": 16,
+          "bottom": 0
+         }
+        },
+        {
+         "type": "sticky_footer",
+         "custom_props": {
+          "body": [],
+          "footer": [
+           {
+            "type": "container",
+            "orientation": "vertical",
+            "items": [
+             {
+              "type": "button",
+              "text": "Save trip",
+              "font_size": 14,
+              "font_weight": "bold",
+              "text_color": "#FFFFFF",
+              "background_color": "#7C3AED",
+              "corner_radius": 12,
+              "height": {
+               "type": "fixed",
+               "value": 44
+              },
+              "width": {
+               "type": "match_parent"
+              },
+              "actions": [
+               {
+                "url": "local-db://op/db.insert",
+                "payload": {
+                 "collection": "trips",
+                 "data": {
+                  "day": "Today",
+                  "fare": "@{user.fare_input}",
+                  "payment": "@{user.payment_method}",
+                  "route": "@{user.route_input}"
+                 }
+                }
+               },
+               {
+                "url": "div-action://set_variable?name=user.last_action&value=Trip%20saved"
+               },
+               {
+                "url": "nav://pop"
+               }
+              ],
+              "id": "trip_save"
+             },
+             {
+              "type": "button",
+              "text": "Cancel",
+              "font_size": 14,
+              "font_weight": "bold",
+              "text_color": "#F8FAFC",
+              "background_color": "transparent",
+              "corner_radius": 12,
+              "height": {
+               "type": "fixed",
+               "value": 44
+              },
+              "width": {
+               "type": "match_parent"
+              },
+              "actions": [
+               {
+                "url": "nav://pop"
+               }
+              ],
+              "border": {
+               "corner_radius": 12,
+               "stroke": {
+                "color": "#1E293B",
+                "width": 1
+               }
+              },
+              "id": "trip_cancel"
+             }
+            ],
+            "item_spacing": 8,
+            "paddings": {
+             "left": 16,
+             "top": 0,
+             "right": 16,
+             "bottom": 0
+            }
+           }
+          ]
+         },
+         "id": "trip_footer"
+        }
+       ],
+       "item_spacing": 8,
+       "paddings": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 16
+       }
+      }
+     }
+    ]
+   }
+  },
+  "earnings": {
+   "card": {
+    "log_id": "motorbike_earnings",
+    "variables": [
+     {
+      "name": "user.workspace_title",
+      "type": "string",
+      "value": "BODA BODA"
+     },
+     {
+      "name": "user.rider_name",
+      "type": "string",
+      "value": "Rider"
+     },
+     {
+      "name": "user.earnings_today",
+      "type": "string",
+      "value": "0"
+     },
+     {
+      "name": "user.trip_count",
+      "type": "integer",
+      "value": 0
+     },
+     {
+      "name": "user.net_profit",
+      "type": "string",
+      "value": "0"
+     },
+     {
+      "name": "user.fare_input",
+      "type": "string",
+      "value": "150"
+     },
+     {
+      "name": "user.payment_method",
+      "type": "string",
+      "value": "M-Pesa"
+     },
+     {
+      "name": "user.route_input",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.weekly_json",
+      "type": "string",
+      "value": "[{\"day\":\"Mon\",\"fare\":1240},{\"day\":\"Tue\",\"fare\":980},{\"day\":\"Wed\",\"fare\":1610},{\"day\":\"Thu\",\"fare\":1050},{\"day\":\"Fri\",\"fare\":1870},{\"day\":\"Sat\",\"fare\":2240},{\"day\":\"Sun\",\"fare\":0}]"
+     },
+     {
+      "name": "user.trips_json",
+      "type": "string",
+      "value": "[{\"id\":\"t1\",\"day\":\"Sat\",\"fare\":350,\"payment\":\"M-Pesa\",\"route\":\"Kawangware → CBD\"},{\"id\":\"t2\",\"day\":\"Sat\",\"fare\":220,\"payment\":\"Cash\",\"route\":\"Westlands → Parklands\"},{\"id\":\"t3\",\"day\":\"Fri\",\"fare\":480,\"payment\":\"M-Pesa\",\"route\":\"CBD → Karen\"}]"
+     },
+     {
+      "name": "user.expenses_json",
+      "type": "string",
+      "value": "[]"
+     },
+     {
+      "name": "user.handover_status",
+      "type": "string",
+      "value": "NOT_STARTED"
+     },
+     {
+      "name": "user.trip_modal",
+      "type": "boolean",
+      "value": false
+     },
+     {
+      "name": "user.last_action",
+      "type": "string",
+      "value": "Ready"
+     }
+    ],
+    "states": [
+     {
+      "state_id": 0,
+      "div": {
+       "type": "container",
+       "orientation": "vertical",
+       "items": [
+        {
+         "type": "container",
+         "orientation": "horizontal",
+         "items": [
+          {
+           "type": "button",
+           "text": "Back",
+           "font_size": 12,
+           "font_weight": "bold",
+           "text_color": "#F8FAFC",
+           "background_color": "#16233A",
+           "corner_radius": 12,
+           "height": {
+            "type": "fixed",
+            "value": 40
+           },
+           "width": {
+            "type": "fixed",
+            "value": 80
+           },
+           "actions": [
+            {
+             "url": "nav://pop"
+            }
+           ],
+           "border": {
+            "corner_radius": 12,
+            "stroke": {
+             "color": "#1E293B",
+             "width": 1
+            }
+           },
+           "id": "btn_back"
+          },
+          {
+           "type": "container",
+           "orientation": "vertical",
+           "items": [
+            {
+             "type": "text",
+             "text": "Earnings",
+             "font_size": 26,
+             "font_weight": "bold",
+             "text_color": "#F8FAFC",
+             "max_lines": 2
+            },
+            {
+             "type": "text",
+             "text": "Fares by day and trip",
+             "font_size": 12,
+             "font_weight": "regular",
+             "text_color": "#94A3B8",
+             "max_lines": 2
+            }
+           ],
+           "weight": 1
+          }
+         ],
+         "item_spacing": 8,
+         "paddings": {
+          "left": 16,
+          "top": 32,
+          "right": 16,
+          "bottom": 8
+         }
+        },
+        {
+         "type": "container",
+         "orientation": "vertical",
+         "items": [
+          {
+           "type": "custom",
+           "custom_type": "sdui_chart",
+           "custom_props": {
+            "chart_type": "line",
+            "title": "FARES BY DAY",
+            "subtitle": "Tap a point to inspect it",
+            "label_field": "day",
+            "value_field": "fare",
+            "value_prefix": "KES ",
+            "value_suffix": "",
+            "accent_color": "#38BDF8",
+            "height": 210,
+            "show_grid": true,
+            "show_legend": true,
+            "interactive": true,
+            "data_var": "user.weekly_json"
+           },
+           "id": "earnings_chart"
+          },
+          {
+           "type": "text",
+           "text": "TRIP LOG",
+           "font_size": 11,
+           "font_weight": "bold",
+           "text_color": "#94A3B8"
+          },
+          {
+           "type": "json_list",
+           "data_var": "user.trips_json",
+           "empty_text": "No trips recorded yet",
+           "row_card": {
+            "type": "container",
+            "orientation": "horizontal",
+            "items": [
+             {
+              "type": "container",
+              "orientation": "vertical",
+              "items": [
+               {
+                "type": "text",
+                "text": "@{item.route}",
+                "font_size": 12,
+                "font_weight": "bold",
+                "text_color": "#F8FAFC"
+               },
+               {
+                "type": "text",
+                "text": "@{item.day} • @{item.payment}",
+                "font_size": 11,
+                "font_weight": "regular",
+                "text_color": "#94A3B8"
+               }
+              ],
+              "width": {
+               "type": "match_parent"
+              }
+             },
+             {
+              "type": "text",
+              "text": "KES @{item.fare}",
+              "font_size": 14,
+              "font_weight": "bold",
+              "text_color": "#34D399"
+             }
+            ],
+            "item_spacing": 8,
+            "background_color": "#16233A",
+            "paddings": {
+             "left": 8,
+             "top": 8,
+             "right": 8,
+             "bottom": 8
+            },
+            "border": {
+             "corner_radius": 12,
+             "stroke": {
+              "color": "#1E293B",
+              "width": 1
+             }
+            }
+           },
+           "id": "earnings_list"
+          }
+         ],
+         "item_spacing": 12,
+         "paddings": {
+          "left": 16,
+          "top": 0,
+          "right": 16,
+          "bottom": 0
+         }
+        }
+       ],
+       "item_spacing": 8,
+       "paddings": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 16
+       }
+      }
+     }
+    ]
+   }
+  },
+  "expenses": {
+   "card": {
+    "log_id": "motorbike_expenses",
+    "variables": [
+     {
+      "name": "user.workspace_title",
+      "type": "string",
+      "value": "BODA BODA"
+     },
+     {
+      "name": "user.rider_name",
+      "type": "string",
+      "value": "Rider"
+     },
+     {
+      "name": "user.earnings_today",
+      "type": "string",
+      "value": "0"
+     },
+     {
+      "name": "user.trip_count",
+      "type": "integer",
+      "value": 0
+     },
+     {
+      "name": "user.net_profit",
+      "type": "string",
+      "value": "0"
+     },
+     {
+      "name": "user.fare_input",
+      "type": "string",
+      "value": "150"
+     },
+     {
+      "name": "user.payment_method",
+      "type": "string",
+      "value": "M-Pesa"
+     },
+     {
+      "name": "user.route_input",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.weekly_json",
+      "type": "string",
+      "value": "[{\"day\":\"Mon\",\"fare\":1240},{\"day\":\"Tue\",\"fare\":980},{\"day\":\"Wed\",\"fare\":1610},{\"day\":\"Thu\",\"fare\":1050},{\"day\":\"Fri\",\"fare\":1870},{\"day\":\"Sat\",\"fare\":2240},{\"day\":\"Sun\",\"fare\":0}]"
+     },
+     {
+      "name": "user.trips_json",
+      "type": "string",
+      "value": "[{\"id\":\"t1\",\"day\":\"Sat\",\"fare\":350,\"payment\":\"M-Pesa\",\"route\":\"Kawangware → CBD\"},{\"id\":\"t2\",\"day\":\"Sat\",\"fare\":220,\"payment\":\"Cash\",\"route\":\"Westlands → Parklands\"},{\"id\":\"t3\",\"day\":\"Fri\",\"fare\":480,\"payment\":\"M-Pesa\",\"route\":\"CBD → Karen\"}]"
+     },
+     {
+      "name": "user.expenses_json",
+      "type": "string",
+      "value": "[]"
+     },
+     {
+      "name": "user.handover_status",
+      "type": "string",
+      "value": "NOT_STARTED"
+     },
+     {
+      "name": "user.trip_modal",
+      "type": "boolean",
+      "value": false
+     },
+     {
+      "name": "user.last_action",
+      "type": "string",
+      "value": "Ready"
+     }
+    ],
+    "states": [
+     {
+      "state_id": 0,
+      "div": {
+       "type": "container",
+       "orientation": "vertical",
+       "items": [
+        {
+         "type": "container",
+         "orientation": "horizontal",
+         "items": [
+          {
+           "type": "button",
+           "text": "Back",
+           "font_size": 12,
+           "font_weight": "bold",
+           "text_color": "#F8FAFC",
+           "background_color": "#16233A",
+           "corner_radius": 12,
+           "height": {
+            "type": "fixed",
+            "value": 40
+           },
+           "width": {
+            "type": "fixed",
+            "value": 80
+           },
+           "actions": [
+            {
+             "url": "nav://pop"
+            }
+           ],
+           "border": {
+            "corner_radius": 12,
+            "stroke": {
+             "color": "#1E293B",
+             "width": 1
+            }
+           },
+           "id": "btn_back"
+          },
+          {
+           "type": "container",
+           "orientation": "vertical",
+           "items": [
+            {
+             "type": "text",
+             "text": "Expenses",
+             "font_size": 26,
+             "font_weight": "bold",
+             "text_color": "#F8FAFC",
+             "max_lines": 2
+            },
+            {
+             "type": "text",
+             "text": "Fuel, repairs and licence",
+             "font_size": 12,
+             "font_weight": "regular",
+             "text_color": "#94A3B8",
+             "max_lines": 2
+            }
+           ],
+           "weight": 1
+          }
+         ],
+         "item_spacing": 8,
+         "paddings": {
+          "left": 16,
+          "top": 32,
+          "right": 16,
+          "bottom": 8
+         }
+        },
+        {
+         "type": "container",
+         "orientation": "vertical",
+         "items": [
+          {
+           "type": "segmented",
+           "custom_props": {
+            "items": [
+             {
+              "value": "Fuel",
+              "label": "Fuel"
+             },
+             {
+              "value": "Repairs",
+              "label": "Repairs"
+             },
+             {
+              "value": "Licence",
+              "label": "Licence"
+             }
+            ],
+            "active_value": "Fuel"
+           },
+           "id": "expense_kind"
+          },
+          {
+           "type": "json_list",
+           "data_var": "user.expenses_json",
+           "empty_text": "No expenses logged today",
+           "row_card": {
+            "type": "container",
+            "orientation": "horizontal",
+            "items": [
+             {
+              "type": "text",
+              "text": "@{item.kind}",
+              "font_size": 12,
+              "font_weight": "regular",
+              "text_color": "#F8FAFC",
+              "width": {
+               "type": "match_parent"
+              }
+             },
+             {
+              "type": "text",
+              "text": "KES @{item.amount}",
+              "font_size": 12,
+              "font_weight": "bold",
+              "text_color": "#F59E0B"
+             }
+            ],
+            "background_color": "#16233A",
+            "paddings": {
+             "left": 8,
+             "top": 8,
+             "right": 8,
+             "bottom": 8
+            },
+            "border": {
+             "corner_radius": 12
+            }
+           },
+           "id": "expense_list"
+          },
+          {
+           "type": "fab",
+           "custom_props": {
+            "label": "Log expense",
+            "actions": [
+             {
+              "url": "div-action://set_variable?name=user.expense_modal&value=true"
+             }
+            ]
+           },
+           "id": "expense_fab"
+          },
+          {
+           "type": "form_modal",
+           "custom_props": {
+            "visible": false,
+            "title": "Log an expense",
+            "body": [
+             {
+              "type": "text",
+              "text": "Amount and note",
+              "font_size": 12,
+              "font_weight": "regular",
+              "text_color": "#94A3B8"
+             },
+             {
+              "type": "text_field",
+              "custom_props": {
+               "label": "Amount",
+               "variable": "user.expense_amount",
+               "placeholder": "500"
+              }
+             }
+            ],
+            "primary_label": "Save",
+            "primary": {
+             "actions": [
+              {
+               "url": "local-db://op/db.insert",
+               "payload": {
+                "collection": "expenses",
+                "data": {
+                 "kind": "@{user.expense_kind}",
+                 "amount": "@{user.expense_amount}"
+                }
+               }
+              }
+             ]
+            },
+            "secondary_label": "Cancel",
+            "secondary": {
+             "actions": [
+              {
+               "url": "div-action://set_variable?name=user.expense_modal&value=false"
+              }
+             ]
+            }
+           },
+           "id": "expense_modal"
+          }
+         ],
+         "item_spacing": 12,
+         "paddings": {
+          "left": 16,
+          "top": 0,
+          "right": 16,
+          "bottom": 0
+         }
+        }
+       ],
+       "item_spacing": 8,
+       "paddings": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 16
+       }
+      }
+     }
+    ]
+   }
+  },
+  "handover": {
+   "card": {
+    "log_id": "motorbike_handover",
+    "variables": [
+     {
+      "name": "user.workspace_title",
+      "type": "string",
+      "value": "BODA BODA"
+     },
+     {
+      "name": "user.rider_name",
+      "type": "string",
+      "value": "Rider"
+     },
+     {
+      "name": "user.earnings_today",
+      "type": "string",
+      "value": "0"
+     },
+     {
+      "name": "user.trip_count",
+      "type": "integer",
+      "value": 0
+     },
+     {
+      "name": "user.net_profit",
+      "type": "string",
+      "value": "0"
+     },
+     {
+      "name": "user.fare_input",
+      "type": "string",
+      "value": "150"
+     },
+     {
+      "name": "user.payment_method",
+      "type": "string",
+      "value": "M-Pesa"
+     },
+     {
+      "name": "user.route_input",
+      "type": "string",
+      "value": ""
+     },
+     {
+      "name": "user.weekly_json",
+      "type": "string",
+      "value": "[{\"day\":\"Mon\",\"fare\":1240},{\"day\":\"Tue\",\"fare\":980},{\"day\":\"Wed\",\"fare\":1610},{\"day\":\"Thu\",\"fare\":1050},{\"day\":\"Fri\",\"fare\":1870},{\"day\":\"Sat\",\"fare\":2240},{\"day\":\"Sun\",\"fare\":0}]"
+     },
+     {
+      "name": "user.trips_json",
+      "type": "string",
+      "value": "[{\"id\":\"t1\",\"day\":\"Sat\",\"fare\":350,\"payment\":\"M-Pesa\",\"route\":\"Kawangware → CBD\"},{\"id\":\"t2\",\"day\":\"Sat\",\"fare\":220,\"payment\":\"Cash\",\"route\":\"Westlands → Parklands\"},{\"id\":\"t3\",\"day\":\"Fri\",\"fare\":480,\"payment\":\"M-Pesa\",\"route\":\"CBD → Karen\"}]"
+     },
+     {
+      "name": "user.expenses_json",
+      "type": "string",
+      "value": "[]"
+     },
+     {
+      "name": "user.handover_status",
+      "type": "string",
+      "value": "NOT_STARTED"
+     },
+     {
+      "name": "user.trip_modal",
+      "type": "boolean",
+      "value": false
+     },
+     {
+      "name": "user.last_action",
+      "type": "string",
+      "value": "Ready"
+     }
+    ],
+    "states": [
+     {
+      "state_id": 0,
+      "div": {
+       "type": "container",
+       "orientation": "vertical",
+       "items": [
+        {
+         "type": "container",
+         "orientation": "horizontal",
+         "items": [
+          {
+           "type": "button",
+           "text": "Back",
+           "font_size": 12,
+           "font_weight": "bold",
+           "text_color": "#F8FAFC",
+           "background_color": "#16233A",
+           "corner_radius": 12,
+           "height": {
+            "type": "fixed",
+            "value": 40
+           },
+           "width": {
+            "type": "fixed",
+            "value": 80
+           },
+           "actions": [
+            {
+             "url": "nav://pop"
+            }
+           ],
+           "border": {
+            "corner_radius": 12,
+            "stroke": {
+             "color": "#1E293B",
+             "width": 1
+            }
+           },
+           "id": "btn_back"
+          },
+          {
+           "type": "container",
+           "orientation": "vertical",
+           "items": [
+            {
+             "type": "text",
+             "text": "Handover",
+             "font_size": 26,
+             "font_weight": "bold",
+             "text_color": "#F8FAFC",
+             "max_lines": 2
+            },
+            {
+             "type": "text",
+             "text": "Close the day with the owner",
+             "font_size": 12,
+             "font_weight": "regular",
+             "text_color": "#94A3B8",
+             "max_lines": 2
+            }
+           ],
+           "weight": 1
+          }
+         ],
+         "item_spacing": 8,
+         "paddings": {
+          "left": 16,
+          "top": 32,
+          "right": 16,
+          "bottom": 8
+         }
+        },
+        {
+         "type": "container",
+         "orientation": "vertical",
+         "items": [
+          {
+           "type": "progress_ring",
+           "custom_props": {
+            "value": 0.72,
+            "label": "Cash target",
+            "caption": "KES 3,600 of 5,000"
+           },
+           "id": "handover_ring"
+          },
+          {
+           "type": "text",
+           "text": "Rider signature",
+           "font_size": 11,
+           "font_weight": "bold",
+           "text_color": "#94A3B8"
+          },
+          {
+           "type": "custom",
+           "custom_type": "sdui_signature",
+           "custom_props": {
+            "variable": "user.handover_signature",
+            "label": "Sign to confirm"
+           },
+           "id": "handover_signature"
+          },
+          {
+           "type": "inline_banner",
+           "custom_props": {
+            "text": "@{'Status: ' + user.handover_status}",
+            "tone": "success"
+           },
+           "id": "handover_status"
+          },
+          {
+           "type": "toast",
+           "custom_props": {
+            "text": "@{'Handover ' + user.handover_status}"
+           },
+           "id": "handover_toast"
+          }
+         ],
+         "item_spacing": 12,
+         "paddings": {
+          "left": 16,
+          "top": 0,
+          "right": 16,
+          "bottom": 0
+         }
+        },
+        {
+         "type": "sticky_footer",
+         "custom_props": {
+          "body": [],
+          "footer": [
+           {
+            "type": "container",
+            "orientation": "vertical",
+            "items": [
+             {
+              "type": "button",
+              "text": "Confirm handover",
+              "font_size": 14,
+              "font_weight": "bold",
+              "text_color": "#FFFFFF",
+              "background_color": "#7C3AED",
+              "corner_radius": 12,
+              "height": {
+               "type": "fixed",
+               "value": 44
+              },
+              "width": {
+               "type": "match_parent"
+              },
+              "actions": [
+               {
+                "url": "local-db://op/db.insert",
+                "payload": {
+                 "collection": "handovers",
+                 "data": {
+                  "status": "CONFIRMED",
+                  "signature": "@{user.handover_signature}"
+                 }
+                }
+               },
+               {
+                "url": "div-action://set_variable?name=user.handover_status&value=CONFIRMED"
+               }
+              ],
+              "id": "handover_confirm"
+             },
+             {
+              "type": "button",
+              "text": "Back to hub",
+              "font_size": 14,
+              "font_weight": "bold",
+              "text_color": "#F8FAFC",
+              "background_color": "transparent",
+              "corner_radius": 12,
+              "height": {
+               "type": "fixed",
+               "value": 44
+              },
+              "width": {
+               "type": "match_parent"
+              },
+              "actions": [
+               {
+                "url": "nav://pop"
+               }
+              ],
+              "border": {
+               "corner_radius": 12,
+               "stroke": {
+                "color": "#1E293B",
+                "width": 1
+               }
+              },
+              "id": "handover_back"
+             }
+            ],
+            "item_spacing": 8,
+            "paddings": {
+             "left": 16,
+             "top": 0,
+             "right": 16,
+             "bottom": 0
+            }
+           }
+          ]
+         },
+         "id": "handover_footer"
+        }
+       ],
+       "item_spacing": 8,
+       "paddings": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 16
+       }
+      }
+     }
+    ]
+   }
+  }
+ },
+ "order": [
+  "trip",
+  "earnings",
+  "expenses",
+  "handover"
+ ]
+}

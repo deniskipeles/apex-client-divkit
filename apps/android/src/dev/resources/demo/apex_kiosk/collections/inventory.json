@@ -82,7 +82,7 @@
     {
       "item_name": "Sandwich",
       "sku": "P1008",
-      "price": 4.0,
+      "price": 4,
       "price_display": "4.00",
       "stock": 40,
       "category": "Food"

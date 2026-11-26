@@ -272,10 +272,10 @@ Adding a notification source = feed items through `NotificationCenter.add` into
 `NotificationType` whose `icon` names an existing catalog icon. Reference:
 `docs/tools/notifications-tray.md`.
 
-## Web dashboard (`apps/web`) & Desktop POS (`apps/desktop`)
+## Web dashboard (`apps/web`), Desktop POS (`apps/desktop`) & DivKit dev server (`apps/dev-server`)
 
-Two independent pnpm-workspace apps consume the same `packages/pos-ui` and `packages/contract`
-modules. Neither renders the other's UI. `apps/android` and `apps/ios` are untouched.
+Three independent pnpm-workspace apps consume the same `packages/pos-ui` and `packages/contract`
+modules. None renders another's UI. `apps/android` and `apps/ios` are untouched.
 
 - `packages/pos-ui` — shared DivKit render layer: `DivKitView` (wraps `@divkitframework/react`),
   `dispatchTool` (resolves capability ids/aliases from `packages/contract/tools.json`), the
@@ -306,13 +306,25 @@ modules. Neither renders the other's UI. `apps/android` and `apps/ios` are untou
   modules reproduce the same **observable result shapes** so DivKit cards render identically.
   When adding a capability, mirror the mobile change in the matching Rust module and add the
   canonical id + aliases to `tools::route`.
+- `apps/dev-server` — `@apex/dev-server`, the Boda DivKit playground (imported from a standalone
+  Bun project). Nitro (h3) serves `/api/health`, `/api/schemas` and `/api/schemas/[id]`; the
+  Vite SPA in `client/` renders those schemas in a device simulator with a variables inspector
+  and event log. Card generators live in `server/utils/schemas/` and are pure JS, so the same
+  module runs on Node, prerenders for the `static` preset and bundles for Cloudflare Pages.
+  `scripts/build-schemas.mjs` imports `registry.ts` directly, which needs Node's type stripping
+  (Node >= 22.18) and therefore explicit `.ts` extensions in `registry.ts` imports — the
+  extensionless form only resolved under Bun. It has no test runner; `pnpm -C apps/dev-server
+  run typecheck` (`tsc --noEmit`) is the check. It does not depend on `packages/pos-ui` or
+  `packages/contract`; it renders `@divkitframework/divkit` directly.
 
 Commands (root `package.json`):
 
 ```bash
-pnpm install                 # pnpm workspace (apps/web, apps/desktop, packages/pos-ui)
+pnpm install                 # pnpm workspace (apps/web, apps/desktop, apps/dev-server, packages/*)
 pnpm test:web                # vitest: contract fixtures, server libs, shared pos-ui
 pnpm build:web               # vite build + nitro build
+pnpm dev:dev-server          # Nitro dev server on :3000 (PORT overrides) + live schema API
+pnpm build:dev-server        # vite build + schema snapshots + nitro build (.output/)
 pnpm test:desktop            # cargo test (capability-routing guard)
 pnpm check:desktop           # cargo check
 ```

@@ -1,0 +1,53 @@
+{
+ "format": "apex.workspace/1",
+ "id": "apex_tools_test",
+ "title": "APEX TOOLS",
+ "subtitle": "Capability harness for every native tool",
+ "terminal": "TOOLS-001",
+ "accent": "#0EA5E9",
+ "mode": "NATIVE",
+ "capabilities": [
+  "scanner",
+  "printer",
+  "haptics",
+  "beeper",
+  "clipboard"
+ ],
+ "tools": {
+  "hapticVibration": true,
+  "hardwareBeeperAudio": true,
+  "cameraBarcodeScanner": true,
+  "clipboardAccess": true,
+  "backgroundAlertsPush": true,
+  "offlinePageCaching": true,
+  "realtimeEngineWsSse": true
+ },
+ "urls": {
+  "tunnel": "https://apex-tools.local/",
+  "lan": "http://192.168.1.30:8089",
+  "client_id": "pk_test_apex_tools"
+ },
+ "unread": 0,
+ "hub": "card.json",
+ "catalog": "tool_catalog.json",
+ "collections": {
+  "dir": "collections",
+  "files": [
+   "samples.json"
+  ]
+ },
+ "cards": {
+  "dir": "tools",
+  "order": [
+   "local_db",
+   "scanner",
+   "code_generate",
+   "haptics",
+   "clipboard",
+   "net",
+   "print",
+   "files",
+   "data_views"
+  ]
+ }
+}

@@ -1,0 +1,37 @@
+{
+ "workspaces": [
+  {
+   "slug": "motorbike",
+   "manifestId": "motorbike",
+   "title": "BODA BODA",
+   "subtitle": "Work & payments for motorcycle-taxi riders",
+   "accent": "#F59E0B",
+   "terminal": "BODA-001",
+   "cardCount": 4,
+   "collectionCount": 3,
+   "android": false
+  },
+  {
+   "slug": "apex-tools-test",
+   "manifestId": "apex_tools_test",
+   "title": "APEX TOOLS",
+   "subtitle": "Capability harness for every native tool",
+   "accent": "#0EA5E9",
+   "terminal": "TOOLS-001",
+   "cardCount": 9,
+   "collectionCount": 1,
+   "android": true
+  },
+  {
+   "slug": "apex-kiosk",
+   "manifestId": "apex_kiosk",
+   "title": "APEX KIOSK",
+   "subtitle": "Orders, receipts, QR & LAN",
+   "accent": "#7C3AED",
+   "terminal": "KSK-001",
+   "cardCount": 4,
+   "collectionCount": 4,
+   "android": true
+  }
+ ]
+}

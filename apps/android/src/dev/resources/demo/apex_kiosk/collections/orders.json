@@ -53,7 +53,7 @@
     {
       "item_name": "Sandwich",
       "sku": "P1008",
-      "price": 4.0,
+      "price": 4,
       "qty": 1,
       "terminal_id": "KSK-001",
       "status": "PAID"

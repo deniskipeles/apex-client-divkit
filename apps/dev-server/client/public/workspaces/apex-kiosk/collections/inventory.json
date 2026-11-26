@@ -1,0 +1,123 @@
+{
+ "id": 2,
+ "name": "inventory",
+ "schema": {
+  "fields": {
+   "item_name": {
+    "type": "string",
+    "required": false,
+    "uid": "inventory_item_name",
+    "min_length": 1,
+    "max_length": 60
+   },
+   "sku": {
+    "type": "string",
+    "required": false,
+    "uid": "inventory_sku",
+    "unique": true,
+    "min_length": 2
+   },
+   "price": {
+    "type": "number",
+    "required": false,
+    "uid": "inventory_price",
+    "min": 0
+   },
+   "stock": {
+    "type": "number",
+    "required": false,
+    "uid": "inventory_stock"
+   },
+   "category": {
+    "type": "string",
+    "required": false,
+    "uid": "inventory_category"
+   },
+   "barcode": {
+    "type": "string",
+    "required": false,
+    "sql_indexed": true,
+    "uid": "inventory_barcode"
+   },
+   "description": {
+    "type": "string",
+    "required": false,
+    "uid": "inventory_description"
+   },
+   "photo_url": {
+    "type": "string",
+    "required": false,
+    "uid": "inventory_photo_url"
+   }
+  },
+  "policies": {
+   "read": "public",
+   "create": "public",
+   "update": "public",
+   "delete": "public"
+  },
+  "lookup": {
+   "field": "barcode",
+   "secondary_field": "sku"
+  },
+  "references": [
+   {
+    "collection": "kiosk_order_lines",
+    "field": "sku",
+    "match": "sku",
+    "restrict_delete": true,
+    "message": "This product is on past orders and can't be deleted. Edit it instead to set stock to 0."
+   }
+  ]
+ },
+ "seed": [
+  {
+   "item_name": "Mineral Water",
+   "sku": "P1001",
+   "price": 1.5,
+   "price_display": "1.50",
+   "stock": 120,
+   "category": "Drinks"
+  },
+  {
+   "item_name": "Sandwich",
+   "sku": "P1008",
+   "price": 4,
+   "price_display": "4.00",
+   "stock": 40,
+   "category": "Food"
+  },
+  {
+   "item_name": "Coffee",
+   "sku": "P1012",
+   "price": 2.5,
+   "price_display": "2.50",
+   "stock": 80,
+   "category": "Drinks"
+  },
+  {
+   "item_name": "Chocolate Bar",
+   "sku": "P1015",
+   "price": 1.75,
+   "price_display": "1.75",
+   "stock": 60,
+   "category": "Snacks"
+  },
+  {
+   "item_name": "Fresh Juice",
+   "sku": "P1020",
+   "price": 3.25,
+   "price_display": "3.25",
+   "stock": 35,
+   "category": "Drinks"
+  },
+  {
+   "item_name": "Croissant",
+   "sku": "P1024",
+   "price": 2.75,
+   "price_display": "2.75",
+   "stock": 25,
+   "category": "Bakery"
+  }
+ ]
+}

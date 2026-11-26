@@ -370,59 +370,12 @@
         "item_spacing": 8,
         "items": [
          {
-          "type": "container",
-          "orientation": "vertical",
-          "item_spacing": 4,
-          "items": [
-           {
-            "type": "text",
-            "text": "@{item.item_name}",
-            "font_size": 15,
-            "text_color": "#F8FAFC",
-            "font_weight": "bold",
-            "max_lines": 2
-           },
-           {
-            "type": "container",
-            "orientation": "horizontal",
-            "item_spacing": 6,
-            "items": [
-             {
-              "type": "text",
-              "text": "@{item.sku}",
-              "font_size": 11,
-              "text_color": "#94A3B8",
-              "font_family": "monospace"
-             },
-             {
-              "type": "text",
-              "text": "·",
-              "font_size": 11,
-              "text_color": "#94A3B8"
-             },
-             {
-              "type": "text",
-              "text": "$@{if(item.price_display == '', item.price, item.price_display)}",
-              "font_size": 13,
-              "text_color": "#34D399",
-              "font_weight": "bold",
-              "font_family": "monospace"
-             },
-             {
-              "type": "text",
-              "text": "·",
-              "font_size": 11,
-              "text_color": "#94A3B8"
-             },
-             {
-              "type": "text",
-              "text": "@{item.stock} in stock",
-              "font_size": 11,
-              "text_color": "#94A3B8"
-             }
-            ]
-           }
-          ],
+          "type": "text",
+          "text": "@{item.item_name}",
+          "font_size": 15,
+          "text_color": "#F8FAFC",
+          "font_weight": "bold",
+          "max_lines": 2,
           "weight": 1
          },
          {
@@ -476,7 +429,60 @@
             "color": "#34D399",
             "width": 1
            }
+          },
+          "width": {
+           "type": "fixed",
+           "value": 78
+          },
+          "height": {
+           "type": "fixed",
+           "value": 38
           }
+         }
+        ]
+       },
+       {
+        "type": "container",
+        "orientation": "horizontal",
+        "item_spacing": 6,
+        "items": [
+         {
+          "type": "text",
+          "text": "@{item.sku}",
+          "font_size": 11,
+          "text_color": "#94A3B8",
+          "font_family": "monospace",
+          "max_lines": 1
+         },
+         {
+          "type": "text",
+          "text": "·",
+          "font_size": 11,
+          "text_color": "#94A3B8",
+          "max_lines": 1
+         },
+         {
+          "type": "text",
+          "text": "$@{if(item.price_display == '', item.price, item.price_display)}",
+          "font_size": 12,
+          "text_color": "#34D399",
+          "font_weight": "bold",
+          "font_family": "monospace",
+          "max_lines": 1
+         },
+         {
+          "type": "text",
+          "text": "·",
+          "font_size": 11,
+          "text_color": "#94A3B8",
+          "max_lines": 1
+         },
+         {
+          "type": "text",
+          "text": "@{item.stock} in stock",
+          "font_size": 11,
+          "text_color": "#94A3B8",
+          "max_lines": 1
          }
         ]
        }

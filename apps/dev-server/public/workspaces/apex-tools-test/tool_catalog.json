@@ -1,0 +1,69 @@
+{
+ "title": "Harness",
+ "subtitle": "Every capability, one card each.",
+ "entries": [
+  {
+   "file": "local_db",
+   "label": "Local DB",
+   "icon": "database",
+   "accent_color": "#0EA5E9",
+   "subtitle": "SQLite insert/query/count/delete"
+  },
+  {
+   "file": "scanner",
+   "label": "Scanner",
+   "icon": "scan",
+   "accent_color": "#0EA5E9",
+   "subtitle": "Scan and OCR"
+  },
+  {
+   "file": "code_generate",
+   "label": "Code generator",
+   "icon": "qr_code",
+   "accent_color": "#0EA5E9",
+   "subtitle": "QR, EAN-13, Code 128"
+  },
+  {
+   "file": "haptics",
+   "label": "Haptics and beeper",
+   "icon": "haptics",
+   "accent_color": "#0EA5E9",
+   "subtitle": "Patterns and tones"
+  },
+  {
+   "file": "clipboard",
+   "label": "Clipboard",
+   "icon": "clipboard",
+   "accent_color": "#0EA5E9",
+   "subtitle": "Copy, paste, clear"
+  },
+  {
+   "file": "net",
+   "label": "Network",
+   "icon": "globe",
+   "accent_color": "#0EA5E9",
+   "subtitle": "HTTP and LAN hub"
+  },
+  {
+   "file": "print",
+   "label": "Printer",
+   "icon": "printer",
+   "accent_color": "#0EA5E9",
+   "subtitle": "ESC/POS over Bluetooth"
+  },
+  {
+   "file": "files",
+   "label": "Files and screen",
+   "icon": "folder",
+   "accent_color": "#0EA5E9",
+   "subtitle": "Sandbox files, capture"
+  },
+  {
+   "file": "data_views",
+   "label": "Data views",
+   "icon": "chart",
+   "accent_color": "#0EA5E9",
+   "subtitle": "Chart and list blocks"
+  }
+ ]
+}

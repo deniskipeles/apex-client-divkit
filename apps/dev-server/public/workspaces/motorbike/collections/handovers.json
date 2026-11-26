@@ -1,0 +1,19 @@
+{
+ "id": 3,
+ "name": "handovers",
+ "schema": {
+  "fields": {
+   "status": {
+    "type": "string",
+    "required": false,
+    "uid": "handovers_status"
+   },
+   "signature": {
+    "type": "string",
+    "required": false,
+    "uid": "handovers_signature"
+   }
+  }
+ },
+ "seed": []
+}

@@ -1,0 +1,586 @@
+{
+ "card": {
+  "log_id": "apex_tools_test_files",
+  "variables": [
+   {
+    "name": "user.workspace_title",
+    "type": "string",
+    "value": "APEX TOOLS"
+   },
+   {
+    "name": "user.tools_status",
+    "type": "string",
+    "value": "Idle"
+   },
+   {
+    "name": "user.tools_result",
+    "type": "string",
+    "value": ""
+   },
+   {
+    "name": "user.tools_error",
+    "type": "string",
+    "value": ""
+   },
+   {
+    "name": "user.haptic_state",
+    "type": "string",
+    "value": "idle"
+   },
+   {
+    "name": "user.beep_state",
+    "type": "string",
+    "value": "idle"
+   },
+   {
+    "name": "user.clipboard_content",
+    "type": "string",
+    "value": ""
+   },
+   {
+    "name": "user.code_image_uri",
+    "type": "string",
+    "value": ""
+   },
+   {
+    "name": "user.code_format",
+    "type": "string",
+    "value": ""
+   },
+   {
+    "name": "user.file_preview",
+    "type": "string",
+    "value": ""
+   },
+   {
+    "name": "user.files_json",
+    "type": "string",
+    "value": "[]"
+   },
+   {
+    "name": "user.net_status",
+    "type": "string",
+    "value": "stopped"
+   },
+   {
+    "name": "user.net_url",
+    "type": "string",
+    "value": ""
+   },
+   {
+    "name": "user.net_shares_json",
+    "type": "string",
+    "value": "[]"
+   },
+   {
+    "name": "user.print_state",
+    "type": "string",
+    "value": "idle"
+   },
+   {
+    "name": "user.screen_state",
+    "type": "string",
+    "value": "idle"
+   },
+   {
+    "name": "user.samples_json",
+    "type": "string",
+    "value": "[]"
+   },
+   {
+    "name": "user.samples_count",
+    "type": "integer",
+    "value": 0
+   }
+  ],
+  "states": [
+   {
+    "state_id": 0,
+    "div": {
+     "type": "container",
+     "orientation": "vertical",
+     "items": [
+      {
+       "type": "container",
+       "orientation": "horizontal",
+       "items": [
+        {
+         "type": "button",
+         "text": "Back",
+         "font_size": 12,
+         "font_weight": "bold",
+         "text_color": "#F8FAFC",
+         "background_color": "#16233A",
+         "corner_radius": 12,
+         "height": {
+          "type": "fixed",
+          "value": 40
+         },
+         "width": {
+          "type": "fixed",
+          "value": 80
+         },
+         "actions": [
+          {
+           "url": "nav://pop"
+          }
+         ],
+         "border": {
+          "corner_radius": 12,
+          "stroke": {
+           "color": "#1E293B",
+           "width": 1
+          }
+         },
+         "id": "btn_back"
+        },
+        {
+         "type": "container",
+         "orientation": "vertical",
+         "items": [
+          {
+           "type": "text",
+           "text": "Files and screen",
+           "font_size": 18,
+           "font_weight": "bold",
+           "text_color": "#F8FAFC"
+          },
+          {
+           "type": "text",
+           "text": "Workspace sandbox files and screen capture",
+           "font_size": 12,
+           "font_weight": "regular",
+           "text_color": "#94A3B8"
+          }
+         ],
+         "weight": 1
+        }
+       ],
+       "item_spacing": 8,
+       "paddings": {
+        "left": 16,
+        "top": 32,
+        "right": 16,
+        "bottom": 8
+       }
+      },
+      {
+       "type": "container",
+       "orientation": "vertical",
+       "items": [
+        {
+         "type": "container",
+         "orientation": "vertical",
+         "items": [
+          {
+           "type": "text",
+           "text": "File preview",
+           "font_size": 11,
+           "font_weight": "bold",
+           "text_color": "#94A3B8"
+          },
+          {
+           "type": "text",
+           "text": "@{user.file_preview == '' ? 'no file yet' : user.file_preview}",
+           "font_size": 14,
+           "font_weight": "bold",
+           "text_color": "#34D399"
+          },
+          {
+           "type": "inline_banner",
+           "custom_props": {
+            "text": "@{user.tools_error == '' ? 'No errors' : user.tools_error}",
+            "tone": "warn"
+           }
+          }
+         ],
+         "item_spacing": 8,
+         "background_color": "#111C2E",
+         "paddings": {
+          "left": 12,
+          "top": 12,
+          "right": 12,
+          "bottom": 12
+         },
+         "border": {
+          "corner_radius": 16,
+          "stroke": {
+           "color": "#1E293B",
+           "width": 1
+          }
+         }
+        },
+        {
+         "type": "json_list",
+         "data_var": "user.files_json",
+         "empty_text": "No files in the sandbox",
+         "row_card": {
+          "type": "container",
+          "orientation": "horizontal",
+          "items": [
+           {
+            "type": "text",
+            "text": "@{item.name}",
+            "font_size": 12,
+            "font_weight": "regular",
+            "text_color": "#F8FAFC",
+            "width": {
+             "type": "match_parent"
+            }
+           },
+           {
+            "type": "text",
+            "text": "@{item.bytes} B",
+            "font_size": 11,
+            "font_weight": "regular",
+            "text_color": "#94A3B8"
+           }
+          ],
+          "background_color": "#16233A",
+          "paddings": {
+           "left": 8,
+           "top": 8,
+           "right": 8,
+           "bottom": 8
+          },
+          "border": {
+           "corner_radius": 12
+          }
+         },
+         "id": "files_list"
+        },
+        {
+         "type": "container",
+         "orientation": "vertical",
+         "items": [
+          {
+           "type": "button",
+           "text": "Write file",
+           "font_size": 12,
+           "font_weight": "bold",
+           "text_color": "#F8FAFC",
+           "background_color": "#16233A",
+           "corner_radius": 12,
+           "height": {
+            "type": "fixed",
+            "value": 44
+           },
+           "width": {
+            "type": "match_parent"
+           },
+           "actions": [
+            {
+             "url": "tools://files/write",
+             "payload": {
+              "options": {
+               "path": "notes/probe.txt",
+               "content": "APEX TOOLS PROBE"
+              },
+              "output": {
+               "path": "user.file_path",
+               "bytes": "user.file_bytes"
+              }
+             }
+            }
+           ],
+           "border": {
+            "corner_radius": 12,
+            "stroke": {
+             "color": "#1E293B",
+             "width": 1
+            }
+           },
+           "id": "files_write"
+          },
+          {
+           "type": "button",
+           "text": "Read file",
+           "font_size": 12,
+           "font_weight": "bold",
+           "text_color": "#F8FAFC",
+           "background_color": "#16233A",
+           "corner_radius": 12,
+           "height": {
+            "type": "fixed",
+            "value": 44
+           },
+           "width": {
+            "type": "match_parent"
+           },
+           "actions": [
+            {
+             "url": "tools://files/read",
+             "payload": {
+              "options": {
+               "path": "notes/probe.txt"
+              },
+              "output": {
+               "text": "user.file_preview",
+               "path": "user.file_path"
+              }
+             }
+            }
+           ],
+           "border": {
+            "corner_radius": 12,
+            "stroke": {
+             "color": "#1E293B",
+             "width": 1
+            }
+           },
+           "id": "files_read"
+          },
+          {
+           "type": "button",
+           "text": "List files",
+           "font_size": 12,
+           "font_weight": "bold",
+           "text_color": "#F8FAFC",
+           "background_color": "#16233A",
+           "corner_radius": 12,
+           "height": {
+            "type": "fixed",
+            "value": 44
+           },
+           "width": {
+            "type": "match_parent"
+           },
+           "actions": [
+            {
+             "url": "tools://files/list",
+             "payload": {
+              "options": {
+               "path": "notes"
+              },
+              "output": {
+               "_json": "user.files_json"
+              }
+             }
+            }
+           ],
+           "border": {
+            "corner_radius": 12,
+            "stroke": {
+             "color": "#1E293B",
+             "width": 1
+            }
+           },
+           "id": "files_list"
+          },
+          {
+           "type": "button",
+           "text": "Delete file",
+           "font_size": 12,
+           "font_weight": "bold",
+           "text_color": "#F8FAFC",
+           "background_color": "#16233A",
+           "corner_radius": 12,
+           "height": {
+            "type": "fixed",
+            "value": 44
+           },
+           "width": {
+            "type": "match_parent"
+           },
+           "actions": [
+            {
+             "url": "tools://files/delete",
+             "payload": {
+              "options": {
+               "path": "notes/probe.txt"
+              },
+              "output": {
+               "status": "user.tools_status"
+              }
+             }
+            }
+           ],
+           "border": {
+            "corner_radius": 12,
+            "stroke": {
+             "color": "#1E293B",
+             "width": 1
+            }
+           },
+           "id": "files_delete"
+          },
+          {
+           "type": "button",
+           "text": "Keep awake",
+           "font_size": 12,
+           "font_weight": "bold",
+           "text_color": "#F8FAFC",
+           "background_color": "#16233A",
+           "corner_radius": 12,
+           "height": {
+            "type": "fixed",
+            "value": 44
+           },
+           "width": {
+            "type": "match_parent"
+           },
+           "actions": [
+            {
+             "url": "tools://screen/keep_awake",
+             "payload": {
+              "options": {
+               "enabled": "true"
+              },
+              "output": {
+               "status": "user.screen_state"
+              }
+             }
+            }
+           ],
+           "border": {
+            "corner_radius": 12,
+            "stroke": {
+             "color": "#1E293B",
+             "width": 1
+            }
+           },
+           "id": "screen_awake"
+          },
+          {
+           "type": "button",
+           "text": "Screenshot",
+           "font_size": 12,
+           "font_weight": "bold",
+           "text_color": "#F8FAFC",
+           "background_color": "#16233A",
+           "corner_radius": 12,
+           "height": {
+            "type": "fixed",
+            "value": 44
+           },
+           "width": {
+            "type": "match_parent"
+           },
+           "actions": [
+            {
+             "url": "tools://screen/screenshot",
+             "payload": {
+              "output": {
+               "uri": "user.screen_uri",
+               "status": "user.screen_state"
+              }
+             }
+            }
+           ],
+           "border": {
+            "corner_radius": 12,
+            "stroke": {
+             "color": "#1E293B",
+             "width": 1
+            }
+           },
+           "id": "screen_shot"
+          },
+          {
+           "type": "button",
+           "text": "Start recording",
+           "font_size": 12,
+           "font_weight": "bold",
+           "text_color": "#F8FAFC",
+           "background_color": "#16233A",
+           "corner_radius": 12,
+           "height": {
+            "type": "fixed",
+            "value": 44
+           },
+           "width": {
+            "type": "match_parent"
+           },
+           "actions": [
+            {
+             "url": "tools://screen/record_start",
+             "payload": {
+              "output": {
+               "status": "user.screen_state"
+              }
+             }
+            }
+           ],
+           "border": {
+            "corner_radius": 12,
+            "stroke": {
+             "color": "#1E293B",
+             "width": 1
+            }
+           },
+           "id": "screen_record"
+          },
+          {
+           "type": "button",
+           "text": "Stop recording",
+           "font_size": 12,
+           "font_weight": "bold",
+           "text_color": "#F8FAFC",
+           "background_color": "#16233A",
+           "corner_radius": 12,
+           "height": {
+            "type": "fixed",
+            "value": 44
+           },
+           "width": {
+            "type": "match_parent"
+           },
+           "actions": [
+            {
+             "url": "tools://screen/record_stop",
+             "payload": {
+              "output": {
+               "uri": "user.screen_video_uri",
+               "status": "user.screen_state"
+              }
+             }
+            }
+           ],
+           "border": {
+            "corner_radius": 12,
+            "stroke": {
+             "color": "#1E293B",
+             "width": 1
+            }
+           },
+           "id": "screen_stop"
+          }
+         ],
+         "item_spacing": 8,
+         "background_color": "#111C2E",
+         "paddings": {
+          "left": 12,
+          "top": 12,
+          "right": 12,
+          "bottom": 12
+         },
+         "border": {
+          "corner_radius": 16,
+          "stroke": {
+           "color": "#1E293B",
+           "width": 1
+          }
+         }
+        }
+       ],
+       "item_spacing": 12,
+       "paddings": {
+        "left": 16,
+        "top": 0,
+        "right": 16,
+        "bottom": 0
+       }
+      }
+     ],
+     "item_spacing": 8,
+     "paddings": {
+      "left": 0,
+      "top": 0,
+      "right": 0,
+      "bottom": 16
+     }
+    }
+   }
+  ]
+ }
+}

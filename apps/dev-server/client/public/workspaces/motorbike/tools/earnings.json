@@ -1,0 +1,258 @@
+{
+ "card": {
+  "log_id": "motorbike_earnings",
+  "variables": [
+   {
+    "name": "user.workspace_title",
+    "type": "string",
+    "value": "BODA BODA"
+   },
+   {
+    "name": "user.rider_name",
+    "type": "string",
+    "value": "Rider"
+   },
+   {
+    "name": "user.earnings_today",
+    "type": "string",
+    "value": "0"
+   },
+   {
+    "name": "user.trip_count",
+    "type": "integer",
+    "value": 0
+   },
+   {
+    "name": "user.net_profit",
+    "type": "string",
+    "value": "0"
+   },
+   {
+    "name": "user.fare_input",
+    "type": "string",
+    "value": "150"
+   },
+   {
+    "name": "user.payment_method",
+    "type": "string",
+    "value": "M-Pesa"
+   },
+   {
+    "name": "user.route_input",
+    "type": "string",
+    "value": ""
+   },
+   {
+    "name": "user.weekly_json",
+    "type": "string",
+    "value": "[{\"day\":\"Mon\",\"fare\":1240},{\"day\":\"Tue\",\"fare\":980},{\"day\":\"Wed\",\"fare\":1610},{\"day\":\"Thu\",\"fare\":1050},{\"day\":\"Fri\",\"fare\":1870},{\"day\":\"Sat\",\"fare\":2240},{\"day\":\"Sun\",\"fare\":0}]"
+   },
+   {
+    "name": "user.trips_json",
+    "type": "string",
+    "value": "[{\"id\":\"t1\",\"day\":\"Sat\",\"fare\":350,\"payment\":\"M-Pesa\",\"route\":\"Kawangware → CBD\"},{\"id\":\"t2\",\"day\":\"Sat\",\"fare\":220,\"payment\":\"Cash\",\"route\":\"Westlands → Parklands\"},{\"id\":\"t3\",\"day\":\"Fri\",\"fare\":480,\"payment\":\"M-Pesa\",\"route\":\"CBD → Karen\"}]"
+   },
+   {
+    "name": "user.expenses_json",
+    "type": "string",
+    "value": "[]"
+   },
+   {
+    "name": "user.handover_status",
+    "type": "string",
+    "value": "NOT_STARTED"
+   },
+   {
+    "name": "user.trip_modal",
+    "type": "boolean",
+    "value": false
+   },
+   {
+    "name": "user.last_action",
+    "type": "string",
+    "value": "Ready"
+   }
+  ],
+  "states": [
+   {
+    "state_id": 0,
+    "div": {
+     "type": "container",
+     "orientation": "vertical",
+     "items": [
+      {
+       "type": "container",
+       "orientation": "horizontal",
+       "items": [
+        {
+         "type": "button",
+         "text": "Back",
+         "font_size": 12,
+         "font_weight": "bold",
+         "text_color": "#F8FAFC",
+         "background_color": "#16233A",
+         "corner_radius": 12,
+         "height": {
+          "type": "fixed",
+          "value": 40
+         },
+         "width": {
+          "type": "fixed",
+          "value": 80
+         },
+         "actions": [
+          {
+           "url": "nav://pop"
+          }
+         ],
+         "border": {
+          "corner_radius": 12,
+          "stroke": {
+           "color": "#1E293B",
+           "width": 1
+          }
+         },
+         "id": "btn_back"
+        },
+        {
+         "type": "container",
+         "orientation": "vertical",
+         "items": [
+          {
+           "type": "text",
+           "text": "Earnings",
+           "font_size": 26,
+           "font_weight": "bold",
+           "text_color": "#F8FAFC",
+           "max_lines": 2
+          },
+          {
+           "type": "text",
+           "text": "Fares by day and trip",
+           "font_size": 12,
+           "font_weight": "regular",
+           "text_color": "#94A3B8",
+           "max_lines": 2
+          }
+         ],
+         "weight": 1
+        }
+       ],
+       "item_spacing": 8,
+       "paddings": {
+        "left": 16,
+        "top": 32,
+        "right": 16,
+        "bottom": 8
+       }
+      },
+      {
+       "type": "container",
+       "orientation": "vertical",
+       "items": [
+        {
+         "type": "custom",
+         "custom_type": "sdui_chart",
+         "custom_props": {
+          "chart_type": "line",
+          "title": "FARES BY DAY",
+          "subtitle": "Tap a point to inspect it",
+          "label_field": "day",
+          "value_field": "fare",
+          "value_prefix": "KES ",
+          "value_suffix": "",
+          "accent_color": "#38BDF8",
+          "height": 210,
+          "show_grid": true,
+          "show_legend": true,
+          "interactive": true,
+          "data_var": "user.weekly_json"
+         },
+         "id": "earnings_chart"
+        },
+        {
+         "type": "text",
+         "text": "TRIP LOG",
+         "font_size": 11,
+         "font_weight": "bold",
+         "text_color": "#94A3B8"
+        },
+        {
+         "type": "json_list",
+         "data_var": "user.trips_json",
+         "empty_text": "No trips recorded yet",
+         "row_card": {
+          "type": "container",
+          "orientation": "horizontal",
+          "items": [
+           {
+            "type": "container",
+            "orientation": "vertical",
+            "items": [
+             {
+              "type": "text",
+              "text": "@{item.route}",
+              "font_size": 12,
+              "font_weight": "bold",
+              "text_color": "#F8FAFC"
+             },
+             {
+              "type": "text",
+              "text": "@{item.day} • @{item.payment}",
+              "font_size": 11,
+              "font_weight": "regular",
+              "text_color": "#94A3B8"
+             }
+            ],
+            "width": {
+             "type": "match_parent"
+            }
+           },
+           {
+            "type": "text",
+            "text": "KES @{item.fare}",
+            "font_size": 14,
+            "font_weight": "bold",
+            "text_color": "#34D399"
+           }
+          ],
+          "item_spacing": 8,
+          "background_color": "#16233A",
+          "paddings": {
+           "left": 8,
+           "top": 8,
+           "right": 8,
+           "bottom": 8
+          },
+          "border": {
+           "corner_radius": 12,
+           "stroke": {
+            "color": "#1E293B",
+            "width": 1
+           }
+          }
+         },
+         "id": "earnings_list"
+        }
+       ],
+       "item_spacing": 12,
+       "paddings": {
+        "left": 16,
+        "top": 0,
+        "right": 16,
+        "bottom": 0
+       }
+      }
+     ],
+     "item_spacing": 8,
+     "paddings": {
+      "left": 0,
+      "top": 0,
+      "right": 0,
+      "bottom": 16
+     }
+    }
+   }
+  ]
+ }
+}

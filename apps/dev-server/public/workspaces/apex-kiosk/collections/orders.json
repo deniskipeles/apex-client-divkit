@@ -1,0 +1,62 @@
+{
+ "id": 1,
+ "name": "orders",
+ "schema": {
+  "fields": {
+   "item_name": {
+    "type": "string",
+    "required": false,
+    "uid": "orders_item_name"
+   },
+   "sku": {
+    "type": "string",
+    "required": false,
+    "uid": "orders_sku"
+   },
+   "price": {
+    "type": "number",
+    "required": false,
+    "uid": "orders_price"
+   },
+   "qty": {
+    "type": "number",
+    "required": false,
+    "uid": "orders_qty"
+   },
+   "terminal_id": {
+    "type": "string",
+    "required": false,
+    "uid": "orders_terminal_id"
+   },
+   "status": {
+    "type": "string",
+    "required": false,
+    "uid": "orders_status"
+   }
+  },
+  "policies": {
+   "read": "public",
+   "create": "public",
+   "update": "public",
+   "delete": "public"
+  }
+ },
+ "seed": [
+  {
+   "item_name": "Mineral Water",
+   "sku": "P1001",
+   "price": 1.5,
+   "qty": 2,
+   "terminal_id": "KSK-001",
+   "status": "OPEN"
+  },
+  {
+   "item_name": "Sandwich",
+   "sku": "P1008",
+   "price": 4,
+   "qty": 1,
+   "terminal_id": "KSK-001",
+   "status": "PAID"
+  }
+ ]
+}

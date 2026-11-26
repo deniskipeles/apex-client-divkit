@@ -44,6 +44,12 @@ apps/desktop/src-tauri/gen
 apps/web/.nitro
 apps/web/.output
 
+# --- apps/dev-server (Nitro + Vite) ---
+apps/dev-server/.nitro
+apps/dev-server/.output
+apps/dev-server/dist
+apps/dev-server/node_modules
+
 # --- pnpm workspace ---
 node_modules/
 .pnpm-store/
@@ -54,3 +60,6 @@ artifacts/
 # --- local Python tooling ---
 __pycache__/
 *.py[cod]
+
+# --- agent scratch ---
+/.agents_tmp/

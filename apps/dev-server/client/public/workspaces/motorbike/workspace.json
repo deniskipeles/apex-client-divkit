@@ -1,0 +1,38 @@
+{
+ "format": "apex.workspace/1",
+ "id": "motorbike",
+ "title": "BODA BODA",
+ "subtitle": "Work & payments for motorcycle-taxi riders",
+ "terminal": "BODA-001",
+ "accent": "#F59E0B",
+ "mode": "NATIVE",
+ "capabilities": [
+  "haptics",
+  "clipboard"
+ ],
+ "tools": {
+  "hapticVibration": true,
+  "clipboardAccess": true,
+  "offlinePageCaching": true
+ },
+ "unread": 1,
+ "hub": "card.json",
+ "catalog": "tool_catalog.json",
+ "collections": {
+  "dir": "collections",
+  "files": [
+   "trips.json",
+   "expenses.json",
+   "handovers.json"
+  ]
+ },
+ "cards": {
+  "dir": "tools",
+  "order": [
+   "trip",
+   "earnings",
+   "expenses",
+   "handover"
+  ]
+ }
+}
