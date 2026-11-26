@@ -1,4 +1,4 @@
-import type { DivNode, DivSize } from './div.ts'
+import { container, fixed, matchParent, text, type DivNode, type DivSize } from './div.ts'
 import { palette, radius, space, type as ramp } from './tokens.ts'
 import type { DivAction } from './actions.ts'
 
@@ -263,15 +263,65 @@ export const metric = (opts: {
     type: 'container',
     orientation: 'vertical',
     item_spacing: space(1),
-    paddings: { left: space(3), top: space(2), right: space(3), bottom: space(2) },
+    paddings: { left: space(3), top: space(3), right: space(3), bottom: space(3) },
     background_color: palette.surfaceAlt,
     border: { corner_radius: radius.md, stroke: { color: palette.line, width: 1 } },
     items: [
-      { type: 'text', text: opts.label, font_size: ramp.label, font_weight: 'bold', text_color: palette.textMuted },
+      { type: 'text', text: opts.label, font_size: ramp.label, font_weight: 'bold', text_color: palette.textFaint },
       { type: 'text', text: opts.value, font_size: ramp.title, font_weight: 'bold', text_color: opts.tone ?? palette.text },
     ],
   }
   if (opts.width) node.width = opts.width
   if (opts.id) node.id = opts.id
   return node
+}
+
+/**
+ * Result readout used by tool probe cards: a mono value line with a tone dot,
+ * so the outcome of the last `tools://` dispatch is always visible without
+ * opening the event log.
+ */
+export const resultLine = (opts: {
+  label: string
+  value: string
+  tone?: 'accent' | 'warn' | 'danger' | 'info' | 'neutral'
+  id?: string
+}): DivNode => {
+  const toneMap = {
+    accent: palette.accent,
+    warn: palette.warn,
+    danger: palette.danger,
+    info: palette.info,
+    neutral: palette.textMuted,
+  } as const
+  const fg = toneMap[opts.tone ?? 'accent']
+  return container({
+    orientation: 'horizontal',
+    spacing: space(2),
+    padding: { left: space(3), top: space(3), right: space(3), bottom: space(3) },
+    background: palette.surfaceAlt,
+    radius: radius.md,
+    stroke: { color: palette.line, width: 1 },
+    width: matchParent(),
+    valign: 'center',
+    items: [
+      container({
+        orientation: 'horizontal',
+        width: fixed(8),
+        height: fixed(8),
+        radius: radius.pill,
+        background: fg,
+        items: [],
+      }),
+      container({
+        weight: 1,
+        spacing: space(1),
+        items: [
+          text({ text: opts.label, size: ramp.label, weight: 'bold', color: palette.textFaint, letterSpacing: 1.1 }),
+          text({ text: opts.value, size: ramp.mono, weight: 'medium', color: fg, fontFamily: 'monospace', lines: 3 }),
+        ],
+      }),
+    ],
+    ...(opts.id ? { id: opts.id } : {}),
+  })
 }

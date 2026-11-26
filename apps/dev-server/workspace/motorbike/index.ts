@@ -1,12 +1,14 @@
 import {
   boolVar, button, card, chart, container, divKitCard, expression, fab, fixed, formModal,
-  inlineBanner, intVar, jsonList, localDb, matchParent, metric, navPop, navPush, numpad,
-  palette, progressRing, radius, segmented, separator, setVariable, signature, space,
-  stickyFooter, stringVar, text, textField, toast, tool, type as ramp,
+  grid, hero, inlineBanner, intVar, jsonList, keyValue, localDb, matchParent, metric, navPop,
+  navPush, numpad, palette, progressRing, quickTile, radius, resultLine, sectionTitle, segmented,
+  separator, setVariable, signature, space, stickyFooter, stringVar, text, textField, toast,
+  tool, type as ramp,
 } from '../kit/index.ts'
+import type { DivNode } from '../kit/div.ts'
 import type { WorkspaceDefinition } from '../types.ts'
 
-const ACCENT = '#F59E0B'
+const ACCENT = '#F5A83C'
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
 const weekly = DAYS.map((day, index) => ({ day, fare: [1240, 980, 1610, 1050, 1870, 2240, 0][index] }))
@@ -33,35 +35,40 @@ const variables = [
   stringVar('user.last_action', 'Ready'),
 ]
 
-const header = (title: string, subtitle: string, back: boolean) =>
-  container({
-    orientation: 'horizontal',
-    spacing: space(2),
-    padding: { left: space(4), top: space(8), right: space(4), bottom: space(2) },
-    items: [
-      ...(back
-        ? [button({ text: 'Back', actions: [navPop()], tone: 'secondary', width: fixed(80), height: space(10), size: ramp.small, id: 'btn_back' })]
-        : []),
-      container({
-        weight: 1,
-        items: [
-          text({ text: title, size: ramp.display, weight: 'bold', lines: 2 }),
-          text({ text: subtitle, size: ramp.small, color: palette.textMuted, lines: 2 }),
-        ],
-      }),
-    ],
-  })
+const GUTTER = { left: space(5), right: space(5) }
 
 const statusStrip = () =>
+  grid(
+    [
+      metric({ label: 'TODAY', value: expression("'KES ' + user.earnings_today"), tone: palette.accent, id: 'metric_today' }),
+      metric({ label: 'TRIPS', value: expression('user.trip_count'), id: 'metric_trips' }),
+      metric({ label: 'NET', value: expression("'KES ' + user.net_profit"), id: 'metric_net' }),
+    ],
+    3,
+    'metric_strip',
+  )
+
+const tripRow = (routeExpr: string, metaExpr: string, fareExpr: string, id: string): DivNode =>
   container({
     orientation: 'horizontal',
     spacing: space(2),
-    padding: { left: space(4), right: space(4), top: space(1), bottom: space(2) },
+    padding: space(3),
+    background: palette.surfaceAlt,
+    radius: radius.md,
+    stroke: { color: palette.line, width: 1 },
+    width: matchParent(),
     items: [
-      metric({ label: 'TODAY', value: expression("'KES ' + user.earnings_today"), tone: palette.accent, width: matchParent(), id: 'metric_today' }),
-      metric({ label: 'TRIPS', value: expression('user.trip_count'), width: matchParent(), id: 'metric_trips' }),
-      metric({ label: 'NET', value: expression("'KES ' + user.net_profit"), width: matchParent(), id: 'metric_net' }),
+      container({
+        weight: 1,
+        spacing: space(1),
+        items: [
+          text({ text: routeExpr, size: ramp.small, weight: 'bold', lines: 1 }),
+          text({ text: metaExpr, size: ramp.label, color: palette.textMuted, lines: 1 }),
+        ],
+      }),
+      text({ text: fareExpr, size: ramp.body, weight: 'bold', color: palette.accent, align: 'right' }),
     ],
+    id,
   })
 
 const hub = divKitCard({
@@ -69,39 +76,54 @@ const hub = divKitCard({
   variables,
   states: [{
     div: container({
-      spacing: space(2),
-      padding: { bottom: space(4) },
+      spacing: space(3),
+      padding: { bottom: space(6) },
       items: [
-        header('BODA BODA', 'Every trip, fare and fuel cost — in one place', false),
-        statusStrip(),
-        container({
-          padding: { left: space(4), right: space(4) },
-          spacing: space(2),
-          items: [
-            chart({
-              id: 'chart_week',
-              chartType: 'bar',
-              title: 'THIS WEEK',
-              subtitle: 'Fares per day',
-              dataVar: 'user.weekly_json',
-              labelField: 'day',
-              valueField: 'fare',
-              valuePrefix: 'KES ',
-              height: 190,
-            }),
-            inlineBanner({ text: expression("'Last action: ' + user.last_action"), tone: 'info', id: 'banner_last' }),
-          ],
+        hero({
+          title: 'BODA BODA',
+          subtitle: 'Every trip, fare and fuel cost — in one place',
+          accent: ACCENT,
+          badge: 'RIDING',
+          id: 'hub_hero',
         }),
-        container({
-          padding: { left: space(4), right: space(4), top: space(2) },
-          spacing: space(2),
-          items: [
-            button({ text: 'Record a trip', actions: [navPush('trip')], id: 'nav_trip' }),
-            button({ text: 'Earnings', actions: [navPush('earnings')], tone: 'secondary', id: 'nav_earnings' }),
-            button({ text: 'Expenses', actions: [navPush('expenses')], tone: 'secondary', id: 'nav_expenses' }),
-            button({ text: 'Handover', actions: [navPush('handover')], tone: 'secondary', id: 'nav_handover' }),
-          ],
-        }),
+        container({ ...GUTTER, spacing: space(3), items: [
+          statusStrip(),
+          card(
+            [
+              sectionTitle('THIS WEEK'),
+              chart({
+                id: 'chart_week',
+                chartType: 'bar',
+                title: 'Fares per day',
+                subtitle: 'Tap a bar to inspect it',
+                dataVar: 'user.weekly_json',
+                labelField: 'day',
+                valueField: 'fare',
+                valuePrefix: 'KES ',
+                accentColor: ACCENT,
+                height: 190,
+              }),
+            ],
+            { elevation: 'raised' },
+          ),
+          resultLine({
+            label: 'LAST ACTION',
+            value: expression("user.last_action == '' ? 'Ready' : user.last_action"),
+            tone: 'info',
+            id: 'banner_last',
+          }),
+          sectionTitle('WORKFLOWS'),
+          grid(
+            [
+              quickTile({ label: 'Record a trip', subtitle: 'Fare, route, payment', icon: 'add', tone: 'primary', actions: [navPush('trip')], id: 'nav_trip' }),
+              quickTile({ label: 'Earnings', subtitle: 'Fares by day', icon: 'trending_up', tone: 'accent', actions: [navPush('earnings')], id: 'nav_earnings' }),
+              quickTile({ label: 'Expenses', subtitle: 'Fuel and repairs', icon: 'receipt', tone: 'warn', actions: [navPush('expenses')], id: 'nav_expenses' }),
+              quickTile({ label: 'Handover', subtitle: 'Close the day', icon: 'task_complete', tone: 'info', actions: [navPush('handover')], id: 'nav_handover' }),
+            ],
+            2,
+            'hub_tiles',
+          ),
+        ] }),
       ],
     }),
   }],
@@ -112,16 +134,22 @@ const trip = divKitCard({
   variables,
   states: [{
     div: container({
-      spacing: space(2),
-      padding: { bottom: space(4) },
+      spacing: space(3),
+      padding: { bottom: space(6) },
       items: [
-        header('Record a trip', 'Fare, route and payment method', true),
+        hero({
+          title: 'Record a trip',
+          subtitle: 'Fare, route and payment method',
+          accent: ACCENT,
+          back: true,
+          id: 'trip_hero',
+        }),
         container({
-          padding: { left: space(4), right: space(4) },
+          ...GUTTER,
           spacing: space(3),
           items: [
             card([
-              text({ text: 'FARE', size: ramp.label, weight: 'bold', color: palette.textMuted }),
+              sectionTitle('FARE'),
               text({ text: expression("'KES ' + user.fare_input"), size: ramp.display, weight: 'bold', color: palette.accent, id: 'trip_fare' }),
               numpad({ variable: 'user.fare_input', label: 'Amount', id: 'trip_numpad' }),
               container({
@@ -140,7 +168,7 @@ const trip = divKitCard({
               }),
             ]),
             card([
-              text({ text: 'PAYMENT', size: ramp.label, weight: 'bold', color: palette.textMuted }),
+              sectionTitle('PAYMENT'),
               segmented({
                 activeValue: 'M-Pesa',
                 items: ['Cash', 'M-Pesa', 'Fuel advance'].map((value) => ({
@@ -158,7 +186,7 @@ const trip = divKitCard({
           body: [],
           footer: [
             container({
-              padding: { left: space(4), right: space(4) },
+              ...GUTTER,
               spacing: space(2),
               items: [
                 button({
@@ -189,48 +217,41 @@ const earnings = divKitCard({
   variables,
   states: [{
     div: container({
-      spacing: space(2),
-      padding: { bottom: space(4) },
+      spacing: space(3),
+      padding: { bottom: space(6) },
       items: [
-        header('Earnings', 'Fares by day and trip', true),
+        hero({
+          title: 'Earnings',
+          subtitle: 'Fares by day and trip',
+          accent: ACCENT,
+          back: true,
+          id: 'earnings_hero',
+        }),
         container({
-          padding: { left: space(4), right: space(4) },
+          ...GUTTER,
           spacing: space(3),
           items: [
-            chart({
-              id: 'earnings_chart',
-              chartType: 'line',
-              title: 'FARES BY DAY',
-              subtitle: 'Tap a point to inspect it',
-              dataVar: 'user.weekly_json',
-              labelField: 'day',
-              valueField: 'fare',
-              valuePrefix: 'KES ',
-              height: 210,
-            }),
-            text({ text: 'TRIP LOG', size: ramp.label, weight: 'bold', color: palette.textMuted }),
+            card([
+              sectionTitle('FARES BY DAY'),
+              chart({
+                id: 'earnings_chart',
+                chartType: 'line',
+                title: 'Tap a point to inspect it',
+                subtitle: 'Mon – Sun',
+                dataVar: 'user.weekly_json',
+                labelField: 'day',
+                valueField: 'fare',
+                valuePrefix: 'KES ',
+                accentColor: ACCENT,
+                height: 210,
+              }),
+            ]),
+            sectionTitle('TRIP LOG'),
             jsonList({
               id: 'earnings_list',
               dataVar: 'user.trips_json',
               emptyText: 'No trips recorded yet',
-              rowCard: container({
-                orientation: 'horizontal',
-                spacing: space(2),
-                padding: space(2),
-                background: palette.surfaceAlt,
-                radius: radius.md,
-                stroke: { color: palette.line, width: 1 },
-                items: [
-                  container({
-                    width: matchParent(),
-                    items: [
-                      text({ text: '@{item.route}', size: ramp.small, weight: 'bold' }),
-                      text({ text: '@{item.day} • @{item.payment}', size: ramp.label, color: palette.textMuted }),
-                    ],
-                  }),
-                  text({ text: 'KES @{item.fare}', size: ramp.body, weight: 'bold', color: palette.accent }),
-                ],
-              }),
+              rowCard: tripRow('@{item.route}', '@{item.day} • @{item.payment}', 'KES @{item.fare}', 'trip_row'),
             }),
           ],
         }),
@@ -244,12 +265,18 @@ const expenses = divKitCard({
   variables,
   states: [{
     div: container({
-      spacing: space(2),
-      padding: { bottom: space(4) },
+      spacing: space(3),
+      padding: { bottom: space(6) },
       items: [
-        header('Expenses', 'Fuel, repairs and licence', true),
+        hero({
+          title: 'Expenses',
+          subtitle: 'Fuel, repairs and licence',
+          accent: ACCENT,
+          back: true,
+          id: 'expenses_hero',
+        }),
         container({
-          padding: { left: space(4), right: space(4) },
+          ...GUTTER,
           spacing: space(3),
           items: [
             segmented({
@@ -257,21 +284,15 @@ const expenses = divKitCard({
               items: ['Fuel', 'Repairs', 'Licence'].map((value) => ({ value, label: value })),
               id: 'expense_kind',
             }),
-            jsonList({
-              id: 'expense_list',
-              dataVar: 'user.expenses_json',
-              emptyText: 'No expenses logged today',
-              rowCard: container({
-                orientation: 'horizontal',
-                padding: space(2),
-                background: palette.surfaceAlt,
-                radius: radius.md,
-                items: [
-                  text({ text: '@{item.kind}', size: ramp.small, width: matchParent() }),
-                  text({ text: 'KES @{item.amount}', size: ramp.small, weight: 'bold', color: palette.warn }),
-                ],
+            card([
+              sectionTitle('TODAY'),
+              jsonList({
+                id: 'expense_list',
+                dataVar: 'user.expenses_json',
+                emptyText: 'No expenses logged today',
+                rowCard: tripRow('@{item.kind}', 'Expense', 'KES @{item.amount}', 'expense_row'),
               }),
-            }),
+            ]),
             fab({ label: 'Log expense', actions: [setVariable('user.expense_modal', 'true')], id: 'expense_fab' }),
             formModal({
               visible: false,
@@ -301,31 +322,49 @@ const handover = divKitCard({
   variables,
   states: [{
     div: container({
-      spacing: space(2),
-      padding: { bottom: space(4) },
+      spacing: space(3),
+      padding: { bottom: space(6) },
       items: [
-        header('Handover', 'Close the day with the owner', true),
+        hero({
+          title: 'Handover',
+          subtitle: 'Close the day with the owner',
+          accent: ACCENT,
+          back: true,
+          id: 'handover_hero',
+        }),
         container({
-          padding: { left: space(4), right: space(4) },
+          ...GUTTER,
           spacing: space(3),
           items: [
-            progressRing({
-              value: 0.72,
-              label: 'Cash target',
-              caption: 'KES 3,600 of 5,000',
-              id: 'handover_ring',
-            }),
-            text({ text: 'Rider signature', size: ramp.label, weight: 'bold', color: palette.textMuted }),
-            signature({ variable: 'user.handover_signature', label: 'Sign to confirm', id: 'handover_signature' }),
-            inlineBanner({ text: expression("'Status: ' + user.handover_status"), tone: 'success', id: 'handover_status' }),
-            toast({ text: expression("'Handover ' + user.handover_status"), id: 'handover_toast' }),
+            card([
+              sectionTitle('CASH TARGET'),
+              progressRing({
+                value: 0.72,
+                label: 'Cash target',
+                caption: 'KES 3,600 of 5,000',
+                id: 'handover_ring',
+              }),
+              keyValue('Day total', 'KES 3,600', { id: 'handover_total' }),
+              keyValue('Expected', 'KES 5,000', { valueTone: palette.textMuted, id: 'handover_expected' }),
+            ]),
+            card([
+              sectionTitle('RIDER SIGNATURE'),
+              signature({ variable: 'user.handover_signature', label: 'Sign to confirm', id: 'handover_signature' }),
+              resultLine({
+                label: 'STATUS',
+                value: expression('user.handover_status'),
+                tone: 'accent',
+                id: 'handover_status',
+              }),
+              toast({ text: expression("'Handover ' + user.handover_status"), id: 'handover_toast' }),
+            ]),
           ],
         }),
         stickyFooter({
           body: [],
           footer: [
             container({
-              padding: { left: space(4), right: space(4) },
+              ...GUTTER,
               spacing: space(2),
               items: [
                 button({
@@ -382,10 +421,10 @@ export const motorbike: WorkspaceDefinition = {
     title: 'Today',
     subtitle: 'Pick a workflow to begin.',
     entries: [
-      { file: 'trip', label: 'Record a trip', icon: 'add_circle', accent_color: ACCENT, subtitle: 'Fare, route and payment' },
+      { file: 'trip', label: 'Record a trip', icon: 'add', accent_color: ACCENT, subtitle: 'Fare, route and payment' },
       { file: 'earnings', label: 'Earnings', icon: 'trending_up', accent_color: ACCENT, subtitle: 'Fares by day' },
       { file: 'expenses', label: 'Expenses', icon: 'receipt', accent_color: ACCENT, subtitle: 'Fuel and repairs' },
-      { file: 'handover', label: 'Handover', icon: 'check_circle', accent_color: ACCENT, subtitle: 'Close the day' },
+      { file: 'handover', label: 'Handover', icon: 'task_complete', accent_color: ACCENT, subtitle: 'Close the day' },
     ],
   },
   collections: [
@@ -393,4 +432,5 @@ export const motorbike: WorkspaceDefinition = {
     { file: 'expenses.json', json: collection(2, 'expenses', { kind: 'string', amount: 'number', note: 'string' }, []) },
     { file: 'handovers.json', json: collection(3, 'handovers', { status: 'string', signature: 'string' }, []) },
   ],
+  targets: { android: true },
 }

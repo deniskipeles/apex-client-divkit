@@ -1,13 +1,13 @@
 import {
-  button, card, chart, container, divKitCard, expression, inlineBanner, intVar, jsonList,
-  localDb, matchParent, metric, navPop, navPush, palette, radius, space, stringVar, text,
-  tool, type as ramp,
+  button, card, chart, container, divKitCard, expression, grid, hero, inlineBanner, intVar,
+  jsonList, localDb, matchParent, metric, navPop, navPush, palette, pill, quickTile, radius,
+  resultLine, sectionTitle, space, stringVar, text, tool, type as ramp,
 } from '../kit/index.ts'
 import type { DivCard } from '../kit/card.ts'
 import type { DivNode } from '../kit/div.ts'
 import type { WorkspaceDefinition } from '../types.ts'
 
-const ACCENT = '#0EA5E9'
+const ACCENT = '#41BDF0'
 
 const variables = [
   stringVar('user.workspace_title', 'APEX TOOLS'),
@@ -17,8 +17,10 @@ const variables = [
   stringVar('user.haptic_state', 'idle'),
   stringVar('user.beep_state', 'idle'),
   stringVar('user.clipboard_content', ''),
+  stringVar('user.clipboard_length', ''),
   stringVar('user.code_image_uri', ''),
   stringVar('user.code_format', ''),
+  stringVar('user.code_kind', ''),
   stringVar('user.file_preview', ''),
   stringVar('user.files_json', '[]'),
   stringVar('user.net_status', 'stopped'),
@@ -26,42 +28,43 @@ const variables = [
   stringVar('user.net_shares_json', '[]'),
   stringVar('user.print_state', 'idle'),
   stringVar('user.screen_state', 'idle'),
+  stringVar('user.codec_status', 'idle'),
+  stringVar('user.codec_text', ''),
+  stringVar('user.codec_json', ''),
+  stringVar('user.codec_valid', ''),
+  stringVar('user.push_state', 'idle'),
+  stringVar('user.realtime_state', 'IDLE'),
+  stringVar('user.realtime_channel', 'kitchen_stream'),
+  stringVar('user.biometric_state', 'idle'),
+  stringVar('user.camera_state', 'idle'),
+  stringVar('user.scan_state', 'idle'),
   stringVar('user.samples_json', '[]'),
   intVar('user.samples_count', 0),
 ]
 
-const header = (title: string, subtitle: string) =>
-  container({
-    orientation: 'horizontal',
-    spacing: space(2),
-    padding: { left: space(4), top: space(8), right: space(4), bottom: space(2) },
-    items: [
-      button({ text: 'Back', actions: [navPop()], tone: 'secondary', width: { type: 'fixed', value: 80 }, height: space(10), size: ramp.small, id: 'btn_back' }),
-      container({
-        weight: 1,
-        items: [
-          text({ text: title, size: ramp.title, weight: 'bold' }),
-          text({ text: subtitle, size: ramp.small, color: palette.textMuted }),
-        ],
-      }),
-    ],
+const GUTTER = { left: space(5), right: space(5) }
+
+const backHeader = () =>
+  button({ text: 'Back', actions: [navPop()], tone: 'ghost', width: matchParent(), height: space(10), size: ramp.small, id: 'btn_back' })
+
+const scopeBanner = (live: boolean) =>
+  inlineBanner({
+    text: live
+      ? 'Runs live in this dev server — the same dispatch the device makes, executed by the web tool host.'
+      : 'Needs the device client — this capability drives real hardware the browser does not have. The preview reports it instead of faking success.',
+    tone: live ? 'info' : 'warn',
   })
 
-const statusCard = (valueExpr: string, label: string) =>
-  card([
-    text({ text: label, size: ramp.label, weight: 'bold', color: palette.textMuted }),
-    text({ text: valueExpr, size: ramp.body, weight: 'bold', color: palette.accent }),
-    inlineBanner({ text: expression("user.tools_error == '' ? 'No errors' : user.tools_error"), tone: 'warn' }),
-  ])
-
-/** One harness card: status readout plus a column of tool triggers. */
+/** One harness card: hero, scope banner, status readout, triggers, extras. */
 const probeCard = (
   name: string,
   title: string,
   subtitle: string,
+  live: boolean,
   statusLabel: string,
   statusExpr: string,
-  actions: DivNode[],
+  statusTone: 'accent' | 'warn' | 'danger' | 'info' | 'neutral',
+  triggers: DivNode[],
   extra: DivNode[] = [],
 ): DivCard =>
   divKitCard({
@@ -69,14 +72,20 @@ const probeCard = (
     variables,
     states: [{
       div: container({
-        spacing: space(2),
-        padding: { bottom: space(4) },
+        spacing: space(3),
+        padding: { bottom: space(6) },
         items: [
-          header(title, subtitle),
+          hero({ title, subtitle, accent: ACCENT, back: true, id: `${name}_hero` }),
           container({
-            padding: { left: space(4), right: space(4) },
+            ...GUTTER,
             spacing: space(3),
-            items: [statusCard(statusExpr, statusLabel), ...extra, card(actions)],
+            items: [
+              scopeBanner(live),
+              resultLine({ label: statusLabel, value: statusExpr, tone: statusTone, id: `${name}_status` }),
+              ...extra,
+              sectionTitle('TRIGGERS'),
+              card(triggers, { elevation: 'raised', spacing: space(2) }),
+            ],
           }),
         ],
       }),
@@ -96,38 +105,55 @@ const hub = divKitCard({
   variables,
   states: [{
     div: container({
-      spacing: space(2),
-      padding: { bottom: space(4) },
+      spacing: space(3),
+      padding: { bottom: space(6) },
       items: [
-        container({
-          padding: { left: space(4), top: space(8), right: space(4) },
-          items: [
-            text({ text: 'APEX TOOLS', size: ramp.display, weight: 'bold' }),
-            text({ text: 'Every capability, one harness workspace', size: ramp.small, color: palette.textMuted }),
-          ],
+        hero({
+          title: 'APEX TOOLS',
+          subtitle: 'Every capability, one harness workspace',
+          accent: ACCENT,
+          badge: 'TOOLS-001',
+          id: 'hub_hero',
         }),
         container({
-          orientation: 'horizontal',
-          spacing: space(2),
-          padding: { left: space(4), right: space(4) },
+          ...GUTTER,
+          spacing: space(3),
           items: [
-            metric({ label: 'SAMPLES', value: expression('user.samples_count'), tone: palette.accent, width: matchParent(), id: 'metric_samples' }),
-            metric({ label: 'STATUS', value: expression('user.tools_status'), width: matchParent(), id: 'metric_status' }),
-          ],
-        }),
-        container({
-          padding: { left: space(4), right: space(4), top: space(2) },
-          spacing: space(2),
-          items: [
-            button({ text: 'Local DB', actions: [navPush('local_db')], id: 'nav_local_db' }),
-            button({ text: 'Scanner', actions: [navPush('scanner')], tone: 'secondary', id: 'nav_scanner' }),
-            button({ text: 'Code generator', actions: [navPush('code_generate')], tone: 'secondary', id: 'nav_code_generate' }),
-            button({ text: 'Haptics and beeper', actions: [navPush('haptics')], tone: 'secondary', id: 'nav_haptics' }),
-            button({ text: 'Clipboard', actions: [navPush('clipboard')], tone: 'secondary', id: 'nav_clipboard' }),
-            button({ text: 'Network', actions: [navPush('net')], tone: 'secondary', id: 'nav_net' }),
-            button({ text: 'Printer', actions: [navPush('print')], tone: 'secondary', id: 'nav_print' }),
-            button({ text: 'Files and screen', actions: [navPush('files')], tone: 'secondary', id: 'nav_files' }),
-            button({ text: 'Data views', actions: [navPush('data_views')], tone: 'secondary', id: 'nav_data_views' }),
+            grid(
+              [
+                metric({ label: 'SAMPLES', value: expression('user.samples_count'), tone: palette.accent, id: 'metric_samples' }),
+                metric({ label: 'STATUS', value: expression('user.tools_status'), id: 'metric_status' }),
+              ],
+              2,
+              'metric_strip',
+            ),
+            sectionTitle('SOFTWARE · LIVE IN THE DEV SERVER'),
+            grid(
+              [
+                quickTile({ label: 'Local DB', subtitle: 'SQLite insert/query/count/delete', icon: 'database', tone: 'primary', actions: [navPush('local_db')], id: 'nav_local_db' }),
+                quickTile({ label: 'Clipboard', subtitle: 'Copy, paste, clear', icon: 'clipboard', tone: 'accent', actions: [navPush('clipboard')], id: 'nav_clipboard' }),
+                quickTile({ label: 'Codec', subtitle: 'Base64, Base45, JSON chunking', icon: 'text', tone: 'primary', actions: [navPush('codec')], id: 'nav_codec' }),
+                quickTile({ label: 'Code generator', subtitle: 'QR, EAN-13, Code 128', icon: 'qr_code', tone: 'accent', actions: [navPush('code_generate')], id: 'nav_code_generate' }),
+                quickTile({ label: 'Files', subtitle: 'Workspace sandbox store', icon: 'folder', tone: 'primary', actions: [navPush('files')], id: 'nav_files' }),
+                quickTile({ label: 'Network', subtitle: 'HTTP fetch and LAN hub', icon: 'globe', tone: 'accent', actions: [navPush('net')], id: 'nav_net' }),
+                quickTile({ label: 'Push alerts', subtitle: 'In-app notification ledger', icon: 'push', tone: 'primary', actions: [navPush('push')], id: 'nav_push' }),
+                quickTile({ label: 'Realtime', subtitle: 'WebSocket / SSE channel', icon: 'sync', tone: 'accent', actions: [navPush('realtime')], id: 'nav_realtime' }),
+                quickTile({ label: 'Data views', subtitle: 'Chart and list blocks', icon: 'bar_chart', tone: 'primary', actions: [navPush('data_views')], id: 'nav_data_views' }),
+              ],
+              2,
+              'software_tiles',
+            ),
+            sectionTitle('DEVICE · RUNS ON THE CLIENT'),
+            grid(
+              [
+                quickTile({ label: 'Scanner', subtitle: 'Camera scan and OCR', icon: 'scan', tone: 'warn', actions: [navPush('scanner')], id: 'nav_scanner' }),
+                quickTile({ label: 'Haptics and beeper', subtitle: 'Patterns and tones', icon: 'vibration', tone: 'warn', actions: [navPush('haptics')], id: 'nav_haptics' }),
+                quickTile({ label: 'Printer', subtitle: 'Bluetooth ESC/POS', icon: 'print', tone: 'warn', actions: [navPush('print')], id: 'nav_print' }),
+                quickTile({ label: 'Client hardware', subtitle: 'Camera and biometric gate', icon: 'security', tone: 'warn', actions: [navPush('client_hardware')], id: 'nav_client_hardware' }),
+              ],
+              2,
+              'device_tiles',
+            ),
           ],
         }),
       ],
@@ -139,8 +165,10 @@ const localDbCard = probeCard(
   'local_db',
   'Local DB',
   'SQLite data plane: insert, query, count, delete',
+  true,
   'Last result',
   expression('user.tools_result'),
+  'accent',
   [
     trigger('db_insert', 'Insert sample', localDb('db.insert', {
       collection: 'samples',
@@ -155,20 +183,43 @@ const localDbCard = probeCard(
       output: { deleted: 'user.tools_result' },
     })),
   ],
+  [
+    card([
+      sectionTitle('SAMPLES'),
+      jsonList({
+        dataVar: 'user.samples_json',
+        emptyText: 'Query the samples collection first',
+        id: 'local_db_list',
+        rowCard: container({
+          orientation: 'horizontal',
+          padding: space(2),
+          background: palette.surfaceAlt,
+          radius: radius.md,
+          items: [
+            text({ text: '@{item.name}', size: ramp.small, width: matchParent() }),
+            text({ text: '#@{item.id}', size: ramp.label, color: palette.accent, align: 'right' }),
+          ],
+        }),
+      }),
+    ]),
+  ],
 )
 
 const scannerCard = probeCard(
   'scanner',
   'Scanner',
   'Camera scan, OCR and format checks',
+  false,
   'Scan status',
-  expression('user.tools_status'),
+  expression('user.scan_state'),
+  'warn',
   [
-    trigger('scan_any', 'Scan barcode', tool('scanner', 'scan', { output: { status: 'user.tools_status', value: 'user.tools_result' } })),
-    trigger('scan_ocr', 'Read text (OCR)', tool('scanner', 'ocr', { output: { status: 'user.tools_status', text: 'user.tools_result' } })),
-    trigger('scan_ean', 'Scan EAN-13 only', tool('scanner', 'scan', {
+    trigger('scan_any', 'Scan barcode (device camera)', tool('scanner', 'scan', { output: { status: 'user.scan_state', value: 'user.tools_result' } })),
+    trigger('scan_sim', 'Simulate a scan', tool('scanner', 'simulate', { options: { content: 'APEX-POS-000123', format: 'CODE_128' }, output: { status: 'user.scan_state', raw_value: 'user.tools_result', format: 'user.scanned_format' } })),
+    trigger('scan_ocr', 'Read text (OCR, device)', tool('scanner', 'ocr', { output: { status: 'user.scan_state', text: 'user.tools_result' } })),
+    trigger('scan_ean', 'Scan EAN-13 only (device)', tool('scanner', 'scan', {
       options: { format: 'EAN_13' },
-      output: { status: 'user.tools_status', value: 'user.tools_result' },
+      output: { status: 'user.scan_state', value: 'user.tools_result' },
     })),
   ],
 )
@@ -176,9 +227,11 @@ const scannerCard = probeCard(
 const codeGenerateCard = probeCard(
   'code_generate',
   'Code generator',
-  'QR, EAN-13 and Code 128 rendered on device',
+  'QR, EAN-13 and Code 128 rendered from the module matrix',
+  true,
   'Generated symbol',
   expression("user.code_format == '' ? 'none yet' : user.code_format"),
+  'accent',
   [
     trigger('gen_qr', 'Generate QR', tool('code-generate', 'generate', {
       options: { content: 'apexpos://tools/probe?terminal=TEST-1', format: 'qr', width: '512', ec_level: 'M' },
@@ -195,7 +248,7 @@ const codeGenerateCard = probeCard(
   ],
   [
     card([
-      text({ text: 'Rendered symbol', size: ramp.label, weight: 'bold', color: palette.textMuted }),
+      sectionTitle('RENDERED SYMBOL'),
       { type: 'image', image_url: expression('user.code_image_uri'), height: { type: 'fixed', value: 180 }, scale: 'fit', id: 'code_image' },
     ]),
   ],
@@ -205,8 +258,10 @@ const hapticsCard = probeCard(
   'haptics',
   'Haptics and beeper',
   'Vibration patterns and tone sequences',
+  false,
   'Haptic / beeper state',
   expression("user.haptic_state + ' / ' + user.beep_state"),
+  'warn',
   [
     row([
       trigger('haptic_click', 'Click', tool('haptics', 'click', { output: { status: 'user.haptic_state' } })),
@@ -227,15 +282,52 @@ const clipboardCard = probeCard(
   'clipboard',
   'Clipboard',
   'Copy, paste and clear the system clipboard',
+  true,
   'Clipboard content',
   expression("user.clipboard_content == '' ? 'empty' : user.clipboard_content"),
+  'accent',
   [
     trigger('clip_copy', 'Copy receipt text', tool('clipboard', 'copy', {
       options: { text: 'APEX TOOLS - receipt #0001' },
       output: { text: 'user.clipboard_content', length: 'user.clipboard_length' },
     })),
-    trigger('clip_paste', 'Paste', tool('clipboard', 'paste', { output: { text: 'user.clipboard_content' } })),
-    trigger('clip_clear', 'Clear', tool('clipboard', 'clear', { output: { status: 'user.tools_status' } })),
+    trigger('clip_paste', 'Paste', tool('clipboard', 'paste', { output: { text: 'user.clipboard_content', length: 'user.clipboard_length' } })),
+    trigger('clip_clear', 'Clear', tool('clipboard', 'clear', { output: { status: 'user.tools_status', text: 'user.clipboard_content' } })),
+  ],
+)
+
+const codecCard = probeCard(
+  'codec',
+  'Codec',
+  'Base64, Base45 and JSON chunk envelopes',
+  true,
+  'Codec status',
+  expression('user.codec_status'),
+  'accent',
+  [
+    trigger('codec_b64enc', 'Base64 encode', tool('codec', 'base64', {
+      options: { text: 'APEX TOOLS probe payload', op: 'encode' },
+      output: { status: 'user.codec_status', text: 'user.codec_text' },
+    })),
+    trigger('codec_b45', 'Base45 round-trip', tool('codec', 'base45', {
+      options: { text: 'KIOSK-ORDER-0042', op: 'encode' },
+      output: { status: 'user.codec_status', text: 'user.codec_text', checksum: 'user.codec_checksum' },
+    })),
+    trigger('codec_json', 'Validate JSON', tool('codec', 'json/validate', {
+      options: { text: '{"order":"A100","total":350}' },
+      output: { status: 'user.codec_status', valid: 'user.codec_valid', json: 'user.codec_json' },
+    })),
+    trigger('codec_chunk', 'Chunk JSON for QR', tool('codec', 'json/chunk', {
+      options: { json: '{"order":"A100","lines":[{"sku":"P1","qty":2},{"sku":"P2","qty":1}]}', max_bytes: '120' },
+      output: { status: 'user.codec_status', chunks: 'user.codec_chunks', count: 'user.codec_count' },
+    })),
+  ],
+  [
+    card([
+      sectionTitle('CODEC OUTPUT'),
+      resultLine({ label: 'TEXT', value: expression("user.codec_text == '' ? '—' : user.codec_text"), tone: 'accent', id: 'codec_text_line' }),
+      resultLine({ label: 'VALID', value: expression("user.codec_valid == '' ? '—' : user.codec_valid"), tone: 'info', id: 'codec_valid_line' }),
+    ]),
   ],
 )
 
@@ -243,8 +335,10 @@ const netCard = probeCard(
   'net',
   'Network',
   'HTTP fetch plus the LAN share hub',
+  true,
   'Hub state',
   expression("user.net_status + (user.net_url == '' ? '' : ' - ' + user.net_url)"),
+  'accent',
   [
     trigger('net_get', 'GET example.com', tool('net', 'get', {
       options: { url: 'https://example.com' },
@@ -274,10 +368,46 @@ const netCard = probeCard(
         radius: radius.md,
         items: [
           text({ text: '@{item.title}', size: ramp.small, width: matchParent() }),
-          text({ text: '@{item.id}', size: ramp.label, color: palette.textMuted }),
+          text({ text: '@{item.id}', size: ramp.label, color: palette.textMuted, align: 'right' }),
         ],
       }),
     }),
+  ],
+)
+
+const pushCard = probeCard(
+  'push',
+  'Push alerts',
+  'Background alerts through the notification ledger',
+  true,
+  'Last dispatch',
+  expression("user.push_state == 'idle' ? 'nothing sent yet' : user.push_state"),
+  'accent',
+  [
+    trigger('push_order', 'Order ready alert', tool('push', 'send_alert', {
+      options: { title: 'Kitchen alert', message: 'Order #1042 ready for pickup', channel: 'orders_dispatch', priority: 'high' },
+      output: { status: 'user.push_state', notification_id: 'user.push_notification_id' },
+    })),
+    trigger('push_low', 'Low priority note', tool('push', 'notify', {
+      options: { title: 'Shift note', message: 'Float counted and locked', priority: 'default' },
+      output: { status: 'user.push_state', notification_id: 'user.push_notification_id' },
+    })),
+  ],
+)
+
+const realtimeCard = probeCard(
+  'realtime',
+  'Realtime channel',
+  'WebSocket / SSE engine state machine',
+  true,
+  'Connection',
+  expression("user.realtime_state + ' · ' + user.realtime_channel"),
+  'accent',
+  [
+    trigger('rt_connect', 'Connect', tool('realtime-ws', 'connect', { options: { channel: 'kitchen_stream' }, output: { status: 'user.realtime_state', channel: 'user.realtime_channel' } })),
+    trigger('rt_send', 'Send ping', tool('realtime-ws', 'send', { options: { channel: 'kitchen_stream', message: 'ping' }, output: { status: 'user.realtime_state', last_message: 'user.tools_result' } })),
+    trigger('rt_subscribe', 'Subscribe', tool('realtime-ws', 'subscribe', { options: { channel: 'kitchen_stream' }, output: { status: 'user.realtime_state' } })),
+    trigger('rt_disconnect', 'Disconnect', tool('realtime-ws', 'disconnect', { output: { status: 'user.realtime_state' } })),
   ],
 )
 
@@ -285,17 +415,19 @@ const printCard = probeCard(
   'print',
   'Printer',
   'Bluetooth ESC/POS pairing and test print',
+  false,
   'Printer state',
   expression('user.print_state'),
+  'warn',
   [
-    trigger('print_scan', 'Scan printers', tool('print', 'scan', { output: { status: 'user.print_state', _json: 'user.print_devices_json' } })),
+    trigger('print_scan', 'Scan printers', tool('print', 'scan', { output: { status: 'user.print_state', count: 'user.print_device_count', _json: 'user.print_devices_json' } })),
     trigger('print_connect', 'Connect', tool('print', 'connect', {
       options: { address: '00:11:22:33:44:55' },
       output: { status: 'user.print_state' },
     })),
     trigger('print_test', 'Test print', tool('print', 'print', {
       options: { address: '00:11:22:33:44:55', text: 'APEX TOOLS TEST PRINT' },
-      output: { status: 'user.print_state' },
+      output: { status: 'user.print_state', bytes: 'user.print_bytes' },
     })),
     trigger('print_disconnect', 'Disconnect', tool('print', 'disconnect', { output: { status: 'user.print_state' } })),
   ],
@@ -305,8 +437,10 @@ const filesCard = probeCard(
   'files',
   'Files and screen',
   'Workspace sandbox files and screen capture',
+  true,
   'File preview',
   expression("user.file_preview == '' ? 'no file yet' : user.file_preview"),
+  'accent',
   [
     trigger('files_write', 'Write file', tool('files', 'write', {
       options: { path: 'notes/probe.txt', content: 'APEX TOOLS PROBE' },
@@ -318,10 +452,10 @@ const filesCard = probeCard(
     })),
     trigger('files_list', 'List files', tool('files', 'list', { options: { path: 'notes' }, output: { _json: 'user.files_json' } })),
     trigger('files_delete', 'Delete file', tool('files', 'delete', { options: { path: 'notes/probe.txt' }, output: { status: 'user.tools_status' } })),
-    trigger('screen_awake', 'Keep awake', tool('screen', 'keep_awake', { options: { enabled: 'true' }, output: { status: 'user.screen_state' } })),
-    trigger('screen_shot', 'Screenshot', tool('screen', 'screenshot', { output: { uri: 'user.screen_uri', status: 'user.screen_state' } })),
-    trigger('screen_record', 'Start recording', tool('screen', 'record_start', { output: { status: 'user.screen_state' } })),
-    trigger('screen_stop', 'Stop recording', tool('screen', 'record_stop', { output: { uri: 'user.screen_video_uri', status: 'user.screen_state' } })),
+    trigger('screen_awake', 'Keep awake', tool('screen', 'keep-awake', { options: { action: 'enable' }, output: { status: 'user.screen_state', enabled: 'user.screen_keep_awake' } })),
+    trigger('screen_shot', 'Screenshot (device)', tool('screen', 'screenshot', { output: { uri: 'user.screen_uri', status: 'user.screen_state' } })),
+    trigger('screen_record', 'Start recording (device)', tool('screen', 'recording', { options: { action: 'start' }, output: { status: 'user.screen_state' } })),
+    trigger('screen_stop', 'Stop recording (device)', tool('screen', 'recording', { options: { action: 'stop' }, output: { status: 'user.screen_state', uri: 'user.screen_video_uri' } })),
   ],
   [
     jsonList({
@@ -335,10 +469,32 @@ const filesCard = probeCard(
         radius: radius.md,
         items: [
           text({ text: '@{item.name}', size: ramp.small, width: matchParent() }),
-          text({ text: '@{item.bytes} B', size: ramp.label, color: palette.textMuted }),
+          text({ text: '@{item.size_bytes} B', size: ramp.label, color: palette.textMuted, align: 'right' }),
         ],
       }),
     }),
+  ],
+)
+
+const clientHardwareCard = probeCard(
+  'client_hardware',
+  'Client hardware',
+  'Camera capture and the supervisor biometric gate',
+  false,
+  'Hardware state',
+  expression("'biometric: ' + user.biometric_state + ' · camera: ' + user.camera_state"),
+  'warn',
+  [
+    trigger('bio_auth', 'Supervisor auth (device)', tool('biometrics', 'authenticate', {
+      options: { prompt: 'Supervisor Authorization Required' },
+      output: { status: 'user.biometric_state', authenticated: 'user.biometric_authenticated' },
+    })),
+    trigger('cam_capture', 'Capture photo (device)', tool('camera', 'capture', {
+      options: { facing: 'back', resolution: '1080p' },
+      output: { status: 'user.camera_state', uri: 'user.camera_capture_uri' },
+    })),
+    trigger('cam_torch', 'Toggle torch (device)', tool('camera', 'torch_toggle', { output: { status: 'user.camera_state' } })),
+    trigger('cam_status', 'Camera status (device)', tool('camera', 'get_status', { output: { status: 'user.camera_state' } })),
   ],
 )
 
@@ -347,26 +503,36 @@ const dataViewsCard = divKitCard({
   variables,
   states: [{
     div: container({
-      spacing: space(2),
-      padding: { bottom: space(4) },
+      spacing: space(3),
+      padding: { bottom: space(6) },
       items: [
-        header('Data views', 'Chart and list blocks over the samples collection'),
+        hero({
+          title: 'Data views',
+          subtitle: 'Chart and list blocks over the samples collection',
+          accent: ACCENT,
+          back: true,
+          id: 'data_views_hero',
+        }),
         container({
-          padding: { left: space(4), right: space(4) },
+          ...GUTTER,
           spacing: space(3),
           items: [
-            chart({
-              id: 'samples_chart',
-              chartType: 'donut',
-              title: 'SAMPLES BY ID',
-              subtitle: 'Live from user.samples_json',
-              dataVar: 'user.samples_json',
-              labelField: 'name',
-              valueField: 'id',
-              height: 220,
-            }),
             card([
-              text({ text: 'SAMPLES', size: ramp.label, weight: 'bold', color: palette.textMuted }),
+              sectionTitle('SAMPLES BY ID'),
+              chart({
+                id: 'samples_chart',
+                chartType: 'donut',
+                title: 'Live from user.samples_json',
+                subtitle: 'Donut',
+                dataVar: 'user.samples_json',
+                labelField: 'name',
+                valueField: 'id',
+                accentColor: ACCENT,
+                height: 220,
+              }),
+            ]),
+            card([
+              sectionTitle('SAMPLES'),
               jsonList({
                 dataVar: 'user.samples_json',
                 emptyText: 'Query the samples collection first',
@@ -378,7 +544,7 @@ const dataViewsCard = divKitCard({
                   radius: radius.md,
                   items: [
                     text({ text: '@{item.name}', size: ramp.small, width: matchParent() }),
-                    text({ text: '#@{item.id}', size: ramp.label, color: palette.accent }),
+                    text({ text: '#@{item.id}', size: ramp.label, color: palette.accent, align: 'right' }),
                   ],
                 }),
               }),
@@ -416,28 +582,36 @@ export const apexToolsTest: WorkspaceDefinition = {
   hub,
   cards: [
     { name: 'local_db', card: localDbCard },
-    { name: 'scanner', card: scannerCard },
-    { name: 'code_generate', card: codeGenerateCard },
-    { name: 'haptics', card: hapticsCard },
     { name: 'clipboard', card: clipboardCard },
-    { name: 'net', card: netCard },
-    { name: 'print', card: printCard },
+    { name: 'codec', card: codecCard },
+    { name: 'code_generate', card: codeGenerateCard },
     { name: 'files', card: filesCard },
+    { name: 'net', card: netCard },
+    { name: 'push', card: pushCard },
+    { name: 'realtime', card: realtimeCard },
     { name: 'data_views', card: dataViewsCard },
+    { name: 'scanner', card: scannerCard },
+    { name: 'haptics', card: hapticsCard },
+    { name: 'print', card: printCard },
+    { name: 'client_hardware', card: clientHardwareCard },
   ],
   catalog: {
     title: 'Harness',
     subtitle: 'Every capability, one card each.',
     entries: [
       { file: 'local_db', label: 'Local DB', icon: 'database', accent_color: ACCENT, subtitle: 'SQLite insert/query/count/delete' },
-      { file: 'scanner', label: 'Scanner', icon: 'scan', accent_color: ACCENT, subtitle: 'Scan and OCR' },
-      { file: 'code_generate', label: 'Code generator', icon: 'qr_code', accent_color: ACCENT, subtitle: 'QR, EAN-13, Code 128' },
-      { file: 'haptics', label: 'Haptics and beeper', icon: 'haptics', accent_color: ACCENT, subtitle: 'Patterns and tones' },
       { file: 'clipboard', label: 'Clipboard', icon: 'clipboard', accent_color: ACCENT, subtitle: 'Copy, paste, clear' },
+      { file: 'codec', label: 'Codec', icon: 'text', accent_color: ACCENT, subtitle: 'Base64, Base45, JSON chunking' },
+      { file: 'code_generate', label: 'Code generator', icon: 'qr_code', accent_color: ACCENT, subtitle: 'QR, EAN-13, Code 128' },
+      { file: 'files', label: 'Files', icon: 'folder', accent_color: ACCENT, subtitle: 'Sandbox store and screen' },
       { file: 'net', label: 'Network', icon: 'globe', accent_color: ACCENT, subtitle: 'HTTP and LAN hub' },
-      { file: 'print', label: 'Printer', icon: 'printer', accent_color: ACCENT, subtitle: 'ESC/POS over Bluetooth' },
-      { file: 'files', label: 'Files and screen', icon: 'folder', accent_color: ACCENT, subtitle: 'Sandbox files, capture' },
-      { file: 'data_views', label: 'Data views', icon: 'chart', accent_color: ACCENT, subtitle: 'Chart and list blocks' },
+      { file: 'push', label: 'Push alerts', icon: 'push', accent_color: ACCENT, subtitle: 'Notification ledger' },
+      { file: 'realtime', label: 'Realtime', icon: 'sync', accent_color: ACCENT, subtitle: 'WebSocket / SSE channel' },
+      { file: 'data_views', label: 'Data views', icon: 'bar_chart', accent_color: ACCENT, subtitle: 'Chart and list blocks' },
+      { file: 'scanner', label: 'Scanner', icon: 'scan', accent_color: ACCENT, subtitle: 'Camera scan and OCR' },
+      { file: 'haptics', label: 'Haptics and beeper', icon: 'vibration', accent_color: ACCENT, subtitle: 'Patterns and tones' },
+      { file: 'print', label: 'Printer', icon: 'print', accent_color: ACCENT, subtitle: 'ESC/POS over Bluetooth' },
+      { file: 'client_hardware', label: 'Client hardware', icon: 'security', accent_color: ACCENT, subtitle: 'Camera and biometric gate' },
     ],
   },
   collections: [
