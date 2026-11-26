@@ -1,0 +1,381 @@
+{
+  "_generated": "apps/dev-server/scripts/build-tool-cases.mjs",
+  "_doNotEdit": "Edit apps/dev-server/tests/tools/definitions.ts and rerun `pnpm tool-cases:build`.",
+  "toolId": "files",
+  "slug": "files",
+  "doc": "docs/tools/files.md",
+  "versionedCapability": "storage.files@1",
+  "usage": "Read and write files inside the workspace sandbox: write, read, append, copy, move, list, info, delete, mkdir, exists, uri.",
+  "operations": [
+    "list",
+    "info",
+    "read",
+    "write",
+    "append",
+    "copy",
+    "move",
+    "delete",
+    "mkdir",
+    "exists",
+    "uri"
+  ],
+  "outputMapping": {
+    "uri": "user.files_last_uri",
+    "path": "user.files_last_path",
+    "status": "user.files_status"
+  },
+  "options": [
+    {
+      "name": "path",
+      "type": "string",
+      "default": ".",
+      "description": "Sandbox-relative path"
+    },
+    {
+      "name": "content",
+      "type": "string",
+      "description": "Body for write or append"
+    },
+    {
+      "name": "encoding",
+      "type": "string",
+      "default": "utf8",
+      "description": "utf8 | base64"
+    },
+    {
+      "name": "destination",
+      "type": "string",
+      "description": "Copy or move target"
+    }
+  ],
+  "results": [
+    {
+      "name": "path",
+      "type": "string",
+      "description": "Resolved sandbox path"
+    },
+    {
+      "name": "content",
+      "type": "string",
+      "description": "File body for read"
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "description": "SUCCESS | FAILED"
+    }
+  ],
+  "statuses": [
+    {
+      "status": "SUCCESS",
+      "meaning": "Operation completed"
+    }
+  ],
+  "cardActions": [
+    {
+      "url": "tools://storage.files/write",
+      "options": {
+        "path": "notes/hello.txt",
+        "content": "apex conformance"
+      }
+    },
+    {
+      "url": "tools://storage.files/write",
+      "options": {
+        "path": "notes/append.txt",
+        "content": "one"
+      }
+    },
+    {
+      "url": "tools://storage.files/write",
+      "options": {
+        "path": "notes/src.txt",
+        "content": "payload"
+      }
+    },
+    {
+      "url": "tools://storage.files/mkdir",
+      "options": {
+        "path": "notes"
+      }
+    },
+    {
+      "url": "tools://storage.files/write",
+      "options": {
+        "path": "notes/gone.txt",
+        "content": "x"
+      }
+    },
+    {
+      "url": "tools://storage.files/write",
+      "options": {
+        "path": "notes/uri.txt",
+        "content": "u"
+      }
+    },
+    {
+      "url": "tools://storage.files/read",
+      "options": {
+        "path": "notes/does-not-exist.txt"
+      }
+    }
+  ],
+  "notCovered": [],
+  "cases": [
+    {
+      "name": "write_read_round_trip",
+      "description": "Write then read",
+      "steps": [
+        {
+          "url": "tools://storage.files/write",
+          "payload": {
+            "options": {
+              "path": "notes/hello.txt",
+              "content": "apex conformance"
+            }
+          }
+        },
+        {
+          "url": "tools://storage.files/read",
+          "payload": {
+            "options": {
+              "path": "notes/hello.txt"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": true,
+        "status": "SUCCESS",
+        "data": {
+          "path": {
+            "equals": "notes/hello.txt"
+          },
+          "content": {
+            "equals": "apex conformance"
+          }
+        }
+      }
+    },
+    {
+      "name": "append_extends",
+      "description": "Append",
+      "steps": [
+        {
+          "url": "tools://storage.files/write",
+          "payload": {
+            "options": {
+              "path": "notes/append.txt",
+              "content": "one"
+            }
+          }
+        },
+        {
+          "url": "tools://storage.files/append",
+          "payload": {
+            "options": {
+              "path": "notes/append.txt",
+              "content": "-two"
+            }
+          },
+          "expect": {
+            "success": true,
+            "status": "SUCCESS"
+          }
+        },
+        {
+          "url": "tools://storage.files/read",
+          "payload": {
+            "options": {
+              "path": "notes/append.txt"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": true,
+        "status": "SUCCESS",
+        "data": {
+          "content": {
+            "equals": "one-two"
+          }
+        }
+      }
+    },
+    {
+      "name": "copy_then_move",
+      "description": "Copy then move",
+      "steps": [
+        {
+          "url": "tools://storage.files/write",
+          "payload": {
+            "options": {
+              "path": "notes/src.txt",
+              "content": "payload"
+            }
+          }
+        },
+        {
+          "url": "tools://storage.files/copy",
+          "payload": {
+            "options": {
+              "path": "notes/src.txt",
+              "destination": "notes/copy.txt"
+            }
+          }
+        },
+        {
+          "url": "tools://storage.files/move",
+          "payload": {
+            "options": {
+              "path": "notes/copy.txt",
+              "destination": "notes/moved.txt"
+            }
+          }
+        },
+        {
+          "url": "tools://storage.files/exists",
+          "payload": {
+            "options": {
+              "path": "notes/moved.txt"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": true,
+        "status": "SUCCESS",
+        "data": {
+          "path": {
+            "equals": "notes/moved.txt"
+          }
+        }
+      }
+    },
+    {
+      "name": "list_and_info",
+      "description": "List then info",
+      "steps": [
+        {
+          "url": "tools://storage.files/mkdir",
+          "payload": {
+            "options": {
+              "path": "notes"
+            }
+          }
+        },
+        {
+          "url": "tools://storage.files/list",
+          "payload": {
+            "options": {
+              "path": "notes"
+            }
+          }
+        },
+        {
+          "url": "tools://storage.files/info",
+          "payload": {
+            "options": {
+              "path": "notes"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": true,
+        "status": "SUCCESS",
+        "data": {
+          "path": {
+            "equals": "notes"
+          }
+        }
+      }
+    },
+    {
+      "name": "delete_removes",
+      "description": "Delete",
+      "steps": [
+        {
+          "url": "tools://storage.files/write",
+          "payload": {
+            "options": {
+              "path": "notes/gone.txt",
+              "content": "x"
+            }
+          }
+        },
+        {
+          "url": "tools://storage.files/delete",
+          "payload": {
+            "options": {
+              "path": "notes/gone.txt"
+            }
+          }
+        },
+        {
+          "url": "tools://storage.files/exists",
+          "payload": {
+            "options": {
+              "path": "notes/gone.txt"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": true,
+        "status": "SUCCESS"
+      }
+    },
+    {
+      "name": "uri_resolves",
+      "description": "File URI",
+      "steps": [
+        {
+          "url": "tools://storage.files/write",
+          "payload": {
+            "options": {
+              "path": "notes/uri.txt",
+              "content": "u"
+            }
+          }
+        },
+        {
+          "url": "tools://storage.files/uri",
+          "payload": {
+            "options": {
+              "path": "notes/uri.txt"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": true,
+        "status": "SUCCESS",
+        "data": {
+          "uri": {
+            "startsWith": "file://"
+          }
+        }
+      }
+    },
+    {
+      "name": "read_missing_fails",
+      "description": "Read missing file",
+      "steps": [
+        {
+          "url": "tools://storage.files/read",
+          "payload": {
+            "options": {
+              "path": "notes/does-not-exist.txt"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": false,
+        "status": "FAILED",
+        "errorContains": "No such file"
+      }
+    }
+  ]
+}

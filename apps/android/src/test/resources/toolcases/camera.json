@@ -1,0 +1,135 @@
+{
+  "_generated": "apps/dev-server/scripts/build-tool-cases.mjs",
+  "_doNotEdit": "Edit apps/dev-server/tests/tools/definitions.ts and rerun `pnpm tool-cases:build`.",
+  "toolId": "camera",
+  "slug": "camera",
+  "doc": "docs/tools/camera.md",
+  "versionedCapability": "device.camera@1",
+  "usage": "Capture a still frame or toggle the torch through the CameraX host. Without a host the call fails closed; no synthetic frame is returned.",
+  "operations": [
+    "capture",
+    "torch_toggle",
+    "get_status"
+  ],
+  "outputMapping": {
+    "uri": "user.camera_capture_uri"
+  },
+  "options": [
+    {
+      "name": "facing",
+      "type": "string",
+      "default": "back",
+      "description": "back | front"
+    },
+    {
+      "name": "resolution",
+      "type": "string",
+      "default": "1080p",
+      "description": "Capture resolution"
+    },
+    {
+      "name": "simulated_image",
+      "type": "string",
+      "description": "Injected frame URI for tests"
+    }
+  ],
+  "results": [
+    {
+      "name": "uri",
+      "type": "string",
+      "description": "Captured frame URI"
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "description": "CAPTURED | READY | UNSUPPORTED"
+    }
+  ],
+  "statuses": [
+    {
+      "status": "CAPTURED",
+      "meaning": "Frame captured"
+    },
+    {
+      "status": "READY",
+      "meaning": "Status probe"
+    },
+    {
+      "status": "UNSUPPORTED",
+      "meaning": "No camera host installed"
+    }
+  ],
+  "cardActions": [
+    {
+      "url": "tools://camera/capture",
+      "options": {}
+    },
+    {
+      "url": "tools://camera/torch_toggle",
+      "options": {
+        "torch": "on"
+      }
+    },
+    {
+      "url": "tools://camera/get_status",
+      "options": {}
+    }
+  ],
+  "notCovered": [],
+  "cases": [
+    {
+      "name": "capture_without_host_fails_closed",
+      "description": "Capture (no host)",
+      "host": "none",
+      "steps": [
+        {
+          "url": "tools://camera/capture",
+          "payload": {
+            "options": {}
+          }
+        }
+      ],
+      "expect": {
+        "success": false,
+        "status": "UNSUPPORTED",
+        "errorContains": "No camera host"
+      }
+    },
+    {
+      "name": "torch_without_host_fails_closed",
+      "description": "Torch (no host)",
+      "host": "none",
+      "steps": [
+        {
+          "url": "tools://camera/torch_toggle",
+          "payload": {
+            "options": {
+              "torch": "on"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": false,
+        "status": "UNSUPPORTED"
+      }
+    },
+    {
+      "name": "status_reports",
+      "description": "Status",
+      "host": "none",
+      "steps": [
+        {
+          "url": "tools://camera/get_status",
+          "payload": {
+            "options": {}
+          }
+        }
+      ],
+      "expect": {
+        "success": true,
+        "status": "READY"
+      }
+    }
+  ]
+}

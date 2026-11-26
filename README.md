@@ -308,6 +308,15 @@ Every tool is deliberately **unopinionated**: it exposes a generic capability co
 >
 > **Code generation (`tools://code-generate`).** The encode-side counterpart to the scanner. It renders any content into a 1D barcode or 2D matrix symbol (QR, DataMatrix, Aztec, PDF417, EAN, UPC, Code 128/39/93, ITF, Codabar) via ZXing `MultiFormatWriter`, writes a PNG into the tenant media sandbox, and returns the module matrix for pure-DivKit rendering. ZXing is a pure-JVM library with no Play Services dependency.
 >
+> **Fail-closed by contract.** A capability never reports a hardware or network effect it
+> did not produce: `print` with no receipt is `FAILED` and with no open socket is
+> `UNSUPPORTED`; `realtime-ws/connect` needs an installed transport and a `url`; `codec
+> json/validate` answers `INVALID` for a document that does not parse; `offline-cache` stores
+> real pages under the app files dir instead of reporting a fixed figure. Every capability in
+> this table has a declarative case list — see
+> [`docs/tool-cases/README.md`](docs/tool-cases/README.md) — which runs on-device as
+> `ToolConformanceTest` and renders as buttons in the shipped `apex_tools_test` workspace.
+>
 > **Unopinionated feedback APIs.** `tools://haptics` and `tools://beeper` carry no vendor or SDK coupling: the caller supplies generic parameters (patterns, frequencies, waveforms, volumes, timing arrays, sequences) and the platform chooses the physical implementation. There is no dedicated "POS tone" API — `PosTonePlayer`/`playPosTone` were removed and the haptic entry point is the platform-neutral `triggerHaptic`.
 >
 > **Generic networking (`tools://net`).** Built on Ktor (CIO engine), it covers both client calls (`request`/`get`/`post`/`download`/`upload`) and an embedded LAN transfer hub (`serve`/`stop`/`status`/`share`/`list`/`unshare`). `serve` starts a Ktor CIO server that hosts a discovery page at `/` and downloadable items at `/file/{id}`, so the same tool powers hubs and Xender-style device-to-device sharing.

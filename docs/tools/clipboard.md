@@ -91,3 +91,11 @@ Default output mapping: `text → user.clipboard_content`.
   }
 }
 ```
+
+## Conformance cases
+
+Contract: `apps/dev-server/tests/tools/definitions.ts` (`toolId: clipboard`).
+
+Every result now carries a `status`: `SUCCESS` when the clipboard holds text and `EMPTY`
+after a clear (with `text: ""`). Before, the result had only `state`/`op`/`text`/`length`,
+so a card that mapped `status` showed a permanently blank readout.

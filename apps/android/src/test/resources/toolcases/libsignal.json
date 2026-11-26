@@ -1,0 +1,427 @@
+{
+  "_generated": "apps/dev-server/scripts/build-tool-cases.mjs",
+  "_doNotEdit": "Edit apps/dev-server/tests/tools/definitions.ts and rerun `pnpm tool-cases:build`.",
+  "toolId": "libsignal",
+  "slug": "libsignal",
+  "doc": "docs/tools/libsignal.md",
+  "versionedCapability": "secure.send@1",
+  "usage": "Establish a Double-Ratchet session, encrypt, decrypt and verify a 60-digit safety number. The fleet acceptance flow is establish, encrypt, decrypt, verify.",
+  "operations": [
+    "setup_identity",
+    "init_keys",
+    "create_session",
+    "encrypt",
+    "decrypt",
+    "status",
+    "verify_identity",
+    "reset_session"
+  ],
+  "outputMapping": {
+    "status": "user.signal_status",
+    "session_id": "user.signal_session_id",
+    "ciphertext": "user.signal_ciphertext",
+    "plaintext": "user.signal_plaintext",
+    "safety_number": "user.signal_fingerprint",
+    "fingerprint": "user.signal_fingerprint"
+  },
+  "options": [
+    {
+      "name": "peer_id",
+      "type": "string",
+      "default": "apex-peer",
+      "description": "Remote peer identity"
+    },
+    {
+      "name": "message",
+      "type": "string",
+      "description": "Plaintext for encrypt"
+    },
+    {
+      "name": "ciphertext",
+      "type": "string",
+      "description": "Ciphertext for decrypt"
+    },
+    {
+      "name": "expected_fingerprint",
+      "type": "string",
+      "description": "Safety number to compare"
+    }
+  ],
+  "results": [
+    {
+      "name": "status",
+      "type": "string",
+      "description": "ESTABLISHED | ENCRYPTED | DECRYPTED | NO_SESSION | MISMATCH"
+    },
+    {
+      "name": "session_id",
+      "type": "string",
+      "description": "Session identifier"
+    },
+    {
+      "name": "ciphertext",
+      "type": "string",
+      "description": "Encrypted payload"
+    },
+    {
+      "name": "plaintext",
+      "type": "string",
+      "description": "Recovered payload"
+    },
+    {
+      "name": "safety_number",
+      "type": "string",
+      "description": "60-digit safety number"
+    }
+  ],
+  "statuses": [
+    {
+      "status": "IDENTITY_READY",
+      "meaning": "Identity keys created"
+    },
+    {
+      "status": "ESTABLISHED",
+      "meaning": "Session handshake complete"
+    },
+    {
+      "status": "ENCRYPTED",
+      "meaning": "Ciphertext produced"
+    },
+    {
+      "status": "DECRYPTED",
+      "meaning": "Plaintext recovered"
+    },
+    {
+      "status": "SESSION_RESET",
+      "meaning": "Session torn down"
+    },
+    {
+      "status": "NO_SESSION",
+      "meaning": "No session to operate on"
+    },
+    {
+      "status": "MISMATCH",
+      "meaning": "Safety number did not match"
+    }
+  ],
+  "cardActions": [
+    {
+      "url": "tools://libsignal/create_session",
+      "options": {
+        "peer_id": "apex-peer"
+      }
+    },
+    {
+      "url": "tools://libsignal/setup_identity",
+      "options": {
+        "peer_id": "apex-peer"
+      }
+    },
+    {
+      "url": "tools://libsignal/create_session",
+      "options": {
+        "peer_id": "apex-peer"
+      }
+    },
+    {
+      "url": "tools://libsignal/create_session",
+      "options": {
+        "peer_id": "apex-peer"
+      }
+    },
+    {
+      "url": "tools://libsignal/create_session",
+      "options": {
+        "peer_id": "apex-peer"
+      }
+    },
+    {
+      "url": "tools://libsignal/decrypt",
+      "options": {
+        "peer_id": "ghost-peer",
+        "ciphertext": "AAA"
+      }
+    },
+    {
+      "url": "tools://libsignal/create_session",
+      "options": {
+        "peer_id": "apex-peer"
+      }
+    }
+  ],
+  "notCovered": [],
+  "cases": [
+    {
+      "name": "full_flow",
+      "description": "Establish to verify",
+      "steps": [
+        {
+          "url": "tools://libsignal/create_session",
+          "payload": {
+            "options": {
+              "peer_id": "apex-peer"
+            }
+          }
+        },
+        {
+          "url": "tools://libsignal/encrypt",
+          "payload": {
+            "options": {
+              "peer_id": "apex-peer",
+              "message": "Apex order #1042 - 2 items"
+            }
+          },
+          "expect": {
+            "success": true,
+            "status": "ENCRYPTED",
+            "data": {
+              "ciphertext": {
+                "nonEmpty": true
+              }
+            }
+          }
+        },
+        {
+          "url": "tools://libsignal/decrypt",
+          "payload": {
+            "options": {
+              "peer_id": "apex-peer",
+              "ciphertext": "$prev.ciphertext"
+            }
+          },
+          "expect": {
+            "success": true,
+            "status": "DECRYPTED",
+            "data": {
+              "plaintext": {
+                "equals": "Apex order #1042 - 2 items"
+              }
+            }
+          }
+        },
+        {
+          "url": "tools://libsignal/verify_identity",
+          "payload": {
+            "options": {
+              "peer_id": "apex-peer",
+              "expected_fingerprint": "$prev.safety_number"
+            }
+          },
+          "expect": {
+            "success": true,
+            "status": "VERIFIED"
+          }
+        }
+      ],
+      "expect": {
+        "success": true,
+        "status": "VERIFIED",
+        "data": {
+          "verified": {
+            "equals": true
+          }
+        }
+      }
+    },
+    {
+      "name": "identity_keys_setup",
+      "description": "Identity keys",
+      "steps": [
+        {
+          "url": "tools://libsignal/setup_identity",
+          "payload": {
+            "options": {
+              "peer_id": "apex-peer"
+            }
+          }
+        },
+        {
+          "url": "tools://libsignal/init_keys",
+          "payload": {
+            "options": {
+              "peer_id": "apex-peer"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": true,
+        "status": "IDENTITY_READY",
+        "data": {
+          "identity_key": {
+            "nonEmpty": true
+          }
+        }
+      }
+    },
+    {
+      "name": "status_reports_session",
+      "description": "Status",
+      "steps": [
+        {
+          "url": "tools://libsignal/create_session",
+          "payload": {
+            "options": {
+              "peer_id": "apex-peer"
+            }
+          }
+        },
+        {
+          "url": "tools://libsignal/status",
+          "payload": {
+            "options": {
+              "peer_id": "apex-peer"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": true,
+        "status": "ESTABLISHED",
+        "data": {
+          "session_id": {
+            "startsWith": "sig_sess_"
+          }
+        }
+      }
+    },
+    {
+      "name": "reset_clears_session",
+      "description": "Reset session",
+      "steps": [
+        {
+          "url": "tools://libsignal/create_session",
+          "payload": {
+            "options": {
+              "peer_id": "apex-peer"
+            }
+          }
+        },
+        {
+          "url": "tools://libsignal/reset_session",
+          "payload": {
+            "options": {
+              "peer_id": "apex-peer"
+            }
+          },
+          "expect": {
+            "success": true,
+            "status": "SESSION_RESET",
+            "data": {
+              "session_id": {
+                "equals": ""
+              }
+            }
+          }
+        },
+        {
+          "url": "tools://libsignal/status",
+          "payload": {
+            "options": {
+              "peer_id": "apex-peer"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": true,
+        "status": "NO_SESSION",
+        "data": {
+          "session_id": {
+            "equals": ""
+          }
+        }
+      }
+    },
+    {
+      "name": "ratchet_advances",
+      "description": "Ratchet advances",
+      "expect": {
+        "success": true,
+        "status": "ENCRYPTED",
+        "data": {
+          "ciphertext": {
+            "nonEmpty": true
+          }
+        }
+      },
+      "stress": {
+        "repeat": 3,
+        "distinct": [
+          "ciphertext"
+        ]
+      },
+      "steps": [
+        {
+          "url": "tools://libsignal/create_session",
+          "payload": {
+            "options": {
+              "peer_id": "apex-peer"
+            }
+          }
+        },
+        {
+          "url": "tools://libsignal/encrypt",
+          "payload": {
+            "options": {
+              "peer_id": "apex-peer",
+              "message": "ratchet probe"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "decrypt_without_session_fails",
+      "description": "Decrypt (no session)",
+      "steps": [
+        {
+          "url": "tools://libsignal/decrypt",
+          "payload": {
+            "options": {
+              "peer_id": "ghost-peer",
+              "ciphertext": "AAA"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": false,
+        "status": "FAILED",
+        "errorContains": "authentication"
+      }
+    },
+    {
+      "name": "verify_wrong_number_mismatches",
+      "description": "Verify (wrong number)",
+      "steps": [
+        {
+          "url": "tools://libsignal/create_session",
+          "payload": {
+            "options": {
+              "peer_id": "apex-peer"
+            }
+          }
+        },
+        {
+          "url": "tools://libsignal/verify_identity",
+          "payload": {
+            "options": {
+              "peer_id": "apex-peer",
+              "expected_fingerprint": "000000"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": false,
+        "status": "MISMATCH",
+        "data": {
+          "verified": {
+            "equals": false
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,16 +1,11 @@
 {
  "card": {
-  "log_id": "apex_tools_test_net",
+  "log_id": "apex_tool_net",
   "variables": [
-   {
-    "name": "user.workspace_title",
-    "type": "string",
-    "value": "APEX TOOLS"
-   },
    {
     "name": "user.tools_status",
     "type": "string",
-    "value": "Idle"
+    "value": ""
    },
    {
     "name": "user.tools_result",
@@ -23,74 +18,24 @@
     "value": ""
    },
    {
-    "name": "user.haptic_state",
-    "type": "string",
-    "value": "idle"
-   },
-   {
-    "name": "user.beep_state",
-    "type": "string",
-    "value": "idle"
-   },
-   {
-    "name": "user.clipboard_content",
-    "type": "string",
-    "value": ""
-   },
-   {
-    "name": "user.code_image_uri",
-    "type": "string",
-    "value": ""
-   },
-   {
-    "name": "user.code_format",
-    "type": "string",
-    "value": ""
-   },
-   {
-    "name": "user.file_preview",
-    "type": "string",
-    "value": ""
-   },
-   {
-    "name": "user.files_json",
-    "type": "string",
-    "value": "[]"
-   },
-   {
     "name": "user.net_status",
     "type": "string",
-    "value": "stopped"
+    "value": ""
    },
    {
-    "name": "user.net_url",
+    "name": "user.net_http_status",
     "type": "string",
     "value": ""
    },
    {
-    "name": "user.net_shares_json",
+    "name": "user.net_bytes",
     "type": "string",
-    "value": "[]"
+    "value": ""
    },
    {
-    "name": "user.print_state",
+    "name": "user.net_hub_port",
     "type": "string",
-    "value": "idle"
-   },
-   {
-    "name": "user.screen_state",
-    "type": "string",
-    "value": "idle"
-   },
-   {
-    "name": "user.samples_json",
-    "type": "string",
-    "value": "[]"
-   },
-   {
-    "name": "user.samples_count",
-    "type": "integer",
-    "value": 0
+    "value": ""
    }
   ],
   "states": [
@@ -140,14 +85,14 @@
          "items": [
           {
            "type": "text",
-           "text": "Network",
+           "text": "net",
            "font_size": 18,
            "font_weight": "bold",
            "text_color": "#F8FAFC"
           },
           {
            "type": "text",
-           "text": "HTTP fetch plus the LAN share hub",
+           "text": "HTTP GET, POST, download and upload plus the in-process LAN hub: serve, stop, status, share, list, unshare.",
            "font_size": 12,
            "font_weight": "regular",
            "text_color": "#94A3B8"
@@ -171,83 +116,45 @@
         {
          "type": "container",
          "orientation": "vertical",
+         "item_spacing": 4,
+         "paddings": {
+          "left": 12,
+          "top": 8,
+          "right": 12,
+          "bottom": 8
+         },
+         "background_color": "#16233A",
+         "border": {
+          "corner_radius": 12,
+          "stroke": {
+           "color": "#1E293B",
+           "width": 1
+          }
+         },
          "items": [
           {
            "type": "text",
-           "text": "Hub state",
+           "text": "Status",
            "font_size": 11,
            "font_weight": "bold",
            "text_color": "#94A3B8"
           },
           {
            "type": "text",
-           "text": "@{user.net_status + (user.net_url == '' ? '' : ' - ' + user.net_url)}",
-           "font_size": 14,
+           "text": "@{user.tools_status}",
+           "font_size": 18,
            "font_weight": "bold",
            "text_color": "#34D399"
-          },
-          {
-           "type": "inline_banner",
-           "custom_props": {
-            "text": "@{user.tools_error == '' ? 'No errors' : user.tools_error}",
-            "tone": "warn"
-           }
           }
          ],
-         "item_spacing": 8,
-         "background_color": "#111C2E",
-         "paddings": {
-          "left": 12,
-          "top": 12,
-          "right": 12,
-          "bottom": 12
-         },
-         "border": {
-          "corner_radius": 16,
-          "stroke": {
-           "color": "#1E293B",
-           "width": 1
-          }
-         }
+         "id": "metric_status"
         },
         {
-         "type": "json_list",
-         "data_var": "user.net_shares_json",
-         "empty_text": "No shares on the hub",
-         "row_card": {
-          "type": "container",
-          "orientation": "horizontal",
-          "items": [
-           {
-            "type": "text",
-            "text": "@{item.title}",
-            "font_size": 12,
-            "font_weight": "regular",
-            "text_color": "#F8FAFC",
-            "width": {
-             "type": "match_parent"
-            }
-           },
-           {
-            "type": "text",
-            "text": "@{item.id}",
-            "font_size": 11,
-            "font_weight": "regular",
-            "text_color": "#94A3B8"
-           }
-          ],
-          "background_color": "#16233A",
-          "paddings": {
-           "left": 8,
-           "top": 8,
-           "right": 8,
-           "bottom": 8
-          },
-          "border": {
-           "corner_radius": 12
-          }
-         },
-         "id": "net_shares_list"
+         "type": "inline_banner",
+         "custom_props": {
+          "text": "@{user.tools_error == '' ? 'No errors' : user.tools_error}",
+          "tone": "warn"
+         }
         },
         {
          "type": "container",
@@ -255,7 +162,36 @@
          "items": [
           {
            "type": "button",
-           "text": "GET example.com",
+           "text": "Hub lifecycle · 1/6",
+           "font_size": 12,
+           "font_weight": "bold",
+           "text_color": "#FFFFFF",
+           "background_color": "#7C3AED",
+           "corner_radius": 12,
+           "height": {
+            "type": "fixed",
+            "value": 40
+           },
+           "width": {
+            "type": "match_parent"
+           },
+           "actions": [
+            {
+             "url": "tools://network.transfer/serve",
+             "payload": {
+              "options": {},
+              "output": {
+               "status": "user.tools_status"
+              }
+             }
+            }
+           ],
+           "id": "tool_net_hub_lifecycle",
+           "content_description": "net serve"
+          },
+          {
+           "type": "button",
+           "text": "Status (no hub)",
            "font_size": 12,
            "font_weight": "bold",
            "text_color": "#F8FAFC",
@@ -263,37 +199,66 @@
            "corner_radius": 12,
            "height": {
             "type": "fixed",
-            "value": 44
+            "value": 40
            },
            "width": {
             "type": "match_parent"
            },
            "actions": [
             {
-             "url": "tools://net/get",
+             "url": "tools://network.transfer/status",
+             "payload": {
+              "options": {},
+              "output": {
+               "status": "user.tools_status"
+              }
+             }
+            }
+           ],
+           "border": {
+            "corner_radius": 12,
+            "stroke": {
+             "color": "#1E293B",
+             "width": 1
+            }
+           },
+           "id": "tool_net_status_without_hub",
+           "content_description": "net status"
+          },
+          {
+           "type": "button",
+           "text": "Share (no content)",
+           "font_size": 12,
+           "font_weight": "bold",
+           "text_color": "#FFFFFF",
+           "background_color": "#7C3AED",
+           "corner_radius": 12,
+           "height": {
+            "type": "fixed",
+            "value": 40
+           },
+           "width": {
+            "type": "match_parent"
+           },
+           "actions": [
+            {
+             "url": "tools://network.transfer/share",
              "payload": {
               "options": {
-               "url": "https://example.com"
+               "name": "orphan.json"
               },
               "output": {
-               "status": "user.tools_status",
-               "body": "user.tools_result"
+               "status": "user.tools_status"
               }
              }
             }
            ],
-           "border": {
-            "corner_radius": 12,
-            "stroke": {
-             "color": "#1E293B",
-             "width": 1
-            }
-           },
-           "id": "net_get"
+           "id": "tool_net_share_without_content_fails",
+           "content_description": "net share"
           },
           {
            "type": "button",
-           "text": "Start hub",
+           "text": "Share (hub stopped)",
            "font_size": 12,
            "font_weight": "bold",
            "text_color": "#F8FAFC",
@@ -301,22 +266,21 @@
            "corner_radius": 12,
            "height": {
             "type": "fixed",
-            "value": 44
+            "value": 40
            },
            "width": {
             "type": "match_parent"
            },
            "actions": [
             {
-             "url": "tools://net/serve",
+             "url": "tools://network.transfer/share",
              "payload": {
               "options": {
-               "port": "8089"
+               "content": "{\"order\":7}",
+               "name": "staged.json"
               },
               "output": {
-               "status": "user.net_status",
-               "url": "user.net_url",
-               "id": "user.net_share_id"
+               "status": "user.tools_status"
               }
              }
             }
@@ -328,85 +292,44 @@
              "width": 1
             }
            },
-           "id": "net_serve"
+           "id": "tool_net_share_without_hub_is_staged",
+           "content_description": "net share"
           },
           {
            "type": "button",
-           "text": "Hub status",
+           "text": "GET unreachable",
            "font_size": 12,
            "font_weight": "bold",
-           "text_color": "#F8FAFC",
-           "background_color": "#16233A",
+           "text_color": "#FFFFFF",
+           "background_color": "#7C3AED",
            "corner_radius": 12,
            "height": {
             "type": "fixed",
-            "value": 44
+            "value": 40
            },
            "width": {
             "type": "match_parent"
            },
            "actions": [
             {
-             "url": "tools://net/status",
-             "payload": {
-              "output": {
-               "status": "user.net_status",
-               "url": "user.net_url"
-              }
-             }
-            }
-           ],
-           "border": {
-            "corner_radius": 12,
-            "stroke": {
-             "color": "#1E293B",
-             "width": 1
-            }
-           },
-           "id": "net_status"
-          },
-          {
-           "type": "button",
-           "text": "Share sample",
-           "font_size": 12,
-           "font_weight": "bold",
-           "text_color": "#F8FAFC",
-           "background_color": "#16233A",
-           "corner_radius": 12,
-           "height": {
-            "type": "fixed",
-            "value": 44
-           },
-           "width": {
-            "type": "match_parent"
-           },
-           "actions": [
-            {
-             "url": "tools://net/share",
+             "url": "tools://network.transfer/get",
              "payload": {
               "options": {
-               "title": "Probe item",
-               "payload": "{\"sku\":\"P1001\",\"price\":1.5}"
+               "url": "http://127.0.0.1:1/none",
+               "timeout_ms": "1500"
               },
               "output": {
-               "id": "user.net_share_id",
-               "count": "user.net_share_count"
+               "status": "user.tools_status"
               }
              }
             }
            ],
-           "border": {
-            "corner_radius": 12,
-            "stroke": {
-             "color": "#1E293B",
-             "width": 1
-            }
-           },
-           "id": "net_share"
+           "id": "tool_net_get_unreachable_fails",
+           "content_description": "net get"
           },
           {
            "type": "button",
-           "text": "List shares",
+           "text": "POST unreachable",
            "font_size": 12,
            "font_weight": "bold",
            "text_color": "#F8FAFC",
@@ -414,17 +337,22 @@
            "corner_radius": 12,
            "height": {
             "type": "fixed",
-            "value": 44
+            "value": 40
            },
            "width": {
             "type": "match_parent"
            },
            "actions": [
             {
-             "url": "tools://net/list",
+             "url": "tools://network.transfer/post",
              "payload": {
+              "options": {
+               "url": "http://127.0.0.1:1/none",
+               "body": "{}",
+               "timeout_ms": "1500"
+              },
               "output": {
-               "_json": "user.net_shares_json"
+               "status": "user.tools_status"
               }
              }
             }
@@ -436,11 +364,44 @@
              "width": 1
             }
            },
-           "id": "net_list"
+           "id": "tool_net_post_unreachable_fails",
+           "content_description": "net post"
           },
           {
            "type": "button",
-           "text": "Stop hub",
+           "text": "Download unreachable",
+           "font_size": 12,
+           "font_weight": "bold",
+           "text_color": "#FFFFFF",
+           "background_color": "#7C3AED",
+           "corner_radius": 12,
+           "height": {
+            "type": "fixed",
+            "value": 40
+           },
+           "width": {
+            "type": "match_parent"
+           },
+           "actions": [
+            {
+             "url": "tools://network.transfer/download",
+             "payload": {
+              "options": {
+               "url": "http://127.0.0.1:1/none",
+               "timeout_ms": "1500"
+              },
+              "output": {
+               "status": "user.tools_status"
+              }
+             }
+            }
+           ],
+           "id": "tool_net_download_unreachable_fails",
+           "content_description": "net download"
+          },
+          {
+           "type": "button",
+           "text": "Upload unreachable",
            "font_size": 12,
            "font_weight": "bold",
            "text_color": "#F8FAFC",
@@ -448,17 +409,22 @@
            "corner_radius": 12,
            "height": {
             "type": "fixed",
-            "value": 44
+            "value": 40
            },
            "width": {
             "type": "match_parent"
            },
            "actions": [
             {
-             "url": "tools://net/stop",
+             "url": "tools://network.transfer/upload",
              "payload": {
+              "options": {
+               "url": "http://127.0.0.1:1/none",
+               "content": "x",
+               "timeout_ms": "1500"
+              },
               "output": {
-               "status": "user.net_status"
+               "status": "user.tools_status"
               }
              }
             }
@@ -470,7 +436,77 @@
              "width": 1
             }
            },
-           "id": "net_stop"
+           "id": "tool_net_upload_unreachable_fails",
+           "content_description": "net upload"
+          },
+          {
+           "type": "button",
+           "text": "Request unreachable",
+           "font_size": 12,
+           "font_weight": "bold",
+           "text_color": "#FFFFFF",
+           "background_color": "#7C3AED",
+           "corner_radius": 12,
+           "height": {
+            "type": "fixed",
+            "value": 40
+           },
+           "width": {
+            "type": "match_parent"
+           },
+           "actions": [
+            {
+             "url": "tools://network.transfer/request",
+             "payload": {
+              "options": {
+               "url": "http://127.0.0.1:1/none",
+               "method": "GET",
+               "timeout_ms": "1500"
+              },
+              "output": {
+               "status": "user.tools_status"
+              }
+             }
+            }
+           ],
+           "id": "tool_net_request_unreachable_fails",
+           "content_description": "net request"
+          },
+          {
+           "type": "button",
+           "text": "Stop twice · 1/3",
+           "font_size": 12,
+           "font_weight": "bold",
+           "text_color": "#F8FAFC",
+           "background_color": "#16233A",
+           "corner_radius": 12,
+           "height": {
+            "type": "fixed",
+            "value": 40
+           },
+           "width": {
+            "type": "match_parent"
+           },
+           "actions": [
+            {
+             "url": "tools://network.transfer/serve",
+             "payload": {
+              "options": {},
+              "output": {
+               "status": "user.tools_status"
+              }
+             }
+            }
+           ],
+           "border": {
+            "corner_radius": 12,
+            "stroke": {
+             "color": "#1E293B",
+             "width": 1
+            }
+           },
+           "id": "tool_net_stop_twice_is_safe",
+           "content_description": "net serve"
           }
          ],
          "item_spacing": 8,
@@ -488,6 +524,35 @@
            "width": 1
           }
          }
+        },
+        {
+         "type": "button",
+         "text": "Back to tools",
+         "font_size": 12,
+         "font_weight": "bold",
+         "text_color": "#F8FAFC",
+         "background_color": "transparent",
+         "corner_radius": 12,
+         "height": {
+          "type": "fixed",
+          "value": 40
+         },
+         "width": {
+          "type": "match_parent"
+         },
+         "actions": [
+          {
+           "url": "nav://pop"
+          }
+         ],
+         "border": {
+          "corner_radius": 12,
+          "stroke": {
+           "color": "#1E293B",
+           "width": 1
+          }
+         },
+         "id": "btn_back_footer"
         }
        ],
        "item_spacing": 12,

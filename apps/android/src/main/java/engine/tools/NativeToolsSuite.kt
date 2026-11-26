@@ -27,7 +27,9 @@ object NativeToolsSuite {
         "FAILED", "UNSUPPORTED", "NO_INPUT", "NO_CODE_FOUND", "FORMAT_MISMATCH",
         "DENIED", "BLUETOOTH_OFF", "NO_DEVICE", "ERROR",
         // A safety-number comparison that did not match must not read as a success.
-        "MISMATCH", "KEY_CHANGED"
+        "MISMATCH", "KEY_CHANGED",
+        // A JSON document that failed validation is a rejected input.
+        "INVALID"
     )
 
     /**

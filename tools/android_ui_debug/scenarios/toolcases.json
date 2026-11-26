@@ -1,0 +1,48 @@
+{
+  "name": "toolcases",
+  "comment": "Walks the apex_tools_test harness card. A card tap runs the first step of a case, so multi-step cases are labelled '· 1/N'; the full sequences run in ToolConformanceTest and in scenarios/libsignal.json.",
+  "package": "com.aistudio.sduiposengine.kmpdiv",
+  "activity": "com.example.MainActivity",
+  "steps": [
+    { "action": "launch", "settle": 25, "clear_data": true },
+    { "action": "wait_text", "contains": "Apex Tools", "timeout": 90 },
+    { "action": "tap", "text": "Apex Tools", "settle": 10 },
+    { "action": "wait_text", "contains": "Every capability, one card each", "timeout": 30 },
+
+    { "action": "scroll_to", "contains": "Libsignal", "max_swipes": 20, "scroll_percent": 0.7 },
+    { "action": "tap", "contains": "Libsignal", "scroll": false, "settle": 3 },
+    { "action": "wait_text", "contains": "Establish to verify", "timeout": 20 },
+    { "action": "tap", "contains": "Establish to verify", "scroll": true, "settle": 2 },
+    { "action": "wait_text", "contains": "ESTABLISHED", "timeout": 30 },
+    { "action": "assert_no_crash" },
+
+    { "action": "tap", "text": "Back", "scroll": true, "settle": 3 },
+    { "action": "scroll_to", "contains": "Printer", "max_swipes": 20, "scroll_percent": 0.7 },
+    { "action": "tap", "contains": "Printer", "scroll": false, "settle": 3 },
+    { "action": "tap", "contains": "Print (no receipt)", "scroll": true, "settle": 2 },
+    { "action": "wait_text", "contains": "FAILED", "timeout": 20 },
+    { "action": "assert_text", "contains": "missing receipt", "scroll": true },
+    { "action": "assert_no_crash" },
+
+    { "action": "tap", "text": "Back", "scroll": true, "settle": 3 },
+    { "action": "scroll_to", "contains": "Network", "max_swipes": 20, "scroll_percent": 0.7 },
+    { "action": "tap", "contains": "Network", "scroll": false, "settle": 3 },
+    { "action": "tap", "contains": "Status (no hub)", "scroll": true, "settle": 2 },
+    { "action": "wait_text", "contains": "IDLE", "timeout": 20 },
+    { "action": "assert_no_crash" },
+
+    { "action": "tap", "text": "Back", "scroll": true, "settle": 3 },
+    { "action": "scroll_to", "contains": "Codec", "max_swipes": 20, "scroll_percent": 0.7 },
+    { "action": "tap", "contains": "Codec", "scroll": false, "settle": 3 },
+    { "action": "tap", "contains": "JSON invalid", "scroll": true, "settle": 2 },
+    { "action": "wait_text", "contains": "INVALID", "timeout": 20 },
+    { "action": "assert_no_crash" },
+
+    { "action": "tap", "text": "Back", "scroll": true, "settle": 3 },
+    { "action": "scroll_to", "contains": "Realtime channel", "max_swipes": 20, "scroll_percent": 0.7 },
+    { "action": "tap", "contains": "Realtime channel", "scroll": false, "settle": 3 },
+    { "action": "tap", "contains": "Connect (no transport)", "scroll": true, "settle": 2 },
+    { "action": "wait_text", "contains": "UNSUPPORTED", "timeout": 20 },
+    { "action": "assert_no_crash" }
+  ]
+}

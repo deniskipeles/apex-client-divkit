@@ -43,6 +43,10 @@ dispatch contract and the provenance gate.
 >
 > `local-db://` and `icons://` are **URL schemes** (data plane), not `tools://` capabilities,
 > but they share the same router and `user.*` output-mapping contract.
+>
+> Every capability in this index also ships a declarative case list that the on-device
+> `ToolConformanceTest` executes and that renders as buttons in the `apex_tools_test`
+> workspace. See [`../tool-cases/README.md`](../tool-cases/README.md).
 
 ## Native surfaces
 

@@ -1,0 +1,243 @@
+{
+  "_generated": "apps/dev-server/scripts/build-tool-cases.mjs",
+  "_doNotEdit": "Edit apps/dev-server/tests/tools/definitions.ts and rerun `pnpm tool-cases:build`.",
+  "toolId": "image-manipulation",
+  "slug": "image-manipulation",
+  "doc": "docs/tools/image-manipulation.md",
+  "versionedCapability": "vision.image_manipulation@1",
+  "usage": "Crop, resize, adjust colour, threshold, smooth or remove the background of an image and return the processed URI.",
+  "operations": [
+    "process",
+    "remove_background",
+    "smooth",
+    "adjust_color",
+    "crop",
+    "resize",
+    "threshold"
+  ],
+  "outputMapping": {
+    "uri": "user.processed_image_uri",
+    "status": "user.image_processing_status"
+  },
+  "options": [
+    {
+      "name": "uri",
+      "type": "string",
+      "description": "Source image URI"
+    },
+    {
+      "name": "base64",
+      "type": "string",
+      "description": "Source image bytes"
+    },
+    {
+      "name": "format",
+      "type": "string",
+      "default": "png",
+      "description": "Output format"
+    },
+    {
+      "name": "threshold",
+      "type": "int",
+      "description": "Threshold cutoff 0-255"
+    }
+  ],
+  "results": [
+    {
+      "name": "uri",
+      "type": "string",
+      "description": "Processed image URI"
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "description": "SUCCESS | FAILED"
+    }
+  ],
+  "statuses": [
+    {
+      "status": "SUCCESS",
+      "meaning": "Image processed"
+    },
+    {
+      "status": "FAILED",
+      "meaning": "No decodable image supplied"
+    }
+  ],
+  "cardActions": [
+    {
+      "url": "tools://image-manipulation/process",
+      "options": {
+        "op": "remove_background"
+      }
+    },
+    {
+      "url": "tools://image-manipulation/crop",
+      "options": {
+        "width": "64",
+        "height": "64"
+      }
+    },
+    {
+      "url": "tools://image-manipulation/resize",
+      "options": {
+        "width": "32",
+        "height": "32"
+      }
+    },
+    {
+      "url": "tools://image-manipulation/threshold",
+      "options": {
+        "threshold": "128"
+      }
+    },
+    {
+      "url": "tools://image-manipulation/adjust_color",
+      "options": {
+        "brightness": "1.1"
+      }
+    },
+    {
+      "url": "tools://image-manipulation/smooth",
+      "options": {}
+    },
+    {
+      "url": "tools://image-manipulation/remove_background",
+      "options": {}
+    }
+  ],
+  "notCovered": [],
+  "cases": [
+    {
+      "name": "process_without_image_fails",
+      "description": "Process (no image)",
+      "host": "none",
+      "steps": [
+        {
+          "url": "tools://image-manipulation/process",
+          "payload": {
+            "options": {
+              "op": "remove_background"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": false,
+        "status": "NO_INPUT"
+      }
+    },
+    {
+      "name": "crop_without_image_fails",
+      "description": "Crop (no image)",
+      "host": "none",
+      "steps": [
+        {
+          "url": "tools://image-manipulation/crop",
+          "payload": {
+            "options": {
+              "width": "64",
+              "height": "64"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": false,
+        "status": "NO_INPUT"
+      }
+    },
+    {
+      "name": "resize_without_image_fails",
+      "description": "Resize (no image)",
+      "host": "none",
+      "steps": [
+        {
+          "url": "tools://image-manipulation/resize",
+          "payload": {
+            "options": {
+              "width": "32",
+              "height": "32"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": false,
+        "status": "NO_INPUT"
+      }
+    },
+    {
+      "name": "threshold_without_image_fails",
+      "description": "Threshold (no image)",
+      "host": "none",
+      "steps": [
+        {
+          "url": "tools://image-manipulation/threshold",
+          "payload": {
+            "options": {
+              "threshold": "128"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": false,
+        "status": "NO_INPUT"
+      }
+    },
+    {
+      "name": "adjust_color_without_image_fails",
+      "description": "Adjust colour (no image)",
+      "host": "none",
+      "steps": [
+        {
+          "url": "tools://image-manipulation/adjust_color",
+          "payload": {
+            "options": {
+              "brightness": "1.1"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": false,
+        "status": "NO_INPUT"
+      }
+    },
+    {
+      "name": "smooth_without_image_fails",
+      "description": "Smooth (no image)",
+      "host": "none",
+      "steps": [
+        {
+          "url": "tools://image-manipulation/smooth",
+          "payload": {
+            "options": {}
+          }
+        }
+      ],
+      "expect": {
+        "success": false,
+        "status": "NO_INPUT"
+      }
+    },
+    {
+      "name": "remove_background_without_image_fails",
+      "description": "Remove background (no image)",
+      "host": "none",
+      "steps": [
+        {
+          "url": "tools://image-manipulation/remove_background",
+          "payload": {
+            "options": {}
+          }
+        }
+      ],
+      "expect": {
+        "success": false,
+        "status": "NO_INPUT"
+      }
+    }
+  ]
+}

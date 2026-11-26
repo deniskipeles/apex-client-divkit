@@ -90,3 +90,16 @@ Default output mapping: `connection_state → user.realtime_connection_state`,
   }
 }
 ```
+
+## Conformance cases
+
+Contract: `apps/dev-server/tests/tools/definitions.ts` (`toolId: realtime-ws`).
+
+`connect` requires an installed transport (`RealtimeWsTool.transport`) **and** a `url`.
+Without a transport the call returns `UNSUPPORTED` with
+`no websocket transport installed`, and `subscribe`/`send` on a channel that was never
+connected return `FAILED` with `channel <name> is not connected`.
+
+The tool used to flip a map entry to `CONNECTED` and report a fabricated `latency_ms: 4`
+without opening a socket. That path is gone: the status a card shows now describes a real
+connection attempt (`CONNECTED`, `FAILED`, `DISCONNECTED`) and nothing else.

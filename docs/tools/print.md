@@ -162,3 +162,18 @@ than throwing.
   }
 ]
 ```
+
+## Conformance cases
+
+Contract: `apps/dev-server/tests/tools/definitions.ts` (`toolId: print`).
+
+| input | result |
+| :--- | :--- |
+| no `receipt`/`text`/`lines` | `FAILED`, `missing receipt argument — nothing to print` |
+| receipt but no open RFCOMM socket | `UNSUPPORTED`, `no printer connected...` or `no printer host installed...` |
+| receipt on a connected socket | `SUCCESS`, `mode: bluetooth_rfcomm`, real byte count |
+
+The previous handler rendered an empty receipt, reported `SUCCESS` with `mode: emulated`
+and 12 bytes of ESC/POS, which looked like a completed print job. A print is a hardware
+effect; without a socket there is nothing to report. `PrintTool.buildEscPos` stays an
+`internal` function so the byte-level encoding is still unit-tested directly.

@@ -343,6 +343,39 @@ pnpm check:desktop           # cargo check
 - Nitro/Nitro-pack outputs (`.output`, `.nitro`), `apps/desktop/dist`, and
   `apps/desktop/src-tauri/{target,gen}` are gitignored.
 
+## Tool conformance cases (`apps/dev-server/tests/tools`)
+
+Every `tools://` capability has a declarative case list that three consumers share:
+
+- `apps/dev-server/tests/tools/definitions.ts` — the contract table (operations incl. aliases,
+  `outputMapping` mirroring `NativeToolsSuite.ToolSchema`, options, results, statuses, cases).
+- `apps/dev-server/tests/tools/expectations.ts` — one `{ success, status, data/outputs
+  matchers }` per case, keyed `<slug>/<case>`, plus `STEP_EXPECTATIONS` for intermediate steps.
+- `apps/dev-server/tests/cardkit.ts` — turns each case into one button on the module's card.
+
+`apps/dev-server/scripts/build-tool-cases.mjs` writes `apps/android/src/test/resources/toolcases/*.json`
+(consumed by `ToolConformanceTest`) and the `apex_tools_test` demo cards (`pnpm toolcases:build`,
+`pnpm toolcases:check` for drift). `apps/dev-server/tests/toolcases.test.ts` guards the table
+itself. `ToolConformanceTest` has four tests: `everyCaseHolds` (drives `NativeToolsSuite`),
+`coversEveryOperation`, `mirrorsTheKotlinRegistry` (output mapping + operation drift),
+`cardActionsAreCovered`.
+
+Rules that bite:
+
+- Array/object arguments belong at the **payload root**; only flat strings may go in
+  `options` (that is what `EngineRouter` builds from a card). `NativeToolsSuite` copies
+  payload scalars into the tool args, so `chunks`/`paths`/`keys` must not be nested in
+  `options`.
+- `$prev.field` binds from the previous step, `$prev[2].field` from an earlier step; both
+  resolve through `data`, then `outputs`, then the record root.
+- A tool that returns no `status` cannot bind `status` on its card. `clipboard` and
+  `biometrics` gained one (`EMPTY`/`SUCCESS`, `AUTHORIZED`) rather than special-casing the
+  card test.
+- `ToolResult.Unsupported`/`Failed` cards still need their `outputs` mapped, or the card
+  readout keeps a stale seed value.
+
+See `docs/tool-cases/README.md`.
+
 ## Testing conventions
 
 - **Text-only APK debugging.** Use `tools/android_ui_debug` and

@@ -1,0 +1,474 @@
+{
+  "card": {
+    "log_id": "apex_tool_libsignal",
+    "variables": [
+      {
+        "name": "user.tools_status",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.tools_result",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.tools_error",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.signal_status",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.signal_session_id",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.signal_ciphertext",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.signal_plaintext",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.signal_fingerprint",
+        "type": "string",
+        "value": ""
+      }
+    ],
+    "states": [
+      {
+        "state_id": 0,
+        "div": {
+          "type": "container",
+          "orientation": "vertical",
+          "items": [
+            {
+              "type": "container",
+              "orientation": "horizontal",
+              "items": [
+                {
+                  "type": "button",
+                  "text": "Back",
+                  "font_size": 12,
+                  "font_weight": "bold",
+                  "text_color": "#F8FAFC",
+                  "background_color": "#16233A",
+                  "corner_radius": 12,
+                  "height": {
+                    "type": "fixed",
+                    "value": 40
+                  },
+                  "width": {
+                    "type": "fixed",
+                    "value": 80
+                  },
+                  "actions": [
+                    {
+                      "url": "nav://pop"
+                    }
+                  ],
+                  "border": {
+                    "corner_radius": 12,
+                    "stroke": {
+                      "color": "#1E293B",
+                      "width": 1
+                    }
+                  },
+                  "id": "btn_back"
+                },
+                {
+                  "type": "container",
+                  "orientation": "vertical",
+                  "items": [
+                    {
+                      "type": "text",
+                      "text": "libsignal",
+                      "font_size": 18,
+                      "font_weight": "bold",
+                      "text_color": "#F8FAFC"
+                    },
+                    {
+                      "type": "text",
+                      "text": "Establish a Double-Ratchet session, encrypt, decrypt and verify a 60-digit safety number. The fleet acceptance flow is establish, encrypt, decrypt, verify.",
+                      "font_size": 12,
+                      "font_weight": "regular",
+                      "text_color": "#94A3B8"
+                    }
+                  ],
+                  "weight": 1
+                }
+              ],
+              "item_spacing": 8,
+              "paddings": {
+                "left": 16,
+                "top": 32,
+                "right": 16,
+                "bottom": 8
+              }
+            },
+            {
+              "type": "container",
+              "orientation": "vertical",
+              "items": [
+                {
+                  "type": "container",
+                  "orientation": "vertical",
+                  "item_spacing": 4,
+                  "paddings": {
+                    "left": 12,
+                    "top": 8,
+                    "right": 12,
+                    "bottom": 8
+                  },
+                  "background_color": "#16233A",
+                  "border": {
+                    "corner_radius": 12,
+                    "stroke": {
+                      "color": "#1E293B",
+                      "width": 1
+                    }
+                  },
+                  "items": [
+                    {
+                      "type": "text",
+                      "text": "Status",
+                      "font_size": 11,
+                      "font_weight": "bold",
+                      "text_color": "#94A3B8"
+                    },
+                    {
+                      "type": "text",
+                      "text": "@{user.tools_status}",
+                      "font_size": 18,
+                      "font_weight": "bold",
+                      "text_color": "#34D399"
+                    }
+                  ],
+                  "id": "metric_status"
+                },
+                {
+                  "type": "inline_banner",
+                  "custom_props": {
+                    "text": "@{user.tools_error == '' ? 'No errors' : user.tools_error}",
+                    "tone": "warn"
+                  }
+                },
+                {
+                  "type": "container",
+                  "orientation": "vertical",
+                  "items": [
+                    {
+                      "type": "button",
+                      "text": "Establish to verify · 1/4",
+                      "font_size": 12,
+                      "font_weight": "bold",
+                      "text_color": "#FFFFFF",
+                      "background_color": "#7C3AED",
+                      "corner_radius": 12,
+                      "height": {
+                        "type": "fixed",
+                        "value": 40
+                      },
+                      "width": {
+                        "type": "match_parent"
+                      },
+                      "actions": [
+                        {
+                          "url": "tools://libsignal/create_session",
+                          "payload": {
+                            "options": {
+                              "peer_id": "apex-peer"
+                            },
+                            "output": {
+                              "status": "user.tools_status"
+                            }
+                          }
+                        }
+                      ],
+                      "id": "tool_libsignal_full_flow",
+                      "content_description": "libsignal create_session"
+                    },
+                    {
+                      "type": "button",
+                      "text": "Identity keys · 1/2",
+                      "font_size": 12,
+                      "font_weight": "bold",
+                      "text_color": "#F8FAFC",
+                      "background_color": "#16233A",
+                      "corner_radius": 12,
+                      "height": {
+                        "type": "fixed",
+                        "value": 40
+                      },
+                      "width": {
+                        "type": "match_parent"
+                      },
+                      "actions": [
+                        {
+                          "url": "tools://libsignal/setup_identity",
+                          "payload": {
+                            "options": {
+                              "peer_id": "apex-peer"
+                            },
+                            "output": {
+                              "status": "user.tools_status"
+                            }
+                          }
+                        }
+                      ],
+                      "border": {
+                        "corner_radius": 12,
+                        "stroke": {
+                          "color": "#1E293B",
+                          "width": 1
+                        }
+                      },
+                      "id": "tool_libsignal_identity_keys_setup",
+                      "content_description": "libsignal setup_identity"
+                    },
+                    {
+                      "type": "button",
+                      "text": "Status · 1/2",
+                      "font_size": 12,
+                      "font_weight": "bold",
+                      "text_color": "#FFFFFF",
+                      "background_color": "#7C3AED",
+                      "corner_radius": 12,
+                      "height": {
+                        "type": "fixed",
+                        "value": 40
+                      },
+                      "width": {
+                        "type": "match_parent"
+                      },
+                      "actions": [
+                        {
+                          "url": "tools://libsignal/create_session",
+                          "payload": {
+                            "options": {
+                              "peer_id": "apex-peer"
+                            },
+                            "output": {
+                              "status": "user.tools_status"
+                            }
+                          }
+                        }
+                      ],
+                      "id": "tool_libsignal_status_reports_session",
+                      "content_description": "libsignal create_session"
+                    },
+                    {
+                      "type": "button",
+                      "text": "Reset session · 1/3",
+                      "font_size": 12,
+                      "font_weight": "bold",
+                      "text_color": "#F8FAFC",
+                      "background_color": "#16233A",
+                      "corner_radius": 12,
+                      "height": {
+                        "type": "fixed",
+                        "value": 40
+                      },
+                      "width": {
+                        "type": "match_parent"
+                      },
+                      "actions": [
+                        {
+                          "url": "tools://libsignal/create_session",
+                          "payload": {
+                            "options": {
+                              "peer_id": "apex-peer"
+                            },
+                            "output": {
+                              "status": "user.tools_status"
+                            }
+                          }
+                        }
+                      ],
+                      "border": {
+                        "corner_radius": 12,
+                        "stroke": {
+                          "color": "#1E293B",
+                          "width": 1
+                        }
+                      },
+                      "id": "tool_libsignal_reset_clears_session",
+                      "content_description": "libsignal create_session"
+                    },
+                    {
+                      "type": "button",
+                      "text": "Ratchet advances · 1/2",
+                      "font_size": 12,
+                      "font_weight": "bold",
+                      "text_color": "#FFFFFF",
+                      "background_color": "#7C3AED",
+                      "corner_radius": 12,
+                      "height": {
+                        "type": "fixed",
+                        "value": 40
+                      },
+                      "width": {
+                        "type": "match_parent"
+                      },
+                      "actions": [
+                        {
+                          "url": "tools://libsignal/create_session",
+                          "payload": {
+                            "options": {
+                              "peer_id": "apex-peer"
+                            },
+                            "output": {
+                              "status": "user.tools_status"
+                            }
+                          }
+                        }
+                      ],
+                      "id": "tool_libsignal_ratchet_advances",
+                      "content_description": "libsignal create_session"
+                    },
+                    {
+                      "type": "button",
+                      "text": "Decrypt (no session)",
+                      "font_size": 12,
+                      "font_weight": "bold",
+                      "text_color": "#F8FAFC",
+                      "background_color": "#16233A",
+                      "corner_radius": 12,
+                      "height": {
+                        "type": "fixed",
+                        "value": 40
+                      },
+                      "width": {
+                        "type": "match_parent"
+                      },
+                      "actions": [
+                        {
+                          "url": "tools://libsignal/decrypt",
+                          "payload": {
+                            "options": {
+                              "peer_id": "ghost-peer",
+                              "ciphertext": "AAA"
+                            },
+                            "output": {
+                              "status": "user.tools_status"
+                            }
+                          }
+                        }
+                      ],
+                      "border": {
+                        "corner_radius": 12,
+                        "stroke": {
+                          "color": "#1E293B",
+                          "width": 1
+                        }
+                      },
+                      "id": "tool_libsignal_decrypt_without_session_fails",
+                      "content_description": "libsignal decrypt"
+                    },
+                    {
+                      "type": "button",
+                      "text": "Verify (wrong number) · 1/2",
+                      "font_size": 12,
+                      "font_weight": "bold",
+                      "text_color": "#FFFFFF",
+                      "background_color": "#7C3AED",
+                      "corner_radius": 12,
+                      "height": {
+                        "type": "fixed",
+                        "value": 40
+                      },
+                      "width": {
+                        "type": "match_parent"
+                      },
+                      "actions": [
+                        {
+                          "url": "tools://libsignal/create_session",
+                          "payload": {
+                            "options": {
+                              "peer_id": "apex-peer"
+                            },
+                            "output": {
+                              "status": "user.tools_status"
+                            }
+                          }
+                        }
+                      ],
+                      "id": "tool_libsignal_verify_wrong_number_mismatches",
+                      "content_description": "libsignal create_session"
+                    }
+                  ],
+                  "item_spacing": 8,
+                  "background_color": "#111C2E",
+                  "paddings": {
+                    "left": 12,
+                    "top": 12,
+                    "right": 12,
+                    "bottom": 12
+                  },
+                  "border": {
+                    "corner_radius": 16,
+                    "stroke": {
+                      "color": "#1E293B",
+                      "width": 1
+                    }
+                  }
+                },
+                {
+                  "type": "button",
+                  "text": "Back to tools",
+                  "font_size": 12,
+                  "font_weight": "bold",
+                  "text_color": "#F8FAFC",
+                  "background_color": "transparent",
+                  "corner_radius": 12,
+                  "height": {
+                    "type": "fixed",
+                    "value": 40
+                  },
+                  "width": {
+                    "type": "match_parent"
+                  },
+                  "actions": [
+                    {
+                      "url": "nav://pop"
+                    }
+                  ],
+                  "border": {
+                    "corner_radius": 12,
+                    "stroke": {
+                      "color": "#1E293B",
+                      "width": 1
+                    }
+                  },
+                  "id": "btn_back_footer"
+                }
+              ],
+              "item_spacing": 12,
+              "paddings": {
+                "left": 16,
+                "top": 0,
+                "right": 16,
+                "bottom": 0
+              }
+            }
+          ],
+          "item_spacing": 8,
+          "paddings": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 16
+          }
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,435 @@
+{
+  "_generated": "apps/dev-server/scripts/build-tool-cases.mjs",
+  "_doNotEdit": "Edit apps/dev-server/tests/tools/definitions.ts and rerun `pnpm tool-cases:build`.",
+  "toolId": "net",
+  "slug": "net",
+  "doc": "docs/tools/net.md",
+  "versionedCapability": "network.transfer@1",
+  "usage": "HTTP GET, POST, download and upload plus the in-process LAN hub: serve, stop, status, share, list, unshare.",
+  "operations": [
+    "request",
+    "get",
+    "post",
+    "download",
+    "upload",
+    "serve",
+    "stop",
+    "status",
+    "share",
+    "list",
+    "unshare"
+  ],
+  "outputMapping": {
+    "status": "user.net_status",
+    "http_status": "user.net_http_status",
+    "bytes": "user.net_bytes",
+    "port": "user.net_hub_port"
+  },
+  "options": [
+    {
+      "name": "url",
+      "type": "string",
+      "description": "Request URL"
+    },
+    {
+      "name": "method",
+      "type": "string",
+      "default": "GET",
+      "description": "HTTP method"
+    },
+    {
+      "name": "timeout_ms",
+      "type": "int",
+      "default": "30000",
+      "description": "Request timeout"
+    },
+    {
+      "name": "label",
+      "type": "string",
+      "description": "Share label"
+    }
+  ],
+  "results": [
+    {
+      "name": "status",
+      "type": "string",
+      "description": "OK | SERVING | SUCCESS | FAILED | UNSUPPORTED"
+    },
+    {
+      "name": "port",
+      "type": "number",
+      "description": "LAN hub port"
+    },
+    {
+      "name": "bytes",
+      "type": "number",
+      "description": "Body byte count"
+    }
+  ],
+  "statuses": [
+    {
+      "status": "SUCCESS",
+      "meaning": "Request or hub operation completed"
+    },
+    {
+      "status": "OK",
+      "meaning": "Hub responded"
+    },
+    {
+      "status": "SERVING",
+      "meaning": "Hub is listening"
+    },
+    {
+      "status": "FAILED",
+      "meaning": "Request failed"
+    },
+    {
+      "status": "UNSUPPORTED",
+      "meaning": "No hub running"
+    }
+  ],
+  "cardActions": [
+    {
+      "url": "tools://network.transfer/serve",
+      "options": {}
+    },
+    {
+      "url": "tools://network.transfer/status",
+      "options": {}
+    },
+    {
+      "url": "tools://network.transfer/share",
+      "options": {
+        "name": "orphan.json"
+      }
+    },
+    {
+      "url": "tools://network.transfer/share",
+      "options": {
+        "content": "{\"order\":7}",
+        "name": "staged.json"
+      }
+    },
+    {
+      "url": "tools://network.transfer/get",
+      "options": {
+        "url": "http://127.0.0.1:1/none",
+        "timeout_ms": "1500"
+      }
+    },
+    {
+      "url": "tools://network.transfer/post",
+      "options": {
+        "url": "http://127.0.0.1:1/none",
+        "body": "{}",
+        "timeout_ms": "1500"
+      }
+    },
+    {
+      "url": "tools://network.transfer/download",
+      "options": {
+        "url": "http://127.0.0.1:1/none",
+        "timeout_ms": "1500"
+      }
+    },
+    {
+      "url": "tools://network.transfer/upload",
+      "options": {
+        "url": "http://127.0.0.1:1/none",
+        "content": "x",
+        "timeout_ms": "1500"
+      }
+    },
+    {
+      "url": "tools://network.transfer/request",
+      "options": {
+        "url": "http://127.0.0.1:1/none",
+        "method": "GET",
+        "timeout_ms": "1500"
+      }
+    },
+    {
+      "url": "tools://network.transfer/serve",
+      "options": {}
+    }
+  ],
+  "notCovered": [],
+  "cases": [
+    {
+      "name": "hub_lifecycle",
+      "description": "Hub lifecycle",
+      "steps": [
+        {
+          "url": "tools://network.transfer/serve",
+          "payload": {
+            "options": {}
+          },
+          "expect": {
+            "success": true,
+            "status": "SERVING",
+            "data": {
+              "port": {
+                "equals": "8089"
+              }
+            }
+          }
+        },
+        {
+          "url": "tools://network.transfer/status",
+          "payload": {
+            "options": {}
+          }
+        },
+        {
+          "url": "tools://network.transfer/share",
+          "payload": {
+            "options": {
+              "content": "{\"order\":1042}",
+              "name": "order-1042.json",
+              "content_type": "application/json"
+            }
+          },
+          "expect": {
+            "success": true,
+            "status": "SHARED",
+            "data": {
+              "id": {
+                "nonEmpty": true
+              }
+            }
+          }
+        },
+        {
+          "url": "tools://network.transfer/list",
+          "payload": {
+            "options": {}
+          },
+          "expect": {
+            "success": true,
+            "status": "OK",
+            "data": {
+              "count": {
+                "range": {
+                  "min": 1
+                }
+              }
+            }
+          }
+        },
+        {
+          "url": "tools://network.transfer/unshare",
+          "payload": {
+            "options": {
+              "id": "$prev[2].id"
+            }
+          },
+          "expect": {
+            "success": true,
+            "status": "REMOVED"
+          }
+        },
+        {
+          "url": "tools://network.transfer/stop",
+          "payload": {
+            "options": {}
+          }
+        }
+      ],
+      "expect": {
+        "success": true,
+        "status": "STOPPED",
+        "data": {
+          "port": {
+            "equals": "0"
+          }
+        }
+      }
+    },
+    {
+      "name": "status_without_hub",
+      "description": "Status (no hub)",
+      "steps": [
+        {
+          "url": "tools://network.transfer/status",
+          "payload": {
+            "options": {}
+          }
+        }
+      ],
+      "expect": {
+        "success": true,
+        "status": "IDLE"
+      }
+    },
+    {
+      "name": "share_without_content_fails",
+      "description": "Share (no content)",
+      "steps": [
+        {
+          "url": "tools://network.transfer/share",
+          "payload": {
+            "options": {
+              "name": "orphan.json"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": false,
+        "status": "FAILED",
+        "errorContains": "missing content"
+      }
+    },
+    {
+      "name": "share_without_hub_is_staged",
+      "description": "Share (hub stopped)",
+      "steps": [
+        {
+          "url": "tools://network.transfer/share",
+          "payload": {
+            "options": {
+              "content": "{\"order\":7}",
+              "name": "staged.json"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": true,
+        "status": "STAGED",
+        "data": {
+          "hub_running": {
+            "equals": false
+          }
+        }
+      }
+    },
+    {
+      "name": "get_unreachable_fails",
+      "description": "GET unreachable",
+      "steps": [
+        {
+          "url": "tools://network.transfer/get",
+          "payload": {
+            "options": {
+              "url": "http://127.0.0.1:1/none",
+              "timeout_ms": "1500"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": false,
+        "status": "FAILED",
+        "errorContains": "Connection refused"
+      }
+    },
+    {
+      "name": "post_unreachable_fails",
+      "description": "POST unreachable",
+      "steps": [
+        {
+          "url": "tools://network.transfer/post",
+          "payload": {
+            "options": {
+              "url": "http://127.0.0.1:1/none",
+              "body": "{}",
+              "timeout_ms": "1500"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": false,
+        "status": "FAILED"
+      }
+    },
+    {
+      "name": "download_unreachable_fails",
+      "description": "Download unreachable",
+      "steps": [
+        {
+          "url": "tools://network.transfer/download",
+          "payload": {
+            "options": {
+              "url": "http://127.0.0.1:1/none",
+              "timeout_ms": "1500"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": false,
+        "status": "FAILED"
+      }
+    },
+    {
+      "name": "upload_unreachable_fails",
+      "description": "Upload unreachable",
+      "steps": [
+        {
+          "url": "tools://network.transfer/upload",
+          "payload": {
+            "options": {
+              "url": "http://127.0.0.1:1/none",
+              "content": "x",
+              "timeout_ms": "1500"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": false,
+        "status": "FAILED"
+      }
+    },
+    {
+      "name": "request_unreachable_fails",
+      "description": "Request unreachable",
+      "steps": [
+        {
+          "url": "tools://network.transfer/request",
+          "payload": {
+            "options": {
+              "url": "http://127.0.0.1:1/none",
+              "method": "GET",
+              "timeout_ms": "1500"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": false,
+        "status": "FAILED"
+      }
+    },
+    {
+      "name": "stop_twice_is_safe",
+      "description": "Stop twice",
+      "steps": [
+        {
+          "url": "tools://network.transfer/serve",
+          "payload": {
+            "options": {}
+          }
+        },
+        {
+          "url": "tools://network.transfer/stop",
+          "payload": {
+            "options": {}
+          }
+        },
+        {
+          "url": "tools://network.transfer/stop",
+          "payload": {
+            "options": {}
+          }
+        }
+      ],
+      "expect": {
+        "success": true,
+        "status": "NOT_RUNNING"
+      }
+    }
+  ]
+}

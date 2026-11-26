@@ -1,0 +1,122 @@
+{
+  "_generated": "apps/dev-server/scripts/build-tool-cases.mjs",
+  "_doNotEdit": "Edit apps/dev-server/tests/tools/definitions.ts and rerun `pnpm tool-cases:build`.",
+  "toolId": "u-2-Net.tflite",
+  "slug": "u2net",
+  "doc": "docs/tools/u2net.md",
+  "versionedCapability": "vision.remove_background@1",
+  "usage": "Salient-object segmentation. The U-2-Net weights are not bundled, so every call reports UNSUPPORTED with a reason and produces no mask URI.",
+  "operations": [
+    "segment",
+    "infer",
+    "mask"
+  ],
+  "outputMapping": {
+    "mask_uri": "user.u2net_mask_uri",
+    "confidence": "user.u2net_confidence"
+  },
+  "options": [
+    {
+      "name": "saliency_cutoff",
+      "type": "float",
+      "default": "0.45",
+      "description": "Mask cutoff"
+    },
+    {
+      "name": "image",
+      "type": "string",
+      "description": "Image URI to segment"
+    }
+  ],
+  "results": [
+    {
+      "name": "mask_uri",
+      "type": "string",
+      "description": "Alpha-matte URI (never produced)"
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "description": "UNSUPPORTED"
+    },
+    {
+      "name": "reason",
+      "type": "string",
+      "description": "Why the model is unavailable"
+    }
+  ],
+  "statuses": [
+    {
+      "status": "UNSUPPORTED",
+      "meaning": "Model weights are not bundled"
+    }
+  ],
+  "cardActions": [
+    {
+      "url": "tools://u-2-Net.tflite/segment",
+      "options": {}
+    },
+    {
+      "url": "tools://u-2-Net.tflite/infer",
+      "options": {}
+    },
+    {
+      "url": "tools://u-2-Net.tflite/mask",
+      "options": {}
+    }
+  ],
+  "notCovered": [],
+  "cases": [
+    {
+      "name": "segment_reports_unsupported",
+      "description": "Segment",
+      "host": "none",
+      "steps": [
+        {
+          "url": "tools://u-2-Net.tflite/segment",
+          "payload": {
+            "options": {}
+          }
+        }
+      ],
+      "expect": {
+        "success": false,
+        "status": "NO_INPUT"
+      }
+    },
+    {
+      "name": "infer_reports_unsupported",
+      "description": "Infer",
+      "host": "none",
+      "steps": [
+        {
+          "url": "tools://u-2-Net.tflite/infer",
+          "payload": {
+            "options": {}
+          }
+        }
+      ],
+      "expect": {
+        "success": false,
+        "status": "NO_INPUT"
+      }
+    },
+    {
+      "name": "mask_reports_unsupported",
+      "description": "Mask",
+      "host": "none",
+      "steps": [
+        {
+          "url": "tools://u-2-Net.tflite/mask",
+          "payload": {
+            "options": {}
+          }
+        }
+      ],
+      "expect": {
+        "success": false,
+        "status": "NO_INPUT"
+      }
+    }
+  ]
+}

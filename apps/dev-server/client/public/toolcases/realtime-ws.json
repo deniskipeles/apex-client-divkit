@@ -1,0 +1,202 @@
+{
+  "_generated": "apps/dev-server/scripts/build-tool-cases.mjs",
+  "_doNotEdit": "Edit apps/dev-server/tests/tools/definitions.ts and rerun `pnpm tool-cases:build`.",
+  "toolId": "realtime-ws",
+  "slug": "realtime-ws",
+  "doc": "docs/tools/realtime-ws.md",
+  "versionedCapability": "network.realtime@1",
+  "usage": "Open a websocket channel, subscribe, send a frame and disconnect. Without a reachable server the socket reports a failure rather than pretending to be connected.",
+  "operations": [
+    "connect",
+    "disconnect",
+    "send",
+    "subscribe"
+  ],
+  "outputMapping": {
+    "connection_state": "user.realtime_connection_state",
+    "channel": "user.realtime_channel"
+  },
+  "options": [
+    {
+      "name": "channel",
+      "type": "string",
+      "default": "kitchen_stream",
+      "description": "Channel name"
+    },
+    {
+      "name": "url",
+      "type": "string",
+      "description": "Websocket endpoint"
+    },
+    {
+      "name": "message",
+      "type": "string",
+      "description": "Frame to send"
+    }
+  ],
+  "results": [
+    {
+      "name": "connection_state",
+      "type": "string",
+      "description": "CONNECTED | DISCONNECTED | FAILED"
+    },
+    {
+      "name": "channel",
+      "type": "string",
+      "description": "Channel the call addressed"
+    }
+  ],
+  "statuses": [
+    {
+      "status": "CONNECTED",
+      "meaning": "Socket connected"
+    },
+    {
+      "status": "FAILED",
+      "meaning": "No endpoint reachable"
+    },
+    {
+      "status": "UNSUPPORTED",
+      "meaning": "No websocket host"
+    }
+  ],
+  "cardActions": [
+    {
+      "url": "tools://network.realtime/connect",
+      "options": {
+        "channel": "kitchen_stream",
+        "url": "ws://127.0.0.1:1/stream"
+      }
+    },
+    {
+      "url": "tools://network.realtime/connect",
+      "options": {
+        "channel": "kitchen_stream",
+        "url": "ws://127.0.0.1:1/stream"
+      }
+    },
+    {
+      "url": "tools://network.realtime/subscribe",
+      "options": {
+        "channel": "kitchen_stream"
+      }
+    },
+    {
+      "url": "tools://network.realtime/send",
+      "options": {
+        "channel": "kitchen_stream",
+        "message": "ping"
+      }
+    },
+    {
+      "url": "tools://network.realtime/disconnect",
+      "options": {
+        "channel": "kitchen_stream"
+      }
+    }
+  ],
+  "notCovered": [],
+  "cases": [
+    {
+      "name": "connect_without_transport_fails",
+      "description": "Connect (no transport)",
+      "host": "none",
+      "steps": [
+        {
+          "url": "tools://network.realtime/connect",
+          "payload": {
+            "options": {
+              "channel": "kitchen_stream",
+              "url": "ws://127.0.0.1:1/stream"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": false,
+        "status": "UNSUPPORTED",
+        "errorContains": "no websocket transport"
+      }
+    },
+    {
+      "name": "connect_with_transport_succeeds",
+      "description": "Connect (transport)",
+      "host": "fake",
+      "steps": [
+        {
+          "url": "tools://network.realtime/connect",
+          "payload": {
+            "options": {
+              "channel": "kitchen_stream",
+              "url": "ws://127.0.0.1:1/stream"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": true,
+        "status": "CONNECTED"
+      }
+    },
+    {
+      "name": "subscribe_without_endpoint_fails",
+      "description": "Subscribe (no endpoint)",
+      "host": "none",
+      "steps": [
+        {
+          "url": "tools://network.realtime/subscribe",
+          "payload": {
+            "options": {
+              "channel": "kitchen_stream"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": false,
+        "status": "FAILED",
+        "errorContains": "not connected"
+      }
+    },
+    {
+      "name": "send_without_endpoint_fails",
+      "description": "Send (no endpoint)",
+      "host": "none",
+      "steps": [
+        {
+          "url": "tools://network.realtime/send",
+          "payload": {
+            "options": {
+              "channel": "kitchen_stream",
+              "message": "ping"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": false,
+        "status": "FAILED",
+        "errorContains": "not connected"
+      }
+    },
+    {
+      "name": "disconnect_is_safe",
+      "description": "Disconnect",
+      "host": "none",
+      "steps": [
+        {
+          "url": "tools://network.realtime/disconnect",
+          "payload": {
+            "options": {
+              "channel": "kitchen_stream"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": true,
+        "status": "DISCONNECTED"
+      }
+    }
+  ]
+}

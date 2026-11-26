@@ -23,66 +23,6 @@
     "value": ""
    },
    {
-    "name": "user.haptic_state",
-    "type": "string",
-    "value": "idle"
-   },
-   {
-    "name": "user.beep_state",
-    "type": "string",
-    "value": "idle"
-   },
-   {
-    "name": "user.clipboard_content",
-    "type": "string",
-    "value": ""
-   },
-   {
-    "name": "user.code_image_uri",
-    "type": "string",
-    "value": ""
-   },
-   {
-    "name": "user.code_format",
-    "type": "string",
-    "value": ""
-   },
-   {
-    "name": "user.file_preview",
-    "type": "string",
-    "value": ""
-   },
-   {
-    "name": "user.files_json",
-    "type": "string",
-    "value": "[]"
-   },
-   {
-    "name": "user.net_status",
-    "type": "string",
-    "value": "stopped"
-   },
-   {
-    "name": "user.net_url",
-    "type": "string",
-    "value": ""
-   },
-   {
-    "name": "user.net_shares_json",
-    "type": "string",
-    "value": "[]"
-   },
-   {
-    "name": "user.print_state",
-    "type": "string",
-    "value": "idle"
-   },
-   {
-    "name": "user.screen_state",
-    "type": "string",
-    "value": "idle"
-   },
-   {
     "name": "user.samples_json",
     "type": "string",
     "value": "[]"
@@ -91,6 +31,16 @@
     "name": "user.samples_count",
     "type": "integer",
     "value": 0
+   },
+   {
+    "name": "user.db_result",
+    "type": "string",
+    "value": ""
+   },
+   {
+    "name": "user.chart_json",
+    "type": "string",
+    "value": "[]"
    }
   ],
   "states": [
@@ -181,17 +131,10 @@
           },
           {
            "type": "text",
-           "text": "@{user.tools_result}",
+           "text": "@{user.db_result}",
            "font_size": 14,
            "font_weight": "bold",
            "text_color": "#34D399"
-          },
-          {
-           "type": "inline_banner",
-           "custom_props": {
-            "text": "@{user.tools_error == '' ? 'No errors' : user.tools_error}",
-            "tone": "warn"
-           }
           }
          ],
          "item_spacing": 8,
@@ -219,8 +162,8 @@
            "text": "Insert sample",
            "font_size": 12,
            "font_weight": "bold",
-           "text_color": "#F8FAFC",
-           "background_color": "#16233A",
+           "text_color": "#FFFFFF",
+           "background_color": "#7C3AED",
            "corner_radius": 12,
            "height": {
             "type": "fixed",
@@ -239,18 +182,11 @@
                "note": "inserted from card"
               },
               "output": {
-               "id": "user.tools_result"
+               "id": "user.db_result"
               }
              }
             }
            ],
-           "border": {
-            "corner_radius": 12,
-            "stroke": {
-             "color": "#1E293B",
-             "width": 1
-            }
-           },
            "id": "db_insert"
           },
           {
@@ -330,8 +266,8 @@
            "text": "Delete inserted",
            "font_size": 12,
            "font_weight": "bold",
-           "text_color": "#F8FAFC",
-           "background_color": "#16233A",
+           "text_color": "#FFFFFF",
+           "background_color": "#EF4444",
            "corner_radius": 12,
            "height": {
             "type": "fixed",
@@ -349,18 +285,11 @@
                "note": "inserted from card"
               },
               "output": {
-               "deleted": "user.tools_result"
+               "deleted": "user.db_result"
               }
              }
             }
            ],
-           "border": {
-            "corner_radius": 12,
-            "stroke": {
-             "color": "#1E293B",
-             "width": 1
-            }
-           },
            "id": "db_delete"
           }
          ],

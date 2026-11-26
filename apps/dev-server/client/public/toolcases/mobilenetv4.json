@@ -1,0 +1,133 @@
+{
+  "_generated": "apps/dev-server/scripts/build-tool-cases.mjs",
+  "_doNotEdit": "Edit apps/dev-server/tests/tools/definitions.ts and rerun `pnpm tool-cases:build`.",
+  "toolId": "MobileNetV4-small",
+  "slug": "mobilenetv4",
+  "doc": "docs/tools/mobilenetv4.md",
+  "versionedCapability": "vision.identify_product@1",
+  "usage": "Run the bundled MobileNetV4 ImageNet-1k classifier over a real image. It reports ImageNet labels, never a POS SKU, and refuses when it has no frame.",
+  "operations": [
+    "classify",
+    "detect",
+    "predict"
+  ],
+  "outputMapping": {
+    "prediction_label": "user.ai_prediction_label",
+    "prediction_sku": "user.ai_prediction_sku",
+    "confidence": "user.ai_confidence"
+  },
+  "options": [
+    {
+      "name": "top_k",
+      "type": "int",
+      "default": "3",
+      "description": "Labels to return"
+    },
+    {
+      "name": "min_confidence",
+      "type": "float",
+      "default": "0.40",
+      "description": "Softmax floor"
+    },
+    {
+      "name": "image",
+      "type": "string",
+      "description": "Image URI to classify"
+    }
+  ],
+  "results": [
+    {
+      "name": "prediction_label",
+      "type": "string",
+      "description": "Top ImageNet label"
+    },
+    {
+      "name": "confidence",
+      "type": "number",
+      "description": "Softmax probability"
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "description": "SUCCESS | UNSUPPORTED"
+    }
+  ],
+  "statuses": [
+    {
+      "status": "SUCCESS",
+      "meaning": "Classification produced"
+    },
+    {
+      "status": "UNSUPPORTED",
+      "meaning": "No image and no camera host"
+    }
+  ],
+  "cardActions": [
+    {
+      "url": "tools://MobileNetV4-small/classify",
+      "options": {}
+    },
+    {
+      "url": "tools://MobileNetV4-small/detect",
+      "options": {}
+    },
+    {
+      "url": "tools://MobileNetV4-small/predict",
+      "options": {}
+    }
+  ],
+  "notCovered": [],
+  "cases": [
+    {
+      "name": "classify_without_image_fails_closed",
+      "description": "Classify (no image)",
+      "host": "none",
+      "steps": [
+        {
+          "url": "tools://MobileNetV4-small/classify",
+          "payload": {
+            "options": {}
+          }
+        }
+      ],
+      "expect": {
+        "success": false,
+        "status": "NO_INPUT"
+      }
+    },
+    {
+      "name": "detect_alias_fails_closed",
+      "description": "Detect (no image)",
+      "host": "none",
+      "steps": [
+        {
+          "url": "tools://MobileNetV4-small/detect",
+          "payload": {
+            "options": {}
+          }
+        }
+      ],
+      "expect": {
+        "success": false,
+        "status": "NO_INPUT"
+      }
+    },
+    {
+      "name": "predict_alias_fails_closed",
+      "description": "Predict (no image)",
+      "host": "none",
+      "steps": [
+        {
+          "url": "tools://MobileNetV4-small/predict",
+          "payload": {
+            "options": {}
+          }
+        }
+      ],
+      "expect": {
+        "success": false,
+        "status": "NO_INPUT"
+      }
+    }
+  ]
+}

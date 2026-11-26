@@ -224,26 +224,32 @@ class PrintTool : ToolHandler {
 
     private suspend fun executePrint(args: ToolArgs): ToolResult {
         val address = args["address"] ?: args["mac"] ?: args["device"]
+        val hasContent = listOf("receipt", "text", "lines").any { !args[it].isNullOrBlank() }
+        if (!hasContent) {
+            return ToolResult.Failed(capability, "missing receipt argument — nothing to print")
+        }
         val payload = buildEscPos(args)
 
         val context = currentAndroidContext?.invoke()
         val socket = address?.let { connections[it] }
 
-        if (context == null || socket == null) {
-            return ToolResult.Success(
-                mapOf(
-                    "status" to "SUCCESS",
-                    "mode" to if (context == null) "emulated" else "queued",
-                    "address" to (address ?: ""),
-                    "bytes" to payload.size,
-                    "preview_hex" to payload.take(32).joinToString(" ") { "%02X".format(it) },
-                    "timestamp" to currentTimeMillis()
-                )
+        // Printing is a hardware effect: without an open RFCOMM socket there is no job to
+        // report. Claiming SUCCESS here used to ship a "printed" receipt that never existed.
+        if (socket == null) {
+            return ToolResult.Unsupported(
+                capability,
+                if (context == null) {
+                    "no printer host installed — connect to a Bluetooth printer first"
+                } else {
+                    "no printer connected at ${address ?: "any address"} — call connect first"
+                }
             )
         }
 
-        val denied = missingPermissions(context)
-        if (denied.isNotEmpty()) return ToolResult.PermissionDenied(capability, denied.first())
+        if (context != null) {
+            val denied = missingPermissions(context)
+            if (denied.isNotEmpty()) return ToolResult.PermissionDenied(capability, denied.first())
+        }
 
         withContext(Dispatchers.IO) {
             socket.outputStream.apply {
@@ -290,7 +296,7 @@ class PrintTool : ToolHandler {
     // ESC/POS payload construction
     // ------------------------------------------------------------------
 
-    private fun buildEscPos(args: ToolArgs): ByteArray {
+    internal fun buildEscPos(args: ToolArgs): ByteArray {
         val out = ByteArrayOutputStream()
         out.write(ESC_INIT)
 

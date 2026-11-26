@@ -104,9 +104,10 @@ class CodecTool : ToolHandler {
                 )
             )
         } catch (e: Exception) {
+            // A document that does not parse is a rejected document, not a passing check.
             ToolResult.Success(
                 mapOf(
-                    "status" to "SUCCESS",
+                    "status" to "INVALID",
                     "valid" to false,
                     "error" to (e.message ?: "Invalid JSON")
                 )

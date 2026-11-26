@@ -335,6 +335,7 @@ class BiometricsTool : ToolHandler {
         return ToolResult.Success(
             mapOf(
                 "state" to "ok",
+                "status" to "AUTHORIZED",
                 "authenticated" to true,
                 "role" to requiredRole,
                 "auth_token" to "bio_tok_${UUID.randomUUID().toString().take(10)}",
@@ -393,6 +394,7 @@ class ClipboardTool : ToolHandler {
         return ToolResult.Success(
             mapOf(
                 "state" to "ok",
+                "status" to if (currentClipboard.isEmpty()) "EMPTY" else "SUCCESS",
                 "op" to op,
                 "text" to currentClipboard,
                 "length" to currentClipboard.length
@@ -466,56 +468,86 @@ class PushAlertTool : ToolHandler {
 class OfflineCacheTool : ToolHandler {
     override val capability = "storage.offline_cache@1"
 
+    private companion object {
+        const val DIR = "offline_cache"
+    }
+
     override suspend fun invoke(args: ToolArgs, ctx: ToolContext): ToolResult {
         val op = (args["op"] ?: args["operation"] ?: "get_stats").lowercase()
         val schemaId = args["schema_id"] ?: ctx.workspaceId
-        val androidContext = engine.db.currentAndroidContext?.invoke()
+        val context = engine.db.currentAndroidContext?.invoke()
+            ?: return ToolResult.Unsupported(capability, "no storage host installed for the offline cache")
 
-        var cachedPages = 2
-        var cacheSizeKb = 84
+        val dir = java.io.File(context.filesDir, DIR).apply { mkdirs() }
+        val store = java.io.File(dir, "$schemaId.json")
 
-        if (androidContext != null) {
-            try {
-                val dbFile = androidContext.getDatabasePath("workspace_${schemaId}.db")
-                if (dbFile.exists()) {
-                    val driver = engine.db.WorkspaceDriverFactory(androidContext).create(schemaId)
-                    val db = engine.db.WorkspaceDatabase(driver)
-                    val versions = db.workspaceQueries.selectAllSchemaVersions()
-                    cachedPages = versions.size
-                    cacheSizeKb = (versions.sumOf { it.verifiedPayload.toByteArray(Charsets.UTF_8).size } / 1024).coerceAtLeast(1)
-
-                    if (op == "clear") {
-                        val active = db.workspaceQueries.selectActiveSchemaVersion()
-                        if (active != null) {
-                            cachedPages = 1
-                            cacheSizeKb = (active.verifiedPayload.toByteArray(Charsets.UTF_8).size / 1024).coerceAtLeast(1)
-                        }
-                    }
-                    driver.close()
-                }
-            } catch (_: Exception) {
-                cachedPages = 2
-                cacheSizeKb = 84
+        val entries = readEntries(store)
+        return when (op) {
+            "cache", "put", "store" -> {
+                val key = args["key"] ?: args["url"] ?: args["path"]
+                    ?: return ToolResult.Failed(capability, "missing key argument")
+                val content = args["content"] ?: args["body"] ?: args["text"]
+                    ?: return ToolResult.Failed(capability, "missing content argument")
+                entries[key] = mapOf("content" to content, "saved_at" to System.currentTimeMillis())
+                writeEntries(store, entries)
+                success(op, schemaId, entries, "CACHED_OFFLINE_READY")
             }
+            "clear", "evict" -> {
+                store.delete()
+                success(op, schemaId, emptyMap(), "CACHE_CLEARED")
+            }
+            "get_stats", "stats", "status" -> success(op, schemaId, entries, "CACHED_OFFLINE_READY")
+            else -> ToolResult.Failed(capability, "Unsupported offline cache operation '$op'")
         }
+    }
 
-        val status = when (op) {
-            "clear" -> "CACHE_CLEARED"
-            "cache" -> "CACHED_OFFLINE_READY"
-            else -> "CACHED_OFFLINE_READY"
-        }
-
+    private fun success(
+        op: String,
+        schemaId: String,
+        entries: Map<String, Map<String, Any?>>,
+        status: String
+    ): ToolResult {
+        val bytes = entries.values.sumOf { (it["content"] as? String)?.toByteArray(Charsets.UTF_8)?.size ?: 0 }
         return ToolResult.Success(
             mapOf(
                 "state" to "ok",
                 "op" to op,
                 "schema_id" to schemaId,
-                "cached_pages" to cachedPages,
-                "cache_size_kb" to cacheSizeKb,
-                "status" to status,
-                "offline_resilience" to "ACTIVE"
+                "cached_pages" to entries.size,
+                "cache_size_kb" to if (bytes == 0) 0 else (bytes + 1023) / 1024,
+                "keys" to entries.keys.toList(),
+                "status" to status
             )
         )
+    }
+
+    private fun readEntries(store: java.io.File): MutableMap<String, Map<String, Any?>> {
+        if (!store.exists()) return mutableMapOf()
+        return try {
+            val root = kotlinx.serialization.json.Json.parseToJsonElement(store.readText())
+            val obj = root as? kotlinx.serialization.json.JsonObject ?: return mutableMapOf()
+            obj.entries.associate { (key, value) ->
+                val page = value as? kotlinx.serialization.json.JsonObject
+                key to mapOf<String, Any?>(
+                    "content" to (page?.get("content") as? kotlinx.serialization.json.JsonPrimitive)?.content,
+                    "saved_at" to (page?.get("saved_at") as? kotlinx.serialization.json.JsonPrimitive)?.content?.toLongOrNull()
+                )
+            }.toMutableMap()
+        } catch (_: Exception) {
+            mutableMapOf()
+        }
+    }
+
+    private fun writeEntries(store: java.io.File, entries: Map<String, Map<String, Any?>>) {
+        val root = kotlinx.serialization.json.buildJsonObject {
+            entries.forEach { (key, page) ->
+                put(key, kotlinx.serialization.json.buildJsonObject {
+                    put("content", kotlinx.serialization.json.JsonPrimitive(page["content"] as? String ?: ""))
+                    put("saved_at", kotlinx.serialization.json.JsonPrimitive((page["saved_at"] as? Long) ?: 0L))
+                })
+            }
+        }
+        store.writeText(root.toString())
     }
 }
 
@@ -528,49 +560,87 @@ class RealtimeWsTool : ToolHandler {
     companion object {
         private val channelStates = java.util.concurrent.ConcurrentHashMap<String, String>()
         private val lastMessages = java.util.concurrent.ConcurrentHashMap<String, String>()
+
+        /**
+         * Installed by a host that can actually open a socket. Without it the tool cannot
+         * claim a connection: `connect` reports UNSUPPORTED instead of flipping a flag.
+         */
+        var transport: ((channel: String, url: String) -> Boolean)? = null
+
+        fun resetForTest() {
+            channelStates.clear()
+            lastMessages.clear()
+            transport = null
+        }
     }
 
     override suspend fun invoke(args: ToolArgs, ctx: ToolContext): ToolResult {
         val op = (args["op"] ?: args["operation"] ?: "connect").lowercase()
         val channel = args["channel"] ?: "kitchen_stream"
         val message = args["message"] ?: "ping"
+        val url = args["url"] ?: args["endpoint"] ?: args["target"]
         val channelKey = "${ctx.workspaceId}:$channel"
 
-        val connectionState = when (op) {
+        val state = when (op) {
             "connect" -> {
-                channelStates[channelKey] = "CONNECTED"
-                "CONNECTED"
+                val opener = transport ?: return ToolResult.Unsupported(
+                    capability,
+                    "no websocket transport installed — this build has no realtime socket"
+                )
+                val endpoint = url ?: return ToolResult.Failed(
+                    capability,
+                    "missing url argument — connect needs a ws:// endpoint"
+                )
+                val opened = try {
+                    opener(channel, endpoint)
+                } catch (error: Exception) {
+                    false
+                }
+                val next = if (opened) "CONNECTED" else "FAILED"
+                channelStates[channelKey] = next
+                next
             }
-            "disconnect" -> {
+            "disconnect", "close" -> {
                 channelStates[channelKey] = "DISCONNECTED"
                 "DISCONNECTED"
             }
-            "send" -> {
+            "send", "publish" -> {
+                if (channelStates[channelKey] != "CONNECTED") {
+                    return failedNotConnected(channel)
+                }
                 lastMessages[channelKey] = message
-                channelStates.getOrDefault(channelKey, "CONNECTED")
+                "CONNECTED"
             }
-            "subscribe" -> {
-                channelStates.getOrDefault(channelKey, "CONNECTED")
+            "subscribe", "join" -> {
+                if (channelStates[channelKey] != "CONNECTED") {
+                    return failedNotConnected(channel)
+                }
+                "CONNECTED"
             }
-            else -> channelStates.getOrDefault(channelKey, "CONNECTED")
+            "status", "state" -> channelStates.getOrDefault(channelKey, "DISCONNECTED")
+            else -> return ToolResult.Failed(capability, "Unsupported realtime operation '$op'")
         }
 
-        val lastMessage = lastMessages[channelKey] ?: message
-
-        EngineStateBridge.pushUpdate("user.realtime_connection_state", DivVariableValue.Str(connectionState))
+        EngineStateBridge.pushUpdate("user.realtime_connection_state", DivVariableValue.Str(state))
         EngineStateBridge.pushUpdate("user.realtime_channel", DivVariableValue.Str(channel))
+
+        if (state == "FAILED") {
+            return ToolResult.Failed(capability, "could not open websocket channel $channel")
+        }
 
         return ToolResult.Success(
             mapOf(
                 "state" to "ok",
                 "op" to op,
                 "channel" to channel,
-                "connection_state" to connectionState,
-                "protocol" to "WSS_SSE_HYBRID",
-                "latency_ms" to (if (connectionState == "CONNECTED") 4L else 0L),
-                "last_message" to lastMessage,
-                "status" to connectionState
+                "connection_state" to state,
+                "last_message" to (lastMessages[channelKey] ?: ""),
+                "status" to state
             )
         )
     }
+
+    private fun failedNotConnected(channel: String): ToolResult =
+        ToolResult.Failed(capability, "channel $channel is not connected — connect first")
 }
+

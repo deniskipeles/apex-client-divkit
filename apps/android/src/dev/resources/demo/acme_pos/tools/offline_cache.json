@@ -1,102 +1,104 @@
 {
-    "type": "container",
-    "orientation": "vertical",
-    "background_color": "#1C1917",
+  "type": "container",
+  "orientation": "vertical",
+  "background_color": "#1C1917",
+  "corner_radius": 12,
+  "paddings": {
+    "left": 12,
+    "right": 12,
+    "top": 10,
+    "bottom": 10
+  },
+  "border": {
     "corner_radius": 12,
-    "paddings": {
-        "left": 12,
-        "right": 12,
-        "top": 10,
-        "bottom": 10
+    "stroke": {
+      "color": "#A8A29E",
+      "width": 1
+    }
+  },
+  "items": [
+    {
+      "type": "text",
+      "text": "💾 OFFLINE PAGE & SCHEMA CACHE (tools://offline-cache)",
+      "font_size": 11,
+      "font_weight": "bold",
+      "text_color": "#D6D3D1"
     },
-    "border": {
-        "corner_radius": 12,
-        "stroke": {
-            "color": "#A8A29E",
-            "width": 1
-        }
+    {
+      "type": "text",
+      "text": "Status: @{user.offline_cache_status} • Cached Pages: @{user.offline_cached_pages}",
+      "font_size": 12,
+      "text_color": "#FAFAF9",
+      "font_family": "monospace"
     },
-    "items": [
+    {
+      "type": "container",
+      "orientation": "horizontal",
+      "item_spacing": 8,
+      "items": [
         {
-            "type": "text",
-            "text": "💾 OFFLINE PAGE & SCHEMA CACHE (tools://offline-cache)",
-            "font_size": 11,
-            "font_weight": "bold",
-            "text_color": "#D6D3D1"
-        },
-        {
-            "type": "text",
-            "text": "Status: @{user.offline_cache_status} • Cached Pages: @{user.offline_cached_pages}",
-            "font_size": 12,
-            "text_color": "#FAFAF9",
-            "font_family": "monospace"
-        },
-        {
-            "type": "container",
-            "orientation": "horizontal",
-            "item_spacing": 8,
-            "items": [
-                {
-                    "type": "container",
-                    "weight": 1.0,
-                    "items": [
-                        {
-                            "type": "button",
-                            "id": "tool_offline-cache_cache",
-                            "text": "Cache Card",
-                            "subtitle": "tools://offline-cache/cache",
-                            "icon": "cloud",
-                            "background_color": "#57534E",
-                            "text_color": "#FFFFFF",
-                            "corner_radius": 10,
-                            "action": {
-                                "log_id": "exec_tool_offline-cache_cache",
-                                "url": "tools://offline-cache/cache",
-                                "payload": {
-                                    "operation": "cache",
-                                    "options": {
-                                        "op": "cache"
-                                    },
-                                    "output": {
-                                        "status": "user.offline_cache_status",
-                                        "cached_pages": "user.offline_cached_pages"
-                                    }
-                                }
-                            }
-                        }
-                    ]
-                },
-                {
-                    "type": "container",
-                    "weight": 1.0,
-                    "items": [
-                        {
-                            "type": "button",
-                            "id": "tool_offline-cache_get_stats",
-                            "text": "Cache Stats",
-                            "subtitle": "tools://offline-cache/get_stats",
-                            "icon": "stock",
-                            "background_color": "#44403C",
-                            "text_color": "#FFFFFF",
-                            "corner_radius": 10,
-                            "action": {
-                                "log_id": "exec_tool_offline-cache_get_stats",
-                                "url": "tools://offline-cache/get_stats",
-                                "payload": {
-                                    "operation": "get_stats",
-                                    "options": {
-                                        "op": "get_stats"
-                                    },
-                                    "output": {
-                                        "status": "user.offline_cache_status",
-                                        "cached_pages": "user.offline_cached_pages"
-                                    }
-                                }
-                            }
-                        }
-                    ]
+          "type": "container",
+          "weight": 1.0,
+          "items": [
+            {
+              "type": "button",
+              "id": "tool_offline-cache_cache",
+              "text": "Cache Card",
+              "subtitle": "tools://offline-cache/cache",
+              "icon": "cloud",
+              "background_color": "#57534E",
+              "text_color": "#FFFFFF",
+              "corner_radius": 10,
+              "action": {
+                "log_id": "exec_tool_offline-cache_cache",
+                "url": "tools://offline-cache/cache",
+                "payload": {
+                  "operation": "cache",
+                  "options": {
+                    "op": "cache",
+                    "key": "catalog-page",
+                    "content": "{\"items\":[\"Coffee\",\"Bagel\"]}"
+                  },
+                  "output": {
+                    "status": "user.offline_cache_status",
+                    "cached_pages": "user.offline_cached_pages"
+                  }
                 }
-            ]
+              }
+            }
+          ]
+        },
+        {
+          "type": "container",
+          "weight": 1.0,
+          "items": [
+            {
+              "type": "button",
+              "id": "tool_offline-cache_get_stats",
+              "text": "Cache Stats",
+              "subtitle": "tools://offline-cache/get_stats",
+              "icon": "stock",
+              "background_color": "#44403C",
+              "text_color": "#FFFFFF",
+              "corner_radius": 10,
+              "action": {
+                "log_id": "exec_tool_offline-cache_get_stats",
+                "url": "tools://offline-cache/get_stats",
+                "payload": {
+                  "operation": "get_stats",
+                  "options": {
+                    "op": "get_stats"
+                  },
+                  "output": {
+                    "status": "user.offline_cache_status",
+                    "cached_pages": "user.offline_cached_pages"
+                  }
+                }
+              }
+            }
+          ]
         }
-    ]
+      ]
+    }
+  ]
 }

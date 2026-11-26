@@ -168,3 +168,19 @@ it is a failed tool call, not silent corruption.
 - Chunk envelopes are generic. They do not contain a schema version or business meaning;
   callers that need one should include it inside the JSON payload.
 - The tool is pure Kotlin and runs on plain JVM tests.
+
+## Conformance cases
+
+Contract: `apps/dev-server/tests/tools/definitions.ts` (`toolId: codec`).
+
+- `json/validate` on a document that does not parse returns `status: INVALID`,
+  `valid: false` and the parser message. It previously reported `SUCCESS` with
+  `valid: false`, so a caller reading only the status was told the document was fine.
+  `INVALID` is listed in `NativeToolsSuite.FAILURE_STATUSES`, so `success` is `false`.
+- `json/extract` takes `paths` as an array at the payload root (flat `options` values can
+  only carry strings) and reports `count`/`missing`.
+- `json/stringify` takes `keys` + `values` arrays, or a `json`/`text` document.
+- `json/chunk` emits `C1|<transfer>|<index>|<total>|<checksum>|<payload>` envelopes;
+  `json/assemble` accepts them in any order, reports `PARTIAL` with `missing` indices when
+  one is absent, and `FAILED` with `checksum_ok: false` when a chunk is corrupt. Duplicate
+  indices never complete a set.

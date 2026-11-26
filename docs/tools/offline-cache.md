@@ -88,3 +88,24 @@ Default output mapping: `status → user.offline_cache_status`,
   }
 }
 ```
+
+## Conformance cases
+
+Contract: `apps/dev-server/tests/tools/definitions.ts` (`toolId: offline-cache`).
+Run `pnpm toolcases:check` for the table and `./gradlew testDevDebugUnitTest` for the
+on-device suite.
+
+The cache is a real JSON store under the app's files directory
+(`files/offline_cache/<schema_id>.json`), not a fixed statistic:
+
+| op | required args | status |
+| :--- | :--- | :--- |
+| `cache` | `key`, `content` | `CACHED_OFFLINE_READY` |
+| `get_stats` | — | `CACHED_OFFLINE_READY` with the live `cached_pages`/`keys` |
+| `clear` | — | `CACHE_CLEARED`, then `get_stats` reports `cached_pages: 0` |
+
+`cached_pages` is the number of stored entries and `cache_size_kb` is derived from their
+byte length. Without an Android storage host the tool returns `UNSUPPORTED`; it never
+invents a page count. The demo button that shipped `tools://offline-cache/cache` without a
+`key` was fixed at the same time — `demoCards_supplyTheArgumentsTheirToolsRequire` fails on
+that class of bug.

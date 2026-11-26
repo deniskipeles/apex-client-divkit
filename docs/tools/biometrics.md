@@ -88,3 +88,17 @@ On failure the tool returns a `Failed` result (`"Supervisor authentication faile
   }
 }
 ```
+
+## Conformance cases
+
+Contract: `apps/dev-server/tests/tools/definitions.ts` (`toolId: biometrics`).
+
+| situation | status |
+| :--- | :--- |
+| no host installed | `UNSUPPORTED`, supervisor identity unverified |
+| host returns null / prompt cancelled | `UNSUPPORTED` |
+| host denies | `FAILED`, `Supervisor authentication was cancelled or denied` |
+| host verifies | `AUTHORIZED` with `authenticated: true` and an `auth_token` |
+
+The success path gained the `AUTHORIZED` status so a card can map it like every other
+capability. Denial remains a failure: nothing authorises a supervisor implicitly.

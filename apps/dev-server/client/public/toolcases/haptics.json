@@ -1,0 +1,317 @@
+{
+  "_generated": "apps/dev-server/scripts/build-tool-cases.mjs",
+  "_doNotEdit": "Edit apps/dev-server/tests/tools/definitions.ts and rerun `pnpm tool-cases:build`.",
+  "toolId": "haptics",
+  "slug": "haptics",
+  "doc": "docs/tools/haptics.md",
+  "versionedCapability": "device.haptics@1",
+  "usage": "Drive the vibration actuator with semantic impacts, one-shot timings or a W3C waveform.",
+  "operations": [
+    "perform",
+    "vibrate",
+    "click",
+    "heavy",
+    "tick",
+    "success",
+    "warning",
+    "error",
+    "stop",
+    "status"
+  ],
+  "outputMapping": {
+    "status": "user.haptics_status",
+    "pattern": "user.haptics_pattern"
+  },
+  "options": [
+    {
+      "name": "pattern",
+      "type": "string",
+      "default": "click",
+      "description": "click | heavy | tick | success | warning | error"
+    },
+    {
+      "name": "duration_ms",
+      "type": "int",
+      "default": "20",
+      "description": "One-shot duration"
+    },
+    {
+      "name": "amplitude",
+      "type": "int",
+      "default": "180",
+      "description": "0-255 actuator amplitude"
+    }
+  ],
+  "results": [
+    {
+      "name": "status",
+      "type": "string",
+      "description": "SUCCESS | CANCELLED | READY"
+    },
+    {
+      "name": "pattern",
+      "type": "string",
+      "description": "Pattern that played"
+    }
+  ],
+  "statuses": [
+    {
+      "status": "SUCCESS",
+      "meaning": "Pattern played"
+    },
+    {
+      "status": "CANCELLED",
+      "meaning": "Actuator stopped by stop"
+    },
+    {
+      "status": "READY",
+      "meaning": "Status probe"
+    }
+  ],
+  "cardActions": [
+    {
+      "url": "tools://device.haptics/click",
+      "options": {
+        "duration_ms": "20"
+      }
+    },
+    {
+      "url": "tools://device.haptics/heavy",
+      "options": {}
+    },
+    {
+      "url": "tools://device.haptics/vibrate",
+      "options": {
+        "duration_ms": "40",
+        "amplitude": "200"
+      }
+    },
+    {
+      "url": "tools://device.haptics/stop",
+      "options": {}
+    },
+    {
+      "url": "tools://device.haptics/status",
+      "options": {}
+    },
+    {
+      "url": "tools://device.haptics/perform",
+      "options": {
+        "pattern": "success"
+      }
+    },
+    {
+      "url": "tools://device.haptics/tick",
+      "options": {}
+    },
+    {
+      "url": "tools://device.haptics/success",
+      "options": {}
+    },
+    {
+      "url": "tools://device.haptics/warning",
+      "options": {}
+    },
+    {
+      "url": "tools://device.haptics/error",
+      "options": {}
+    },
+    {
+      "url": "tools://device.haptics/click",
+      "options": {
+        "duration_ms": "10"
+      }
+    }
+  ],
+  "notCovered": [],
+  "cases": [
+    {
+      "name": "click_plays",
+      "description": "Click",
+      "steps": [
+        {
+          "url": "tools://device.haptics/click",
+          "payload": {
+            "options": {
+              "duration_ms": "20"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": true,
+        "status": "SUCCESS"
+      }
+    },
+    {
+      "name": "heavy_plays",
+      "description": "Heavy impact",
+      "steps": [
+        {
+          "url": "tools://device.haptics/heavy",
+          "payload": {
+            "options": {}
+          }
+        }
+      ],
+      "expect": {
+        "success": true,
+        "status": "SUCCESS"
+      }
+    },
+    {
+      "name": "vibrate_one_shot",
+      "description": "Vibrate 40ms",
+      "steps": [
+        {
+          "url": "tools://device.haptics/vibrate",
+          "payload": {
+            "options": {
+              "duration_ms": "40",
+              "amplitude": "200"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": true,
+        "status": "SUCCESS"
+      }
+    },
+    {
+      "name": "stop_cancels",
+      "description": "Stop",
+      "steps": [
+        {
+          "url": "tools://device.haptics/stop",
+          "payload": {
+            "options": {}
+          }
+        }
+      ],
+      "expect": {
+        "success": true,
+        "status": "CANCELLED"
+      }
+    },
+    {
+      "name": "status_reports_ready",
+      "description": "Status",
+      "steps": [
+        {
+          "url": "tools://device.haptics/status",
+          "payload": {
+            "options": {}
+          }
+        }
+      ],
+      "expect": {
+        "success": true,
+        "status": "READY"
+      }
+    },
+    {
+      "name": "perform_pattern",
+      "description": "Perform",
+      "steps": [
+        {
+          "url": "tools://device.haptics/perform",
+          "payload": {
+            "options": {
+              "pattern": "success"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": true,
+        "status": "SUCCESS"
+      }
+    },
+    {
+      "name": "tick_plays",
+      "description": "Tick",
+      "steps": [
+        {
+          "url": "tools://device.haptics/tick",
+          "payload": {
+            "options": {}
+          }
+        }
+      ],
+      "expect": {
+        "success": true,
+        "status": "SUCCESS"
+      }
+    },
+    {
+      "name": "success_plays",
+      "description": "Success",
+      "steps": [
+        {
+          "url": "tools://device.haptics/success",
+          "payload": {
+            "options": {}
+          }
+        }
+      ],
+      "expect": {
+        "success": true,
+        "status": "SUCCESS"
+      }
+    },
+    {
+      "name": "warning_plays",
+      "description": "Warning",
+      "steps": [
+        {
+          "url": "tools://device.haptics/warning",
+          "payload": {
+            "options": {}
+          }
+        }
+      ],
+      "expect": {
+        "success": true,
+        "status": "SUCCESS"
+      }
+    },
+    {
+      "name": "error_plays",
+      "description": "Error",
+      "steps": [
+        {
+          "url": "tools://device.haptics/error",
+          "payload": {
+            "options": {}
+          }
+        }
+      ],
+      "expect": {
+        "success": true,
+        "status": "SUCCESS"
+      }
+    },
+    {
+      "name": "repeat_is_stable",
+      "description": "Repeat click",
+      "stress": {
+        "repeat": 5
+      },
+      "steps": [
+        {
+          "url": "tools://device.haptics/click",
+          "payload": {
+            "options": {
+              "duration_ms": "10"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": true,
+        "status": "SUCCESS"
+      }
+    }
+  ]
+}

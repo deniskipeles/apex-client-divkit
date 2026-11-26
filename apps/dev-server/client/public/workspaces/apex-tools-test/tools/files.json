@@ -1,16 +1,11 @@
 {
  "card": {
-  "log_id": "apex_tools_test_files",
+  "log_id": "apex_tool_files",
   "variables": [
-   {
-    "name": "user.workspace_title",
-    "type": "string",
-    "value": "APEX TOOLS"
-   },
    {
     "name": "user.tools_status",
     "type": "string",
-    "value": "Idle"
+    "value": ""
    },
    {
     "name": "user.tools_result",
@@ -23,74 +18,19 @@
     "value": ""
    },
    {
-    "name": "user.haptic_state",
-    "type": "string",
-    "value": "idle"
-   },
-   {
-    "name": "user.beep_state",
-    "type": "string",
-    "value": "idle"
-   },
-   {
-    "name": "user.clipboard_content",
+    "name": "user.files_last_uri",
     "type": "string",
     "value": ""
    },
    {
-    "name": "user.code_image_uri",
+    "name": "user.files_last_path",
     "type": "string",
     "value": ""
    },
    {
-    "name": "user.code_format",
+    "name": "user.files_status",
     "type": "string",
     "value": ""
-   },
-   {
-    "name": "user.file_preview",
-    "type": "string",
-    "value": ""
-   },
-   {
-    "name": "user.files_json",
-    "type": "string",
-    "value": "[]"
-   },
-   {
-    "name": "user.net_status",
-    "type": "string",
-    "value": "stopped"
-   },
-   {
-    "name": "user.net_url",
-    "type": "string",
-    "value": ""
-   },
-   {
-    "name": "user.net_shares_json",
-    "type": "string",
-    "value": "[]"
-   },
-   {
-    "name": "user.print_state",
-    "type": "string",
-    "value": "idle"
-   },
-   {
-    "name": "user.screen_state",
-    "type": "string",
-    "value": "idle"
-   },
-   {
-    "name": "user.samples_json",
-    "type": "string",
-    "value": "[]"
-   },
-   {
-    "name": "user.samples_count",
-    "type": "integer",
-    "value": 0
    }
   ],
   "states": [
@@ -140,14 +80,14 @@
          "items": [
           {
            "type": "text",
-           "text": "Files and screen",
+           "text": "files",
            "font_size": 18,
            "font_weight": "bold",
            "text_color": "#F8FAFC"
           },
           {
            "type": "text",
-           "text": "Workspace sandbox files and screen capture",
+           "text": "Read and write files inside the workspace sandbox: write, read, append, copy, move, list, info, delete, mkdir, exists, uri.",
            "font_size": 12,
            "font_weight": "regular",
            "text_color": "#94A3B8"
@@ -171,83 +111,45 @@
         {
          "type": "container",
          "orientation": "vertical",
+         "item_spacing": 4,
+         "paddings": {
+          "left": 12,
+          "top": 8,
+          "right": 12,
+          "bottom": 8
+         },
+         "background_color": "#16233A",
+         "border": {
+          "corner_radius": 12,
+          "stroke": {
+           "color": "#1E293B",
+           "width": 1
+          }
+         },
          "items": [
           {
            "type": "text",
-           "text": "File preview",
+           "text": "Status",
            "font_size": 11,
            "font_weight": "bold",
            "text_color": "#94A3B8"
           },
           {
            "type": "text",
-           "text": "@{user.file_preview == '' ? 'no file yet' : user.file_preview}",
-           "font_size": 14,
+           "text": "@{user.tools_status}",
+           "font_size": 18,
            "font_weight": "bold",
            "text_color": "#34D399"
-          },
-          {
-           "type": "inline_banner",
-           "custom_props": {
-            "text": "@{user.tools_error == '' ? 'No errors' : user.tools_error}",
-            "tone": "warn"
-           }
           }
          ],
-         "item_spacing": 8,
-         "background_color": "#111C2E",
-         "paddings": {
-          "left": 12,
-          "top": 12,
-          "right": 12,
-          "bottom": 12
-         },
-         "border": {
-          "corner_radius": 16,
-          "stroke": {
-           "color": "#1E293B",
-           "width": 1
-          }
-         }
+         "id": "metric_status"
         },
         {
-         "type": "json_list",
-         "data_var": "user.files_json",
-         "empty_text": "No files in the sandbox",
-         "row_card": {
-          "type": "container",
-          "orientation": "horizontal",
-          "items": [
-           {
-            "type": "text",
-            "text": "@{item.name}",
-            "font_size": 12,
-            "font_weight": "regular",
-            "text_color": "#F8FAFC",
-            "width": {
-             "type": "match_parent"
-            }
-           },
-           {
-            "type": "text",
-            "text": "@{item.bytes} B",
-            "font_size": 11,
-            "font_weight": "regular",
-            "text_color": "#94A3B8"
-           }
-          ],
-          "background_color": "#16233A",
-          "paddings": {
-           "left": 8,
-           "top": 8,
-           "right": 8,
-           "bottom": 8
-          },
-          "border": {
-           "corner_radius": 12
-          }
-         },
-         "id": "files_list"
+         "type": "inline_banner",
+         "custom_props": {
+          "text": "@{user.tools_error == '' ? 'No errors' : user.tools_error}",
+          "tone": "warn"
+         }
         },
         {
          "type": "container",
@@ -255,46 +157,39 @@
          "items": [
           {
            "type": "button",
-           "text": "Write file",
+           "text": "Write then read · 1/2",
            "font_size": 12,
            "font_weight": "bold",
-           "text_color": "#F8FAFC",
-           "background_color": "#16233A",
+           "text_color": "#FFFFFF",
+           "background_color": "#7C3AED",
            "corner_radius": 12,
            "height": {
             "type": "fixed",
-            "value": 44
+            "value": 40
            },
            "width": {
             "type": "match_parent"
            },
            "actions": [
             {
-             "url": "tools://files/write",
+             "url": "tools://storage.files/write",
              "payload": {
               "options": {
-               "path": "notes/probe.txt",
-               "content": "APEX TOOLS PROBE"
+               "path": "notes/hello.txt",
+               "content": "apex conformance"
               },
               "output": {
-               "path": "user.file_path",
-               "bytes": "user.file_bytes"
+               "status": "user.tools_status"
               }
              }
             }
            ],
-           "border": {
-            "corner_radius": 12,
-            "stroke": {
-             "color": "#1E293B",
-             "width": 1
-            }
-           },
-           "id": "files_write"
+           "id": "tool_files_write_read_round_trip",
+           "content_description": "files write"
           },
           {
            "type": "button",
-           "text": "Read file",
+           "text": "Append · 1/3",
            "font_size": 12,
            "font_weight": "bold",
            "text_color": "#F8FAFC",
@@ -302,92 +197,18 @@
            "corner_radius": 12,
            "height": {
             "type": "fixed",
-            "value": 44
+            "value": 40
            },
            "width": {
             "type": "match_parent"
            },
            "actions": [
             {
-             "url": "tools://files/read",
+             "url": "tools://storage.files/write",
              "payload": {
               "options": {
-               "path": "notes/probe.txt"
-              },
-              "output": {
-               "text": "user.file_preview",
-               "path": "user.file_path"
-              }
-             }
-            }
-           ],
-           "border": {
-            "corner_radius": 12,
-            "stroke": {
-             "color": "#1E293B",
-             "width": 1
-            }
-           },
-           "id": "files_read"
-          },
-          {
-           "type": "button",
-           "text": "List files",
-           "font_size": 12,
-           "font_weight": "bold",
-           "text_color": "#F8FAFC",
-           "background_color": "#16233A",
-           "corner_radius": 12,
-           "height": {
-            "type": "fixed",
-            "value": 44
-           },
-           "width": {
-            "type": "match_parent"
-           },
-           "actions": [
-            {
-             "url": "tools://files/list",
-             "payload": {
-              "options": {
-               "path": "notes"
-              },
-              "output": {
-               "_json": "user.files_json"
-              }
-             }
-            }
-           ],
-           "border": {
-            "corner_radius": 12,
-            "stroke": {
-             "color": "#1E293B",
-             "width": 1
-            }
-           },
-           "id": "files_list"
-          },
-          {
-           "type": "button",
-           "text": "Delete file",
-           "font_size": 12,
-           "font_weight": "bold",
-           "text_color": "#F8FAFC",
-           "background_color": "#16233A",
-           "corner_radius": 12,
-           "height": {
-            "type": "fixed",
-            "value": 44
-           },
-           "width": {
-            "type": "match_parent"
-           },
-           "actions": [
-            {
-             "url": "tools://files/delete",
-             "payload": {
-              "options": {
-               "path": "notes/probe.txt"
+               "path": "notes/append.txt",
+               "content": "one"
               },
               "output": {
                "status": "user.tools_status"
@@ -402,48 +223,44 @@
              "width": 1
             }
            },
-           "id": "files_delete"
+           "id": "tool_files_append_extends",
+           "content_description": "files write"
           },
           {
            "type": "button",
-           "text": "Keep awake",
+           "text": "Copy then move · 1/4",
            "font_size": 12,
            "font_weight": "bold",
-           "text_color": "#F8FAFC",
-           "background_color": "#16233A",
+           "text_color": "#FFFFFF",
+           "background_color": "#7C3AED",
            "corner_radius": 12,
            "height": {
             "type": "fixed",
-            "value": 44
+            "value": 40
            },
            "width": {
             "type": "match_parent"
            },
            "actions": [
             {
-             "url": "tools://screen/keep_awake",
+             "url": "tools://storage.files/write",
              "payload": {
               "options": {
-               "enabled": "true"
+               "path": "notes/src.txt",
+               "content": "payload"
               },
               "output": {
-               "status": "user.screen_state"
+               "status": "user.tools_status"
               }
              }
             }
            ],
-           "border": {
-            "corner_radius": 12,
-            "stroke": {
-             "color": "#1E293B",
-             "width": 1
-            }
-           },
-           "id": "screen_awake"
+           "id": "tool_files_copy_then_move",
+           "content_description": "files write"
           },
           {
            "type": "button",
-           "text": "Screenshot",
+           "text": "List then info · 1/3",
            "font_size": 12,
            "font_weight": "bold",
            "text_color": "#F8FAFC",
@@ -451,18 +268,20 @@
            "corner_radius": 12,
            "height": {
             "type": "fixed",
-            "value": 44
+            "value": 40
            },
            "width": {
             "type": "match_parent"
            },
            "actions": [
             {
-             "url": "tools://screen/screenshot",
+             "url": "tools://storage.files/mkdir",
              "payload": {
+              "options": {
+               "path": "notes"
+              },
               "output": {
-               "uri": "user.screen_uri",
-               "status": "user.screen_state"
+               "status": "user.tools_status"
               }
              }
             }
@@ -474,11 +293,44 @@
              "width": 1
             }
            },
-           "id": "screen_shot"
+           "id": "tool_files_list_and_info",
+           "content_description": "files mkdir"
           },
           {
            "type": "button",
-           "text": "Start recording",
+           "text": "Delete · 1/3",
+           "font_size": 12,
+           "font_weight": "bold",
+           "text_color": "#FFFFFF",
+           "background_color": "#7C3AED",
+           "corner_radius": 12,
+           "height": {
+            "type": "fixed",
+            "value": 40
+           },
+           "width": {
+            "type": "match_parent"
+           },
+           "actions": [
+            {
+             "url": "tools://storage.files/write",
+             "payload": {
+              "options": {
+               "path": "notes/gone.txt",
+               "content": "x"
+              },
+              "output": {
+               "status": "user.tools_status"
+              }
+             }
+            }
+           ],
+           "id": "tool_files_delete_removes",
+           "content_description": "files write"
+          },
+          {
+           "type": "button",
+           "text": "File URI · 1/2",
            "font_size": 12,
            "font_weight": "bold",
            "text_color": "#F8FAFC",
@@ -486,17 +338,21 @@
            "corner_radius": 12,
            "height": {
             "type": "fixed",
-            "value": 44
+            "value": 40
            },
            "width": {
             "type": "match_parent"
            },
            "actions": [
             {
-             "url": "tools://screen/record_start",
+             "url": "tools://storage.files/write",
              "payload": {
+              "options": {
+               "path": "notes/uri.txt",
+               "content": "u"
+              },
               "output": {
-               "status": "user.screen_state"
+               "status": "user.tools_status"
               }
              }
             }
@@ -508,42 +364,39 @@
              "width": 1
             }
            },
-           "id": "screen_record"
+           "id": "tool_files_uri_resolves",
+           "content_description": "files write"
           },
           {
            "type": "button",
-           "text": "Stop recording",
+           "text": "Read missing file",
            "font_size": 12,
            "font_weight": "bold",
-           "text_color": "#F8FAFC",
-           "background_color": "#16233A",
+           "text_color": "#FFFFFF",
+           "background_color": "#7C3AED",
            "corner_radius": 12,
            "height": {
             "type": "fixed",
-            "value": 44
+            "value": 40
            },
            "width": {
             "type": "match_parent"
            },
            "actions": [
             {
-             "url": "tools://screen/record_stop",
+             "url": "tools://storage.files/read",
              "payload": {
+              "options": {
+               "path": "notes/does-not-exist.txt"
+              },
               "output": {
-               "uri": "user.screen_video_uri",
-               "status": "user.screen_state"
+               "status": "user.tools_status"
               }
              }
             }
            ],
-           "border": {
-            "corner_radius": 12,
-            "stroke": {
-             "color": "#1E293B",
-             "width": 1
-            }
-           },
-           "id": "screen_stop"
+           "id": "tool_files_read_missing_fails",
+           "content_description": "files read"
           }
          ],
          "item_spacing": 8,
@@ -561,6 +414,35 @@
            "width": 1
           }
          }
+        },
+        {
+         "type": "button",
+         "text": "Back to tools",
+         "font_size": 12,
+         "font_weight": "bold",
+         "text_color": "#F8FAFC",
+         "background_color": "transparent",
+         "corner_radius": 12,
+         "height": {
+          "type": "fixed",
+          "value": 40
+         },
+         "width": {
+          "type": "match_parent"
+         },
+         "actions": [
+          {
+           "url": "nav://pop"
+          }
+         ],
+         "border": {
+          "corner_radius": 12,
+          "stroke": {
+           "color": "#1E293B",
+           "width": 1
+          }
+         },
+         "id": "btn_back_footer"
         }
        ],
        "item_spacing": 12,

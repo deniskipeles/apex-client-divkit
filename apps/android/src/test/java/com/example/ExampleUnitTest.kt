@@ -677,13 +677,37 @@ class ExampleUnitTest {
         assertTrue(pushOutcome.success)
         assertEquals("push", pushOutcome.toolId)
 
+        // No websocket transport is installed in this build, so a connect must fail closed
+        // instead of flipping a state flag to CONNECTED with a fabricated latency.
         val rtOutcome = engine.tools.NativeToolsSuite.execute(
             "tools://realtime-ws/connect",
-            buildJsonObject { putJsonObject("options") { put("channel", "pos_stream") } }
+            buildJsonObject {
+                putJsonObject("options") {
+                    put("channel", "pos_stream")
+                    put("url", "ws://127.0.0.1:1/stream")
+                }
+            }
         )
-        assertTrue(rtOutcome.success)
         assertEquals("realtime-ws", rtOutcome.toolId)
-        assertTrue(rtOutcome.outputVariables.containsKey("user.realtime_connection_state"))
+        assertFalse("connect without a transport must not succeed", rtOutcome.success)
+        assertEquals("UNSUPPORTED", (rtOutcome.resultData as JsonObject)["status"]?.jsonPrimitive?.content)
+
+        engine.tools.impl.RealtimeWsTool.transport = { _, url -> url.startsWith("ws") }
+        try {
+            val connected = engine.tools.NativeToolsSuite.execute(
+                "tools://realtime-ws/connect",
+                buildJsonObject {
+                    putJsonObject("options") {
+                        put("channel", "pos_stream")
+                        put("url", "ws://127.0.0.1:1/stream")
+                    }
+                }
+            )
+            assertTrue("an installed transport should connect", connected.success)
+            assertEquals("CONNECTED", (connected.resultData as JsonObject)["status"]?.jsonPrimitive?.content)
+        } finally {
+            engine.tools.impl.RealtimeWsTool.resetForTest()
+        }
     }
 
     @Test
@@ -1400,25 +1424,37 @@ class ExampleUnitTest {
     }
 
     @Test
-    fun printTool_encodesEscPosReceiptPayload() = kotlinx.coroutines.runBlocking {
-        val result = engine.tools.impl.PrintTool().invoke(
-            args = ToolArgs(
+    fun printTool_encodesEscPosReceiptPayload() {
+        val payload = engine.tools.impl.PrintTool().buildEscPos(
+            ToolArgs(
                 mapOf(
-                    "op" to "print",
                     "text" to "ACME POS\nOrder #1042\nTotal 24.50",
                     "align" to "center",
                     "cut" to "true"
                 )
-            ),
+            )
+        )
+        assertTrue(payload.isNotEmpty())
+        val hex = payload.take(5).joinToString(" ") { "%02X".format(it) }
+        // ESC @ (init) + ESC a 1 (center).
+        assertEquals("1B 40 1B 61 01", hex)
+    }
+
+    @Test
+    fun printTool_refusesToReportAJobWithoutAReceiptOrAConnection() = kotlinx.coroutines.runBlocking {
+        // Nothing to print: an empty receipt used to "succeed" with a 12-byte ESC/POS frame.
+        val empty = engine.tools.impl.PrintTool().invoke(
+            args = ToolArgs(mapOf("op" to "print")),
             ctx = ToolContext()
         )
-        assertTrue(result is ToolResult.Success)
-        val data = (result as ToolResult.Success).data
-        assertEquals("SUCCESS", data["status"])
-        // ESC @ (init) + ESC a 1 (center) + text + ESC d (cut) all present.
-        assertTrue((data["bytes"] as Int) > 0)
-        val hex = data["preview_hex"] as String
-        assertTrue(hex.startsWith("1B 40 1B 61 01"))
+        assertTrue("empty print must fail, got $empty", empty is ToolResult.Failed)
+
+        // A real receipt but no open socket: there is no printer to print on.
+        val unconnected = engine.tools.impl.PrintTool().invoke(
+            args = ToolArgs(mapOf("op" to "print", "receipt" to "APEX ORDER 1042", "address" to "00:11:22:33:44:55")),
+            ctx = ToolContext()
+        )
+        assertTrue("unconnected print must be unsupported, got $unconnected", unconnected is ToolResult.Unsupported)
     }
 
     @Test

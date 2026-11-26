@@ -74,7 +74,7 @@ class WorkspacePackageTest {
 
         assertTrue("packaged workspaces must load: ${report.failures}", report.failures.isEmpty())
         val ids = report.bundles.map { it.id }.sorted()
-        assertEquals(listOf("acme_pos", "apex_kiosk"), ids)
+        assertEquals(listOf("acme_pos", "apex_kiosk", "apex_tools_test"), ids)
         report.bundles.forEach { bundle ->
             assertTrue("${bundle.id} needs a hub", bundle.hub.isNotEmpty())
             assertTrue("${bundle.id} needs cards", bundle.cards.isNotEmpty())
@@ -199,6 +199,6 @@ class WorkspacePackageTest {
     @Test
     fun indexListsEveryPackagedWorkspace() {
         val ids = WorkspaceRepository.index(ClasspathSource())
-        assertEquals(listOf("acme_pos", "apex_kiosk"), ids)
+        assertEquals(listOf("acme_pos", "apex_kiosk", "apex_tools_test"), ids)
     }
 }

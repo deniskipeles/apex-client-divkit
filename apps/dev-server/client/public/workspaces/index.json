@@ -14,11 +14,11 @@
   {
    "slug": "apex-tools-test",
    "manifestId": "apex_tools_test",
-   "title": "APEX TOOLS",
-   "subtitle": "Capability harness for every native tool",
+   "title": "Apex Tools",
+   "subtitle": "Capability conformance harness",
    "accent": "#0EA5E9",
-   "terminal": "TOOLS-001",
-   "cardCount": 9,
+   "terminal": "TERM-TOOLS-01",
+   "cardCount": 22,
    "collectionCount": 1,
    "android": true
   },

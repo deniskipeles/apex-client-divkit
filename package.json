@@ -12,6 +12,8 @@
     "test:desktop": "cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml --lib",
     "check:desktop": "cargo check --manifest-path apps/desktop/src-tauri/Cargo.toml",
     "workspaces:build": "pnpm -C apps/dev-server run workspaces:build",
-    "test:dev-server": "pnpm -C apps/dev-server run test"
+    "test:dev-server": "pnpm -C apps/dev-server run test",
+    "toolcases:build": "pnpm -C apps/dev-server run toolcases:build",
+    "toolcases:check": "pnpm -C apps/dev-server run toolcases:check"
   }
 }

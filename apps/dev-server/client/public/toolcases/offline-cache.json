@@ -1,0 +1,135 @@
+{
+  "_generated": "apps/dev-server/scripts/build-tool-cases.mjs",
+  "_doNotEdit": "Edit apps/dev-server/tests/tools/definitions.ts and rerun `pnpm tool-cases:build`.",
+  "toolId": "offline-cache",
+  "slug": "offline-cache",
+  "doc": "docs/tools/offline-cache.md",
+  "versionedCapability": "storage.offline_cache@1",
+  "usage": "Persist a page snapshot, report cache statistics, or clear the cache.",
+  "operations": [
+    "cache",
+    "get_stats",
+    "clear"
+  ],
+  "outputMapping": {
+    "status": "user.offline_cache_status",
+    "cached_pages": "user.offline_cached_pages"
+  },
+  "options": [
+    {
+      "name": "key",
+      "type": "string",
+      "description": "Cache key"
+    },
+    {
+      "name": "content",
+      "type": "string",
+      "description": "Body to cache"
+    }
+  ],
+  "results": [
+    {
+      "name": "status",
+      "type": "string",
+      "description": "SUCCESS"
+    },
+    {
+      "name": "cached_pages",
+      "type": "number",
+      "description": "Entries in the cache"
+    }
+  ],
+  "statuses": [
+    {
+      "status": "SUCCESS",
+      "meaning": "Cache operation completed"
+    }
+  ],
+  "cardActions": [
+    {
+      "url": "tools://storage.offline_cache/cache",
+      "options": {
+        "key": "catalog",
+        "content": "{\"items\":3}"
+      }
+    },
+    {
+      "url": "tools://storage.offline_cache/cache",
+      "options": {
+        "key": "catalog",
+        "content": "{\"items\":3}"
+      }
+    }
+  ],
+  "notCovered": [],
+  "cases": [
+    {
+      "name": "cache_then_stats",
+      "description": "Cache then stats",
+      "steps": [
+        {
+          "url": "tools://storage.offline_cache/cache",
+          "payload": {
+            "options": {
+              "key": "catalog",
+              "content": "{\"items\":3}"
+            }
+          }
+        },
+        {
+          "url": "tools://storage.offline_cache/get_stats",
+          "payload": {
+            "options": {}
+          }
+        }
+      ],
+      "expect": {
+        "success": true,
+        "status": "CACHED_OFFLINE_READY",
+        "data": {
+          "cached_pages": {
+            "range": {
+              "min": 1
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "clear_empties_cache",
+      "description": "Clear",
+      "steps": [
+        {
+          "url": "tools://storage.offline_cache/cache",
+          "payload": {
+            "options": {
+              "key": "catalog",
+              "content": "{\"items\":3}"
+            }
+          }
+        },
+        {
+          "url": "tools://storage.offline_cache/clear",
+          "payload": {
+            "options": {}
+          }
+        },
+        {
+          "url": "tools://storage.offline_cache/get_stats",
+          "payload": {
+            "options": {}
+          }
+        }
+      ],
+      "expect": {
+        "success": true,
+        "status": "CACHED_OFFLINE_READY",
+        "data": {
+          "cached_pages": {
+            "equals": "0"
+          }
+        }
+      }
+    }
+  ]
+}
