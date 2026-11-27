@@ -114,6 +114,7 @@ private fun divValueFromJson(element: JsonElement): DivVariableValue = when (ele
         else -> DivVariableValue.Str(element.content)
     }
     is JsonArray -> DivVariableValue.ArrayVal(element.map { divValueFromJson(it) })
+    is JsonObject -> DivVariableValue.DictVal(element.mapValues { divValueFromJson(it.value) })
     else -> DivVariableValue.Str(element.toString())
 }
 
@@ -178,6 +179,9 @@ fun DivView(
                 "boolean" -> DivVariableValue.Bool(valueEl?.jsonPrimitive?.booleanOrNull ?: false)
                 "array" -> DivVariableValue.ArrayVal(
                     valueEl?.jsonArray?.map { divValueFromJson(it) } ?: emptyList()
+                )
+                "dict", "object" -> DivVariableValue.DictVal(
+                    valueEl?.jsonObject?.mapValues { divValueFromJson(it.value) } ?: emptyMap()
                 )
                 else -> DivVariableValue.Str(valueEl?.jsonPrimitive?.contentOrNull ?: "")
             }
@@ -690,8 +694,8 @@ private fun RenderDivNode(
                 val emptyText = props["empty_text"]?.jsonPrimitive?.contentOrNull ?: "No records"
                 val rowCard = props["row_card"]?.jsonObject
 
-                val itemsList = remember(variables[dataVar]) {
-                    parseJsonListVariable(variables[dataVar])
+                val itemsList = remember(variables) {
+                    parseJsonListVariable(resolveVariable(variables, dataVar))
                 }
 
                 Column(
@@ -887,6 +891,23 @@ internal fun adaptButtonTextForTheme(textHex: String, bgHex: String, isDark: Boo
     return parseHexColor(textHex)
 }
 
+private fun resolveVariable(variables: Map<String, DivVariableValue>, name: String): DivVariableValue? {
+    variables[name]?.let { return it }
+    var dot = name.lastIndexOf('.')
+    while (dot > 0) {
+        val base = variables[name.substring(0, dot)]
+        if (base is DivVariableValue.DictVal) {
+            var value: DivVariableValue? = base
+            for (part in name.substring(dot + 1).split('.')) {
+                value = (value as? DivVariableValue.DictVal)?.values?.get(part)
+            }
+            return value
+        }
+        dot = name.lastIndexOf('.', dot - 1)
+    }
+    return null
+}
+
 private fun parseJsonListVariable(valObj: DivVariableValue?): List<Map<String, Any?>> {
     if (valObj == null) return emptyList()
     return when (valObj) {
@@ -1018,6 +1039,7 @@ private fun variableValueFromAction(
                 else -> DivVariableValue.Str(value.content)
             }
             is JsonArray -> DivVariableValue.ArrayVal(value.map { actionArrayValue(it, variables, rowContext) })
+            is JsonObject -> DivVariableValue.DictVal(value.mapValues { actionArrayValue(it.value, variables, rowContext) })
             else -> DivVariableValue.Str(value?.toString() ?: "")
         }
     }
@@ -1036,6 +1058,9 @@ private fun variableValueFromAction(
         "array" -> DivVariableValue.ArrayVal(
             raw?.jsonArray?.map { actionArrayValue(it, variables, rowContext) } ?: emptyList()
         )
+        "dict", "object" -> DivVariableValue.DictVal(
+            raw?.jsonObject?.mapValues { actionArrayValue(it.value, variables, rowContext) } ?: emptyMap()
+        )
         else -> DivVariableValue.Str(
             evalExpr(raw?.jsonPrimitive?.contentOrNull ?: "", variables, rowContext)
         )
@@ -1051,6 +1076,7 @@ private fun actionArrayValue(
         if (element.isString) DivVariableValue.Str(evalExpr(element.content, variables, rowContext))
         else divValueFromJson(element)
     is JsonArray -> DivVariableValue.ArrayVal(element.map { actionArrayValue(it, variables, rowContext) })
+    is JsonObject -> DivVariableValue.DictVal(element.mapValues { actionArrayValue(it.value, variables, rowContext) })
     else -> divValueFromJson(element)
 }
 

@@ -50,6 +50,7 @@ sealed class DivVariableValue {
     data class Bool(val value: Boolean) : DivVariableValue()
     data class DoubleVal(val value: Double) : DivVariableValue()
     data class ArrayVal(val values: List<DivVariableValue>) : DivVariableValue()
+    data class DictVal(val values: Map<String, DivVariableValue>) : DivVariableValue()
 
     fun asDisplayString(): String = when (this) {
         is Str -> value
@@ -57,5 +58,6 @@ sealed class DivVariableValue {
         is Bool -> value.toString()
         is DoubleVal -> if (value == value.toLong().toDouble()) value.toLong().toString() else "%.2f".format(value)
         is ArrayVal -> values.joinToString(", ") { it.asDisplayString() }
+        is DictVal -> values.entries.joinToString(", ") { (key, value) -> "$key: ${value.asDisplayString()}" }
     }
 }

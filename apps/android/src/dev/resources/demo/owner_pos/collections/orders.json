@@ -9,27 +9,34 @@
           "submitted",
           "paid",
           "void"
-        ]
+        ],
+        "uid": "orders_status"
       },
       "total": {
         "type": "number",
-        "min": 0
+        "min": 0,
+        "uid": "orders_total"
       },
       "item_count": {
         "type": "number",
-        "min": 0
+        "min": 0,
+        "uid": "orders_item_count"
       },
       "shop_name": {
-        "type": "string"
+        "type": "string",
+        "uid": "orders_shop_name"
       },
       "shop_terminal": {
-        "type": "string"
+        "type": "string",
+        "uid": "orders_shop_terminal"
       },
       "checksum": {
-        "type": "string"
+        "type": "string",
+        "uid": "orders_checksum"
       },
       "payload_json": {
-        "type": "string"
+        "type": "string",
+        "uid": "orders_payload_json"
       }
     },
     "aggregates": [
@@ -60,8 +67,18 @@
         "name_and_qty": "item_name"
       },
       "child_json_key": "lines_json",
-      "child_count_key": "item_count"
+      "child_count_key": "item_count",
+      "fields": [
+        "status",
+        "total",
+        "item_count",
+        "shop_name",
+        "shop_terminal",
+        "checksum",
+        "payload_json"
+      ]
     }
   },
-  "seed": []
+  "seed": [],
+  "id": 2
 }

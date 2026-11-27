@@ -529,4 +529,18 @@ class WorkspaceDataPlaneTest {
         assertTrue(runCatching { db.op("kiosk.nope", buildJsonObject { }) }.exceptionOrNull() is SecurityException)
         assertTrue(runCatching { db.op("db.nope", buildJsonObject { }) }.exceptionOrNull() is SecurityException)
     }
+
+    @Test
+    fun `every packaged workspace provisions`() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val manager = WorkspaceManager(WorkspaceDriverFactory(context))
+        val registry = EngineRegistry()
+        WorkspaceProvisioner.defaultWorkspaces.forEach { workspace ->
+            runBlocking {
+                manager.useDatabase(workspace.tenantId) { db ->
+                    WorkspaceProvisioner.ensureTenantSchemaAndSeed(db, workspace, registry)
+                }
+            }
+        }
+    }
 }

@@ -79,8 +79,8 @@
         {
           "type": "qr_controls",
           "custom_props": {
-            "index": "owner.qr_index",
-            "count": "owner.qr_auto",
+            "index": "@{owner.qr_index}",
+            "count": "@{owner.qr_auto}",
             "chunks_var": "owner.qr_chunks",
             "auto_ms": 3000
           }
@@ -100,9 +100,9 @@
         {
           "type": "progress_ring",
           "custom_props": {
-            "value": "owner.qr_index / (owner.qr_total || 1)",
-            "label": "owner.qr_index",
-            "caption": "owner.qr_total"
+            "value": "@{owner.qr_index / (owner.qr_total || 1)}",
+            "label": "@{owner.qr_index}",
+            "caption": "@{owner.qr_total}"
           }
         },
         {

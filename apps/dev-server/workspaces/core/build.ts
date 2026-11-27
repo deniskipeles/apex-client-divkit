@@ -118,6 +118,28 @@ export function workspaceReports(def: WorkspaceDefinition): Array<{
   })
 }
 
+/** Android's schema model requires a stable `uid` on every field. Older bundles omitted it. */
+function withCollectionId(collection: unknown, id: number): unknown {
+  const json = plain(collection) as Record<string, any>
+  if (json?.id === undefined) json.id = id
+  return json
+}
+
+function withFieldUids(collection: unknown): unknown {
+  const json = plain(collection) as Record<string, any>
+  const name = typeof json?.name === 'string' ? json.name : 'collection'
+  const fields = json?.schema?.fields
+  if (!fields || typeof fields !== 'object') return json
+  for (const [field, spec] of Object.entries(fields as Record<string, any>)) {
+    if (spec && typeof spec === 'object' && !('uid' in spec)) spec.uid = `${name}_${field}`
+  }
+  const canonical = json.schema.canonical
+  if (canonical && typeof canonical === 'object' && !Array.isArray(canonical.fields)) {
+    canonical.fields = Object.keys(fields)
+  }
+  return json
+}
+
 function manifestFor(def: WorkspaceDefinition): WorkspaceManifest {
   return {
     format: 'apex.workspace/1',
@@ -138,13 +160,17 @@ function manifestFor(def: WorkspaceDefinition): WorkspaceManifest {
 export function buildWorkspace(def: WorkspaceDefinition): WorkspaceBundle {
   validateWorkspace(def)
 
+  const collections = def.collections.map((collection, index) => ({
+    ...collection,
+    json: withCollectionId(withFieldUids(collection.json), index + 1),
+  }))
   const files: Record<string, unknown> = {}
   files['workspace.json'] = manifestFor(def)
   files['card.json'] = def.hub
   files['tool_catalog.json'] = def.catalog
   for (const card of def.cards) files[`tools/${card.name}.json`] = card.card
-  for (const collection of def.collections) files[`collections/${collection.file}`] = collection.json
-  files['collections/index.json'] = { version: 1, collections: def.collections.map((c) => c.file) }
+  for (const collection of collections) files[`collections/${collection.file}`] = collection.json
+  files['collections/index.json'] = { version: 1, collections: collections.map((c) => c.file) }
 
   return {
     slug: def.slug,

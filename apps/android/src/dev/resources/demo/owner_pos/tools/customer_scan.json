@@ -33,9 +33,9 @@
             {
               "type": "progress_ring",
               "custom_props": {
-                "value": "cust.scan_current / (cust.scan_total || 1)",
-                "label": "cust.scan_current",
-                "caption": "cust.scan_total",
+                "value": "@{cust.scan_current / (cust.scan_total || 1)}",
+                "label": "@{cust.scan_current}",
+                "caption": "@{cust.scan_total}",
                 "state_var": "cust.scan_state"
               }
             },
@@ -62,7 +62,7 @@
               "type": "scan_chips",
               "custom_props": {
                 "chunks_var": "cust.scan_chunks",
-                "expected": "cust.scan_chunks.length",
+                "expected": "@{cust.scan_chunks.length}",
                 "collected_var": "cust.scan_collected",
                 "corrupt_var": "cust.scan_corrupt"
               }
@@ -97,9 +97,9 @@
             {
               "type": "progress_ring",
               "custom_props": {
-                "value": "cust.scan_current / (cust.scan_total || 1)",
-                "label": "cust.scan_current",
-                "caption": "cust.scan_total"
+                "value": "@{cust.scan_current / (cust.scan_total || 1)}",
+                "label": "@{cust.scan_current}",
+                "caption": "@{cust.scan_total}"
               }
             }
           ],

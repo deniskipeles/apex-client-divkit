@@ -415,9 +415,9 @@
                     {
                       "id": "global_toast",
                       "type": "toast",
-                      "visibility": "owner.toast_visible ? 'visible' : 'gone'",
+                      "visibility": "@{owner.toast_visible ? 'visible' : 'gone'}",
                       "custom_props": {
-                        "text": "owner.toast_msg",
+                        "text": "@{owner.toast_msg}",
                         "severity_var": "owner.toast_severity",
                         "action_label_var": "owner.toast_action",
                         "dwell_ms": 4000,
@@ -1018,7 +1018,7 @@
                                         "actions": [
                                           {
                                             "log_id": "qty_minus",
-                                            "url": "local-db://op/pos.set_qty?line_id=item.line_id&qty=item.qty%20-%201"
+                                            "url": "local-db://op/pos.set_qty?line_id=%40%7Bitem.line_id%7D&qty=%40%7Bitem.qty%20-%201%7D"
                                           }
                                         ],
                                         "content_alignment_horizontal": "center",
@@ -1052,7 +1052,7 @@
                                         "actions": [
                                           {
                                             "log_id": "qty_plus",
-                                            "url": "local-db://op/pos.set_qty?line_id=item.line_id&qty=item.qty%20%2B%201"
+                                            "url": "local-db://op/pos.set_qty?line_id=%40%7Bitem.line_id%7D&qty=%40%7Bitem.qty%20%2B%201%7D"
                                           }
                                         ],
                                         "content_alignment_horizontal": "center",
@@ -1241,7 +1241,7 @@
                     {
                       "type": "bottom_tabs",
                       "custom_props": {
-                        "active_value": "owner.tab",
+                        "active_value": "@{owner.tab}",
                         "items": [
                           {
                             "value": "pos",
@@ -1292,9 +1292,9 @@
                     {
                       "id": "global_toast",
                       "type": "toast",
-                      "visibility": "owner.toast_visible ? 'visible' : 'gone'",
+                      "visibility": "@{owner.toast_visible ? 'visible' : 'gone'}",
                       "custom_props": {
-                        "text": "owner.toast_msg",
+                        "text": "@{owner.toast_msg}",
                         "severity_var": "owner.toast_severity",
                         "action_label_var": "owner.toast_action",
                         "dwell_ms": 4000,
@@ -1700,7 +1700,7 @@
                     {
                       "type": "bottom_tabs",
                       "custom_props": {
-                        "active_value": "owner.tab",
+                        "active_value": "@{owner.tab}",
                         "items": [
                           {
                             "value": "pos",
@@ -2005,8 +2005,8 @@
                         {
                           "type": "qr_controls",
                           "custom_props": {
-                            "index": "owner.qr_index",
-                            "count": "owner.qr_auto",
+                            "index": "@{owner.qr_index}",
+                            "count": "@{owner.qr_auto}",
                             "chunks_var": "owner.qr_chunks",
                             "auto_ms": 3000
                           }
@@ -2026,9 +2026,9 @@
                         {
                           "type": "progress_ring",
                           "custom_props": {
-                            "value": "owner.qr_index / (owner.qr_total || 1)",
-                            "label": "owner.qr_index",
-                            "caption": "owner.qr_total"
+                            "value": "@{owner.qr_index / (owner.qr_total || 1)}",
+                            "label": "@{owner.qr_index}",
+                            "caption": "@{owner.qr_total}"
                           }
                         },
                         {
@@ -2296,7 +2296,7 @@
                                       "type": "fixed",
                                       "value": 72
                                     },
-                                    "image_url": "product.photo_url",
+                                    "image_url": "@{product.photo_url}",
                                     "placeholder_color": "#E6E8EF",
                                     "width": {
                                       "type": "fixed",
@@ -3455,7 +3455,7 @@
                     {
                       "type": "bottom_tabs",
                       "custom_props": {
-                        "active_value": "cust.tab",
+                        "active_value": "@{cust.tab}",
                         "items": [
                           {
                             "value": "shop",
@@ -3648,7 +3648,7 @@
                     {
                       "type": "bottom_tabs",
                       "custom_props": {
-                        "active_value": "cust.tab",
+                        "active_value": "@{cust.tab}",
                         "items": [
                           {
                             "value": "shop",
@@ -3719,9 +3719,9 @@
                             {
                               "type": "progress_ring",
                               "custom_props": {
-                                "value": "cust.scan_current / (cust.scan_total || 1)",
-                                "label": "cust.scan_current",
-                                "caption": "cust.scan_total",
+                                "value": "@{cust.scan_current / (cust.scan_total || 1)}",
+                                "label": "@{cust.scan_current}",
+                                "caption": "@{cust.scan_total}",
                                 "state_var": "cust.scan_state"
                               }
                             },
@@ -3748,7 +3748,7 @@
                               "type": "scan_chips",
                               "custom_props": {
                                 "chunks_var": "cust.scan_chunks",
-                                "expected": "cust.scan_chunks.length",
+                                "expected": "@{cust.scan_chunks.length}",
                                 "collected_var": "cust.scan_collected",
                                 "corrupt_var": "cust.scan_corrupt"
                               }
@@ -3783,9 +3783,9 @@
                             {
                               "type": "progress_ring",
                               "custom_props": {
-                                "value": "cust.scan_current / (cust.scan_total || 1)",
-                                "label": "cust.scan_current",
-                                "caption": "cust.scan_total"
+                                "value": "@{cust.scan_current / (cust.scan_total || 1)}",
+                                "label": "@{cust.scan_current}",
+                                "caption": "@{cust.scan_total}"
                               }
                             }
                           ],

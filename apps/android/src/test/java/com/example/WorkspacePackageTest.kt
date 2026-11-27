@@ -197,6 +197,25 @@ class WorkspacePackageTest {
     }
 
     @Test
+    fun packagedCollectionsCarryIdsAndFieldUids() {
+        WorkspaceRepository.index(ClasspathSource()).forEach { id ->
+            WorkspaceRepository.load(id).collections.forEach { collection ->
+                val name = collection["name"]?.toString() ?: "<unnamed>"
+                assertNotNull("$id/$name must carry a collection id", collection["id"])
+                val fields = collection["schema"]?.jsonObject?.get("fields")?.jsonObject
+                assertNotNull("$id/$name must declare schema.fields", fields)
+                fields!!.forEach { (field, spec) ->
+                    assertNotNull("$id/$name.$field must carry a field uid", spec.jsonObject["uid"])
+                }
+                val canonical = collection["schema"]?.jsonObject?.get("canonical")?.jsonObject
+                if (canonical != null) {
+                    assertNotNull("$id/$name canonical view must list its fields", canonical["fields"])
+                }
+            }
+        }
+    }
+
+    @Test
     fun indexListsEveryPackagedWorkspace() {
         val ids = WorkspaceRepository.index(ClasspathSource())
         assertEquals(listOf("acme_pos", "apex_kiosk", "apex_tools_test", "owner_pos"), ids)

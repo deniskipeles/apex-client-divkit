@@ -274,7 +274,7 @@
     {
       "type": "bottom_tabs",
       "custom_props": {
-        "active_value": "cust.tab",
+        "active_value": "@{cust.tab}",
         "items": [
           {
             "value": "shop",

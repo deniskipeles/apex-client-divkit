@@ -5,7 +5,7 @@ import {
   DivSeparator,
   DivSolidBackground,
   DivText,
-  expression,
+  expression as rawExpression,
   fixed,
   matchParent,
   weighted,
@@ -13,6 +13,8 @@ import {
   type IDivAction,
 } from '@divkitframework/jsonbuilder'
 import { TOKENS } from './tokens.ts'
+
+const expression = (body: string) => rawExpression(body.trim().startsWith('@{') ? body : `@{${body}}`)
 
 export type Div = any
 export type DivAction = IDivAction

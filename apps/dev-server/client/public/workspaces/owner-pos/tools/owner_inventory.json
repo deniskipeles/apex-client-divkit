@@ -13,9 +13,9 @@
     {
       "id": "global_toast",
       "type": "toast",
-      "visibility": "owner.toast_visible ? 'visible' : 'gone'",
+      "visibility": "@{owner.toast_visible ? 'visible' : 'gone'}",
       "custom_props": {
-        "text": "owner.toast_msg",
+        "text": "@{owner.toast_msg}",
         "severity_var": "owner.toast_severity",
         "action_label_var": "owner.toast_action",
         "dwell_ms": 4000,
@@ -421,7 +421,7 @@
     {
       "type": "bottom_tabs",
       "custom_props": {
-        "active_value": "owner.tab",
+        "active_value": "@{owner.tab}",
         "items": [
           {
             "value": "pos",

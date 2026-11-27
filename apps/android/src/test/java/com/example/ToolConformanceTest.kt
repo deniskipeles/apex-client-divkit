@@ -248,6 +248,7 @@ class ToolConformanceTest {
         is DivVariableValue.IntVal -> JsonPrimitive(value.value)
         is DivVariableValue.DoubleVal -> JsonPrimitive(value.value)
         is DivVariableValue.ArrayVal -> JsonArray(value.values.map { variableJson(it) })
+        is DivVariableValue.DictVal -> JsonObject(value.values.mapValues { variableJson(it.value) })
     }
 
     private fun steps(case: JsonObject): List<JsonObject> =

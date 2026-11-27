@@ -4,22 +4,27 @@
     "fields": {
       "order_id": {
         "type": "string",
-        "required": true
+        "required": true,
+        "uid": "order_lines_order_id"
       },
       "sku": {
         "type": "string",
-        "required": true
+        "required": true,
+        "uid": "order_lines_sku"
       },
       "item_name": {
-        "type": "string"
+        "type": "string",
+        "uid": "order_lines_item_name"
       },
       "unit_price": {
         "type": "number",
-        "min": 0
+        "min": 0,
+        "uid": "order_lines_unit_price"
       },
       "quantity": {
         "type": "number",
-        "min": 0
+        "min": 0,
+        "uid": "order_lines_quantity"
       }
     },
     "append": {
@@ -34,5 +39,6 @@
       }
     }
   },
-  "seed": []
+  "seed": [],
+  "id": 3
 }

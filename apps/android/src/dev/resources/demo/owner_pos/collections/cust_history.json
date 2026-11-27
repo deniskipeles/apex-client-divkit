@@ -4,35 +4,44 @@
     "fields": {
       "shop_terminal": {
         "type": "string",
-        "required": true
+        "required": true,
+        "uid": "cust_history_shop_terminal"
       },
       "shop_name": {
         "type": "string",
-        "required": true
+        "required": true,
+        "uid": "cust_history_shop_name"
       },
       "order_id": {
         "type": "string",
-        "required": true
+        "required": true,
+        "uid": "cust_history_order_id"
       },
       "payload_json": {
         "type": "string",
-        "required": true
+        "required": true,
+        "uid": "cust_history_payload_json"
       },
       "checksum": {
         "type": "string",
-        "required": true
+        "required": true,
+        "uid": "cust_history_checksum"
       },
       "item_count": {
         "type": "number",
-        "min": 0
+        "min": 0,
+        "uid": "cust_history_item_count"
       },
       "total": {
-        "type": "string"
+        "type": "string",
+        "uid": "cust_history_total"
       },
       "received_at": {
-        "type": "string"
+        "type": "string",
+        "uid": "cust_history_received_at"
       }
     }
   },
-  "seed": []
+  "seed": [],
+  "id": 4
 }

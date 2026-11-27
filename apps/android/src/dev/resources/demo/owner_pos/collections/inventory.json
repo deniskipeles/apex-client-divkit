@@ -5,34 +5,42 @@
       "sku": {
         "type": "string",
         "required": true,
-        "unique": true
+        "unique": true,
+        "uid": "inventory_sku"
       },
       "name": {
         "type": "string",
         "required": true,
-        "max_length": 60
+        "max_length": 60,
+        "uid": "inventory_name"
       },
       "price": {
         "type": "string",
-        "required": true
+        "required": true,
+        "uid": "inventory_price"
       },
       "photo_url": {
-        "type": "string"
+        "type": "string",
+        "uid": "inventory_photo_url"
       },
       "code": {
-        "type": "string"
+        "type": "string",
+        "uid": "inventory_code"
       },
       "barcode": {
         "type": "string",
-        "sql_indexed": true
+        "sql_indexed": true,
+        "uid": "inventory_barcode"
       },
       "description": {
         "type": "string",
-        "max_length": 240
+        "max_length": 240,
+        "uid": "inventory_description"
       },
       "stock": {
         "type": "number",
-        "min": 0
+        "min": 0,
+        "uid": "inventory_stock"
       }
     }
   },
@@ -82,5 +90,6 @@
       "stock": 2,
       "photo_url": ""
     }
-  ]
+  ],
+  "id": 1
 }

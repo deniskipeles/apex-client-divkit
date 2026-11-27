@@ -5,7 +5,7 @@ import {
   DivImage,
   DivSolidBackground,
   DivText,
-  expression,
+  expression as rawExpression,
   fixed,
   matchParent,
   weighted,
@@ -41,6 +41,8 @@ import {
 } from './blocks.ts'
 import { TOKENS } from './tokens.ts'
 import { customerVariables, ownerVariables, productFormVariables } from './variables.ts'
+
+const expression = (body: string) => rawExpression(body.trim().startsWith('@{') ? body : `@{${body}}`)
 
 export function buildOwnerPosCard() {
   return divCard(

@@ -226,8 +226,26 @@ private class ExpressionParser(
             name == "null" -> null
             name.startsWith("item.") -> rowContext[name.removePrefix("item.")]
             name.startsWith("user.item.") -> rowContext[name.removePrefix("user.item.")]
-            else -> variables[name]?.toValue()
+            else -> variableValue(name)
         }
+    }
+
+    /** Variables may hold a dict; `cust.order.total` resolves through its `cust.order` base. */
+    private fun variableValue(name: String): Any? {
+        variables[name]?.toValue()?.let { return it }
+        var dot = name.lastIndexOf('.')
+        while (dot > 0) {
+            val base = variables[name.substring(0, dot)]
+            if (base is DivVariableValue.DictVal) {
+                var value: Any? = base.toValue()
+                for (part in name.substring(dot + 1).split('.')) {
+                    value = (value as? Map<*, *>)?.get(part)
+                }
+                return value
+            }
+            dot = name.lastIndexOf('.', dot - 1)
+        }
+        return null
     }
 
     private fun call(name: String, args: List<Any?>): Any? {
@@ -336,4 +354,5 @@ private fun DivVariableValue.toValue(): Any? = when (this) {
     is DivVariableValue.DoubleVal -> value
     is DivVariableValue.Bool -> value
     is DivVariableValue.ArrayVal -> values.map { it.toValue() }
+    is DivVariableValue.DictVal -> values.mapValues { it.value.toValue() }
 }

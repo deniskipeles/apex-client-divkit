@@ -38,7 +38,7 @@
                       "type": "fixed",
                       "value": 72
                     },
-                    "image_url": "product.photo_url",
+                    "image_url": "@{product.photo_url}",
                     "placeholder_color": "#E6E8EF",
                     "width": {
                       "type": "fixed",
