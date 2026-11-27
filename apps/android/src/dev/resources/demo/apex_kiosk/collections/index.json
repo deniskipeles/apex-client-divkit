@@ -1,9 +1,0 @@
-{
-  "version": 1,
-  "collections": [
-    "inventory.json",
-    "orders.json",
-    "kiosk_orders.json",
-    "kiosk_order_lines.json"
-  ]
-}

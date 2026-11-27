@@ -1,7 +1,14 @@
 {
-  "title": "Owner POS",
-  "subtitle": "Choose a screen",
+  "title": "APEX Owner",
+  "subtitle": "Point of sale and customer verification",
   "entries": [
+    {
+      "file": "home",
+      "label": "home",
+      "icon": "pos",
+      "accent_color": "#6D4AFF",
+      "subtitle": ""
+    },
     {
       "file": "owner_pos",
       "label": "owner pos",

@@ -29,7 +29,7 @@
    "subtitle": "Owner POS, inventory and customer handoff",
    "accent": "#6D4AFF",
    "terminal": "POS-001",
-   "cardCount": 11,
+   "cardCount": 12,
    "collectionCount": 4,
    "android": true
   },

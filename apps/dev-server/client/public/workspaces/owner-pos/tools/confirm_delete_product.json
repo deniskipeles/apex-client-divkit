@@ -1,22 +1,121 @@
 {
-  "type": "container",
-  "items": [
-    {
-      "type": "text",
-      "font_size": 20,
-      "font_weight": "bold",
-      "text": "Delete this product?",
-      "text_color": "#111319"
+  "id": "confirm_delete_product_sheet",
+  "type": "bottom_sheet",
+  "custom_props": {
+    "visible": true,
+    "title": "Delete Product?",
+    "body": [
+      {
+        "type": "text",
+        "font_size": 14,
+        "margins": {
+          "bottom": 16
+        },
+        "text": "This product will be permanently removed unless referenced by past orders.",
+        "text_color": "#C81E1E"
+      },
+      {
+        "type": "container",
+        "height": {
+          "type": "fixed",
+          "value": 56
+        },
+        "items": [
+          {
+            "type": "container",
+            "actions": [
+              {
+                "log_id": "cancel_delete",
+                "url": "nav://pop"
+              }
+            ],
+            "border": {
+              "corner_radius": 12,
+              "stroke": {
+                "color": "#E6E8EF",
+                "width": 1
+              }
+            },
+            "content_alignment_horizontal": "center",
+            "content_alignment_vertical": "center",
+            "height": {
+              "type": "fixed",
+              "value": 48
+            },
+            "items": [
+              {
+                "type": "text",
+                "font_size": 16,
+                "font_weight": "regular",
+                "line_height": 22,
+                "text": "Cancel",
+                "text_color": "#111319"
+              }
+            ],
+            "width": {
+              "type": "match_parent",
+              "weight": 1
+            }
+          },
+          {
+            "type": "container",
+            "actions": [
+              {
+                "log_id": "delete_product",
+                "url": "local-db://op/inventory.delete?id=%40%7Bproduct.form_id%7D"
+              },
+              {
+                "log_id": "pop_after_delete",
+                "url": "nav://pop"
+              }
+            ],
+            "background": [
+              {
+                "type": "solid",
+                "color": "#C81E1E"
+              }
+            ],
+            "border": {
+              "corner_radius": 12
+            },
+            "content_alignment_horizontal": "center",
+            "content_alignment_vertical": "center",
+            "height": {
+              "type": "fixed",
+              "value": 48
+            },
+            "items": [
+              {
+                "type": "text",
+                "font_size": 16,
+                "font_weight": "bold",
+                "text": "Delete",
+                "text_color": "#FFFFFF"
+              }
+            ],
+            "margins": {
+              "left": 12
+            },
+            "width": {
+              "type": "match_parent",
+              "weight": 1
+            }
+          }
+        ],
+        "orientation": "horizontal",
+        "width": {
+          "type": "match_parent"
+        }
+      }
+    ],
+    "height_fraction": 0.65,
+    "dismiss": {
+      "actions": [
+        {
+          "log_id": "sheet_dismiss",
+          "url": "sheet://dismiss"
+        }
+      ]
     }
-  ],
-  "orientation": "vertical",
-  "paddings": {
-    "left": 20,
-    "right": 20,
-    "top": 20,
-    "bottom": 20
-  },
-  "width": {
-    "type": "match_parent"
   }
 }

@@ -15,8 +15,8 @@
         "uid": "inventory_name"
       },
       "price": {
-        "type": "string",
-        "required": true,
+        "type": "number",
+        "min": 0,
         "uid": "inventory_price"
       },
       "photo_url": {
@@ -42,13 +42,19 @@
         "min": 0,
         "uid": "inventory_stock"
       }
+    },
+    "policies": {
+      "read": "public",
+      "create": "public",
+      "update": "public",
+      "delete": "public"
     }
   },
   "seed": [
     {
       "sku": "LAT-01",
       "name": "Latte",
-      "price": "4.50",
+      "price": 4.5,
       "code": "0123456789012",
       "barcode": "0123456789012",
       "stock": 24,
@@ -57,7 +63,7 @@
     {
       "sku": "TEA-01",
       "name": "Green Tea",
-      "price": "3.20",
+      "price": 3.2,
       "code": "0123456789029",
       "barcode": "0123456789029",
       "stock": 18,
@@ -66,7 +72,7 @@
     {
       "sku": "MUF-01",
       "name": "Blueberry Muffin",
-      "price": "2.80",
+      "price": 2.8,
       "code": "0123456789036",
       "barcode": "0123456789036",
       "stock": 8,
@@ -75,7 +81,7 @@
     {
       "sku": "WAT-01",
       "name": "Mineral Water",
-      "price": "1.50",
+      "price": 1.5,
       "code": "0123456789043",
       "barcode": "0123456789043",
       "stock": 40,
@@ -84,7 +90,7 @@
     {
       "sku": "CRO-01",
       "name": "Croissant",
-      "price": "3.60",
+      "price": 3.6,
       "code": "0123456789050",
       "barcode": "0123456789050",
       "stock": 2,

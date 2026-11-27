@@ -2,9 +2,12 @@ import { nav } from '../../core/divkit/nav.ts'
 import { DivContainer, DivText, matchParent } from '@divkitframework/jsonbuilder'
 import type { WorkspaceDefinition, WorkspaceMeta } from '../../core/types.ts'
 import {
+  buildConfirmDeleteProductCard,
   buildCustomerHistoryCard,
   buildCustomerScanCard,
   buildCustomerShopCard,
+  buildHomeCard,
+  buildMapBarcodePickerCard,
   buildOwnerCheckoutSheet,
   buildOwnerInventoryCard,
   buildOwnerPosCard,
@@ -17,15 +20,8 @@ import { customerVariables, ownerVariables, productFormVariables } from './varia
 
 const body = (card: any) => card.card.states[0].div
 
-const placeholder = (title: string) =>
-  new DivContainer({
-    orientation: 'vertical',
-    width: matchParent(),
-    paddings: { left: 20, right: 20, top: 20, bottom: 20 },
-    items: [new DivText({ text: title, font_size: 20, font_weight: 'bold', text_color: '#111319' })],
-  })
-
 const pages = [
+  { id: 'home', div: body(buildHomeCard()) },
   { id: 'owner_pos', div: body(buildOwnerPosCard()) },
   { id: 'owner_inventory', div: body(buildOwnerInventoryCard()) },
   { id: 'owner_checkout_sheet', div: body(buildOwnerCheckoutSheet()) },
@@ -35,8 +31,8 @@ const pages = [
   { id: 'customer_shop', div: body(buildCustomerShopCard()) },
   { id: 'customer_history', div: body(buildCustomerHistoryCard()) },
   { id: 'customer_scan', div: body(buildCustomerScanCard()) },
-  { id: 'map_barcode_picker', div: placeholder('Map barcode to a product') },
-  { id: 'confirm_delete_product', div: placeholder('Delete this product?') },
+  { id: 'map_barcode_picker', div: body(buildMapBarcodePickerCard()) },
+  { id: 'confirm_delete_product', div: body(buildConfirmDeleteProductCard()) },
 ]
 
 const meta: WorkspaceMeta = {
@@ -71,7 +67,7 @@ const hub = {
       {
         state_id: 0,
         div: nav({
-          initial: 'owner_pos',
+          initial: 'home',
           cards: pages as Array<{ id: string; div: any }>,
         }),
       },
@@ -86,8 +82,8 @@ export const ownerPos: WorkspaceDefinition = {
   hub: hub as any,
   cards: pages.map((page) => ({ name: page.id, card: page.div as any })),
   catalog: {
-    title: 'Owner POS',
-    subtitle: 'Choose a screen',
+    title: 'APEX Owner',
+    subtitle: 'Point of sale and customer verification',
     entries: pages.map((page) => ({
       file: page.id,
       label: page.id.replace(/_/g, ' '),

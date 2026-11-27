@@ -27,6 +27,12 @@
         "uid": "order_lines_quantity"
       }
     },
+    "policies": {
+      "read": "public",
+      "create": "public",
+      "update": "public",
+      "delete": "public"
+    },
     "append": {
       "parent": "orders",
       "parent_field": "order_id",

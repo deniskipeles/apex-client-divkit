@@ -42,6 +42,7 @@
   "cards": {
     "dir": "tools",
     "order": [
+      "home",
       "owner_pos",
       "owner_inventory",
       "owner_checkout_sheet",

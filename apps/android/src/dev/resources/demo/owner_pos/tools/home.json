@@ -1,0 +1,517 @@
+{
+  "type": "container",
+  "background": [
+    {
+      "type": "solid",
+      "color": "#F7F8FB"
+    }
+  ],
+  "height": {
+    "type": "match_parent"
+  },
+  "items": [
+    {
+      "type": "container",
+      "background": [
+        {
+          "type": "solid",
+          "color": "#FFFFFF"
+        }
+      ],
+      "items": [
+        {
+          "type": "text",
+          "font_size": 22,
+          "font_weight": "bold",
+          "line_height": 28,
+          "text": "APEX POS & Handoff",
+          "text_color": "#111319"
+        },
+        {
+          "type": "text",
+          "font_size": 14,
+          "margins": {
+            "top": 4
+          },
+          "text": "Owner POS terminal and customer verification",
+          "text_color": "#5B6070"
+        }
+      ],
+      "orientation": "vertical",
+      "paddings": {
+        "left": 20,
+        "right": 20,
+        "top": 24,
+        "bottom": 20
+      },
+      "width": {
+        "type": "match_parent"
+      }
+    },
+    {
+      "type": "container",
+      "items": [
+        {
+          "type": "text",
+          "font_size": 22,
+          "font_weight": "bold",
+          "line_height": 28,
+          "text": "Owner Operations",
+          "text_color": "#111319"
+        },
+        {
+          "type": "container",
+          "background": [
+            {
+              "type": "solid",
+              "color": "#FFFFFF"
+            }
+          ],
+          "border": {
+            "corner_radius": 16
+          },
+          "items": [
+            {
+              "type": "container",
+              "actions": [
+                {
+                  "log_id": "nav_owner_pos",
+                  "url": "nav://push?id=owner_pos"
+                }
+              ],
+              "content_alignment_vertical": "center",
+              "height": {
+                "type": "fixed",
+                "value": 56
+              },
+              "items": [
+                {
+                  "type": "container",
+                  "items": [
+                    {
+                      "type": "text",
+                      "font_size": 16,
+                      "font_weight": "bold",
+                      "text": "Point of Sale",
+                      "text_color": "#111319"
+                    },
+                    {
+                      "type": "text",
+                      "font_size": 12,
+                      "margins": {
+                        "top": 2
+                      },
+                      "text": "Cart, barcode scan & checkout",
+                      "text_color": "#5B6070"
+                    }
+                  ],
+                  "orientation": "vertical",
+                  "width": {
+                    "type": "match_parent",
+                    "weight": 1
+                  }
+                },
+                {
+                  "type": "text",
+                  "font_size": 24,
+                  "text": "›",
+                  "text_color": "#5B6070"
+                }
+              ],
+              "orientation": "horizontal",
+              "width": {
+                "type": "match_parent"
+              }
+            },
+            {
+              "type": "separator",
+              "delimiter_style": {
+                "color": "#E6E8EF",
+                "orientation": "horizontal"
+              },
+              "margins": {
+                "top": 16,
+                "bottom": 16
+              },
+              "width": {
+                "type": "match_parent"
+              }
+            },
+            {
+              "type": "container",
+              "actions": [
+                {
+                  "log_id": "nav_owner_inventory",
+                  "url": "nav://push?id=owner_inventory"
+                }
+              ],
+              "content_alignment_vertical": "center",
+              "height": {
+                "type": "fixed",
+                "value": 56
+              },
+              "items": [
+                {
+                  "type": "container",
+                  "items": [
+                    {
+                      "type": "text",
+                      "font_size": 16,
+                      "font_weight": "bold",
+                      "text": "Inventory",
+                      "text_color": "#111319"
+                    },
+                    {
+                      "type": "text",
+                      "font_size": 12,
+                      "margins": {
+                        "top": 2
+                      },
+                      "text": "Manage catalog, stock & pricing",
+                      "text_color": "#5B6070"
+                    }
+                  ],
+                  "orientation": "vertical",
+                  "width": {
+                    "type": "match_parent",
+                    "weight": 1
+                  }
+                },
+                {
+                  "type": "text",
+                  "font_size": 24,
+                  "text": "›",
+                  "text_color": "#5B6070"
+                }
+              ],
+              "orientation": "horizontal",
+              "width": {
+                "type": "match_parent"
+              }
+            },
+            {
+              "type": "separator",
+              "delimiter_style": {
+                "color": "#E6E8EF",
+                "orientation": "horizontal"
+              },
+              "margins": {
+                "top": 16,
+                "bottom": 16
+              },
+              "width": {
+                "type": "match_parent"
+              }
+            },
+            {
+              "type": "container",
+              "actions": [
+                {
+                  "log_id": "nav_owner_qr_sequence",
+                  "url": "nav://push?id=owner_qr_sequence"
+                }
+              ],
+              "content_alignment_vertical": "center",
+              "height": {
+                "type": "fixed",
+                "value": 56
+              },
+              "items": [
+                {
+                  "type": "container",
+                  "items": [
+                    {
+                      "type": "text",
+                      "font_size": 16,
+                      "font_weight": "bold",
+                      "text": "QR Handoff",
+                      "text_color": "#111319"
+                    },
+                    {
+                      "type": "text",
+                      "font_size": 12,
+                      "margins": {
+                        "top": 2
+                      },
+                      "text": "Deterministic QR sequence",
+                      "text_color": "#5B6070"
+                    }
+                  ],
+                  "orientation": "vertical",
+                  "width": {
+                    "type": "match_parent",
+                    "weight": 1
+                  }
+                },
+                {
+                  "type": "text",
+                  "font_size": 24,
+                  "text": "›",
+                  "text_color": "#5B6070"
+                }
+              ],
+              "orientation": "horizontal",
+              "width": {
+                "type": "match_parent"
+              }
+            }
+          ],
+          "margins": {
+            "top": 12
+          },
+          "orientation": "vertical",
+          "paddings": {
+            "left": 16,
+            "right": 16,
+            "top": 8,
+            "bottom": 8
+          },
+          "width": {
+            "type": "match_parent"
+          }
+        },
+        {
+          "type": "container",
+          "items": [
+            {
+              "type": "text",
+              "font_size": 22,
+              "font_weight": "bold",
+              "line_height": 28,
+              "text": "Customer Handoff",
+              "text_color": "#111319"
+            }
+          ],
+          "margins": {
+            "top": 24
+          }
+        },
+        {
+          "type": "container",
+          "background": [
+            {
+              "type": "solid",
+              "color": "#FFFFFF"
+            }
+          ],
+          "border": {
+            "corner_radius": 16
+          },
+          "items": [
+            {
+              "type": "container",
+              "actions": [
+                {
+                  "log_id": "nav_customer_shop",
+                  "url": "nav://push?id=customer_shop"
+                }
+              ],
+              "content_alignment_vertical": "center",
+              "height": {
+                "type": "fixed",
+                "value": 56
+              },
+              "items": [
+                {
+                  "type": "container",
+                  "items": [
+                    {
+                      "type": "text",
+                      "font_size": 16,
+                      "font_weight": "bold",
+                      "text": "Customer Shop",
+                      "text_color": "#111319"
+                    },
+                    {
+                      "type": "text",
+                      "font_size": 12,
+                      "margins": {
+                        "top": 2
+                      },
+                      "text": "Browse items & start order",
+                      "text_color": "#5B6070"
+                    }
+                  ],
+                  "orientation": "vertical",
+                  "width": {
+                    "type": "match_parent",
+                    "weight": 1
+                  }
+                },
+                {
+                  "type": "text",
+                  "font_size": 24,
+                  "text": "›",
+                  "text_color": "#5B6070"
+                }
+              ],
+              "orientation": "horizontal",
+              "width": {
+                "type": "match_parent"
+              }
+            },
+            {
+              "type": "separator",
+              "delimiter_style": {
+                "color": "#E6E8EF",
+                "orientation": "horizontal"
+              },
+              "margins": {
+                "top": 16,
+                "bottom": 16
+              },
+              "width": {
+                "type": "match_parent"
+              }
+            },
+            {
+              "type": "container",
+              "actions": [
+                {
+                  "log_id": "nav_customer_history",
+                  "url": "nav://push?id=customer_history"
+                }
+              ],
+              "content_alignment_vertical": "center",
+              "height": {
+                "type": "fixed",
+                "value": 56
+              },
+              "items": [
+                {
+                  "type": "container",
+                  "items": [
+                    {
+                      "type": "text",
+                      "font_size": 16,
+                      "font_weight": "bold",
+                      "text": "Customer History",
+                      "text_color": "#111319"
+                    },
+                    {
+                      "type": "text",
+                      "font_size": 12,
+                      "margins": {
+                        "top": 2
+                      },
+                      "text": "Past orders & receipts",
+                      "text_color": "#5B6070"
+                    }
+                  ],
+                  "orientation": "vertical",
+                  "width": {
+                    "type": "match_parent",
+                    "weight": 1
+                  }
+                },
+                {
+                  "type": "text",
+                  "font_size": 24,
+                  "text": "›",
+                  "text_color": "#5B6070"
+                }
+              ],
+              "orientation": "horizontal",
+              "width": {
+                "type": "match_parent"
+              }
+            },
+            {
+              "type": "separator",
+              "delimiter_style": {
+                "color": "#E6E8EF",
+                "orientation": "horizontal"
+              },
+              "margins": {
+                "top": 16,
+                "bottom": 16
+              },
+              "width": {
+                "type": "match_parent"
+              }
+            },
+            {
+              "type": "container",
+              "actions": [
+                {
+                  "log_id": "nav_customer_scan",
+                  "url": "nav://push?id=customer_scan"
+                }
+              ],
+              "content_alignment_vertical": "center",
+              "height": {
+                "type": "fixed",
+                "value": 56
+              },
+              "items": [
+                {
+                  "type": "container",
+                  "items": [
+                    {
+                      "type": "text",
+                      "font_size": 16,
+                      "font_weight": "bold",
+                      "text": "Scan Order",
+                      "text_color": "#111319"
+                    },
+                    {
+                      "type": "text",
+                      "font_size": 12,
+                      "margins": {
+                        "top": 2
+                      },
+                      "text": "Verify QR order chunks",
+                      "text_color": "#5B6070"
+                    }
+                  ],
+                  "orientation": "vertical",
+                  "width": {
+                    "type": "match_parent",
+                    "weight": 1
+                  }
+                },
+                {
+                  "type": "text",
+                  "font_size": 24,
+                  "text": "›",
+                  "text_color": "#5B6070"
+                }
+              ],
+              "orientation": "horizontal",
+              "width": {
+                "type": "match_parent"
+              }
+            }
+          ],
+          "margins": {
+            "top": 12
+          },
+          "orientation": "vertical",
+          "paddings": {
+            "left": 16,
+            "right": 16,
+            "top": 8,
+            "bottom": 8
+          },
+          "width": {
+            "type": "match_parent"
+          }
+        }
+      ],
+      "orientation": "vertical",
+      "paddings": {
+        "left": 20,
+        "right": 20,
+        "top": 20,
+        "bottom": 20
+      },
+      "width": {
+        "type": "match_parent"
+      }
+    }
+  ],
+  "orientation": "vertical",
+  "width": {
+    "type": "match_parent"
+  }
+}

@@ -1,22 +1,88 @@
 {
-  "type": "container",
-  "items": [
-    {
-      "type": "text",
-      "font_size": 20,
-      "font_weight": "bold",
-      "text": "Map barcode to a product",
-      "text_color": "#111319"
+  "id": "map_barcode_picker_sheet",
+  "type": "bottom_sheet",
+  "custom_props": {
+    "visible": true,
+    "title": "Map Barcode to Product",
+    "body": [
+      {
+        "type": "text",
+        "font_size": 14,
+        "margins": {
+          "bottom": 12
+        },
+        "text": "Select an inventory item to assign the scanned barcode.",
+        "text_color": "#5B6070"
+      },
+      {
+        "type": "json_list",
+        "data_var": "owner.inventory_list",
+        "empty_text": "No records",
+        "item_spacing": 12,
+        "row_card": {
+          "type": "container",
+          "actions": [
+            {
+              "log_id": "map_barcode_item",
+              "url": "local-db://op/pos.map_barcode?raw=%40%7Bowner.scanned_code%7D&sku=%40%7Bitem.sku%7D"
+            },
+            {
+              "log_id": "pop_after_map",
+              "url": "nav://pop"
+            }
+          ],
+          "content_alignment_vertical": "center",
+          "height": {
+            "type": "fixed",
+            "value": 56
+          },
+          "items": [
+            {
+              "type": "container",
+              "items": [
+                {
+                  "type": "text",
+                  "font_size": 16,
+                  "font_weight": "bold",
+                  "text": {},
+                  "text_color": "#111319"
+                },
+                {
+                  "type": "text",
+                  "font_size": 12,
+                  "text": {},
+                  "text_color": "#5B6070"
+                }
+              ],
+              "orientation": "vertical",
+              "width": {
+                "type": "match_parent",
+                "weight": 1
+              }
+            },
+            {
+              "type": "text",
+              "font_size": 14,
+              "font_weight": "bold",
+              "text": {},
+              "text_color": "#5A3BE0"
+            }
+          ],
+          "orientation": "horizontal",
+          "width": {
+            "type": "match_parent"
+          }
+        }
+      }
+    ],
+    "height_fraction": 0.65,
+    "dismiss": {
+      "actions": [
+        {
+          "log_id": "sheet_dismiss",
+          "url": "sheet://dismiss"
+        }
+      ]
     }
-  ],
-  "orientation": "vertical",
-  "paddings": {
-    "left": 20,
-    "right": 20,
-    "top": 20,
-    "bottom": 20
-  },
-  "width": {
-    "type": "match_parent"
   }
 }

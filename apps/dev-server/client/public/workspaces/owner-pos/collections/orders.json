@@ -39,12 +39,19 @@
         "uid": "orders_payload_json"
       }
     },
+    "policies": {
+      "read": "public",
+      "create": "public",
+      "update": "public",
+      "delete": "public"
+    },
     "aggregates": [
       {
         "target": "order_lines",
         "foreign_field": "order_id",
         "outputs": {
           "item_count": "count()",
+          "line_count": "count()",
           "total": "round2(sum(unit_price * quantity))"
         },
         "editable_status": [
@@ -64,7 +71,9 @@
       "child_computed": {
         "line_total_display": "round2(unit_price * quantity)",
         "unit_price_display": "unit_price",
-        "name_and_qty": "item_name"
+        "name_and_qty": "item_name",
+        "total_display": "total",
+        "subtotal_display": "total"
       },
       "child_json_key": "lines_json",
       "child_count_key": "item_count",

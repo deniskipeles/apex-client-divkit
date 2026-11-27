@@ -1296,3 +1296,207 @@ export function buildCustomerScanCard() {
     },
   )
 }
+
+function navRow(title: string, subtitle: string, targetId: string, icon: string) {
+  return new DivContainer({
+    orientation: 'horizontal',
+    width: matchParent(),
+    height: fixed(56),
+    content_alignment_vertical: 'center',
+    actions: [{ log_id: `nav_${targetId}`, url: `nav://push?id=${targetId}` }],
+    items: [
+      new DivContainer({
+        orientation: 'vertical',
+        width: weighted(1),
+        items: [
+          new DivText({ text: title, font_size: 16, font_weight: 'bold', text_color: TOKENS.color.ink }),
+          new DivText({ text: subtitle, font_size: 12, text_color: TOKENS.color.muted, margins: { top: 2 } }),
+        ],
+      }),
+      new DivText({ text: '›', font_size: 24, text_color: TOKENS.color.muted }),
+    ],
+  })
+}
+
+export function buildHomeCard() {
+  return divCard(
+    {},
+    {
+      log_id: 'home',
+      variables: [...ownerVariables(), ...productFormVariables(), ...customerVariables()],
+      states: [
+        {
+          state_id: 0,
+          div: new DivContainer({
+            orientation: 'vertical',
+            width: matchParent(),
+            height: matchParent(),
+            background: [new DivSolidBackground({ color: TOKENS.color.canvas })],
+            items: [
+              new DivContainer({
+                orientation: 'vertical',
+                width: matchParent(),
+                paddings: { left: 20, right: 20, top: 24, bottom: 20 },
+                background: [new DivSolidBackground({ color: TOKENS.color.surface })],
+                items: [
+                  titleText('APEX POS & Handoff'),
+                  new DivText({
+                    text: 'Owner POS terminal and customer verification',
+                    font_size: 14,
+                    text_color: TOKENS.color.muted,
+                    margins: { top: 4 },
+                  }),
+                ],
+              }),
+              new DivContainer({
+                orientation: 'vertical',
+                width: matchParent(),
+                paddings: { left: 20, right: 20, top: 20, bottom: 20 },
+                items: [
+                  titleText('Owner Operations'),
+                  new DivContainer({
+                    orientation: 'vertical',
+                    width: matchParent(),
+                    margins: { top: 12 },
+                    background: [new DivSolidBackground({ color: TOKENS.color.surface })],
+                    border: { corner_radius: TOKENS.radius.card },
+                    paddings: { left: 16, right: 16, top: 8, bottom: 8 },
+                    items: [
+                      navRow('Point of Sale', 'Cart, barcode scan & checkout', 'owner_pos', 'pos'),
+                      divider(),
+                      navRow('Inventory', 'Manage catalog, stock & pricing', 'owner_inventory', 'box'),
+                      divider(),
+                      navRow('QR Handoff', 'Deterministic QR sequence', 'owner_qr_sequence', 'qr'),
+                    ],
+                  }),
+                  new DivContainer({
+                    margins: { top: 24 },
+                    items: [titleText('Customer Handoff')],
+                  }),
+                  new DivContainer({
+                    orientation: 'vertical',
+                    width: matchParent(),
+                    margins: { top: 12 },
+                    background: [new DivSolidBackground({ color: TOKENS.color.surface })],
+                    border: { corner_radius: TOKENS.radius.card },
+                    paddings: { left: 16, right: 16, top: 8, bottom: 8 },
+                    items: [
+                      navRow('Customer Shop', 'Browse items & start order', 'customer_shop', 'shop'),
+                      divider(),
+                      navRow('Customer History', 'Past orders & receipts', 'customer_history', 'history'),
+                      divider(),
+                      navRow('Scan Order', 'Verify QR order chunks', 'customer_scan', 'scan'),
+                    ],
+                  }),
+                ],
+              }),
+            ],
+          }),
+        },
+      ],
+    },
+  )
+}
+
+export function buildMapBarcodePickerCard() {
+  return divCard(
+    {},
+    {
+      log_id: 'map_barcode_picker',
+      variables: ownerVariables(),
+      states: [
+        {
+          state_id: 0,
+          div: bottomSheet('map_barcode_picker_sheet', 'Map Barcode to Product', [
+            new DivText({
+              text: 'Select an inventory item to assign the scanned barcode.',
+              font_size: 14,
+              text_color: TOKENS.color.muted,
+              margins: { bottom: 12 },
+            }),
+            jsonList(
+              'owner.inventory_list',
+              new DivContainer({
+                orientation: 'horizontal',
+                width: matchParent(),
+                height: fixed(56),
+                content_alignment_vertical: 'center',
+                actions: [
+                  opAction('map_barcode_item', 'pos.map_barcode', {
+                    raw: expression('owner.scanned_code'),
+                    sku: expression('item.sku'),
+                  }),
+                  { log_id: 'pop_after_map', url: 'nav://pop' },
+                ],
+                items: [
+                  new DivContainer({
+                    orientation: 'vertical',
+                    width: weighted(1),
+                    items: [
+                      new DivText({ text: expression('item.name'), font_size: 16, font_weight: 'bold', text_color: TOKENS.color.ink }),
+                      new DivText({ text: expression('item.sku'), font_size: 12, text_color: TOKENS.color.muted }),
+                    ],
+                  }),
+                  new DivText({ text: expression('item.price'), font_size: 14, font_weight: 'bold', text_color: TOKENS.color.accent }),
+                ],
+              }),
+            ),
+          ]),
+        },
+      ],
+    },
+  )
+}
+
+export function buildConfirmDeleteProductCard() {
+  return divCard(
+    {},
+    {
+      log_id: 'confirm_delete_product',
+      variables: productFormVariables(),
+      states: [
+        {
+          state_id: 0,
+          div: bottomSheet('confirm_delete_product_sheet', 'Delete Product?', [
+            new DivText({
+              text: 'This product will be permanently removed unless referenced by past orders.',
+              font_size: 14,
+              text_color: TOKENS.color.danger,
+              margins: { bottom: 16 },
+            }),
+            new DivContainer({
+              orientation: 'horizontal',
+              width: matchParent(),
+              height: fixed(56),
+              items: [
+                new DivContainer({
+                  width: weighted(1),
+                  height: fixed(48),
+                  border: { corner_radius: TOKENS.radius.button, stroke: { color: TOKENS.color.line, width: 1 } },
+                  content_alignment_horizontal: 'center',
+                  content_alignment_vertical: 'center',
+                  actions: [{ log_id: 'cancel_delete', url: 'nav://pop' }],
+                  items: [bodyText('Cancel', TOKENS.color.ink)],
+                }),
+                new DivContainer({
+                  width: weighted(1),
+                  height: fixed(48),
+                  margins: { left: 12 },
+                  border: { corner_radius: TOKENS.radius.button },
+                  background: [new DivSolidBackground({ color: TOKENS.color.danger })],
+                  content_alignment_horizontal: 'center',
+                  content_alignment_vertical: 'center',
+                  actions: [
+                    opAction('delete_product', 'inventory.delete', { id: expression('product.form_id') }),
+                    { log_id: 'pop_after_delete', url: 'nav://pop' },
+                  ],
+                  items: [new DivText({ text: 'Delete', font_size: 16, font_weight: 'bold', text_color: TOKENS.color.surface })],
+                }),
+              ],
+            }),
+          ]),
+        },
+      ],
+    },
+  )
+}

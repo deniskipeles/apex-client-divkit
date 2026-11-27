@@ -2304,7 +2304,7 @@ class ExampleUnitTest {
 
     @Test
     fun kioskDemoCards_supplyTheArgumentsTheirToolsRequire() = kotlinx.coroutines.runBlocking {
-        val spec = WorkspaceProvisioner.defaultWorkspaces.first { it.demoRoot.contains("apex_kiosk") }
+        val spec = WorkspaceProvisioner.defaultWorkspaces.first { it.tenantId == "owner_pos" }
         val missingArgument = Regex("""(missing \S+ argument|requires a \S+)""", RegexOption.IGNORE_CASE)
         val deadEnds = mutableListOf<String>()
 
