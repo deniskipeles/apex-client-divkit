@@ -1,0 +1,105 @@
+{
+  "_generated": "apps/dev-server/scripts/build-tool-cases.mjs",
+  "tools": [
+    {
+      "slug": "scan",
+      "toolId": "scan",
+      "caseCount": 7
+    },
+    {
+      "slug": "haptics",
+      "toolId": "haptics",
+      "caseCount": 11
+    },
+    {
+      "slug": "beeper",
+      "toolId": "beeper",
+      "caseCount": 6
+    },
+    {
+      "slug": "camera",
+      "toolId": "camera",
+      "caseCount": 3
+    },
+    {
+      "slug": "files",
+      "toolId": "files",
+      "caseCount": 7
+    },
+    {
+      "slug": "image-manipulation",
+      "toolId": "image-manipulation",
+      "caseCount": 7
+    },
+    {
+      "slug": "embedding",
+      "toolId": "embedding",
+      "caseCount": 5
+    },
+    {
+      "slug": "clipboard",
+      "toolId": "clipboard",
+      "caseCount": 2
+    },
+    {
+      "slug": "biometrics",
+      "toolId": "biometrics",
+      "caseCount": 3
+    },
+    {
+      "slug": "libsignal",
+      "toolId": "libsignal",
+      "caseCount": 7
+    },
+    {
+      "slug": "mobilenetv4",
+      "toolId": "MobileNetV4-small",
+      "caseCount": 3
+    },
+    {
+      "slug": "u2net",
+      "toolId": "u-2-Net.tflite",
+      "caseCount": 3
+    },
+    {
+      "slug": "push",
+      "toolId": "push",
+      "caseCount": 3
+    },
+    {
+      "slug": "offline-cache",
+      "toolId": "offline-cache",
+      "caseCount": 2
+    },
+    {
+      "slug": "realtime-ws",
+      "toolId": "realtime-ws",
+      "caseCount": 5
+    },
+    {
+      "slug": "net",
+      "toolId": "net",
+      "caseCount": 10
+    },
+    {
+      "slug": "print",
+      "toolId": "print",
+      "caseCount": 7
+    },
+    {
+      "slug": "codec",
+      "toolId": "codec",
+      "caseCount": 11
+    },
+    {
+      "slug": "code-generate",
+      "toolId": "code-generate",
+      "caseCount": 6
+    },
+    {
+      "slug": "screen",
+      "toolId": "screen",
+      "caseCount": 5
+    }
+  ]
+}

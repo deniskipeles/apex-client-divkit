@@ -41,7 +41,7 @@ directory (`pnpm dev`).
 Unit tests for the render projection run on the workspace's vitest install:
 
 ```bash
-pnpm test:dev-server        # from the repo root → vitest over client/src/**/*.test.ts
+pnpm test:dev-server        # from the repo root → vitest over client/src/** and tests/**
 ```
 
 They cover the `json_list` row expansion, the Android `if()` → ternary rewrite and the
@@ -137,7 +137,7 @@ packages/pos-ui/src/android-runtime/   pure TS, no React, no DivKit
   icons.ts         icon catalog resolution (icons://native/<name>, aliases, Material ids)
   validate.ts      authoring check: unknown node types, action schemes, name/expr confusion
 client/src/android/AndroidCard.tsx     the React renderer for that tree
-client/src/workspace/toolRuntime.ts    tool dispatch: codec runs, everything else reports
+client/src/workspace/toolRuntime.ts    dual-mode tool dispatch: local default, optional server
 ```
 
 `packages/pos-ui` stays React-free on purpose: `apps/dev-server` uses React 19 while the
@@ -159,7 +159,8 @@ blank fails here instead of on a handset.
 ### What the preview can and cannot do
 
 - Navigation, variables (workspace-scoped like `EngineStateBridge`), `icons://`,
-  `div-action://set_variable` and the whole `data.codec@1` family run for real.
+  `div-action://set_variable` and the whole `data.codec@1` family run for real in
+  **local** mode; **server** mode runs the same family through `/api/tools/invoke`.
 - `local-db://op/*` runs against an in-memory mirror of the workspace collections
   (`WorkspaceMemoryDb`, seeded from the bundle). It implements the registry's operations —
   `db.insert`/`update`/`upsert`/`query`/`query_one`/`count`/`delete`,
@@ -169,8 +170,48 @@ blank fails here instead of on a handset.
   projections, reference delete guards and the `C1|…` transfer envelopes. Records live for the
   life of the page: a restart reloads the seed, exactly like a fresh workspace import.
 - Native-only capabilities (camera, print, LAN sockets, ML, `db.import_schema`, …) are
-  reported as **unavailable** and show up in the event log. They never return a fabricated
-  success — the point of the preview is to tell you when the device would do something it
-  cannot show you.
+  reported as **unavailable** locally. In **server** mode the families with a real server
+  implementation run (files, clipboard, push, net HTTP + loopback hub, print ESC/POS, screen
+  keep-awake, embedding, scan); the rest answer `UNSUPPORTED` with a reason. They never
+  return a fabricated success — the point of the preview is to tell you when the device
+  would do something it cannot show you.
 - `sdui_numpad` / `sdui_signature` are web/desktop custom components that **Android renders
   as nothing**; the validator warns about them and they only appear in web-only workspaces.
+
+### Tool execution: local (default) or server
+
+Every `tools://` action goes through `dispatchWorkspaceUrl`. The toolbar's
+`LOCAL | SERVER` switch selects where the tool runs:
+
+- **local** (default) runs the in-page implementation: `data.codec@1` and
+  `local-db://op/*` execute for real; anything else is reported `unavailable`.
+- **server** posts `{ tool, operation, payload, context }` to
+  `POST /api/tools/invoke` (same origin). The registry in `server/utils/tools/` owns a
+  real implementation for codec, scan, files, offline-cache, clipboard, push, embedding,
+  net (HTTP + loopback hub), print (ESC/POS encoder), screen (keep-awake) and an example
+  `echo` tool. Hardware-only families (camera, haptics, beeper, biometrics, ML, libsignal,
+  realtime, code generation, image manipulation) answer `UNSUPPORTED` with a reason.
+- A tool the server does not know (`status: 'unavailable'`, `reason: 'unknown-tool'`) falls
+  back to the local implementation. A static build has no API route, so it always falls
+  back. `GET /api/tools` lists the server inventory (`supported: false` marks the hardware
+  families). Server mode needs the Node preset (or Cloudflare `nodejs_compat`); the static
+  preset has no API route.
+
+The card payload is flattened exactly like `EngineRouter` does on the device: flat scalars
+in `payload.options` become top-level arguments, so a demo card's
+`{ options: { text: '…' } }` reaches the tool as `{ text: '…' }`. `output` mappings are
+applied on the server (`applyOutputMapping`) and again on the client, so the card's
+`user.*` variables update the same way in both modes.
+
+#### Add a server tool
+
+1. Create `server/utils/tools/impl/<name>.ts` extending `ServerTool` (`id`, `aliases`,
+   `operations`, `invoke(operation, payload, context)`), or put a workspace-specific tool
+   in `server/utils/tools/custom.ts`.
+2. Add the instance to `server/utils/tools/impl/index.ts` (or the registry).
+3. Use `this.ok({ status, ...data })`, `this.failed(message, data)` or
+   `this.refuse(status, message, data)`. `this.unavailable(reason)` makes the client fall
+   back to its local implementation.
+4. Nothing on the client changes: dispatch is id/alias based.
+
+`EchoTool` in `server/utils/tools/custom.ts` is the smallest working extension.

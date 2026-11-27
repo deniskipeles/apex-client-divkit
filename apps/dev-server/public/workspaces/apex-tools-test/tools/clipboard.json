@@ -1,16 +1,11 @@
 {
  "card": {
-  "log_id": "apex_tools_test_clipboard",
+  "log_id": "apex_tool_clipboard",
   "variables": [
-   {
-    "name": "user.workspace_title",
-    "type": "string",
-    "value": "APEX TOOLS"
-   },
    {
     "name": "user.tools_status",
     "type": "string",
-    "value": "Idle"
+    "value": ""
    },
    {
     "name": "user.tools_result",
@@ -23,74 +18,9 @@
     "value": ""
    },
    {
-    "name": "user.haptic_state",
-    "type": "string",
-    "value": "idle"
-   },
-   {
-    "name": "user.beep_state",
-    "type": "string",
-    "value": "idle"
-   },
-   {
     "name": "user.clipboard_content",
     "type": "string",
     "value": ""
-   },
-   {
-    "name": "user.code_image_uri",
-    "type": "string",
-    "value": ""
-   },
-   {
-    "name": "user.code_format",
-    "type": "string",
-    "value": ""
-   },
-   {
-    "name": "user.file_preview",
-    "type": "string",
-    "value": ""
-   },
-   {
-    "name": "user.files_json",
-    "type": "string",
-    "value": "[]"
-   },
-   {
-    "name": "user.net_status",
-    "type": "string",
-    "value": "stopped"
-   },
-   {
-    "name": "user.net_url",
-    "type": "string",
-    "value": ""
-   },
-   {
-    "name": "user.net_shares_json",
-    "type": "string",
-    "value": "[]"
-   },
-   {
-    "name": "user.print_state",
-    "type": "string",
-    "value": "idle"
-   },
-   {
-    "name": "user.screen_state",
-    "type": "string",
-    "value": "idle"
-   },
-   {
-    "name": "user.samples_json",
-    "type": "string",
-    "value": "[]"
-   },
-   {
-    "name": "user.samples_count",
-    "type": "integer",
-    "value": 0
    }
   ],
   "states": [
@@ -140,14 +70,14 @@
          "items": [
           {
            "type": "text",
-           "text": "Clipboard",
+           "text": "clipboard",
            "font_size": 18,
            "font_weight": "bold",
            "text_color": "#F8FAFC"
           },
           {
            "type": "text",
-           "text": "Copy, paste and clear the system clipboard",
+           "text": "Copy text to the system clipboard, paste it back, or clear it.",
            "font_size": 12,
            "font_weight": "regular",
            "text_color": "#94A3B8"
@@ -171,27 +101,120 @@
         {
          "type": "container",
          "orientation": "vertical",
+         "item_spacing": 4,
+         "paddings": {
+          "left": 12,
+          "top": 8,
+          "right": 12,
+          "bottom": 8
+         },
+         "background_color": "#16233A",
+         "border": {
+          "corner_radius": 12,
+          "stroke": {
+           "color": "#1E293B",
+           "width": 1
+          }
+         },
          "items": [
           {
            "type": "text",
-           "text": "Clipboard content",
+           "text": "Status",
            "font_size": 11,
            "font_weight": "bold",
            "text_color": "#94A3B8"
           },
           {
            "type": "text",
-           "text": "@{user.clipboard_content == '' ? 'empty' : user.clipboard_content}",
-           "font_size": 14,
+           "text": "@{user.tools_status}",
+           "font_size": 18,
            "font_weight": "bold",
            "text_color": "#34D399"
+          }
+         ],
+         "id": "metric_status"
+        },
+        {
+         "type": "inline_banner",
+         "custom_props": {
+          "text": "@{user.tools_error == '' ? 'No errors' : user.tools_error}",
+          "tone": "warn"
+         }
+        },
+        {
+         "type": "container",
+         "orientation": "vertical",
+         "items": [
+          {
+           "type": "button",
+           "text": "Copy then paste · 1/2",
+           "font_size": 12,
+           "font_weight": "bold",
+           "text_color": "#FFFFFF",
+           "background_color": "#7C3AED",
+           "corner_radius": 12,
+           "height": {
+            "type": "fixed",
+            "value": 40
+           },
+           "width": {
+            "type": "match_parent"
+           },
+           "actions": [
+            {
+             "url": "tools://clipboard/copy",
+             "payload": {
+              "options": {
+               "text": "apex clipboard"
+              },
+              "output": {
+               "status": "user.tools_status"
+              }
+             }
+            }
+           ],
+           "subtitle": "tools://clipboard/copy",
+           "id": "tool_clipboard_copy_then_paste",
+           "content_description": "clipboard copy"
           },
           {
-           "type": "inline_banner",
-           "custom_props": {
-            "text": "@{user.tools_error == '' ? 'No errors' : user.tools_error}",
-            "tone": "warn"
-           }
+           "type": "button",
+           "text": "Clear · 1/2",
+           "font_size": 12,
+           "font_weight": "bold",
+           "text_color": "#F8FAFC",
+           "background_color": "#16233A",
+           "corner_radius": 12,
+           "height": {
+            "type": "fixed",
+            "value": 40
+           },
+           "width": {
+            "type": "match_parent"
+           },
+           "actions": [
+            {
+             "url": "tools://clipboard/copy",
+             "payload": {
+              "options": {
+               "text": "to be cleared"
+              },
+              "output": {
+               "status": "user.tools_status"
+              }
+             }
+            }
+           ],
+           "border": {
+            "corner_radius": 12,
+            "stroke": {
+             "color": "#1E293B",
+             "width": 1
+            }
+           },
+           "subtitle": "tools://clipboard/copy",
+           "id": "tool_clipboard_clear_empties",
+           "content_description": "clipboard copy"
           }
          ],
          "item_spacing": 8,
@@ -211,131 +234,33 @@
          }
         },
         {
-         "type": "container",
-         "orientation": "vertical",
-         "items": [
+         "type": "button",
+         "text": "Back to tools",
+         "font_size": 12,
+         "font_weight": "bold",
+         "text_color": "#F8FAFC",
+         "background_color": "transparent",
+         "corner_radius": 12,
+         "height": {
+          "type": "fixed",
+          "value": 40
+         },
+         "width": {
+          "type": "match_parent"
+         },
+         "actions": [
           {
-           "type": "button",
-           "text": "Copy receipt text",
-           "font_size": 12,
-           "font_weight": "bold",
-           "text_color": "#F8FAFC",
-           "background_color": "#16233A",
-           "corner_radius": 12,
-           "height": {
-            "type": "fixed",
-            "value": 44
-           },
-           "width": {
-            "type": "match_parent"
-           },
-           "actions": [
-            {
-             "url": "tools://clipboard/copy",
-             "payload": {
-              "options": {
-               "text": "APEX TOOLS - receipt #0001"
-              },
-              "output": {
-               "text": "user.clipboard_content",
-               "length": "user.clipboard_length"
-              }
-             }
-            }
-           ],
-           "border": {
-            "corner_radius": 12,
-            "stroke": {
-             "color": "#1E293B",
-             "width": 1
-            }
-           },
-           "id": "clip_copy"
-          },
-          {
-           "type": "button",
-           "text": "Paste",
-           "font_size": 12,
-           "font_weight": "bold",
-           "text_color": "#F8FAFC",
-           "background_color": "#16233A",
-           "corner_radius": 12,
-           "height": {
-            "type": "fixed",
-            "value": 44
-           },
-           "width": {
-            "type": "match_parent"
-           },
-           "actions": [
-            {
-             "url": "tools://clipboard/paste",
-             "payload": {
-              "output": {
-               "text": "user.clipboard_content"
-              }
-             }
-            }
-           ],
-           "border": {
-            "corner_radius": 12,
-            "stroke": {
-             "color": "#1E293B",
-             "width": 1
-            }
-           },
-           "id": "clip_paste"
-          },
-          {
-           "type": "button",
-           "text": "Clear",
-           "font_size": 12,
-           "font_weight": "bold",
-           "text_color": "#F8FAFC",
-           "background_color": "#16233A",
-           "corner_radius": 12,
-           "height": {
-            "type": "fixed",
-            "value": 44
-           },
-           "width": {
-            "type": "match_parent"
-           },
-           "actions": [
-            {
-             "url": "tools://clipboard/clear",
-             "payload": {
-              "output": {
-               "status": "user.tools_status"
-              }
-             }
-            }
-           ],
-           "border": {
-            "corner_radius": 12,
-            "stroke": {
-             "color": "#1E293B",
-             "width": 1
-            }
-           },
-           "id": "clip_clear"
+           "url": "nav://pop"
           }
          ],
-         "item_spacing": 8,
-         "background_color": "#111C2E",
-         "paddings": {
-          "left": 12,
-          "top": 12,
-          "right": 12,
-          "bottom": 12
-         },
          "border": {
-          "corner_radius": 16,
+          "corner_radius": 12,
           "stroke": {
            "color": "#1E293B",
            "width": 1
           }
-         }
+         },
+         "id": "btn_back_footer"
         }
        ],
        "item_spacing": 12,

@@ -1,0 +1,149 @@
+{
+  "_generated": "apps/dev-server/scripts/build-tool-cases.mjs",
+  "_doNotEdit": "Edit apps/dev-server/tests/tools/definitions.ts and rerun `pnpm tool-cases:build`.",
+  "toolId": "push",
+  "slug": "push",
+  "doc": "docs/tools/push.md",
+  "versionedCapability": "network.push@1",
+  "usage": "Post a local notification into a channel with a priority.",
+  "operations": [
+    "send_alert",
+    "notify",
+    "send"
+  ],
+  "outputMapping": {
+    "notification_id": "user.push_notification_id",
+    "status": "user.push_status"
+  },
+  "options": [
+    {
+      "name": "title",
+      "type": "string",
+      "default": "Apex",
+      "description": "Notification title"
+    },
+    {
+      "name": "message",
+      "type": "string",
+      "description": "Body copy"
+    },
+    {
+      "name": "channel",
+      "type": "string",
+      "default": "orders_dispatch",
+      "description": "Notification channel"
+    },
+    {
+      "name": "priority",
+      "type": "string",
+      "default": "high",
+      "description": "high | normal | low"
+    }
+  ],
+  "results": [
+    {
+      "name": "notification_id",
+      "type": "number",
+      "description": "Posted notification id"
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "description": "SUCCESS"
+    }
+  ],
+  "statuses": [
+    {
+      "status": "SUCCESS",
+      "meaning": "Notification posted"
+    }
+  ],
+  "cardActions": [
+    {
+      "url": "tools://network.push/send_alert",
+      "options": {
+        "title": "Order ready",
+        "message": "Order #1042 is ready"
+      }
+    },
+    {
+      "url": "tools://network.push/notify",
+      "options": {
+        "title": "Shift",
+        "message": "Handover due"
+      }
+    },
+    {
+      "url": "tools://network.push/send",
+      "options": {
+        "title": "Stock",
+        "message": "Coffee low"
+      }
+    }
+  ],
+  "notCovered": [],
+  "cases": [
+    {
+      "name": "send_alert_posts",
+      "description": "Send alert",
+      "steps": [
+        {
+          "url": "tools://network.push/send_alert",
+          "payload": {
+            "options": {
+              "title": "Order ready",
+              "message": "Order #1042 is ready"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": true,
+        "status": "LOGGED_TO_LEDGER",
+        "data": {
+          "notification_id": {
+            "startsWith": "push_"
+          }
+        }
+      }
+    },
+    {
+      "name": "notify_posts",
+      "description": "Notify",
+      "steps": [
+        {
+          "url": "tools://network.push/notify",
+          "payload": {
+            "options": {
+              "title": "Shift",
+              "message": "Handover due"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": true,
+        "status": "LOGGED_TO_LEDGER"
+      }
+    },
+    {
+      "name": "send_posts",
+      "description": "Send",
+      "steps": [
+        {
+          "url": "tools://network.push/send",
+          "payload": {
+            "options": {
+              "title": "Stock",
+              "message": "Coffee low"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": true,
+        "status": "LOGGED_TO_LEDGER"
+      }
+    }
+  ]
+}

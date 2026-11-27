@@ -1,17 +1,16 @@
 {
  "format": "apex.workspace/1",
  "id": "apex_tools_test",
- "title": "APEX TOOLS",
- "subtitle": "Capability harness for every native tool",
- "terminal": "TOOLS-001",
+ "title": "Apex Tools",
+ "subtitle": "Capability conformance harness",
+ "terminal": "TERM-TOOLS-01",
  "accent": "#0EA5E9",
  "mode": "NATIVE",
  "capabilities": [
-  "scanner",
-  "printer",
-  "haptics",
-  "beeper",
-  "clipboard"
+  "tools",
+  "sqlite",
+  "camera",
+  "bluetooth"
  ],
  "tools": {
   "hapticVibration": true,
@@ -40,13 +39,26 @@
   "dir": "tools",
   "order": [
    "local_db",
-   "scanner",
-   "code_generate",
+   "scan",
    "haptics",
+   "beeper",
+   "camera",
+   "files",
+   "image-manipulation",
+   "embedding",
    "clipboard",
+   "biometrics",
+   "libsignal",
+   "mobilenetv4",
+   "u2net",
+   "push",
+   "offline-cache",
+   "realtime-ws",
    "net",
    "print",
-   "files",
+   "codec",
+   "code-generate",
+   "screen",
    "data_views"
   ]
  }

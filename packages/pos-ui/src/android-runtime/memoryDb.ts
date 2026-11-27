@@ -70,7 +70,17 @@ export interface CollectionDefinition {
   id?: number
   name: string
   schema?: CollectionSchema
+  index?: string
   seed?: Array<Record<string, unknown>>
+}
+
+/** `TenantSchemaPackage` — the payload `db.import_schema` accepts. */
+export interface TenantSchemaPackage {
+  apexkit_version?: string
+  version?: string
+  strategy?: string
+  exported_at?: string
+  collections?: CollectionDefinition[]
 }
 
 export interface RecordRow {
@@ -276,6 +286,53 @@ export class WorkspaceMemoryDb {
 
   schema(collection: string): CollectionSchema | undefined {
     return this.stores.get(collection)?.definition.schema
+  }
+
+  /** `ApexKitDatabaseEngine.listCollections()`: `{ id, name, index }` ordered by id. */
+  listCollections(): Array<{ id: number; name: string; index: string }> {
+    return [...this.stores.values()]
+      .map((store) => ({
+        id: store.definition.id ?? 0,
+        name: store.definition.name,
+        index: store.definition.index ?? '',
+      }))
+      .sort((left, right) => left.id - right.id)
+  }
+
+  /**
+   * `ApexKitDatabaseEngine.importTenantSchema()`: upsert each collection definition and seed
+   * a new (or still-empty) collection from its bundle. Existing rows are preserved, so a
+   * re-import never duplicates seed data.
+   */
+  importSchema(schemaPackage: TenantSchemaPackage): number {
+    const collections = Array.isArray(schemaPackage?.collections) ? schemaPackage.collections : []
+    let imported = 0
+    for (const raw of collections) {
+      const name = typeof raw?.name === 'string' ? raw.name.trim() : ''
+      if (!name) continue
+      const definition: CollectionDefinition = {
+        id: typeof raw.id === 'number' ? raw.id : undefined,
+        name,
+        schema: raw.schema,
+        index: typeof raw.index === 'string' ? raw.index : undefined,
+        seed: Array.isArray(raw.seed) ? raw.seed : undefined,
+      }
+      const existing = this.stores.get(name)
+      if (existing) {
+        existing.definition = { ...existing.definition, ...definition }
+        if (existing.rows.length === 0) this.seedCollection(name, definition.seed)
+      } else {
+        this.stores.set(name, { definition, rows: [] })
+        this.seedCollection(name, definition.seed)
+      }
+      imported += 1
+    }
+    return imported
+  }
+
+  private seedCollection(name: string, seed?: Array<Record<string, unknown>>): void {
+    if (!Array.isArray(seed)) return
+    for (const row of seed) this.insertRecord(name, { ...row })
   }
 
   private store(collection: string): CollectionStore {

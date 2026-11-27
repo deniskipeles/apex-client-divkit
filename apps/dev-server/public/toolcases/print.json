@@ -1,0 +1,251 @@
+{
+  "_generated": "apps/dev-server/scripts/build-tool-cases.mjs",
+  "_doNotEdit": "Edit apps/dev-server/tests/tools/definitions.ts and rerun `pnpm tool-cases:build`.",
+  "toolId": "print",
+  "slug": "print",
+  "doc": "docs/tools/print.md",
+  "versionedCapability": "device.printer@1",
+  "usage": "Scan for ESC/POS printers, pair, connect and print a receipt. With Bluetooth off the tool reports BLUETOOTH_OFF instead of a fake success.",
+  "operations": [
+    "scan",
+    "pair",
+    "connect",
+    "disconnect",
+    "print",
+    "status"
+  ],
+  "outputMapping": {
+    "status": "user.print_status",
+    "count": "user.print_device_count",
+    "bytes": "user.print_bytes"
+  },
+  "options": [
+    {
+      "name": "mac",
+      "type": "string",
+      "description": "Printer address"
+    },
+    {
+      "name": "receipt",
+      "type": "string",
+      "description": "Text to print"
+    },
+    {
+      "name": "align",
+      "type": "string",
+      "default": "left",
+      "description": "left | center | right"
+    },
+    {
+      "name": "width",
+      "type": "int",
+      "default": "32",
+      "description": "Characters per line"
+    }
+  ],
+  "results": [
+    {
+      "name": "status",
+      "type": "string",
+      "description": "BLUETOOTH_OFF | CONNECTED | SUCCESS | READY"
+    },
+    {
+      "name": "count",
+      "type": "number",
+      "description": "Printers found"
+    },
+    {
+      "name": "bytes",
+      "type": "number",
+      "description": "Job size"
+    }
+  ],
+  "statuses": [
+    {
+      "status": "BLUETOOTH_OFF",
+      "meaning": "Adapter is off"
+    },
+    {
+      "status": "NO_DEVICE",
+      "meaning": "No printer found"
+    },
+    {
+      "status": "ALREADY_PAIRED",
+      "meaning": "Device already paired"
+    },
+    {
+      "status": "CONNECTED",
+      "meaning": "Socket connected"
+    },
+    {
+      "status": "SUCCESS",
+      "meaning": "Job sent"
+    },
+    {
+      "status": "READY",
+      "meaning": "Status probe"
+    }
+  ],
+  "cardActions": [
+    {
+      "url": "tools://device.printer/scan",
+      "options": {}
+    },
+    {
+      "url": "tools://device.printer/status",
+      "options": {}
+    },
+    {
+      "url": "tools://device.printer/connect",
+      "options": {
+        "mac": "00:11:22:33:44:55"
+      }
+    },
+    {
+      "url": "tools://device.printer/print",
+      "options": {}
+    },
+    {
+      "url": "tools://device.printer/print",
+      "options": {
+        "receipt": "APEX ORDER 1042",
+        "address": "00:11:22:33:44:55"
+      }
+    },
+    {
+      "url": "tools://device.printer/pair",
+      "options": {
+        "mac": "00:11:22:33:44:55"
+      }
+    },
+    {
+      "url": "tools://device.printer/disconnect",
+      "options": {}
+    }
+  ],
+  "notCovered": [],
+  "cases": [
+    {
+      "name": "scan_reports_adapter_state",
+      "description": "Scan printers",
+      "steps": [
+        {
+          "url": "tools://device.printer/scan",
+          "payload": {
+            "options": {}
+          }
+        }
+      ],
+      "expect": {
+        "success": false,
+        "status": "DENIED"
+      }
+    },
+    {
+      "name": "status_reports_ready",
+      "description": "Status",
+      "steps": [
+        {
+          "url": "tools://device.printer/status",
+          "payload": {
+            "options": {}
+          }
+        }
+      ],
+      "expect": {
+        "success": true,
+        "status": "READY"
+      }
+    },
+    {
+      "name": "connect_without_device_fails",
+      "description": "Connect (no MAC)",
+      "steps": [
+        {
+          "url": "tools://device.printer/connect",
+          "payload": {
+            "options": {
+              "mac": "00:11:22:33:44:55"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": false,
+        "status": "DENIED"
+      }
+    },
+    {
+      "name": "print_without_receipt_fails",
+      "description": "Print (no receipt)",
+      "steps": [
+        {
+          "url": "tools://device.printer/print",
+          "payload": {
+            "options": {}
+          }
+        }
+      ],
+      "expect": {
+        "success": false,
+        "status": "FAILED",
+        "errorContains": "missing receipt"
+      }
+    },
+    {
+      "name": "print_without_printer_fails",
+      "description": "Print (no printer)",
+      "steps": [
+        {
+          "url": "tools://device.printer/print",
+          "payload": {
+            "options": {
+              "receipt": "APEX ORDER 1042",
+              "address": "00:11:22:33:44:55"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": false,
+        "status": "UNSUPPORTED",
+        "errorContains": "printer"
+      }
+    },
+    {
+      "name": "pair_without_device_fails",
+      "description": "Pair (no MAC)",
+      "steps": [
+        {
+          "url": "tools://device.printer/pair",
+          "payload": {
+            "options": {
+              "mac": "00:11:22:33:44:55"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": false,
+        "status": "DENIED"
+      }
+    },
+    {
+      "name": "disconnect_is_safe",
+      "description": "Disconnect",
+      "steps": [
+        {
+          "url": "tools://device.printer/disconnect",
+          "payload": {
+            "options": {}
+          }
+        }
+      ],
+      "expect": {
+        "success": false,
+        "status": "FAILED",
+        "errorContains": "missing address"
+      }
+    }
+  ]
+}

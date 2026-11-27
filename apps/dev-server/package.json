@@ -13,7 +13,7 @@
     "start": "node .output/server/index.mjs",
     "typecheck": "tsc --noEmit",
     "workspaces:build": "node scripts/build-workspaces.mjs",
-    "test": "vitest run",
+    "test": "vitest run --root .",
     "toolcases:build": "node scripts/build-tool-cases.mjs",
     "toolcases:check": "node scripts/build-tool-cases.mjs --check",
     "icons:build": "node scripts/build-icon-catalog.mjs",

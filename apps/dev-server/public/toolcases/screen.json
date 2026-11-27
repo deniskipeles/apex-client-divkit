@@ -1,0 +1,232 @@
+{
+  "_generated": "apps/dev-server/scripts/build-tool-cases.mjs",
+  "_doNotEdit": "Edit apps/dev-server/tests/tools/definitions.ts and rerun `pnpm tool-cases:build`.",
+  "toolId": "screen",
+  "slug": "screen",
+  "doc": "docs/tools/screen.md",
+  "versionedCapability": "device.screen@1",
+  "usage": "Keep the screen awake, capture a screenshot or start and stop a recording through the host sinks. With no host it fails closed.",
+  "operations": [
+    "keep-awake",
+    "screenshot",
+    "recording",
+    "status"
+  ],
+  "outputMapping": {
+    "status": "user.screen_status",
+    "enabled": "user.screen_keep_awake",
+    "recording": "user.screen_recording",
+    "recording_id": "user.screen_recording_id",
+    "uri": "user.screen_media_uri",
+    "path": "user.screen_media_path",
+    "width": "user.screen_width",
+    "height": "user.screen_height",
+    "bytes": "user.screen_bytes",
+    "duration_ms": "user.screen_duration_ms",
+    "image_id": "user.screen_image_id",
+    "error": "user.screen_error",
+    "reason": "user.screen_error"
+  },
+  "options": [
+    {
+      "name": "level",
+      "type": "string",
+      "default": "screen",
+      "description": "screen | dim | full"
+    },
+    {
+      "name": "timeout_ms",
+      "type": "int",
+      "default": "0",
+      "description": "Auto-release timeout"
+    },
+    {
+      "name": "format",
+      "type": "string",
+      "default": "png",
+      "description": "Capture format"
+    },
+    {
+      "name": "state",
+      "type": "string",
+      "description": "on | off | start | stop"
+    }
+  ],
+  "results": [
+    {
+      "name": "status",
+      "type": "string",
+      "description": "CAPTURED | RECORDING | RECORDED | IDLE | UNSUPPORTED"
+    },
+    {
+      "name": "enabled",
+      "type": "boolean",
+      "description": "Keep-awake flag"
+    },
+    {
+      "name": "uri",
+      "type": "string",
+      "description": "Media file URI"
+    }
+  ],
+  "statuses": [
+    {
+      "status": "CAPTURED",
+      "meaning": "Screenshot written"
+    },
+    {
+      "status": "RECORDING",
+      "meaning": "Recording started"
+    },
+    {
+      "status": "RECORDED",
+      "meaning": "Recording stopped"
+    },
+    {
+      "status": "IDLE",
+      "meaning": "No recording"
+    },
+    {
+      "status": "UNSUPPORTED",
+      "meaning": "No screen host installed"
+    }
+  ],
+  "cardActions": [
+    {
+      "url": "tools://device.screen/keep-awake",
+      "options": {
+        "state": "on",
+        "level": "screen"
+      }
+    },
+    {
+      "url": "tools://device.screen/keep-awake",
+      "options": {
+        "state": "off"
+      }
+    },
+    {
+      "url": "tools://device.screen/screenshot",
+      "options": {
+        "format": "png"
+      }
+    },
+    {
+      "url": "tools://device.screen/recording",
+      "options": {
+        "state": "start"
+      }
+    },
+    {
+      "url": "tools://device.screen/status",
+      "options": {}
+    }
+  ],
+  "notCovered": [],
+  "cases": [
+    {
+      "name": "keep_awake_on",
+      "description": "Keep awake on",
+      "steps": [
+        {
+          "url": "tools://device.screen/keep-awake",
+          "payload": {
+            "options": {
+              "state": "on",
+              "level": "screen"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": true,
+        "status": "ENABLED",
+        "data": {
+          "enabled": {
+            "equals": true
+          }
+        }
+      }
+    },
+    {
+      "name": "keep_awake_off",
+      "description": "Keep awake off",
+      "steps": [
+        {
+          "url": "tools://device.screen/keep-awake",
+          "payload": {
+            "options": {
+              "state": "off"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": true,
+        "status": "DISABLED",
+        "data": {
+          "enabled": {
+            "equals": false
+          }
+        }
+      }
+    },
+    {
+      "name": "screenshot_without_host_fails",
+      "description": "Screenshot (no host)",
+      "host": "none",
+      "steps": [
+        {
+          "url": "tools://device.screen/screenshot",
+          "payload": {
+            "options": {
+              "format": "png"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": false,
+        "status": "UNSUPPORTED",
+        "errorContains": "host"
+      }
+    },
+    {
+      "name": "recording_without_host_fails",
+      "description": "Record (no host)",
+      "host": "none",
+      "steps": [
+        {
+          "url": "tools://device.screen/recording",
+          "payload": {
+            "options": {
+              "state": "start"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": false,
+        "status": "UNSUPPORTED",
+        "errorContains": "host"
+      }
+    },
+    {
+      "name": "status_reports_state",
+      "description": "Status",
+      "host": "none",
+      "steps": [
+        {
+          "url": "tools://device.screen/status",
+          "payload": {
+            "options": {}
+          }
+        }
+      ],
+      "expect": {
+        "success": true,
+        "status": "READY"
+      }
+    }
+  ]
+}

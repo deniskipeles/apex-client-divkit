@@ -27,6 +27,7 @@ type DbResult =
   | { kind: 'row'; row: QueryRow | null }
   | { kind: 'rowId'; id: string }
   | { kind: 'count'; n: number }
+  | { kind: 'schemaImported'; count: number }
   | { kind: 'scalar'; value: unknown }
   | { kind: 'empty' }
 
@@ -58,6 +59,17 @@ async function runOperation(operation: string, payload: Record<string, unknown>,
   const collection =
     asString(payload.collection) ?? asString(payload.table) ?? asString(payload.from) ?? ''
   switch (operation) {
+    case 'db.import_schema':
+    case 'schema.import': {
+      const raw = payload.schema && typeof payload.schema === 'object' ? payload.schema : payload
+      const pkg = raw as { collections?: unknown }
+      if (!Array.isArray(pkg.collections)) throw new Error("Missing 'collections' array in schema package")
+      return { kind: 'schemaImported', count: db.importSchema(pkg as Parameters<typeof db.importSchema>[0]) }
+    }
+    case 'db.list_collections':
+    case 'schema.collections': {
+      return { kind: 'rows', rows: db.listCollections() as QueryRow[] }
+    }
     case 'db.insert':
     case 'records.create': {
       requireName(collection, 'collection')
@@ -219,7 +231,8 @@ async function runOperation(operation: string, payload: Record<string, unknown>,
         },
       }
     }
-    case 'doc.unpack': {
+    case 'doc.unpack':
+    case 'doc.assemble': {
       const chunks = asChunks(payload)
       const unpacked = db.unpack(chunks, asString(payload.checksum) ?? undefined)
       const checksumOk = unpacked.payload
@@ -305,6 +318,11 @@ function emitResult(result: DbResult, payload: Record<string, unknown>, variable
     case 'count': {
       const target = asString(output?.count)
       if (target) set(target, result.n)
+      return updates
+    }
+    case 'schemaImported': {
+      const target = asString(output?.collections)
+      if (target) set(target, result.count)
       return updates
     }
     case 'scalar': {

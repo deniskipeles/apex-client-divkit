@@ -1,16 +1,11 @@
 {
  "card": {
-  "log_id": "apex_tools_test_haptics",
+  "log_id": "apex_tool_haptics",
   "variables": [
-   {
-    "name": "user.workspace_title",
-    "type": "string",
-    "value": "APEX TOOLS"
-   },
    {
     "name": "user.tools_status",
     "type": "string",
-    "value": "Idle"
+    "value": ""
    },
    {
     "name": "user.tools_result",
@@ -23,74 +18,14 @@
     "value": ""
    },
    {
-    "name": "user.haptic_state",
-    "type": "string",
-    "value": "idle"
-   },
-   {
-    "name": "user.beep_state",
-    "type": "string",
-    "value": "idle"
-   },
-   {
-    "name": "user.clipboard_content",
+    "name": "user.haptics_status",
     "type": "string",
     "value": ""
    },
    {
-    "name": "user.code_image_uri",
+    "name": "user.haptics_pattern",
     "type": "string",
     "value": ""
-   },
-   {
-    "name": "user.code_format",
-    "type": "string",
-    "value": ""
-   },
-   {
-    "name": "user.file_preview",
-    "type": "string",
-    "value": ""
-   },
-   {
-    "name": "user.files_json",
-    "type": "string",
-    "value": "[]"
-   },
-   {
-    "name": "user.net_status",
-    "type": "string",
-    "value": "stopped"
-   },
-   {
-    "name": "user.net_url",
-    "type": "string",
-    "value": ""
-   },
-   {
-    "name": "user.net_shares_json",
-    "type": "string",
-    "value": "[]"
-   },
-   {
-    "name": "user.print_state",
-    "type": "string",
-    "value": "idle"
-   },
-   {
-    "name": "user.screen_state",
-    "type": "string",
-    "value": "idle"
-   },
-   {
-    "name": "user.samples_json",
-    "type": "string",
-    "value": "[]"
-   },
-   {
-    "name": "user.samples_count",
-    "type": "integer",
-    "value": 0
    }
   ],
   "states": [
@@ -140,14 +75,14 @@
          "items": [
           {
            "type": "text",
-           "text": "Haptics and beeper",
+           "text": "haptics",
            "font_size": 18,
            "font_weight": "bold",
            "text_color": "#F8FAFC"
           },
           {
            "type": "text",
-           "text": "Vibration patterns and tone sequences",
+           "text": "Drive the vibration actuator with semantic impacts, one-shot timings or a W3C waveform.",
            "font_size": 12,
            "font_weight": "regular",
            "text_color": "#94A3B8"
@@ -171,27 +106,423 @@
         {
          "type": "container",
          "orientation": "vertical",
+         "item_spacing": 4,
+         "paddings": {
+          "left": 12,
+          "top": 8,
+          "right": 12,
+          "bottom": 8
+         },
+         "background_color": "#16233A",
+         "border": {
+          "corner_radius": 12,
+          "stroke": {
+           "color": "#1E293B",
+           "width": 1
+          }
+         },
          "items": [
           {
            "type": "text",
-           "text": "Haptic / beeper state",
+           "text": "Status",
            "font_size": 11,
            "font_weight": "bold",
            "text_color": "#94A3B8"
           },
           {
            "type": "text",
-           "text": "@{user.haptic_state + ' / ' + user.beep_state}",
-           "font_size": 14,
+           "text": "@{user.tools_status}",
+           "font_size": 18,
            "font_weight": "bold",
            "text_color": "#34D399"
+          }
+         ],
+         "id": "metric_status"
+        },
+        {
+         "type": "inline_banner",
+         "custom_props": {
+          "text": "@{user.tools_error == '' ? 'No errors' : user.tools_error}",
+          "tone": "warn"
+         }
+        },
+        {
+         "type": "container",
+         "orientation": "vertical",
+         "items": [
+          {
+           "type": "button",
+           "text": "Click",
+           "font_size": 12,
+           "font_weight": "bold",
+           "text_color": "#FFFFFF",
+           "background_color": "#7C3AED",
+           "corner_radius": 12,
+           "height": {
+            "type": "fixed",
+            "value": 40
+           },
+           "width": {
+            "type": "match_parent"
+           },
+           "actions": [
+            {
+             "url": "tools://device.haptics/click",
+             "payload": {
+              "options": {
+               "duration_ms": "20"
+              },
+              "output": {
+               "status": "user.tools_status"
+              }
+             }
+            }
+           ],
+           "subtitle": "tools://device.haptics/click",
+           "id": "tool_haptics_click_plays",
+           "content_description": "haptics click"
           },
           {
-           "type": "inline_banner",
-           "custom_props": {
-            "text": "@{user.tools_error == '' ? 'No errors' : user.tools_error}",
-            "tone": "warn"
-           }
+           "type": "button",
+           "text": "Heavy impact",
+           "font_size": 12,
+           "font_weight": "bold",
+           "text_color": "#F8FAFC",
+           "background_color": "#16233A",
+           "corner_radius": 12,
+           "height": {
+            "type": "fixed",
+            "value": 40
+           },
+           "width": {
+            "type": "match_parent"
+           },
+           "actions": [
+            {
+             "url": "tools://device.haptics/heavy",
+             "payload": {
+              "options": {},
+              "output": {
+               "status": "user.tools_status"
+              }
+             }
+            }
+           ],
+           "border": {
+            "corner_radius": 12,
+            "stroke": {
+             "color": "#1E293B",
+             "width": 1
+            }
+           },
+           "subtitle": "tools://device.haptics/heavy",
+           "id": "tool_haptics_heavy_plays",
+           "content_description": "haptics heavy"
+          },
+          {
+           "type": "button",
+           "text": "Vibrate 40ms",
+           "font_size": 12,
+           "font_weight": "bold",
+           "text_color": "#FFFFFF",
+           "background_color": "#7C3AED",
+           "corner_radius": 12,
+           "height": {
+            "type": "fixed",
+            "value": 40
+           },
+           "width": {
+            "type": "match_parent"
+           },
+           "actions": [
+            {
+             "url": "tools://device.haptics/vibrate",
+             "payload": {
+              "options": {
+               "duration_ms": "40",
+               "amplitude": "200"
+              },
+              "output": {
+               "status": "user.tools_status"
+              }
+             }
+            }
+           ],
+           "subtitle": "tools://device.haptics/vibrate",
+           "id": "tool_haptics_vibrate_one_shot",
+           "content_description": "haptics vibrate"
+          },
+          {
+           "type": "button",
+           "text": "Stop",
+           "font_size": 12,
+           "font_weight": "bold",
+           "text_color": "#F8FAFC",
+           "background_color": "#16233A",
+           "corner_radius": 12,
+           "height": {
+            "type": "fixed",
+            "value": 40
+           },
+           "width": {
+            "type": "match_parent"
+           },
+           "actions": [
+            {
+             "url": "tools://device.haptics/stop",
+             "payload": {
+              "options": {},
+              "output": {
+               "status": "user.tools_status"
+              }
+             }
+            }
+           ],
+           "border": {
+            "corner_radius": 12,
+            "stroke": {
+             "color": "#1E293B",
+             "width": 1
+            }
+           },
+           "subtitle": "tools://device.haptics/stop",
+           "id": "tool_haptics_stop_cancels",
+           "content_description": "haptics stop"
+          },
+          {
+           "type": "button",
+           "text": "Status",
+           "font_size": 12,
+           "font_weight": "bold",
+           "text_color": "#FFFFFF",
+           "background_color": "#7C3AED",
+           "corner_radius": 12,
+           "height": {
+            "type": "fixed",
+            "value": 40
+           },
+           "width": {
+            "type": "match_parent"
+           },
+           "actions": [
+            {
+             "url": "tools://device.haptics/status",
+             "payload": {
+              "options": {},
+              "output": {
+               "status": "user.tools_status"
+              }
+             }
+            }
+           ],
+           "subtitle": "tools://device.haptics/status",
+           "id": "tool_haptics_status_reports_ready",
+           "content_description": "haptics status"
+          },
+          {
+           "type": "button",
+           "text": "Perform",
+           "font_size": 12,
+           "font_weight": "bold",
+           "text_color": "#F8FAFC",
+           "background_color": "#16233A",
+           "corner_radius": 12,
+           "height": {
+            "type": "fixed",
+            "value": 40
+           },
+           "width": {
+            "type": "match_parent"
+           },
+           "actions": [
+            {
+             "url": "tools://device.haptics/perform",
+             "payload": {
+              "options": {
+               "pattern": "success"
+              },
+              "output": {
+               "status": "user.tools_status"
+              }
+             }
+            }
+           ],
+           "border": {
+            "corner_radius": 12,
+            "stroke": {
+             "color": "#1E293B",
+             "width": 1
+            }
+           },
+           "subtitle": "tools://device.haptics/perform",
+           "id": "tool_haptics_perform_pattern",
+           "content_description": "haptics perform"
+          },
+          {
+           "type": "button",
+           "text": "Tick",
+           "font_size": 12,
+           "font_weight": "bold",
+           "text_color": "#FFFFFF",
+           "background_color": "#7C3AED",
+           "corner_radius": 12,
+           "height": {
+            "type": "fixed",
+            "value": 40
+           },
+           "width": {
+            "type": "match_parent"
+           },
+           "actions": [
+            {
+             "url": "tools://device.haptics/tick",
+             "payload": {
+              "options": {},
+              "output": {
+               "status": "user.tools_status"
+              }
+             }
+            }
+           ],
+           "subtitle": "tools://device.haptics/tick",
+           "id": "tool_haptics_tick_plays",
+           "content_description": "haptics tick"
+          },
+          {
+           "type": "button",
+           "text": "Success",
+           "font_size": 12,
+           "font_weight": "bold",
+           "text_color": "#F8FAFC",
+           "background_color": "#16233A",
+           "corner_radius": 12,
+           "height": {
+            "type": "fixed",
+            "value": 40
+           },
+           "width": {
+            "type": "match_parent"
+           },
+           "actions": [
+            {
+             "url": "tools://device.haptics/success",
+             "payload": {
+              "options": {},
+              "output": {
+               "status": "user.tools_status"
+              }
+             }
+            }
+           ],
+           "border": {
+            "corner_radius": 12,
+            "stroke": {
+             "color": "#1E293B",
+             "width": 1
+            }
+           },
+           "subtitle": "tools://device.haptics/success",
+           "id": "tool_haptics_success_plays",
+           "content_description": "haptics success"
+          },
+          {
+           "type": "button",
+           "text": "Warning",
+           "font_size": 12,
+           "font_weight": "bold",
+           "text_color": "#FFFFFF",
+           "background_color": "#7C3AED",
+           "corner_radius": 12,
+           "height": {
+            "type": "fixed",
+            "value": 40
+           },
+           "width": {
+            "type": "match_parent"
+           },
+           "actions": [
+            {
+             "url": "tools://device.haptics/warning",
+             "payload": {
+              "options": {},
+              "output": {
+               "status": "user.tools_status"
+              }
+             }
+            }
+           ],
+           "subtitle": "tools://device.haptics/warning",
+           "id": "tool_haptics_warning_plays",
+           "content_description": "haptics warning"
+          },
+          {
+           "type": "button",
+           "text": "Error",
+           "font_size": 12,
+           "font_weight": "bold",
+           "text_color": "#F8FAFC",
+           "background_color": "#16233A",
+           "corner_radius": 12,
+           "height": {
+            "type": "fixed",
+            "value": 40
+           },
+           "width": {
+            "type": "match_parent"
+           },
+           "actions": [
+            {
+             "url": "tools://device.haptics/error",
+             "payload": {
+              "options": {},
+              "output": {
+               "status": "user.tools_status"
+              }
+             }
+            }
+           ],
+           "border": {
+            "corner_radius": 12,
+            "stroke": {
+             "color": "#1E293B",
+             "width": 1
+            }
+           },
+           "subtitle": "tools://device.haptics/error",
+           "id": "tool_haptics_error_plays",
+           "content_description": "haptics error"
+          },
+          {
+           "type": "button",
+           "text": "Repeat click",
+           "font_size": 12,
+           "font_weight": "bold",
+           "text_color": "#FFFFFF",
+           "background_color": "#7C3AED",
+           "corner_radius": 12,
+           "height": {
+            "type": "fixed",
+            "value": 40
+           },
+           "width": {
+            "type": "match_parent"
+           },
+           "actions": [
+            {
+             "url": "tools://device.haptics/click",
+             "payload": {
+              "options": {
+               "duration_ms": "10"
+              },
+              "output": {
+               "status": "user.tools_status"
+              }
+             }
+            }
+           ],
+           "subtitle": "tools://device.haptics/click",
+           "id": "tool_haptics_repeat_is_stable",
+           "content_description": "haptics click"
           }
          ],
          "item_spacing": 8,
@@ -211,254 +542,33 @@
          }
         },
         {
-         "type": "container",
-         "orientation": "vertical",
-         "items": [
+         "type": "button",
+         "text": "Back to tools",
+         "font_size": 12,
+         "font_weight": "bold",
+         "text_color": "#F8FAFC",
+         "background_color": "transparent",
+         "corner_radius": 12,
+         "height": {
+          "type": "fixed",
+          "value": 40
+         },
+         "width": {
+          "type": "match_parent"
+         },
+         "actions": [
           {
-           "type": "container",
-           "orientation": "horizontal",
-           "items": [
-            {
-             "type": "button",
-             "text": "Click",
-             "font_size": 12,
-             "font_weight": "bold",
-             "text_color": "#F8FAFC",
-             "background_color": "#16233A",
-             "corner_radius": 12,
-             "height": {
-              "type": "fixed",
-              "value": 44
-             },
-             "width": {
-              "type": "match_parent"
-             },
-             "actions": [
-              {
-               "url": "tools://haptics/click",
-               "payload": {
-                "output": {
-                 "status": "user.haptic_state"
-                }
-               }
-              }
-             ],
-             "border": {
-              "corner_radius": 12,
-              "stroke": {
-               "color": "#1E293B",
-               "width": 1
-              }
-             },
-             "id": "haptic_click"
-            },
-            {
-             "type": "button",
-             "text": "Success",
-             "font_size": 12,
-             "font_weight": "bold",
-             "text_color": "#F8FAFC",
-             "background_color": "#16233A",
-             "corner_radius": 12,
-             "height": {
-              "type": "fixed",
-              "value": 44
-             },
-             "width": {
-              "type": "match_parent"
-             },
-             "actions": [
-              {
-               "url": "tools://haptics/success",
-               "payload": {
-                "output": {
-                 "status": "user.haptic_state"
-                }
-               }
-              }
-             ],
-             "border": {
-              "corner_radius": 12,
-              "stroke": {
-               "color": "#1E293B",
-               "width": 1
-              }
-             },
-             "id": "haptic_success"
-            }
-           ],
-           "item_spacing": 8
-          },
-          {
-           "type": "container",
-           "orientation": "horizontal",
-           "items": [
-            {
-             "type": "button",
-             "text": "Warning",
-             "font_size": 12,
-             "font_weight": "bold",
-             "text_color": "#F8FAFC",
-             "background_color": "#16233A",
-             "corner_radius": 12,
-             "height": {
-              "type": "fixed",
-              "value": 44
-             },
-             "width": {
-              "type": "match_parent"
-             },
-             "actions": [
-              {
-               "url": "tools://haptics/warning",
-               "payload": {
-                "output": {
-                 "status": "user.haptic_state"
-                }
-               }
-              }
-             ],
-             "border": {
-              "corner_radius": 12,
-              "stroke": {
-               "color": "#1E293B",
-               "width": 1
-              }
-             },
-             "id": "haptic_warning"
-            },
-            {
-             "type": "button",
-             "text": "Stop",
-             "font_size": 12,
-             "font_weight": "bold",
-             "text_color": "#F8FAFC",
-             "background_color": "#16233A",
-             "corner_radius": 12,
-             "height": {
-              "type": "fixed",
-              "value": 44
-             },
-             "width": {
-              "type": "match_parent"
-             },
-             "actions": [
-              {
-               "url": "tools://haptics/stop",
-               "payload": {
-                "output": {
-                 "status": "user.haptic_state"
-                }
-               }
-              }
-             ],
-             "border": {
-              "corner_radius": 12,
-              "stroke": {
-               "color": "#1E293B",
-               "width": 1
-              }
-             },
-             "id": "haptic_stop"
-            }
-           ],
-           "item_spacing": 8
-          },
-          {
-           "type": "container",
-           "orientation": "horizontal",
-           "items": [
-            {
-             "type": "button",
-             "text": "Tone",
-             "font_size": 12,
-             "font_weight": "bold",
-             "text_color": "#F8FAFC",
-             "background_color": "#16233A",
-             "corner_radius": 12,
-             "height": {
-              "type": "fixed",
-              "value": 44
-             },
-             "width": {
-              "type": "match_parent"
-             },
-             "actions": [
-              {
-               "url": "tools://beeper/tone",
-               "payload": {
-                "options": {
-                 "frequency": "880",
-                 "duration_ms": "150"
-                },
-                "output": {
-                 "status": "user.beep_state"
-                }
-               }
-              }
-             ],
-             "border": {
-              "corner_radius": 12,
-              "stroke": {
-               "color": "#1E293B",
-               "width": 1
-              }
-             },
-             "id": "beep_tone"
-            },
-            {
-             "type": "button",
-             "text": "Silence",
-             "font_size": 12,
-             "font_weight": "bold",
-             "text_color": "#F8FAFC",
-             "background_color": "#16233A",
-             "corner_radius": 12,
-             "height": {
-              "type": "fixed",
-              "value": 44
-             },
-             "width": {
-              "type": "match_parent"
-             },
-             "actions": [
-              {
-               "url": "tools://beeper/stop",
-               "payload": {
-                "output": {
-                 "status": "user.beep_state"
-                }
-               }
-              }
-             ],
-             "border": {
-              "corner_radius": 12,
-              "stroke": {
-               "color": "#1E293B",
-               "width": 1
-              }
-             },
-             "id": "beep_stop"
-            }
-           ],
-           "item_spacing": 8
+           "url": "nav://pop"
           }
          ],
-         "item_spacing": 8,
-         "background_color": "#111C2E",
-         "paddings": {
-          "left": 12,
-          "top": 12,
-          "right": 12,
-          "bottom": 12
-         },
          "border": {
-          "corner_radius": 16,
+          "corner_radius": 12,
           "stroke": {
            "color": "#1E293B",
            "width": 1
           }
-         }
+         },
+         "id": "btn_back_footer"
         }
        ],
        "item_spacing": 12,

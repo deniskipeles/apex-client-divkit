@@ -1,0 +1,225 @@
+{
+  "_generated": "apps/dev-server/scripts/build-tool-cases.mjs",
+  "_doNotEdit": "Edit apps/dev-server/tests/tools/definitions.ts and rerun `pnpm tool-cases:build`.",
+  "toolId": "embedding",
+  "slug": "embedding",
+  "doc": "docs/tools/embedding.md",
+  "versionedCapability": "tools://embedding",
+  "usage": "Embed text (512-d hashed fallback when the MediaPipe text JNI is absent) or an image descriptor, and score two texts for similarity.",
+  "operations": [
+    "text",
+    "image",
+    "image_text",
+    "text_similarity",
+    "similarity"
+  ],
+  "outputMapping": {
+    "vector_b64": "user.vector_b64",
+    "dim": "user.vector_dim",
+    "source_type": "user.vector_source",
+    "ocr_text": "user.ocr_text",
+    "score": "user.vector_similarity"
+  },
+  "options": [
+    {
+      "name": "text",
+      "type": "string",
+      "description": "Text to embed"
+    },
+    {
+      "name": "text_a",
+      "type": "string",
+      "description": "First text for similarity"
+    },
+    {
+      "name": "text_b",
+      "type": "string",
+      "description": "Second text for similarity"
+    },
+    {
+      "name": "normalize",
+      "type": "string",
+      "default": "true",
+      "description": "L2-normalize the vector"
+    }
+  ],
+  "results": [
+    {
+      "name": "status",
+      "type": "string",
+      "description": "SUCCESS, FAILED or UNSUPPORTED"
+    },
+    {
+      "name": "vector_b64",
+      "type": "string",
+      "description": "Base64 float32 vector"
+    },
+    {
+      "name": "dim",
+      "type": "number",
+      "description": "Vector dimension"
+    },
+    {
+      "name": "score",
+      "type": "number",
+      "description": "Cosine similarity for the * similarity ops"
+    }
+  ],
+  "statuses": [
+    {
+      "status": "SUCCESS",
+      "meaning": "Vector produced"
+    },
+    {
+      "status": "FAILED",
+      "meaning": "Nothing to embed"
+    }
+  ],
+  "cardActions": [
+    {
+      "url": "tools://embedding/text",
+      "options": {
+        "text": "apex pos kiosk"
+      }
+    },
+    {
+      "url": "tools://embedding/text_similarity",
+      "options": {
+        "text_a": "coffee order",
+        "text_b": "coffee order"
+      }
+    },
+    {
+      "url": "tools://embedding/image",
+      "options": {}
+    },
+    {
+      "url": "tools://embedding/image_text",
+      "options": {
+        "text": "camera"
+      }
+    },
+    {
+      "url": "tools://embedding/similarity",
+      "options": {
+        "text_a": "a",
+        "text_b": "b"
+      }
+    }
+  ],
+  "notCovered": [],
+  "cases": [
+    {
+      "name": "text_embeds",
+      "description": "Embed text",
+      "steps": [
+        {
+          "url": "tools://embedding/text",
+          "payload": {
+            "options": {
+              "text": "apex pos kiosk"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": true,
+        "status": "SUCCESS",
+        "data": {
+          "dim": {
+            "equals": "512"
+          }
+        },
+        "outputs": {
+          "user.vector_dim": {
+            "nonEmpty": true
+          }
+        }
+      }
+    },
+    {
+      "name": "text_similarity_scores",
+      "description": "Compare texts",
+      "steps": [
+        {
+          "url": "tools://embedding/text_similarity",
+          "payload": {
+            "options": {
+              "text_a": "coffee order",
+              "text_b": "coffee order"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": true,
+        "status": "SUCCESS",
+        "data": {
+          "score": {
+            "range": {
+              "min": 0.99,
+              "max": 1
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "image_without_host_fails",
+      "description": "Embed image (no host)",
+      "host": "none",
+      "steps": [
+        {
+          "url": "tools://embedding/image",
+          "payload": {
+            "options": {}
+          }
+        }
+      ],
+      "expect": {
+        "success": false,
+        "status": "FAILED",
+        "errorContains": "decodable"
+      }
+    },
+    {
+      "name": "image_text_without_host_fails",
+      "description": "Embed image+text (no host)",
+      "host": "none",
+      "steps": [
+        {
+          "url": "tools://embedding/image_text",
+          "payload": {
+            "options": {
+              "text": "camera"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": false,
+        "status": "FAILED"
+      }
+    },
+    {
+      "name": "similarity_alias",
+      "description": "Similarity",
+      "steps": [
+        {
+          "url": "tools://embedding/similarity",
+          "payload": {
+            "options": {
+              "text_a": "a",
+              "text_b": "b"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": false,
+        "status": "FAILED",
+        "errorContains": "packed vectors"
+      }
+    }
+  ]
+}

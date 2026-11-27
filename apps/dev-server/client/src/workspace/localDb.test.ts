@@ -249,3 +249,88 @@ describe('local-db:// kiosk flow', () => {
     expect(report.status).toBe('unavailable')
   })
 })
+
+describe('local-db:// schema management', () => {
+  it('lists collections ordered by id with their index keys', async () => {
+    const db = kioskDb()
+    const report = await run(db, 'local-db://op/db.list_collections', {
+      output: { '*': 'user.collections_json', name: 'user.collection_names' },
+    })
+    expect(report.status).toBe('ok')
+    const rows = JSON.parse(String(report.updates['user.collections_json'])) as Array<{ id: number; name: string }>
+    expect(rows.map((row) => row.name)).toEqual(['inventory', 'kiosk_orders', 'kiosk_order_lines'])
+    expect(report.updates['user.collection_names']).toEqual(['inventory', 'kiosk_orders', 'kiosk_order_lines'])
+  })
+
+  it('imports a tenant schema package and seeds it exactly once', async () => {
+    const db = new WorkspaceMemoryDb([])
+    const pkg = {
+      apexkit_version: '0.1.0',
+      collections: [
+        {
+          id: 7,
+          name: 'widgets',
+          schema: { fields: { sku: { type: 'string' } } },
+          index: 'widgets_idx',
+          seed: [{ sku: 'W1' }],
+        },
+      ],
+    }
+
+    const first = await run(db, 'local-db://op/db.import_schema', {
+      schema: pkg,
+      output: { collections: 'user.schema_count' },
+    })
+    expect(first.status).toBe('ok')
+    expect(first.updates['user.schema_count']).toBe(1)
+    expect(db.query('widgets', {}).map((row) => row.sku)).toEqual(['W1'])
+
+    const again = await run(db, 'local-db://op/db.import_schema', { schema: pkg })
+    expect(again.status).toBe('ok')
+    expect(db.query('widgets', {})).toHaveLength(1)
+    expect(db.listCollections()).toEqual([{ id: 7, name: 'widgets', index: 'widgets_idx' }])
+  })
+
+  it('accepts the schema package as the payload root', async () => {
+    const db = new WorkspaceMemoryDb([])
+    const report = await run(db, 'local-db://op/schema.import', {
+      collections: [{ id: 1, name: 'notes', schema: { fields: {} } }],
+    })
+    expect(report.status).toBe('ok')
+    expect(db.has('notes')).toBe(true)
+  })
+
+  it('fails an import without a collections array', async () => {
+    const db = kioskDb()
+    const report = await run(db, 'local-db://op/db.import_schema', { schema: { nope: true } })
+    expect(report.status).toBe('failed')
+    expect(report.message).toContain('collections')
+  })
+})
+
+describe('local-db:// doc.assemble alias', () => {
+  it('unpacks chunks produced by doc.pack', async () => {
+    const db = kioskDb()
+    const created = await run(db, 'local-db://op/db.upsert', {
+      collection: 'kiosk_orders',
+      data: { direction: 'CUSTOMER_REQUEST', status: 'draft' },
+      output: { id: 'user.kiosk_order_id' },
+    })
+    const id = String(created.updates['user.kiosk_order_id'])
+    const packed = await run(db, 'local-db://op/doc.pack', {
+      collection: 'kiosk_orders',
+      id,
+      chunk_bytes: 64,
+      output: { chunks_json: 'user.chunks' },
+    })
+    const chunks = JSON.parse(String(packed.updates['user.chunks'])) as string[]
+
+    const assembled = await run(db, 'local-db://op/doc.assemble', {
+      chunks_json: chunks,
+      output: { ok: 'user.kiosk_unpacked', checksum_ok: 'user.kiosk_checksum_ok' },
+    })
+    expect(assembled.status).toBe('ok')
+    expect(assembled.updates['user.kiosk_unpacked']).toBe(true)
+    expect(assembled.updates['user.kiosk_checksum_ok']).toBe(true)
+  })
+})

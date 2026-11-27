@@ -1,0 +1,141 @@
+{
+  "_generated": "apps/dev-server/scripts/build-tool-cases.mjs",
+  "_doNotEdit": "Edit apps/dev-server/tests/tools/definitions.ts and rerun `pnpm tool-cases:build`.",
+  "toolId": "biometrics",
+  "slug": "biometrics",
+  "doc": "docs/tools/biometrics.md",
+  "versionedCapability": "auth.biometrics@1",
+  "usage": "Ask the OS for device-credential confirmation. Without a host or a lock screen the call is denied; it never auto-approves.",
+  "operations": [
+    "authenticate"
+  ],
+  "outputMapping": {
+    "authenticated": "user.biometric_authenticated"
+  },
+  "options": [
+    {
+      "name": "prompt",
+      "type": "string",
+      "default": "Authentication Required",
+      "description": "Prompt copy"
+    },
+    {
+      "name": "required_role",
+      "type": "string",
+      "description": "Role recorded on success"
+    }
+  ],
+  "results": [
+    {
+      "name": "authenticated",
+      "type": "boolean",
+      "description": "Whether the OS confirmed the credential"
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "description": "SUCCESS | DENIED | CANCELLED"
+    }
+  ],
+  "statuses": [
+    {
+      "status": "SUCCESS",
+      "meaning": "Credential confirmed"
+    },
+    {
+      "status": "DENIED",
+      "meaning": "Refused or unavailable"
+    },
+    {
+      "status": "CANCELLED",
+      "meaning": "The prompt was dismissed"
+    }
+  ],
+  "cardActions": [
+    {
+      "url": "tools://auth.biometrics/authenticate",
+      "options": {
+        "prompt": "Approve refund"
+      }
+    },
+    {
+      "url": "tools://auth.biometrics/authenticate",
+      "options": {
+        "prompt": "Approve refund"
+      }
+    },
+    {
+      "url": "tools://auth.biometrics/authenticate",
+      "options": {
+        "prompt": "Approve refund"
+      }
+    }
+  ],
+  "notCovered": [],
+  "cases": [
+    {
+      "name": "denied_without_host",
+      "description": "Authenticate (no host)",
+      "host": "none",
+      "steps": [
+        {
+          "url": "tools://auth.biometrics/authenticate",
+          "payload": {
+            "options": {
+              "prompt": "Approve refund"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": false,
+        "status": "UNSUPPORTED",
+        "errorContains": "No biometric"
+      }
+    },
+    {
+      "name": "refusing_sink_denies",
+      "description": "Authenticate (refused)",
+      "host": "denied",
+      "steps": [
+        {
+          "url": "tools://auth.biometrics/authenticate",
+          "payload": {
+            "options": {
+              "prompt": "Approve refund"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": false,
+        "status": "FAILED",
+        "errorContains": "cancelled or denied"
+      }
+    },
+    {
+      "name": "accepting_sink_succeeds",
+      "description": "Authenticate (approved)",
+      "host": "fake",
+      "steps": [
+        {
+          "url": "tools://auth.biometrics/authenticate",
+          "payload": {
+            "options": {
+              "prompt": "Approve refund"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": true,
+        "status": "AUTHORIZED",
+        "data": {
+          "authenticated": {
+            "equals": true
+          }
+        }
+      }
+    }
+  ]
+}

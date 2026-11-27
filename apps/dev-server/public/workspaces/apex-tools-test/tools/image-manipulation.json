@@ -1,0 +1,463 @@
+{
+  "card": {
+    "log_id": "apex_tool_image_manipulation",
+    "variables": [
+      {
+        "name": "user.tools_status",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.tools_result",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.tools_error",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.processed_image_uri",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.image_processing_status",
+        "type": "string",
+        "value": ""
+      }
+    ],
+    "states": [
+      {
+        "state_id": 0,
+        "div": {
+          "type": "container",
+          "orientation": "vertical",
+          "items": [
+            {
+              "type": "container",
+              "orientation": "horizontal",
+              "items": [
+                {
+                  "type": "button",
+                  "text": "Back",
+                  "font_size": 12,
+                  "font_weight": "bold",
+                  "text_color": "#F8FAFC",
+                  "background_color": "#16233A",
+                  "corner_radius": 12,
+                  "height": {
+                    "type": "fixed",
+                    "value": 40
+                  },
+                  "width": {
+                    "type": "fixed",
+                    "value": 80
+                  },
+                  "actions": [
+                    {
+                      "url": "nav://pop"
+                    }
+                  ],
+                  "border": {
+                    "corner_radius": 12,
+                    "stroke": {
+                      "color": "#1E293B",
+                      "width": 1
+                    }
+                  },
+                  "id": "btn_back"
+                },
+                {
+                  "type": "container",
+                  "orientation": "vertical",
+                  "items": [
+                    {
+                      "type": "text",
+                      "text": "image-manipulation",
+                      "font_size": 18,
+                      "font_weight": "bold",
+                      "text_color": "#F8FAFC"
+                    },
+                    {
+                      "type": "text",
+                      "text": "Crop, resize, adjust colour, threshold, smooth or remove the background of an image and return the processed URI.",
+                      "font_size": 12,
+                      "font_weight": "regular",
+                      "text_color": "#94A3B8"
+                    }
+                  ],
+                  "weight": 1
+                }
+              ],
+              "item_spacing": 8,
+              "paddings": {
+                "left": 16,
+                "top": 32,
+                "right": 16,
+                "bottom": 8
+              }
+            },
+            {
+              "type": "container",
+              "orientation": "vertical",
+              "items": [
+                {
+                  "type": "container",
+                  "orientation": "vertical",
+                  "item_spacing": 4,
+                  "paddings": {
+                    "left": 12,
+                    "top": 8,
+                    "right": 12,
+                    "bottom": 8
+                  },
+                  "background_color": "#16233A",
+                  "border": {
+                    "corner_radius": 12,
+                    "stroke": {
+                      "color": "#1E293B",
+                      "width": 1
+                    }
+                  },
+                  "items": [
+                    {
+                      "type": "text",
+                      "text": "Status",
+                      "font_size": 11,
+                      "font_weight": "bold",
+                      "text_color": "#94A3B8"
+                    },
+                    {
+                      "type": "text",
+                      "text": "@{user.tools_status}",
+                      "font_size": 18,
+                      "font_weight": "bold",
+                      "text_color": "#34D399"
+                    }
+                  ],
+                  "id": "metric_status"
+                },
+                {
+                  "type": "inline_banner",
+                  "custom_props": {
+                    "text": "@{user.tools_error == '' ? 'No errors' : user.tools_error}",
+                    "tone": "warn"
+                  }
+                },
+                {
+                  "type": "container",
+                  "orientation": "vertical",
+                  "items": [
+                    {
+                      "type": "button",
+                      "text": "Process (no image)",
+                      "font_size": 12,
+                      "font_weight": "bold",
+                      "text_color": "#FFFFFF",
+                      "background_color": "#7C3AED",
+                      "corner_radius": 12,
+                      "height": {
+                        "type": "fixed",
+                        "value": 40
+                      },
+                      "width": {
+                        "type": "match_parent"
+                      },
+                      "actions": [
+                        {
+                          "url": "tools://image-manipulation/process",
+                          "payload": {
+                            "options": {
+                              "op": "remove_background"
+                            },
+                            "output": {
+                              "status": "user.tools_status"
+                            }
+                          }
+                        }
+                      ],
+                      "subtitle": "tools://image-manipulation/process",
+                      "id": "tool_image-manipulation_process_without_image_fails",
+                      "content_description": "image-manipulation process"
+                    },
+                    {
+                      "type": "button",
+                      "text": "Crop (no image)",
+                      "font_size": 12,
+                      "font_weight": "bold",
+                      "text_color": "#F8FAFC",
+                      "background_color": "#16233A",
+                      "corner_radius": 12,
+                      "height": {
+                        "type": "fixed",
+                        "value": 40
+                      },
+                      "width": {
+                        "type": "match_parent"
+                      },
+                      "actions": [
+                        {
+                          "url": "tools://image-manipulation/crop",
+                          "payload": {
+                            "options": {
+                              "width": "64",
+                              "height": "64"
+                            },
+                            "output": {
+                              "status": "user.tools_status"
+                            }
+                          }
+                        }
+                      ],
+                      "border": {
+                        "corner_radius": 12,
+                        "stroke": {
+                          "color": "#1E293B",
+                          "width": 1
+                        }
+                      },
+                      "subtitle": "tools://image-manipulation/crop",
+                      "id": "tool_image-manipulation_crop_without_image_fails",
+                      "content_description": "image-manipulation crop"
+                    },
+                    {
+                      "type": "button",
+                      "text": "Resize (no image)",
+                      "font_size": 12,
+                      "font_weight": "bold",
+                      "text_color": "#FFFFFF",
+                      "background_color": "#7C3AED",
+                      "corner_radius": 12,
+                      "height": {
+                        "type": "fixed",
+                        "value": 40
+                      },
+                      "width": {
+                        "type": "match_parent"
+                      },
+                      "actions": [
+                        {
+                          "url": "tools://image-manipulation/resize",
+                          "payload": {
+                            "options": {
+                              "width": "32",
+                              "height": "32"
+                            },
+                            "output": {
+                              "status": "user.tools_status"
+                            }
+                          }
+                        }
+                      ],
+                      "subtitle": "tools://image-manipulation/resize",
+                      "id": "tool_image-manipulation_resize_without_image_fails",
+                      "content_description": "image-manipulation resize"
+                    },
+                    {
+                      "type": "button",
+                      "text": "Threshold (no image)",
+                      "font_size": 12,
+                      "font_weight": "bold",
+                      "text_color": "#F8FAFC",
+                      "background_color": "#16233A",
+                      "corner_radius": 12,
+                      "height": {
+                        "type": "fixed",
+                        "value": 40
+                      },
+                      "width": {
+                        "type": "match_parent"
+                      },
+                      "actions": [
+                        {
+                          "url": "tools://image-manipulation/threshold",
+                          "payload": {
+                            "options": {
+                              "threshold": "128"
+                            },
+                            "output": {
+                              "status": "user.tools_status"
+                            }
+                          }
+                        }
+                      ],
+                      "border": {
+                        "corner_radius": 12,
+                        "stroke": {
+                          "color": "#1E293B",
+                          "width": 1
+                        }
+                      },
+                      "subtitle": "tools://image-manipulation/threshold",
+                      "id": "tool_image-manipulation_threshold_without_image_fails",
+                      "content_description": "image-manipulation threshold"
+                    },
+                    {
+                      "type": "button",
+                      "text": "Adjust colour (no image)",
+                      "font_size": 12,
+                      "font_weight": "bold",
+                      "text_color": "#FFFFFF",
+                      "background_color": "#7C3AED",
+                      "corner_radius": 12,
+                      "height": {
+                        "type": "fixed",
+                        "value": 40
+                      },
+                      "width": {
+                        "type": "match_parent"
+                      },
+                      "actions": [
+                        {
+                          "url": "tools://image-manipulation/adjust_color",
+                          "payload": {
+                            "options": {
+                              "brightness": "1.1"
+                            },
+                            "output": {
+                              "status": "user.tools_status"
+                            }
+                          }
+                        }
+                      ],
+                      "subtitle": "tools://image-manipulation/adjust_color",
+                      "id": "tool_image-manipulation_adjust_color_without_image_fails",
+                      "content_description": "image-manipulation adjust_color"
+                    },
+                    {
+                      "type": "button",
+                      "text": "Smooth (no image)",
+                      "font_size": 12,
+                      "font_weight": "bold",
+                      "text_color": "#F8FAFC",
+                      "background_color": "#16233A",
+                      "corner_radius": 12,
+                      "height": {
+                        "type": "fixed",
+                        "value": 40
+                      },
+                      "width": {
+                        "type": "match_parent"
+                      },
+                      "actions": [
+                        {
+                          "url": "tools://image-manipulation/smooth",
+                          "payload": {
+                            "options": {},
+                            "output": {
+                              "status": "user.tools_status"
+                            }
+                          }
+                        }
+                      ],
+                      "border": {
+                        "corner_radius": 12,
+                        "stroke": {
+                          "color": "#1E293B",
+                          "width": 1
+                        }
+                      },
+                      "subtitle": "tools://image-manipulation/smooth",
+                      "id": "tool_image-manipulation_smooth_without_image_fails",
+                      "content_description": "image-manipulation smooth"
+                    },
+                    {
+                      "type": "button",
+                      "text": "Remove background (no image)",
+                      "font_size": 12,
+                      "font_weight": "bold",
+                      "text_color": "#FFFFFF",
+                      "background_color": "#7C3AED",
+                      "corner_radius": 12,
+                      "height": {
+                        "type": "fixed",
+                        "value": 40
+                      },
+                      "width": {
+                        "type": "match_parent"
+                      },
+                      "actions": [
+                        {
+                          "url": "tools://image-manipulation/remove_background",
+                          "payload": {
+                            "options": {},
+                            "output": {
+                              "status": "user.tools_status"
+                            }
+                          }
+                        }
+                      ],
+                      "subtitle": "tools://image-manipulation/remove_background",
+                      "id": "tool_image-manipulation_remove_background_without_image_fails",
+                      "content_description": "image-manipulation remove_background"
+                    }
+                  ],
+                  "item_spacing": 8,
+                  "background_color": "#111C2E",
+                  "paddings": {
+                    "left": 12,
+                    "top": 12,
+                    "right": 12,
+                    "bottom": 12
+                  },
+                  "border": {
+                    "corner_radius": 16,
+                    "stroke": {
+                      "color": "#1E293B",
+                      "width": 1
+                    }
+                  }
+                },
+                {
+                  "type": "button",
+                  "text": "Back to tools",
+                  "font_size": 12,
+                  "font_weight": "bold",
+                  "text_color": "#F8FAFC",
+                  "background_color": "transparent",
+                  "corner_radius": 12,
+                  "height": {
+                    "type": "fixed",
+                    "value": 40
+                  },
+                  "width": {
+                    "type": "match_parent"
+                  },
+                  "actions": [
+                    {
+                      "url": "nav://pop"
+                    }
+                  ],
+                  "border": {
+                    "corner_radius": 12,
+                    "stroke": {
+                      "color": "#1E293B",
+                      "width": 1
+                    }
+                  },
+                  "id": "btn_back_footer"
+                }
+              ],
+              "item_spacing": 12,
+              "paddings": {
+                "left": 16,
+                "top": 0,
+                "right": 16,
+                "bottom": 0
+              }
+            }
+          ],
+          "item_spacing": 8,
+          "paddings": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 16
+          }
+        }
+      }
+    ]
+  }
+}

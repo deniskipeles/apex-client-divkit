@@ -23,66 +23,6 @@
     "value": ""
    },
    {
-    "name": "user.haptic_state",
-    "type": "string",
-    "value": "idle"
-   },
-   {
-    "name": "user.beep_state",
-    "type": "string",
-    "value": "idle"
-   },
-   {
-    "name": "user.clipboard_content",
-    "type": "string",
-    "value": ""
-   },
-   {
-    "name": "user.code_image_uri",
-    "type": "string",
-    "value": ""
-   },
-   {
-    "name": "user.code_format",
-    "type": "string",
-    "value": ""
-   },
-   {
-    "name": "user.file_preview",
-    "type": "string",
-    "value": ""
-   },
-   {
-    "name": "user.files_json",
-    "type": "string",
-    "value": "[]"
-   },
-   {
-    "name": "user.net_status",
-    "type": "string",
-    "value": "stopped"
-   },
-   {
-    "name": "user.net_url",
-    "type": "string",
-    "value": ""
-   },
-   {
-    "name": "user.net_shares_json",
-    "type": "string",
-    "value": "[]"
-   },
-   {
-    "name": "user.print_state",
-    "type": "string",
-    "value": "idle"
-   },
-   {
-    "name": "user.screen_state",
-    "type": "string",
-    "value": "idle"
-   },
-   {
     "name": "user.samples_json",
     "type": "string",
     "value": "[]"
@@ -91,6 +31,16 @@
     "name": "user.samples_count",
     "type": "integer",
     "value": 0
+   },
+   {
+    "name": "user.db_result",
+    "type": "string",
+    "value": ""
+   },
+   {
+    "name": "user.chart_json",
+    "type": "string",
+    "value": "[]"
    }
   ],
   "states": [
@@ -113,7 +63,7 @@
         },
         {
          "type": "text",
-         "text": "Every capability, one harness workspace",
+         "text": "Every capability, one card each",
          "font_size": 12,
          "font_weight": "regular",
          "text_color": "#94A3B8"
@@ -224,7 +174,7 @@
         {
          "type": "button",
          "text": "Local DB",
-         "font_size": 14,
+         "font_size": 12,
          "font_weight": "bold",
          "text_color": "#FFFFFF",
          "background_color": "#7C3AED",
@@ -246,7 +196,7 @@
         {
          "type": "button",
          "text": "Scanner",
-         "font_size": 14,
+         "font_size": 12,
          "font_weight": "bold",
          "text_color": "#F8FAFC",
          "background_color": "#16233A",
@@ -260,7 +210,7 @@
          },
          "actions": [
           {
-           "url": "nav://push?id=scanner"
+           "url": "nav://push?id=scan"
           }
          ],
          "border": {
@@ -270,41 +220,12 @@
            "width": 1
           }
          },
-         "id": "nav_scanner"
+         "id": "nav_scan"
         },
         {
          "type": "button",
-         "text": "Code generator",
-         "font_size": 14,
-         "font_weight": "bold",
-         "text_color": "#F8FAFC",
-         "background_color": "#16233A",
-         "corner_radius": 12,
-         "height": {
-          "type": "fixed",
-          "value": 44
-         },
-         "width": {
-          "type": "match_parent"
-         },
-         "actions": [
-          {
-           "url": "nav://push?id=code_generate"
-          }
-         ],
-         "border": {
-          "corner_radius": 12,
-          "stroke": {
-           "color": "#1E293B",
-           "width": 1
-          }
-         },
-         "id": "nav_code_generate"
-        },
-        {
-         "type": "button",
-         "text": "Haptics and beeper",
-         "font_size": 14,
+         "text": "Haptics",
+         "font_size": 12,
          "font_weight": "bold",
          "text_color": "#F8FAFC",
          "background_color": "#16233A",
@@ -332,8 +253,153 @@
         },
         {
          "type": "button",
+         "text": "Beeper",
+         "font_size": 12,
+         "font_weight": "bold",
+         "text_color": "#F8FAFC",
+         "background_color": "#16233A",
+         "corner_radius": 12,
+         "height": {
+          "type": "fixed",
+          "value": 44
+         },
+         "width": {
+          "type": "match_parent"
+         },
+         "actions": [
+          {
+           "url": "nav://push?id=beeper"
+          }
+         ],
+         "border": {
+          "corner_radius": 12,
+          "stroke": {
+           "color": "#1E293B",
+           "width": 1
+          }
+         },
+         "id": "nav_beeper"
+        },
+        {
+         "type": "button",
+         "text": "Camera",
+         "font_size": 12,
+         "font_weight": "bold",
+         "text_color": "#F8FAFC",
+         "background_color": "#16233A",
+         "corner_radius": 12,
+         "height": {
+          "type": "fixed",
+          "value": 44
+         },
+         "width": {
+          "type": "match_parent"
+         },
+         "actions": [
+          {
+           "url": "nav://push?id=camera"
+          }
+         ],
+         "border": {
+          "corner_radius": 12,
+          "stroke": {
+           "color": "#1E293B",
+           "width": 1
+          }
+         },
+         "id": "nav_camera"
+        },
+        {
+         "type": "button",
+         "text": "Files",
+         "font_size": 12,
+         "font_weight": "bold",
+         "text_color": "#F8FAFC",
+         "background_color": "#16233A",
+         "corner_radius": 12,
+         "height": {
+          "type": "fixed",
+          "value": 44
+         },
+         "width": {
+          "type": "match_parent"
+         },
+         "actions": [
+          {
+           "url": "nav://push?id=files"
+          }
+         ],
+         "border": {
+          "corner_radius": 12,
+          "stroke": {
+           "color": "#1E293B",
+           "width": 1
+          }
+         },
+         "id": "nav_files"
+        },
+        {
+         "type": "button",
+         "text": "Image editing",
+         "font_size": 12,
+         "font_weight": "bold",
+         "text_color": "#F8FAFC",
+         "background_color": "#16233A",
+         "corner_radius": 12,
+         "height": {
+          "type": "fixed",
+          "value": 44
+         },
+         "width": {
+          "type": "match_parent"
+         },
+         "actions": [
+          {
+           "url": "nav://push?id=image-manipulation"
+          }
+         ],
+         "border": {
+          "corner_radius": 12,
+          "stroke": {
+           "color": "#1E293B",
+           "width": 1
+          }
+         },
+         "id": "nav_image_manipulation"
+        },
+        {
+         "type": "button",
+         "text": "Embedding",
+         "font_size": 12,
+         "font_weight": "bold",
+         "text_color": "#F8FAFC",
+         "background_color": "#16233A",
+         "corner_radius": 12,
+         "height": {
+          "type": "fixed",
+          "value": 44
+         },
+         "width": {
+          "type": "match_parent"
+         },
+         "actions": [
+          {
+           "url": "nav://push?id=embedding"
+          }
+         ],
+         "border": {
+          "corner_radius": 12,
+          "stroke": {
+           "color": "#1E293B",
+           "width": 1
+          }
+         },
+         "id": "nav_embedding"
+        },
+        {
+         "type": "button",
          "text": "Clipboard",
-         "font_size": 14,
+         "font_size": 12,
          "font_weight": "bold",
          "text_color": "#F8FAFC",
          "background_color": "#16233A",
@@ -361,8 +427,211 @@
         },
         {
          "type": "button",
+         "text": "Biometrics",
+         "font_size": 12,
+         "font_weight": "bold",
+         "text_color": "#F8FAFC",
+         "background_color": "#16233A",
+         "corner_radius": 12,
+         "height": {
+          "type": "fixed",
+          "value": 44
+         },
+         "width": {
+          "type": "match_parent"
+         },
+         "actions": [
+          {
+           "url": "nav://push?id=biometrics"
+          }
+         ],
+         "border": {
+          "corner_radius": 12,
+          "stroke": {
+           "color": "#1E293B",
+           "width": 1
+          }
+         },
+         "id": "nav_biometrics"
+        },
+        {
+         "type": "button",
+         "text": "Libsignal",
+         "font_size": 12,
+         "font_weight": "bold",
+         "text_color": "#F8FAFC",
+         "background_color": "#16233A",
+         "corner_radius": 12,
+         "height": {
+          "type": "fixed",
+          "value": 44
+         },
+         "width": {
+          "type": "match_parent"
+         },
+         "actions": [
+          {
+           "url": "nav://push?id=libsignal"
+          }
+         ],
+         "border": {
+          "corner_radius": 12,
+          "stroke": {
+           "color": "#1E293B",
+           "width": 1
+          }
+         },
+         "id": "nav_libsignal"
+        },
+        {
+         "type": "button",
+         "text": "Image classifier",
+         "font_size": 12,
+         "font_weight": "bold",
+         "text_color": "#F8FAFC",
+         "background_color": "#16233A",
+         "corner_radius": 12,
+         "height": {
+          "type": "fixed",
+          "value": 44
+         },
+         "width": {
+          "type": "match_parent"
+         },
+         "actions": [
+          {
+           "url": "nav://push?id=mobilenetv4"
+          }
+         ],
+         "border": {
+          "corner_radius": 12,
+          "stroke": {
+           "color": "#1E293B",
+           "width": 1
+          }
+         },
+         "id": "nav_mobilenetv4"
+        },
+        {
+         "type": "button",
+         "text": "Background removal",
+         "font_size": 12,
+         "font_weight": "bold",
+         "text_color": "#F8FAFC",
+         "background_color": "#16233A",
+         "corner_radius": 12,
+         "height": {
+          "type": "fixed",
+          "value": 44
+         },
+         "width": {
+          "type": "match_parent"
+         },
+         "actions": [
+          {
+           "url": "nav://push?id=u2net"
+          }
+         ],
+         "border": {
+          "corner_radius": 12,
+          "stroke": {
+           "color": "#1E293B",
+           "width": 1
+          }
+         },
+         "id": "nav_u2net"
+        },
+        {
+         "type": "button",
+         "text": "Push alerts",
+         "font_size": 12,
+         "font_weight": "bold",
+         "text_color": "#F8FAFC",
+         "background_color": "#16233A",
+         "corner_radius": 12,
+         "height": {
+          "type": "fixed",
+          "value": 44
+         },
+         "width": {
+          "type": "match_parent"
+         },
+         "actions": [
+          {
+           "url": "nav://push?id=push"
+          }
+         ],
+         "border": {
+          "corner_radius": 12,
+          "stroke": {
+           "color": "#1E293B",
+           "width": 1
+          }
+         },
+         "id": "nav_push"
+        },
+        {
+         "type": "button",
+         "text": "Offline cache",
+         "font_size": 12,
+         "font_weight": "bold",
+         "text_color": "#F8FAFC",
+         "background_color": "#16233A",
+         "corner_radius": 12,
+         "height": {
+          "type": "fixed",
+          "value": 44
+         },
+         "width": {
+          "type": "match_parent"
+         },
+         "actions": [
+          {
+           "url": "nav://push?id=offline-cache"
+          }
+         ],
+         "border": {
+          "corner_radius": 12,
+          "stroke": {
+           "color": "#1E293B",
+           "width": 1
+          }
+         },
+         "id": "nav_offline_cache"
+        },
+        {
+         "type": "button",
+         "text": "Realtime channel",
+         "font_size": 12,
+         "font_weight": "bold",
+         "text_color": "#F8FAFC",
+         "background_color": "#16233A",
+         "corner_radius": 12,
+         "height": {
+          "type": "fixed",
+          "value": 44
+         },
+         "width": {
+          "type": "match_parent"
+         },
+         "actions": [
+          {
+           "url": "nav://push?id=realtime-ws"
+          }
+         ],
+         "border": {
+          "corner_radius": 12,
+          "stroke": {
+           "color": "#1E293B",
+           "width": 1
+          }
+         },
+         "id": "nav_realtime_ws"
+        },
+        {
+         "type": "button",
          "text": "Network",
-         "font_size": 14,
+         "font_size": 12,
          "font_weight": "bold",
          "text_color": "#F8FAFC",
          "background_color": "#16233A",
@@ -391,7 +660,7 @@
         {
          "type": "button",
          "text": "Printer",
-         "font_size": 14,
+         "font_size": 12,
          "font_weight": "bold",
          "text_color": "#F8FAFC",
          "background_color": "#16233A",
@@ -419,8 +688,8 @@
         },
         {
          "type": "button",
-         "text": "Files and screen",
-         "font_size": 14,
+         "text": "Codec",
+         "font_size": 12,
          "font_weight": "bold",
          "text_color": "#F8FAFC",
          "background_color": "#16233A",
@@ -434,7 +703,7 @@
          },
          "actions": [
           {
-           "url": "nav://push?id=files"
+           "url": "nav://push?id=codec"
           }
          ],
          "border": {
@@ -444,12 +713,70 @@
            "width": 1
           }
          },
-         "id": "nav_files"
+         "id": "nav_codec"
+        },
+        {
+         "type": "button",
+         "text": "Code generator",
+         "font_size": 12,
+         "font_weight": "bold",
+         "text_color": "#F8FAFC",
+         "background_color": "#16233A",
+         "corner_radius": 12,
+         "height": {
+          "type": "fixed",
+          "value": 44
+         },
+         "width": {
+          "type": "match_parent"
+         },
+         "actions": [
+          {
+           "url": "nav://push?id=code-generate"
+          }
+         ],
+         "border": {
+          "corner_radius": 12,
+          "stroke": {
+           "color": "#1E293B",
+           "width": 1
+          }
+         },
+         "id": "nav_code_generate"
+        },
+        {
+         "type": "button",
+         "text": "Screen",
+         "font_size": 12,
+         "font_weight": "bold",
+         "text_color": "#F8FAFC",
+         "background_color": "#16233A",
+         "corner_radius": 12,
+         "height": {
+          "type": "fixed",
+          "value": 44
+         },
+         "width": {
+          "type": "match_parent"
+         },
+         "actions": [
+          {
+           "url": "nav://push?id=screen"
+          }
+         ],
+         "border": {
+          "corner_radius": 12,
+          "stroke": {
+           "color": "#1E293B",
+           "width": 1
+          }
+         },
+         "id": "nav_screen"
         },
         {
          "type": "button",
          "text": "Data views",
-         "font_size": 14,
+         "font_size": 12,
          "font_weight": "bold",
          "text_color": "#F8FAFC",
          "background_color": "#16233A",

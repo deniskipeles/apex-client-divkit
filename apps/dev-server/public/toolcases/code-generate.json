@@ -1,0 +1,266 @@
+{
+  "_generated": "apps/dev-server/scripts/build-tool-cases.mjs",
+  "_doNotEdit": "Edit apps/dev-server/tests/tools/definitions.ts and rerun `pnpm tool-cases:build`.",
+  "toolId": "code-generate",
+  "slug": "code-generate",
+  "doc": "docs/tools/code-generate.md",
+  "versionedCapability": "vision.generate_code@1",
+  "usage": "Render a QR, EAN-13 or Code 128 symbol to a PNG and publish a decodable payload. 1D formats carry a quiet zone so the image scans back.",
+  "operations": [
+    "generate",
+    "qr",
+    "barcode",
+    "render"
+  ],
+  "outputMapping": {
+    "status": "user.code_status",
+    "uri": "user.code_image_uri",
+    "content": "user.code_content",
+    "format": "user.code_format",
+    "kind": "user.code_kind",
+    "code_id": "user.code_id",
+    "matrix_rows": "user.code_matrix_rows"
+  },
+  "options": [
+    {
+      "name": "content",
+      "type": "string",
+      "description": "Payload to encode"
+    },
+    {
+      "name": "format",
+      "type": "string",
+      "default": "qr",
+      "description": "qr | EAN_13 | CODE_128"
+    },
+    {
+      "name": "width",
+      "type": "int",
+      "default": "512",
+      "description": "Image width"
+    },
+    {
+      "name": "height",
+      "type": "int",
+      "default": "512",
+      "description": "Image height"
+    },
+    {
+      "name": "ec_level",
+      "type": "string",
+      "default": "M",
+      "description": "QR error correction"
+    }
+  ],
+  "results": [
+    {
+      "name": "uri",
+      "type": "string",
+      "description": "PNG file URI"
+    },
+    {
+      "name": "format",
+      "type": "string",
+      "description": "Rendered symbology"
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "description": "SUCCESS"
+    }
+  ],
+  "statuses": [
+    {
+      "status": "SUCCESS",
+      "meaning": "Symbol rendered"
+    }
+  ],
+  "cardActions": [
+    {
+      "url": "tools://code-generate/generate",
+      "options": {
+        "content": "apexpos://order/1042",
+        "format": "qr"
+      }
+    },
+    {
+      "url": "tools://code-generate/barcode",
+      "options": {
+        "content": "9780201633610",
+        "format": "EAN_13",
+        "width": "400",
+        "height": "160"
+      }
+    },
+    {
+      "url": "tools://code-generate/barcode",
+      "options": {
+        "content": "APEX-1042",
+        "format": "CODE_128"
+      }
+    },
+    {
+      "url": "tools://code-generate/qr",
+      "options": {
+        "content": "APEX-QR-77"
+      }
+    },
+    {
+      "url": "tools://code-generate/render",
+      "options": {
+        "content": "APEX-77",
+        "format": "qr"
+      }
+    },
+    {
+      "url": "tools://code-generate/generate",
+      "options": {
+        "format": "qr"
+      }
+    }
+  ],
+  "notCovered": [],
+  "cases": [
+    {
+      "name": "qr_renders",
+      "description": "QR",
+      "steps": [
+        {
+          "url": "tools://code-generate/generate",
+          "payload": {
+            "options": {
+              "content": "apexpos://order/1042",
+              "format": "qr"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": true,
+        "status": "SUCCESS",
+        "data": {
+          "format": {
+            "equals": "QR_CODE"
+          },
+          "uri": {
+            "startsWith": "file://"
+          }
+        }
+      }
+    },
+    {
+      "name": "ean13_renders",
+      "description": "EAN-13",
+      "steps": [
+        {
+          "url": "tools://code-generate/barcode",
+          "payload": {
+            "options": {
+              "content": "9780201633610",
+              "format": "EAN_13",
+              "width": "400",
+              "height": "160"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": true,
+        "status": "SUCCESS",
+        "data": {
+          "format": {
+            "equals": "EAN_13"
+          },
+          "uri": {
+            "startsWith": "file://"
+          }
+        }
+      }
+    },
+    {
+      "name": "code128_renders",
+      "description": "Code 128",
+      "steps": [
+        {
+          "url": "tools://code-generate/barcode",
+          "payload": {
+            "options": {
+              "content": "APEX-1042",
+              "format": "CODE_128"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": true,
+        "status": "SUCCESS",
+        "data": {
+          "format": {
+            "equals": "CODE_128"
+          }
+        }
+      }
+    },
+    {
+      "name": "qr_alias_renders",
+      "description": "QR alias",
+      "steps": [
+        {
+          "url": "tools://code-generate/qr",
+          "payload": {
+            "options": {
+              "content": "APEX-QR-77"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": true,
+        "status": "SUCCESS",
+        "data": {
+          "content": {
+            "equals": "APEX-QR-77"
+          }
+        }
+      }
+    },
+    {
+      "name": "render_alias",
+      "description": "Render",
+      "steps": [
+        {
+          "url": "tools://code-generate/render",
+          "payload": {
+            "options": {
+              "content": "APEX-77",
+              "format": "qr"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": true,
+        "status": "SUCCESS"
+      }
+    },
+    {
+      "name": "missing_content_fails",
+      "description": "No content",
+      "steps": [
+        {
+          "url": "tools://code-generate/generate",
+          "payload": {
+            "options": {
+              "format": "qr"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "success": false,
+        "status": "FAILED",
+        "errorContains": "content"
+      }
+    }
+  ]
+}
