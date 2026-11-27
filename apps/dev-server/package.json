@@ -15,7 +15,12 @@
     "workspaces:build": "node scripts/build-workspaces.mjs",
     "test": "vitest run",
     "toolcases:build": "node scripts/build-tool-cases.mjs",
-    "toolcases:check": "node scripts/build-tool-cases.mjs --check"
+    "toolcases:check": "node scripts/build-tool-cases.mjs --check",
+    "icons:build": "node scripts/build-icon-catalog.mjs",
+    "icons:check": "node scripts/build-icon-catalog.mjs --check",
+    "divkit:schema": "node scripts/build-divkit-schema.mjs",
+    "divkit:schema:check": "node scripts/build-divkit-schema.mjs --check",
+    "workspaces:check": "node scripts/build-workspaces.mjs --check"
   },
   "dependencies": {
     "@apex/pos-ui": "workspace:*",

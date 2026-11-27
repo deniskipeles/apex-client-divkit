@@ -178,6 +178,7 @@
                           }
                         }
                       ],
+                      "subtitle": "tools://image-manipulation/process",
                       "id": "tool_image-manipulation_process_without_image_fails",
                       "content_description": "image-manipulation process"
                     },
@@ -217,6 +218,7 @@
                           "width": 1
                         }
                       },
+                      "subtitle": "tools://image-manipulation/crop",
                       "id": "tool_image-manipulation_crop_without_image_fails",
                       "content_description": "image-manipulation crop"
                     },
@@ -249,6 +251,7 @@
                           }
                         }
                       ],
+                      "subtitle": "tools://image-manipulation/resize",
                       "id": "tool_image-manipulation_resize_without_image_fails",
                       "content_description": "image-manipulation resize"
                     },
@@ -287,6 +290,7 @@
                           "width": 1
                         }
                       },
+                      "subtitle": "tools://image-manipulation/threshold",
                       "id": "tool_image-manipulation_threshold_without_image_fails",
                       "content_description": "image-manipulation threshold"
                     },
@@ -318,6 +322,7 @@
                           }
                         }
                       ],
+                      "subtitle": "tools://image-manipulation/adjust_color",
                       "id": "tool_image-manipulation_adjust_color_without_image_fails",
                       "content_description": "image-manipulation adjust_color"
                     },
@@ -354,6 +359,7 @@
                           "width": 1
                         }
                       },
+                      "subtitle": "tools://image-manipulation/smooth",
                       "id": "tool_image-manipulation_smooth_without_image_fails",
                       "content_description": "image-manipulation smooth"
                     },
@@ -383,6 +389,7 @@
                           }
                         }
                       ],
+                      "subtitle": "tools://image-manipulation/remove_background",
                       "id": "tool_image-manipulation_remove_background_without_image_fails",
                       "content_description": "image-manipulation remove_background"
                     }

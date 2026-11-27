@@ -171,6 +171,7 @@
                           }
                         }
                       ],
+                      "subtitle": "tools://camera/capture",
                       "id": "tool_camera_capture_without_host_fails_closed",
                       "content_description": "camera capture"
                     },
@@ -209,6 +210,7 @@
                           "width": 1
                         }
                       },
+                      "subtitle": "tools://camera/torch_toggle",
                       "id": "tool_camera_torch_without_host_fails_closed",
                       "content_description": "camera torch_toggle"
                     },
@@ -238,6 +240,7 @@
                           }
                         }
                       ],
+                      "subtitle": "tools://camera/get_status",
                       "id": "tool_camera_status_reports",
                       "content_description": "camera get_status"
                     }

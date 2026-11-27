@@ -1,0 +1,2773 @@
+{
+  "_generated": "apps/dev-server/scripts/build-icon-catalog.mjs",
+  "_doNotEdit": "Edit apps/android/src/main/java/engine/icons/NativeIconCatalog.kt and rerun `pnpm icons:build`.",
+  "count": 296,
+  "icons": [
+    {
+      "name": "cart",
+      "material": "ShoppingCart",
+      "category": "COMMERCE",
+      "categoryLabel": "Commerce",
+      "aliases": [
+        "shopping_cart",
+        "trolley"
+      ]
+    },
+    {
+      "name": "cart_add",
+      "material": "AddShoppingCart",
+      "category": "COMMERCE",
+      "categoryLabel": "Commerce",
+      "aliases": [
+        "add_to_cart"
+      ]
+    },
+    {
+      "name": "cart_remove",
+      "material": "RemoveShoppingCart",
+      "category": "COMMERCE",
+      "categoryLabel": "Commerce",
+      "aliases": [
+        "remove_from_cart"
+      ]
+    },
+    {
+      "name": "checkout",
+      "material": "ShoppingCartCheckout",
+      "category": "COMMERCE",
+      "categoryLabel": "Commerce",
+      "aliases": [
+        "cart_checkout",
+        "buy"
+      ]
+    },
+    {
+      "name": "bag",
+      "material": "ShoppingBag",
+      "category": "COMMERCE",
+      "categoryLabel": "Commerce",
+      "aliases": [
+        "shopping_bag"
+      ]
+    },
+    {
+      "name": "basket",
+      "material": "ShoppingBasket",
+      "category": "COMMERCE",
+      "categoryLabel": "Commerce",
+      "aliases": [
+        "shopping_basket"
+      ]
+    },
+    {
+      "name": "product",
+      "material": "Inventory2",
+      "category": "COMMERCE",
+      "categoryLabel": "Commerce",
+      "aliases": [
+        "item",
+        "box"
+      ]
+    },
+    {
+      "name": "stock",
+      "material": "Inventory",
+      "category": "COMMERCE",
+      "categoryLabel": "Commerce",
+      "aliases": [
+        "inventory",
+        "on_hand"
+      ]
+    },
+    {
+      "name": "category",
+      "material": "Category",
+      "category": "COMMERCE",
+      "categoryLabel": "Commerce",
+      "aliases": [
+        "categories"
+      ]
+    },
+    {
+      "name": "tag",
+      "material": "Sell",
+      "category": "COMMERCE",
+      "categoryLabel": "Commerce",
+      "aliases": [
+        "price_tag",
+        "sell",
+        "pricetag"
+      ]
+    },
+    {
+      "name": "label",
+      "material": "Label",
+      "category": "COMMERCE",
+      "categoryLabel": "Commerce",
+      "aliases": [
+        "labels",
+        "barcode_label"
+      ]
+    },
+    {
+      "name": "offer",
+      "material": "LocalOffer",
+      "category": "COMMERCE",
+      "categoryLabel": "Commerce",
+      "aliases": [
+        "local_offer",
+        "deal"
+      ]
+    },
+    {
+      "name": "redeem",
+      "material": "Redeem",
+      "category": "COMMERCE",
+      "categoryLabel": "Commerce",
+      "aliases": [
+        "coupon",
+        "gift"
+      ]
+    },
+    {
+      "name": "loyalty",
+      "material": "Loyalty",
+      "category": "COMMERCE",
+      "categoryLabel": "Commerce",
+      "aliases": [
+        "rewards",
+        "points"
+      ]
+    },
+    {
+      "name": "storefront",
+      "material": "Storefront",
+      "category": "COMMERCE",
+      "categoryLabel": "Commerce",
+      "aliases": [
+        "store",
+        "shop"
+      ]
+    },
+    {
+      "name": "mall",
+      "material": "StoreMallDirectory",
+      "category": "COMMERCE",
+      "categoryLabel": "Commerce",
+      "aliases": [
+        "store_mall",
+        "shopping_mall"
+      ]
+    },
+    {
+      "name": "branch",
+      "material": "Business",
+      "category": "COMMERCE",
+      "categoryLabel": "Commerce",
+      "aliases": [
+        "store_branch"
+      ]
+    },
+    {
+      "name": "mall_bag",
+      "material": "LocalMall",
+      "category": "COMMERCE",
+      "categoryLabel": "Commerce",
+      "aliases": [
+        "local_mall"
+      ]
+    },
+    {
+      "name": "convenience",
+      "material": "LocalConvenienceStore",
+      "category": "COMMERCE",
+      "categoryLabel": "Commerce",
+      "aliases": [
+        "convenience_store"
+      ]
+    },
+    {
+      "name": "new_business",
+      "material": "AddBusiness",
+      "category": "COMMERCE",
+      "categoryLabel": "Commerce",
+      "aliases": [
+        "add_business"
+      ]
+    },
+    {
+      "name": "new_order",
+      "material": "PostAdd",
+      "category": "COMMERCE",
+      "categoryLabel": "Commerce",
+      "aliases": [
+        "post_add",
+        "create_order"
+      ]
+    },
+    {
+      "name": "view_module",
+      "material": "ViewModule",
+      "category": "COMMERCE",
+      "categoryLabel": "Commerce",
+      "aliases": [
+        "catalogue",
+        "catalog_grid"
+      ]
+    },
+    {
+      "name": "production",
+      "material": "ProductionQuantityLimits",
+      "category": "COMMERCE",
+      "categoryLabel": "Commerce",
+      "aliases": [
+        "limits",
+        "qty"
+      ]
+    },
+    {
+      "name": "payment",
+      "material": "Payments",
+      "category": "PAYMENT",
+      "categoryLabel": "Payment",
+      "aliases": [
+        "pay",
+        "payments"
+      ]
+    },
+    {
+      "name": "pos",
+      "material": "PointOfSale",
+      "category": "PAYMENT",
+      "categoryLabel": "Payment",
+      "aliases": [
+        "point_of_sale",
+        "terminal"
+      ]
+    },
+    {
+      "name": "card",
+      "material": "CreditCard",
+      "category": "PAYMENT",
+      "categoryLabel": "Payment",
+      "aliases": [
+        "credit_card",
+        "debit_card"
+      ]
+    },
+    {
+      "name": "wallet",
+      "material": "AccountBalanceWallet",
+      "category": "PAYMENT",
+      "categoryLabel": "Payment",
+      "aliases": [
+        "balance_wallet"
+      ]
+    },
+    {
+      "name": "cash",
+      "material": "AttachMoney",
+      "category": "PAYMENT",
+      "categoryLabel": "Payment",
+      "aliases": [
+        "money",
+        "dollar"
+      ]
+    },
+    {
+      "name": "paid",
+      "material": "Paid",
+      "category": "PAYMENT",
+      "categoryLabel": "Payment",
+      "aliases": [
+        "paid_stamp"
+      ]
+    },
+    {
+      "name": "exchange",
+      "material": "CurrencyExchange",
+      "category": "PAYMENT",
+      "categoryLabel": "Payment",
+      "aliases": [
+        "currency_exchange",
+        "fx"
+      ]
+    },
+    {
+      "name": "atm",
+      "material": "LocalAtm",
+      "category": "PAYMENT",
+      "categoryLabel": "Payment",
+      "aliases": [
+        "cash_machine"
+      ]
+    },
+    {
+      "name": "bank",
+      "material": "AccountBalance",
+      "category": "PAYMENT",
+      "categoryLabel": "Payment",
+      "aliases": [
+        "account_balance"
+      ]
+    },
+    {
+      "name": "receipt",
+      "material": "ReceiptLong",
+      "category": "PAYMENT",
+      "categoryLabel": "Payment",
+      "aliases": [
+        "receipt_long",
+        "bill",
+        "invoice"
+      ]
+    },
+    {
+      "name": "receipt_short",
+      "material": "RequestPage",
+      "category": "PAYMENT",
+      "categoryLabel": "Payment",
+      "aliases": []
+    },
+    {
+      "name": "quote",
+      "material": "RequestQuote",
+      "category": "PAYMENT",
+      "categoryLabel": "Payment",
+      "aliases": [
+        "request_quote",
+        "estimate"
+      ]
+    },
+    {
+      "name": "discount",
+      "material": "Percent",
+      "category": "PAYMENT",
+      "categoryLabel": "Payment",
+      "aliases": [
+        "percent",
+        "sale"
+      ]
+    },
+    {
+      "name": "gift_card",
+      "material": "CardGiftcard",
+      "category": "PAYMENT",
+      "categoryLabel": "Payment",
+      "aliases": [
+        "giftcard",
+        "card_giftcard"
+      ]
+    },
+    {
+      "name": "ticket",
+      "material": "ConfirmationNumber",
+      "category": "PAYMENT",
+      "categoryLabel": "Payment",
+      "aliases": [
+        "confirmation_number"
+      ]
+    },
+    {
+      "name": "refund",
+      "material": "AssignmentReturn",
+      "category": "PAYMENT",
+      "categoryLabel": "Payment",
+      "aliases": [
+        "return_payment",
+        "refund_order"
+      ]
+    },
+    {
+      "name": "warehouse",
+      "material": "Warehouse",
+      "category": "INVENTORY",
+      "categoryLabel": "Inventory",
+      "aliases": [
+        "depot"
+      ]
+    },
+    {
+      "name": "database",
+      "material": "Dns",
+      "category": "INVENTORY",
+      "categoryLabel": "Inventory",
+      "aliases": [
+        "db",
+        "sqlite",
+        "records"
+      ]
+    },
+    {
+      "name": "shipping",
+      "material": "LocalShipping",
+      "category": "INVENTORY",
+      "categoryLabel": "Inventory",
+      "aliases": [
+        "truck",
+        "delivery_truck"
+      ]
+    },
+    {
+      "name": "delivery",
+      "material": "DeliveryDining",
+      "category": "INVENTORY",
+      "categoryLabel": "Inventory",
+      "aliases": [
+        "delivery_dining"
+      ]
+    },
+    {
+      "name": "factory",
+      "material": "Factory",
+      "category": "INVENTORY",
+      "categoryLabel": "Inventory",
+      "aliases": [
+        "manufacturing"
+      ]
+    },
+    {
+      "name": "new_box",
+      "material": "AddBox",
+      "category": "INVENTORY",
+      "categoryLabel": "Inventory",
+      "aliases": [
+        "add_box"
+      ]
+    },
+    {
+      "name": "all_inbox",
+      "material": "AllInbox",
+      "category": "INVENTORY",
+      "categoryLabel": "Inventory",
+      "aliases": [
+        "inbox_all"
+      ]
+    },
+    {
+      "name": "shelves",
+      "material": "Garage",
+      "category": "INVENTORY",
+      "categoryLabel": "Inventory",
+      "aliases": [
+        "shelf",
+        "rack",
+        "garage"
+      ]
+    },
+    {
+      "name": "moving",
+      "material": "Moving",
+      "category": "INVENTORY",
+      "categoryLabel": "Inventory",
+      "aliases": [
+        "transfer_stock"
+      ]
+    },
+    {
+      "name": "scan",
+      "material": "QrCodeScanner",
+      "category": "INVENTORY",
+      "categoryLabel": "Inventory",
+      "aliases": [
+        "scanner",
+        "barcode",
+        "scan_code",
+        "qr_code_scanner"
+      ]
+    },
+    {
+      "name": "qr",
+      "material": "QrCode2",
+      "category": "INVENTORY",
+      "categoryLabel": "Inventory",
+      "aliases": [
+        "qr_code",
+        "qrcode"
+      ]
+    },
+    {
+      "name": "nfc",
+      "material": "Nfc",
+      "category": "INVENTORY",
+      "categoryLabel": "Inventory",
+      "aliases": [
+        "tap",
+        "contactless_pay"
+      ]
+    },
+    {
+      "name": "contactless",
+      "material": "Contactless",
+      "category": "INVENTORY",
+      "categoryLabel": "Inventory",
+      "aliases": [
+        "tap_to_pay"
+      ]
+    },
+    {
+      "name": "sensors",
+      "material": "Sensors",
+      "category": "INVENTORY",
+      "categoryLabel": "Inventory",
+      "aliases": [
+        "sensor"
+      ]
+    },
+    {
+      "name": "customer",
+      "material": "Person",
+      "category": "CUSTOMER",
+      "categoryLabel": "Customer",
+      "aliases": [
+        "person",
+        "user",
+        "profile"
+      ]
+    },
+    {
+      "name": "customers",
+      "material": "People",
+      "category": "CUSTOMER",
+      "categoryLabel": "Customer",
+      "aliases": [
+        "people",
+        "users"
+      ]
+    },
+    {
+      "name": "group",
+      "material": "Groups",
+      "category": "CUSTOMER",
+      "categoryLabel": "Customer",
+      "aliases": [
+        "groups",
+        "team"
+      ]
+    },
+    {
+      "name": "person_add",
+      "material": "PersonAdd",
+      "category": "CUSTOMER",
+      "categoryLabel": "Customer",
+      "aliases": [
+        "add_customer",
+        "new_customer"
+      ]
+    },
+    {
+      "name": "manage_accounts",
+      "material": "ManageAccounts",
+      "category": "CUSTOMER",
+      "categoryLabel": "Customer",
+      "aliases": [
+        "account_manage"
+      ]
+    },
+    {
+      "name": "supervisor",
+      "material": "SupervisorAccount",
+      "category": "CUSTOMER",
+      "categoryLabel": "Customer",
+      "aliases": [
+        "supervisor_account"
+      ]
+    },
+    {
+      "name": "support",
+      "material": "SupportAgent",
+      "category": "CUSTOMER",
+      "categoryLabel": "Customer",
+      "aliases": [
+        "support_agent",
+        "help_desk"
+      ]
+    },
+    {
+      "name": "contact_phone",
+      "material": "ContactPhone",
+      "category": "CUSTOMER",
+      "categoryLabel": "Customer",
+      "aliases": [
+        "phone_contact"
+      ]
+    },
+    {
+      "name": "contacts",
+      "material": "Contacts",
+      "category": "CUSTOMER",
+      "categoryLabel": "Customer",
+      "aliases": [
+        "address_book"
+      ]
+    },
+    {
+      "name": "assignment_ind",
+      "material": "AssignmentInd",
+      "category": "CUSTOMER",
+      "categoryLabel": "Customer",
+      "aliases": [
+        "assigned_staff"
+      ]
+    },
+    {
+      "name": "membership",
+      "material": "CardMembership",
+      "category": "CUSTOMER",
+      "categoryLabel": "Customer",
+      "aliases": [
+        "card_membership"
+      ]
+    },
+    {
+      "name": "premium",
+      "material": "WorkspacePremium",
+      "category": "CUSTOMER",
+      "categoryLabel": "Customer",
+      "aliases": [
+        "workspace_premium",
+        "vip"
+      ]
+    },
+    {
+      "name": "achievement",
+      "material": "MilitaryTech",
+      "category": "CUSTOMER",
+      "categoryLabel": "Customer",
+      "aliases": [
+        "military_tech",
+        "tier"
+      ]
+    },
+    {
+      "name": "trophy",
+      "material": "EmojiEvents",
+      "category": "CUSTOMER",
+      "categoryLabel": "Customer",
+      "aliases": [
+        "emoji_events",
+        "award"
+      ]
+    },
+    {
+      "name": "badge",
+      "material": "Badge",
+      "category": "CUSTOMER",
+      "categoryLabel": "Customer",
+      "aliases": [
+        "staff_badge",
+        "id_badge"
+      ]
+    },
+    {
+      "name": "bell",
+      "material": "Notifications",
+      "category": "ALERTS",
+      "categoryLabel": "Alerts",
+      "aliases": [
+        "notification",
+        "notifications",
+        "push"
+      ]
+    },
+    {
+      "name": "bell_add",
+      "material": "NotificationAdd",
+      "category": "ALERTS",
+      "categoryLabel": "Alerts",
+      "aliases": [
+        "notification_add"
+      ]
+    },
+    {
+      "name": "bell_active",
+      "material": "NotificationsActive",
+      "category": "ALERTS",
+      "categoryLabel": "Alerts",
+      "aliases": [
+        "notifications_active"
+      ]
+    },
+    {
+      "name": "bell_important",
+      "material": "NotificationImportant",
+      "category": "ALERTS",
+      "categoryLabel": "Alerts",
+      "aliases": [
+        "notification_important"
+      ]
+    },
+    {
+      "name": "campaign",
+      "material": "Campaign",
+      "category": "ALERTS",
+      "categoryLabel": "Alerts",
+      "aliases": [
+        "broadcast",
+        "megaphone"
+      ]
+    },
+    {
+      "name": "announcement",
+      "material": "Announcement",
+      "category": "ALERTS",
+      "categoryLabel": "Alerts",
+      "aliases": [
+        "news"
+      ]
+    },
+    {
+      "name": "push_pin",
+      "material": "PushPin",
+      "category": "ALERTS",
+      "categoryLabel": "Alerts",
+      "aliases": [
+        "pin_message"
+      ]
+    },
+    {
+      "name": "mute",
+      "material": "DoNotDisturb",
+      "category": "ALERTS",
+      "categoryLabel": "Alerts",
+      "aliases": [
+        "do_not_disturb"
+      ]
+    },
+    {
+      "name": "priority",
+      "material": "PriorityHigh",
+      "category": "ALERTS",
+      "categoryLabel": "Alerts",
+      "aliases": [
+        "priority_high",
+        "urgent"
+      ]
+    },
+    {
+      "name": "report",
+      "material": "Report",
+      "category": "ALERTS",
+      "categoryLabel": "Alerts",
+      "aliases": [
+        "report_flag"
+      ]
+    },
+    {
+      "name": "report_problem",
+      "material": "ReportProblem",
+      "category": "ALERTS",
+      "categoryLabel": "Alerts",
+      "aliases": [
+        "problem"
+      ]
+    },
+    {
+      "name": "error",
+      "material": "Error",
+      "category": "STATUS",
+      "categoryLabel": "Status",
+      "aliases": [
+        "failed",
+        "danger"
+      ]
+    },
+    {
+      "name": "error_outline",
+      "material": "ErrorOutline",
+      "category": "STATUS",
+      "categoryLabel": "Status",
+      "aliases": [
+        "error_alt"
+      ]
+    },
+    {
+      "name": "warning",
+      "material": "Warning",
+      "category": "STATUS",
+      "categoryLabel": "Status",
+      "aliases": [
+        "alert",
+        "caution"
+      ]
+    },
+    {
+      "name": "warning_amber",
+      "material": "WarningAmber",
+      "category": "STATUS",
+      "categoryLabel": "Status",
+      "aliases": [
+        "warning_alt"
+      ]
+    },
+    {
+      "name": "info",
+      "material": "Info",
+      "category": "STATUS",
+      "categoryLabel": "Status",
+      "aliases": [
+        "information"
+      ]
+    },
+    {
+      "name": "help",
+      "material": "Help",
+      "category": "STATUS",
+      "categoryLabel": "Status",
+      "aliases": [
+        "question"
+      ]
+    },
+    {
+      "name": "help_center",
+      "material": "HelpCenter",
+      "category": "STATUS",
+      "categoryLabel": "Status",
+      "aliases": [
+        "support_center"
+      ]
+    },
+    {
+      "name": "check",
+      "material": "CheckCircle",
+      "category": "STATUS",
+      "categoryLabel": "Status",
+      "aliases": [
+        "success",
+        "ok",
+        "checkout_ok"
+      ]
+    },
+    {
+      "name": "check_outline",
+      "material": "CheckCircleOutline",
+      "category": "STATUS",
+      "categoryLabel": "Status",
+      "aliases": [
+        "success_alt"
+      ]
+    },
+    {
+      "name": "cancel",
+      "material": "Cancel",
+      "category": "STATUS",
+      "categoryLabel": "Status",
+      "aliases": [
+        "cancelled",
+        "void"
+      ]
+    },
+    {
+      "name": "close",
+      "material": "Close",
+      "category": "STATUS",
+      "categoryLabel": "Status",
+      "aliases": [
+        "dismiss",
+        "x"
+      ]
+    },
+    {
+      "name": "done",
+      "material": "Done",
+      "category": "STATUS",
+      "categoryLabel": "Status",
+      "aliases": [
+        "tick"
+      ]
+    },
+    {
+      "name": "done_all",
+      "material": "DoneAll",
+      "category": "STATUS",
+      "categoryLabel": "Status",
+      "aliases": [
+        "all_done"
+      ]
+    },
+    {
+      "name": "pending",
+      "material": "PendingActions",
+      "category": "STATUS",
+      "categoryLabel": "Status",
+      "aliases": [
+        "pending_actions"
+      ]
+    },
+    {
+      "name": "task_alt",
+      "material": "TaskAlt",
+      "category": "STATUS",
+      "categoryLabel": "Status",
+      "aliases": [
+        "task_complete"
+      ]
+    },
+    {
+      "name": "clock",
+      "material": "Schedule",
+      "category": "TIME",
+      "categoryLabel": "Time",
+      "aliases": [
+        "schedule",
+        "time"
+      ]
+    },
+    {
+      "name": "hourglass",
+      "material": "HourglassEmpty",
+      "category": "TIME",
+      "categoryLabel": "Time",
+      "aliases": [
+        "waiting",
+        "hourglass_empty"
+      ]
+    },
+    {
+      "name": "hourglass_full",
+      "material": "HourglassBottom",
+      "category": "TIME",
+      "categoryLabel": "Time",
+      "aliases": [
+        "hourglass_bottom"
+      ]
+    },
+    {
+      "name": "timer",
+      "material": "Timer",
+      "category": "TIME",
+      "categoryLabel": "Time",
+      "aliases": [
+        "stopwatch"
+      ]
+    },
+    {
+      "name": "calendar",
+      "material": "CalendarMonth",
+      "category": "TIME",
+      "categoryLabel": "Time",
+      "aliases": [
+        "calendar_month",
+        "date"
+      ]
+    },
+    {
+      "name": "today",
+      "material": "Today",
+      "category": "TIME",
+      "categoryLabel": "Time",
+      "aliases": [
+        "today_date"
+      ]
+    },
+    {
+      "name": "event",
+      "material": "Event",
+      "category": "TIME",
+      "categoryLabel": "Time",
+      "aliases": [
+        "appointment"
+      ]
+    },
+    {
+      "name": "alarm",
+      "material": "Alarm",
+      "category": "TIME",
+      "categoryLabel": "Time",
+      "aliases": [
+        "alarm_clock"
+      ]
+    },
+    {
+      "name": "update",
+      "material": "Update",
+      "category": "TIME",
+      "categoryLabel": "Time",
+      "aliases": [
+        "update_time"
+      ]
+    },
+    {
+      "name": "history",
+      "material": "History",
+      "category": "TIME",
+      "categoryLabel": "Time",
+      "aliases": [
+        "recent",
+        "log"
+      ]
+    },
+    {
+      "name": "sync",
+      "material": "Sync",
+      "category": "CONNECTIVITY",
+      "categoryLabel": "Connectivity",
+      "aliases": [
+        "refresh_sync"
+      ]
+    },
+    {
+      "name": "autorenew",
+      "material": "Autorenew",
+      "category": "CONNECTIVITY",
+      "categoryLabel": "Connectivity",
+      "aliases": [
+        "retry",
+        "cycle"
+      ]
+    },
+    {
+      "name": "cloud",
+      "material": "CloudSync",
+      "category": "CONNECTIVITY",
+      "categoryLabel": "Connectivity",
+      "aliases": [
+        "cloud_sync"
+      ]
+    },
+    {
+      "name": "cloud_download",
+      "material": "CloudDownload",
+      "category": "CONNECTIVITY",
+      "categoryLabel": "Connectivity",
+      "aliases": [
+        "download_cloud"
+      ]
+    },
+    {
+      "name": "cloud_upload",
+      "material": "CloudUpload",
+      "category": "CONNECTIVITY",
+      "categoryLabel": "Connectivity",
+      "aliases": [
+        "upload_cloud"
+      ]
+    },
+    {
+      "name": "cloud_done",
+      "material": "CloudDone",
+      "category": "CONNECTIVITY",
+      "categoryLabel": "Connectivity",
+      "aliases": [
+        "cloud_ok"
+      ]
+    },
+    {
+      "name": "cloud_off",
+      "material": "CloudOff",
+      "category": "CONNECTIVITY",
+      "categoryLabel": "Connectivity",
+      "aliases": [
+        "offline",
+        "cloud_offline"
+      ]
+    },
+    {
+      "name": "wifi",
+      "material": "Wifi",
+      "category": "CONNECTIVITY",
+      "categoryLabel": "Connectivity",
+      "aliases": [
+        "network"
+      ]
+    },
+    {
+      "name": "signal",
+      "material": "SignalCellularAlt",
+      "category": "CONNECTIVITY",
+      "categoryLabel": "Connectivity",
+      "aliases": [
+        "cellular",
+        "strength"
+      ]
+    },
+    {
+      "name": "wifi_off",
+      "material": "WifiOff",
+      "category": "CONNECTIVITY",
+      "categoryLabel": "Connectivity",
+      "aliases": [
+        "no_network"
+      ]
+    },
+    {
+      "name": "bluetooth",
+      "material": "Bluetooth",
+      "category": "CONNECTIVITY",
+      "categoryLabel": "Connectivity",
+      "aliases": [
+        "bt"
+      ]
+    },
+    {
+      "name": "bluetooth_connected",
+      "material": "BluetoothConnected",
+      "category": "CONNECTIVITY",
+      "categoryLabel": "Connectivity",
+      "aliases": [
+        "bt_connected"
+      ]
+    },
+    {
+      "name": "router",
+      "material": "Router",
+      "category": "CONNECTIVITY",
+      "categoryLabel": "Connectivity",
+      "aliases": [
+        "gateway"
+      ]
+    },
+    {
+      "name": "memory",
+      "material": "Memory",
+      "category": "CONNECTIVITY",
+      "categoryLabel": "Connectivity",
+      "aliases": [
+        "chip"
+      ]
+    },
+    {
+      "name": "usb",
+      "material": "Usb",
+      "category": "CONNECTIVITY",
+      "categoryLabel": "Connectivity",
+      "aliases": [
+        "usb_port"
+      ]
+    },
+    {
+      "name": "battery",
+      "material": "BatteryFull",
+      "category": "CONNECTIVITY",
+      "categoryLabel": "Connectivity",
+      "aliases": [
+        "battery_full"
+      ]
+    },
+    {
+      "name": "battery_low",
+      "material": "BatteryAlert",
+      "category": "CONNECTIVITY",
+      "categoryLabel": "Connectivity",
+      "aliases": [
+        "battery_alert"
+      ]
+    },
+    {
+      "name": "power",
+      "material": "Power",
+      "category": "CONNECTIVITY",
+      "categoryLabel": "Connectivity",
+      "aliases": [
+        "power_on"
+      ]
+    },
+    {
+      "name": "cable",
+      "material": "Cable",
+      "category": "CONNECTIVITY",
+      "categoryLabel": "Connectivity",
+      "aliases": [
+        "wired"
+      ]
+    },
+    {
+      "name": "lan",
+      "material": "Lan",
+      "category": "CONNECTIVITY",
+      "categoryLabel": "Connectivity",
+      "aliases": [
+        "ethernet"
+      ]
+    },
+    {
+      "name": "printer",
+      "material": "Print",
+      "category": "DEVICE",
+      "categoryLabel": "Device",
+      "aliases": [
+        "print",
+        "receipt_printer"
+      ]
+    },
+    {
+      "name": "print_off",
+      "material": "PrintDisabled",
+      "category": "DEVICE",
+      "categoryLabel": "Device",
+      "aliases": [
+        "printer_off"
+      ]
+    },
+    {
+      "name": "scanner_device",
+      "material": "DocumentScanner",
+      "category": "DEVICE",
+      "categoryLabel": "Device",
+      "aliases": [
+        "scanner_hw"
+      ]
+    },
+    {
+      "name": "fax",
+      "material": "Fax",
+      "category": "DEVICE",
+      "categoryLabel": "Device",
+      "aliases": [
+        "fax_machine"
+      ]
+    },
+    {
+      "name": "camera",
+      "material": "PhotoCamera",
+      "category": "DEVICE",
+      "categoryLabel": "Device",
+      "aliases": [
+        "photo_camera"
+      ]
+    },
+    {
+      "name": "photo",
+      "material": "Image",
+      "category": "DEVICE",
+      "categoryLabel": "Device",
+      "aliases": [
+        "image",
+        "picture"
+      ]
+    },
+    {
+      "name": "photo_library",
+      "material": "PhotoLibrary",
+      "category": "DEVICE",
+      "categoryLabel": "Device",
+      "aliases": [
+        "gallery",
+        "photos"
+      ]
+    },
+    {
+      "name": "collections",
+      "material": "Collections",
+      "category": "DEVICE",
+      "categoryLabel": "Device",
+      "aliases": [
+        "media"
+      ]
+    },
+    {
+      "name": "video",
+      "material": "Videocam",
+      "category": "DEVICE",
+      "categoryLabel": "Device",
+      "aliases": [
+        "videocam"
+      ]
+    },
+    {
+      "name": "movie",
+      "material": "Movie",
+      "category": "DEVICE",
+      "categoryLabel": "Device",
+      "aliases": [
+        "film"
+      ]
+    },
+    {
+      "name": "tv",
+      "material": "Tv",
+      "category": "DEVICE",
+      "categoryLabel": "Device",
+      "aliases": [
+        "display"
+      ]
+    },
+    {
+      "name": "smart_display",
+      "material": "SmartDisplay",
+      "category": "DEVICE",
+      "categoryLabel": "Device",
+      "aliases": [
+        "kiosk"
+      ]
+    },
+    {
+      "name": "phone",
+      "material": "PhoneAndroid",
+      "category": "DEVICE",
+      "categoryLabel": "Device",
+      "aliases": [
+        "mobile",
+        "smartphone"
+      ]
+    },
+    {
+      "name": "tablet",
+      "material": "TabletMac",
+      "category": "DEVICE",
+      "categoryLabel": "Device",
+      "aliases": [
+        "tablet_mac"
+      ]
+    },
+    {
+      "name": "laptop",
+      "material": "LaptopMac",
+      "category": "DEVICE",
+      "categoryLabel": "Device",
+      "aliases": [
+        "laptop_mac",
+        "computer"
+      ]
+    },
+    {
+      "name": "desktop",
+      "material": "DesktopWindows",
+      "category": "DEVICE",
+      "categoryLabel": "Device",
+      "aliases": [
+        "desktop_windows",
+        "pc"
+      ]
+    },
+    {
+      "name": "watch",
+      "material": "Watch",
+      "category": "DEVICE",
+      "categoryLabel": "Device",
+      "aliases": [
+        "smartwatch"
+      ]
+    },
+    {
+      "name": "devices",
+      "material": "Devices",
+      "category": "DEVICE",
+      "categoryLabel": "Device",
+      "aliases": [
+        "multi_device"
+      ]
+    },
+    {
+      "name": "volume",
+      "material": "VolumeUp",
+      "category": "DEVICE",
+      "categoryLabel": "Device",
+      "aliases": [
+        "audio",
+        "sound"
+      ]
+    },
+    {
+      "name": "volume_off",
+      "material": "VolumeOff",
+      "category": "DEVICE",
+      "categoryLabel": "Device",
+      "aliases": [
+        "mute_audio"
+      ]
+    },
+    {
+      "name": "mic",
+      "material": "Mic",
+      "category": "DEVICE",
+      "categoryLabel": "Device",
+      "aliases": [
+        "microphone"
+      ]
+    },
+    {
+      "name": "headphones",
+      "material": "Headphones",
+      "category": "DEVICE",
+      "categoryLabel": "Device",
+      "aliases": [
+        "headset"
+      ]
+    },
+    {
+      "name": "speaker",
+      "material": "Speaker",
+      "category": "DEVICE",
+      "categoryLabel": "Device",
+      "aliases": [
+        "speaker_audio"
+      ]
+    },
+    {
+      "name": "music",
+      "material": "MusicNote",
+      "category": "DEVICE",
+      "categoryLabel": "Device",
+      "aliases": [
+        "music_note",
+        "beeper",
+        "tone"
+      ]
+    },
+    {
+      "name": "haptics",
+      "material": "Vibration",
+      "category": "DEVICE",
+      "categoryLabel": "Device",
+      "aliases": [
+        "vibration",
+        "buzz",
+        "vibrate"
+      ]
+    },
+    {
+      "name": "dashboard",
+      "material": "Dashboard",
+      "category": "ANALYTICS",
+      "categoryLabel": "Analytics",
+      "aliases": [
+        "overview"
+      ]
+    },
+    {
+      "name": "insights",
+      "material": "Insights",
+      "category": "ANALYTICS",
+      "categoryLabel": "Analytics",
+      "aliases": [
+        "insight"
+      ]
+    },
+    {
+      "name": "bar_chart",
+      "material": "BarChart",
+      "category": "ANALYTICS",
+      "categoryLabel": "Analytics",
+      "aliases": [
+        "chart_bar",
+        "sales_chart",
+        "chart"
+      ]
+    },
+    {
+      "name": "brain",
+      "material": "Psychology",
+      "category": "ANALYTICS",
+      "categoryLabel": "Analytics",
+      "aliases": [
+        "ai",
+        "ml",
+        "inference"
+      ]
+    },
+    {
+      "name": "pie_chart",
+      "material": "PieChart",
+      "category": "ANALYTICS",
+      "categoryLabel": "Analytics",
+      "aliases": [
+        "chart_pie"
+      ]
+    },
+    {
+      "name": "trending_up",
+      "material": "TrendingUp",
+      "category": "ANALYTICS",
+      "categoryLabel": "Analytics",
+      "aliases": [
+        "growth"
+      ]
+    },
+    {
+      "name": "trending_down",
+      "material": "TrendingDown",
+      "category": "ANALYTICS",
+      "categoryLabel": "Analytics",
+      "aliases": [
+        "decline"
+      ]
+    },
+    {
+      "name": "line_chart",
+      "material": "ShowChart",
+      "category": "ANALYTICS",
+      "categoryLabel": "Analytics",
+      "aliases": [
+        "show_chart"
+      ]
+    },
+    {
+      "name": "stacked_chart",
+      "material": "StackedLineChart",
+      "category": "ANALYTICS",
+      "categoryLabel": "Analytics",
+      "aliases": [
+        "stacked_line_chart"
+      ]
+    },
+    {
+      "name": "query_stats",
+      "material": "QueryStats",
+      "category": "ANALYTICS",
+      "categoryLabel": "Analytics",
+      "aliases": []
+    },
+    {
+      "name": "analytics",
+      "material": "Analytics",
+      "category": "ANALYTICS",
+      "categoryLabel": "Analytics",
+      "aliases": [
+        "metrics"
+      ]
+    },
+    {
+      "name": "assessment",
+      "material": "Assessment",
+      "category": "ANALYTICS",
+      "categoryLabel": "Analytics",
+      "aliases": [
+        "report_card"
+      ]
+    },
+    {
+      "name": "leaderboard",
+      "material": "Leaderboard",
+      "category": "ANALYTICS",
+      "categoryLabel": "Analytics",
+      "aliases": [
+        "ranking"
+      ]
+    },
+    {
+      "name": "speed",
+      "material": "Speed",
+      "category": "ANALYTICS",
+      "categoryLabel": "Analytics",
+      "aliases": [
+        "performance"
+      ]
+    },
+    {
+      "name": "health",
+      "material": "MonitorHeart",
+      "category": "ANALYTICS",
+      "categoryLabel": "Analytics",
+      "aliases": [
+        "monitor_heart",
+        "health_check"
+      ]
+    },
+    {
+      "name": "security",
+      "material": "Security",
+      "category": "SECURITY",
+      "categoryLabel": "Security",
+      "aliases": [
+        "sec"
+      ]
+    },
+    {
+      "name": "shield",
+      "material": "Shield",
+      "category": "SECURITY",
+      "categoryLabel": "Security",
+      "aliases": [
+        "e2ee",
+        "protected"
+      ]
+    },
+    {
+      "name": "verified",
+      "material": "VerifiedUser",
+      "category": "SECURITY",
+      "categoryLabel": "Security",
+      "aliases": [
+        "verified_user"
+      ]
+    },
+    {
+      "name": "gpp_good",
+      "material": "GppGood",
+      "category": "SECURITY",
+      "categoryLabel": "Security",
+      "aliases": [
+        "compliance"
+      ]
+    },
+    {
+      "name": "lock",
+      "material": "Lock",
+      "category": "SECURITY",
+      "categoryLabel": "Security",
+      "aliases": [
+        "locked",
+        "secure"
+      ]
+    },
+    {
+      "name": "unlock",
+      "material": "LockOpen",
+      "category": "SECURITY",
+      "categoryLabel": "Security",
+      "aliases": [
+        "lock_open",
+        "unlocked"
+      ]
+    },
+    {
+      "name": "key",
+      "material": "Key",
+      "category": "SECURITY",
+      "categoryLabel": "Security",
+      "aliases": [
+        "keys"
+      ]
+    },
+    {
+      "name": "vpn_key",
+      "material": "VpnKey",
+      "category": "SECURITY",
+      "categoryLabel": "Security",
+      "aliases": [
+        "token"
+      ]
+    },
+    {
+      "name": "password",
+      "material": "Password",
+      "category": "SECURITY",
+      "categoryLabel": "Security",
+      "aliases": [
+        "passcode",
+        "pin"
+      ]
+    },
+    {
+      "name": "fingerprint",
+      "material": "Fingerprint",
+      "category": "SECURITY",
+      "categoryLabel": "Security",
+      "aliases": [
+        "biometrics",
+        "biometric"
+      ]
+    },
+    {
+      "name": "face_id",
+      "material": "Face",
+      "category": "SECURITY",
+      "categoryLabel": "Security",
+      "aliases": [
+        "face",
+        "facial"
+      ]
+    },
+    {
+      "name": "add",
+      "material": "AddCircle",
+      "category": "ACTIONS",
+      "categoryLabel": "Actions",
+      "aliases": [
+        "plus",
+        "new"
+      ]
+    },
+    {
+      "name": "remove",
+      "material": "RemoveCircle",
+      "category": "ACTIONS",
+      "categoryLabel": "Actions",
+      "aliases": [
+        "minus"
+      ]
+    },
+    {
+      "name": "edit",
+      "material": "Edit",
+      "category": "ACTIONS",
+      "categoryLabel": "Actions",
+      "aliases": [
+        "pencil",
+        "modify"
+      ]
+    },
+    {
+      "name": "edit_note",
+      "material": "EditNote",
+      "category": "ACTIONS",
+      "categoryLabel": "Actions",
+      "aliases": []
+    },
+    {
+      "name": "note_add",
+      "material": "NoteAdd",
+      "category": "ACTIONS",
+      "categoryLabel": "Actions",
+      "aliases": []
+    },
+    {
+      "name": "delete",
+      "material": "DeleteOutline",
+      "category": "ACTIONS",
+      "categoryLabel": "Actions",
+      "aliases": [
+        "trash",
+        "remove_item"
+      ]
+    },
+    {
+      "name": "delete_filled",
+      "material": "DeleteForever",
+      "category": "ACTIONS",
+      "categoryLabel": "Actions",
+      "aliases": [
+        "trash_filled"
+      ]
+    },
+    {
+      "name": "copy",
+      "material": "ContentCopy",
+      "category": "ACTIONS",
+      "categoryLabel": "Actions",
+      "aliases": [
+        "content_copy",
+        "duplicate"
+      ]
+    },
+    {
+      "name": "cut",
+      "material": "ContentCut",
+      "category": "ACTIONS",
+      "categoryLabel": "Actions",
+      "aliases": [
+        "content_cut",
+        "scissors"
+      ]
+    },
+    {
+      "name": "crop",
+      "material": "Crop",
+      "category": "ACTIONS",
+      "categoryLabel": "Actions",
+      "aliases": [
+        "crop_image"
+      ]
+    },
+    {
+      "name": "paste",
+      "material": "ContentPaste",
+      "category": "ACTIONS",
+      "categoryLabel": "Actions",
+      "aliases": [
+        "clipboard",
+        "content_paste"
+      ]
+    },
+    {
+      "name": "clear",
+      "material": "Clear",
+      "category": "ACTIONS",
+      "categoryLabel": "Actions",
+      "aliases": [
+        "reset"
+      ]
+    },
+    {
+      "name": "search",
+      "material": "Search",
+      "category": "ACTIONS",
+      "categoryLabel": "Actions",
+      "aliases": [
+        "find",
+        "magnify",
+        "ocr",
+        "read_text",
+        "text"
+      ]
+    },
+    {
+      "name": "filter",
+      "material": "FilterList",
+      "category": "ACTIONS",
+      "categoryLabel": "Actions",
+      "aliases": [
+        "filter_list"
+      ]
+    },
+    {
+      "name": "filter_alt",
+      "material": "FilterAlt",
+      "category": "ACTIONS",
+      "categoryLabel": "Actions",
+      "aliases": []
+    },
+    {
+      "name": "sort",
+      "material": "Sort",
+      "category": "ACTIONS",
+      "categoryLabel": "Actions",
+      "aliases": [
+        "sort_by"
+      ]
+    },
+    {
+      "name": "refresh",
+      "material": "Refresh",
+      "category": "ACTIONS",
+      "categoryLabel": "Actions",
+      "aliases": [
+        "reload"
+      ]
+    },
+    {
+      "name": "upload",
+      "material": "Upload",
+      "category": "ACTIONS",
+      "categoryLabel": "Actions",
+      "aliases": [
+        "upload_file"
+      ]
+    },
+    {
+      "name": "download",
+      "material": "Download",
+      "category": "ACTIONS",
+      "categoryLabel": "Actions",
+      "aliases": [
+        "download_file"
+      ]
+    },
+    {
+      "name": "file_download",
+      "material": "FileDownload",
+      "category": "ACTIONS",
+      "categoryLabel": "Actions",
+      "aliases": []
+    },
+    {
+      "name": "file_upload",
+      "material": "FileUpload",
+      "category": "ACTIONS",
+      "categoryLabel": "Actions",
+      "aliases": []
+    },
+    {
+      "name": "folder",
+      "material": "Folder",
+      "category": "ACTIONS",
+      "categoryLabel": "Actions",
+      "aliases": [
+        "directory"
+      ]
+    },
+    {
+      "name": "folder_open",
+      "material": "FolderOpen",
+      "category": "ACTIONS",
+      "categoryLabel": "Actions",
+      "aliases": [
+        "open_folder"
+      ]
+    },
+    {
+      "name": "new_folder",
+      "material": "CreateNewFolder",
+      "category": "ACTIONS",
+      "categoryLabel": "Actions",
+      "aliases": [
+        "create_folder"
+      ]
+    },
+    {
+      "name": "file",
+      "material": "InsertDriveFile",
+      "category": "ACTIONS",
+      "categoryLabel": "Actions",
+      "aliases": [
+        "document",
+        "doc"
+      ]
+    },
+    {
+      "name": "note",
+      "material": "Note",
+      "category": "ACTIONS",
+      "categoryLabel": "Actions",
+      "aliases": [
+        "memo"
+      ]
+    },
+    {
+      "name": "article",
+      "material": "Article",
+      "category": "ACTIONS",
+      "categoryLabel": "Actions",
+      "aliases": [
+        "page"
+      ]
+    },
+    {
+      "name": "description",
+      "material": "Description",
+      "category": "ACTIONS",
+      "categoryLabel": "Actions",
+      "aliases": [
+        "doc_text"
+      ]
+    },
+    {
+      "name": "share",
+      "material": "Share",
+      "category": "ACTIONS",
+      "categoryLabel": "Actions",
+      "aliases": [
+        "send_to"
+      ]
+    },
+    {
+      "name": "send",
+      "material": "Send",
+      "category": "ACTIONS",
+      "categoryLabel": "Actions",
+      "aliases": [
+        "submit"
+      ]
+    },
+    {
+      "name": "arrow_back",
+      "material": "ArrowBack",
+      "category": "NAVIGATION",
+      "categoryLabel": "Navigation",
+      "aliases": [
+        "back",
+        "chevron_left"
+      ]
+    },
+    {
+      "name": "chevron_right",
+      "material": "ChevronRight",
+      "category": "NAVIGATION",
+      "categoryLabel": "Navigation",
+      "aliases": [
+        "next",
+        "forward"
+      ]
+    },
+    {
+      "name": "play_arrow",
+      "material": "PlayArrow",
+      "category": "ACTIONS",
+      "categoryLabel": "Actions",
+      "aliases": [
+        "play",
+        "start_hub"
+      ]
+    },
+    {
+      "name": "stop",
+      "material": "Stop",
+      "category": "ACTIONS",
+      "categoryLabel": "Actions",
+      "aliases": [
+        "stop_hub",
+        "halt"
+      ]
+    },
+    {
+      "name": "undo",
+      "material": "Undo",
+      "category": "ACTIONS",
+      "categoryLabel": "Actions",
+      "aliases": [
+        "revert",
+        "restore"
+      ]
+    },
+    {
+      "name": "home",
+      "material": "Home",
+      "category": "NAVIGATION",
+      "categoryLabel": "Navigation",
+      "aliases": [
+        "hub",
+        "start"
+      ]
+    },
+    {
+      "name": "menu",
+      "material": "Menu",
+      "category": "NAVIGATION",
+      "categoryLabel": "Navigation",
+      "aliases": [
+        "hamburger"
+      ]
+    },
+    {
+      "name": "more",
+      "material": "MoreVert",
+      "category": "NAVIGATION",
+      "categoryLabel": "Navigation",
+      "aliases": [
+        "overflow",
+        "more_vert"
+      ]
+    },
+    {
+      "name": "more_horizontal",
+      "material": "MoreHoriz",
+      "category": "NAVIGATION",
+      "categoryLabel": "Navigation",
+      "aliases": [
+        "more_horiz"
+      ]
+    },
+    {
+      "name": "apps",
+      "material": "Apps",
+      "category": "NAVIGATION",
+      "categoryLabel": "Navigation",
+      "aliases": [
+        "app_grid"
+      ]
+    },
+    {
+      "name": "grid",
+      "material": "GridView",
+      "category": "NAVIGATION",
+      "categoryLabel": "Navigation",
+      "aliases": [
+        "grid_view",
+        "tiles"
+      ]
+    },
+    {
+      "name": "list",
+      "material": "ViewList",
+      "category": "NAVIGATION",
+      "categoryLabel": "Navigation",
+      "aliases": [
+        "view_list"
+      ]
+    },
+    {
+      "name": "columns",
+      "material": "ViewColumn",
+      "category": "NAVIGATION",
+      "categoryLabel": "Navigation",
+      "aliases": [
+        "view_column"
+      ]
+    },
+    {
+      "name": "bulleted_list",
+      "material": "FormatListBulleted",
+      "category": "NAVIGATION",
+      "categoryLabel": "Navigation",
+      "aliases": [
+        "list_bullets"
+      ]
+    },
+    {
+      "name": "checklist",
+      "material": "Checklist",
+      "category": "NAVIGATION",
+      "categoryLabel": "Navigation",
+      "aliases": []
+    },
+    {
+      "name": "fact_check",
+      "material": "FactCheck",
+      "category": "NAVIGATION",
+      "categoryLabel": "Navigation",
+      "aliases": []
+    },
+    {
+      "name": "assignment",
+      "material": "Assignment",
+      "category": "NAVIGATION",
+      "categoryLabel": "Navigation",
+      "aliases": []
+    },
+    {
+      "name": "assignment_done",
+      "material": "AssignmentTurnedIn",
+      "category": "NAVIGATION",
+      "categoryLabel": "Navigation",
+      "aliases": [
+        "assignment_turned_in"
+      ]
+    },
+    {
+      "name": "rule",
+      "material": "Rule",
+      "category": "NAVIGATION",
+      "categoryLabel": "Navigation",
+      "aliases": [
+        "rule_check"
+      ]
+    },
+    {
+      "name": "location",
+      "material": "LocationOn",
+      "category": "NAVIGATION",
+      "categoryLabel": "Navigation",
+      "aliases": [
+        "place",
+        "pin_drop"
+      ]
+    },
+    {
+      "name": "map",
+      "material": "Map",
+      "category": "NAVIGATION",
+      "categoryLabel": "Navigation",
+      "aliases": [
+        "maps"
+      ]
+    },
+    {
+      "name": "navigation",
+      "material": "Navigation",
+      "category": "NAVIGATION",
+      "categoryLabel": "Navigation",
+      "aliases": [
+        "near_me"
+      ]
+    },
+    {
+      "name": "my_location",
+      "material": "MyLocation",
+      "category": "NAVIGATION",
+      "categoryLabel": "Navigation",
+      "aliases": []
+    },
+    {
+      "name": "explore",
+      "material": "Explore",
+      "category": "NAVIGATION",
+      "categoryLabel": "Navigation",
+      "aliases": [
+        "compass"
+      ]
+    },
+    {
+      "name": "language",
+      "material": "Language",
+      "category": "NAVIGATION",
+      "categoryLabel": "Navigation",
+      "aliases": [
+        "locale",
+        "globe"
+      ]
+    },
+    {
+      "name": "translate",
+      "material": "Translate",
+      "category": "NAVIGATION",
+      "categoryLabel": "Navigation",
+      "aliases": [
+        "language_translate"
+      ]
+    },
+    {
+      "name": "public",
+      "material": "Public",
+      "category": "NAVIGATION",
+      "categoryLabel": "Navigation",
+      "aliases": [
+        "world",
+        "global"
+      ]
+    },
+    {
+      "name": "directions",
+      "material": "DirectionsRun",
+      "category": "NAVIGATION",
+      "categoryLabel": "Navigation",
+      "aliases": [
+        "directions_run"
+      ]
+    },
+    {
+      "name": "walk",
+      "material": "DirectionsWalk",
+      "category": "NAVIGATION",
+      "categoryLabel": "Navigation",
+      "aliases": [
+        "directions_walk"
+      ]
+    },
+    {
+      "name": "car",
+      "material": "DirectionsCar",
+      "category": "NAVIGATION",
+      "categoryLabel": "Navigation",
+      "aliases": [
+        "directions_car"
+      ]
+    },
+    {
+      "name": "bus",
+      "material": "DirectionsBus",
+      "category": "NAVIGATION",
+      "categoryLabel": "Navigation",
+      "aliases": [
+        "directions_bus"
+      ]
+    },
+    {
+      "name": "taxi",
+      "material": "LocalTaxi",
+      "category": "NAVIGATION",
+      "categoryLabel": "Navigation",
+      "aliases": [
+        "local_taxi"
+      ]
+    },
+    {
+      "name": "parking",
+      "material": "LocalParking",
+      "category": "NAVIGATION",
+      "categoryLabel": "Navigation",
+      "aliases": [
+        "local_parking"
+      ]
+    },
+    {
+      "name": "fuel",
+      "material": "LocalGasStation",
+      "category": "NAVIGATION",
+      "categoryLabel": "Navigation",
+      "aliases": [
+        "local_gas_station"
+      ]
+    },
+    {
+      "name": "ev_charge",
+      "material": "EvStation",
+      "category": "NAVIGATION",
+      "categoryLabel": "Navigation",
+      "aliases": [
+        "ev_station"
+      ]
+    },
+    {
+      "name": "call",
+      "material": "Call",
+      "category": "COMMUNICATION",
+      "categoryLabel": "Communication",
+      "aliases": [
+        "phone_call"
+      ]
+    },
+    {
+      "name": "email",
+      "material": "Email",
+      "category": "COMMUNICATION",
+      "categoryLabel": "Communication",
+      "aliases": [
+        "mail"
+      ]
+    },
+    {
+      "name": "message",
+      "material": "Message",
+      "category": "COMMUNICATION",
+      "categoryLabel": "Communication",
+      "aliases": [
+        "sms"
+      ]
+    },
+    {
+      "name": "chat",
+      "material": "Chat",
+      "category": "COMMUNICATION",
+      "categoryLabel": "Communication",
+      "aliases": [
+        "chat_bubble"
+      ]
+    },
+    {
+      "name": "forum",
+      "material": "Forum",
+      "category": "COMMUNICATION",
+      "categoryLabel": "Communication",
+      "aliases": [
+        "forum_discussion"
+      ]
+    },
+    {
+      "name": "comment",
+      "material": "Comment",
+      "category": "COMMUNICATION",
+      "categoryLabel": "Communication",
+      "aliases": [
+        "comments"
+      ]
+    },
+    {
+      "name": "question_answer",
+      "material": "QuestionAnswer",
+      "category": "COMMUNICATION",
+      "categoryLabel": "Communication",
+      "aliases": [
+        "qa"
+      ]
+    },
+    {
+      "name": "feedback",
+      "material": "Feedback",
+      "category": "COMMUNICATION",
+      "categoryLabel": "Communication",
+      "aliases": [
+        "review_feedback"
+      ]
+    },
+    {
+      "name": "reviews",
+      "material": "Reviews",
+      "category": "COMMUNICATION",
+      "categoryLabel": "Communication",
+      "aliases": [
+        "reviews_list"
+      ]
+    },
+    {
+      "name": "rate_review",
+      "material": "RateReview",
+      "category": "COMMUNICATION",
+      "categoryLabel": "Communication",
+      "aliases": []
+    },
+    {
+      "name": "thumbs_up",
+      "material": "ThumbUp",
+      "category": "COMMUNICATION",
+      "categoryLabel": "Communication",
+      "aliases": [
+        "like"
+      ]
+    },
+    {
+      "name": "thumbs_down",
+      "material": "ThumbDown",
+      "category": "COMMUNICATION",
+      "categoryLabel": "Communication",
+      "aliases": [
+        "dislike"
+      ]
+    },
+    {
+      "name": "handshake",
+      "material": "Handshake",
+      "category": "COMMUNICATION",
+      "categoryLabel": "Communication",
+      "aliases": [
+        "deal_done",
+        "agreement"
+      ]
+    },
+    {
+      "name": "restaurant",
+      "material": "Restaurant",
+      "category": "FOOD",
+      "categoryLabel": "Food",
+      "aliases": []
+    },
+    {
+      "name": "fastfood",
+      "material": "Fastfood",
+      "category": "FOOD",
+      "categoryLabel": "Food",
+      "aliases": [
+        "fast_food",
+        "burger"
+      ]
+    },
+    {
+      "name": "cafe",
+      "material": "LocalCafe",
+      "category": "FOOD",
+      "categoryLabel": "Food",
+      "aliases": [
+        "local_cafe",
+        "coffee"
+      ]
+    },
+    {
+      "name": "dining",
+      "material": "LocalDining",
+      "category": "FOOD",
+      "categoryLabel": "Food",
+      "aliases": [
+        "local_dining"
+      ]
+    },
+    {
+      "name": "drink",
+      "material": "LocalDrink",
+      "category": "FOOD",
+      "categoryLabel": "Food",
+      "aliases": [
+        "local_drink",
+        "beverage"
+      ]
+    },
+    {
+      "name": "pizza",
+      "material": "LocalPizza",
+      "category": "FOOD",
+      "categoryLabel": "Food",
+      "aliases": [
+        "local_pizza"
+      ]
+    },
+    {
+      "name": "bakery",
+      "material": "BakeryDining",
+      "category": "FOOD",
+      "categoryLabel": "Food",
+      "aliases": [
+        "bakery_dining"
+      ]
+    },
+    {
+      "name": "liquor",
+      "material": "Liquor",
+      "category": "FOOD",
+      "categoryLabel": "Food",
+      "aliases": [
+        "bar",
+        "alcohol"
+      ]
+    },
+    {
+      "name": "pharmacy",
+      "material": "LocalPharmacy",
+      "category": "FOOD",
+      "categoryLabel": "Food",
+      "aliases": [
+        "local_pharmacy",
+        "drugstore"
+      ]
+    },
+    {
+      "name": "florist",
+      "material": "LocalFlorist",
+      "category": "FOOD",
+      "categoryLabel": "Food",
+      "aliases": [
+        "local_florist",
+        "flowers"
+      ]
+    },
+    {
+      "name": "pets",
+      "material": "Pets",
+      "category": "FOOD",
+      "categoryLabel": "Food",
+      "aliases": [
+        "pet"
+      ]
+    },
+    {
+      "name": "toys",
+      "material": "Toys",
+      "category": "FOOD",
+      "categoryLabel": "Food",
+      "aliases": [
+        "toy"
+      ]
+    },
+    {
+      "name": "child_care",
+      "material": "ChildCare",
+      "category": "FOOD",
+      "categoryLabel": "Food",
+      "aliases": [
+        "childcare",
+        "baby"
+      ]
+    },
+    {
+      "name": "celebration",
+      "material": "Celebration",
+      "category": "FOOD",
+      "categoryLabel": "Food",
+      "aliases": [
+        "party"
+      ]
+    },
+    {
+      "name": "cake",
+      "material": "Cake",
+      "category": "FOOD",
+      "categoryLabel": "Food",
+      "aliases": [
+        "birthday"
+      ]
+    },
+    {
+      "name": "settings",
+      "material": "Settings",
+      "category": "GENERAL",
+      "categoryLabel": "General",
+      "aliases": [
+        "config",
+        "gear"
+      ]
+    },
+    {
+      "name": "tune",
+      "material": "Tune",
+      "category": "GENERAL",
+      "categoryLabel": "General",
+      "aliases": [
+        "adjust",
+        "sliders"
+      ]
+    },
+    {
+      "name": "build",
+      "material": "Build",
+      "category": "GENERAL",
+      "categoryLabel": "General",
+      "aliases": [
+        "wrench",
+        "tools"
+      ]
+    },
+    {
+      "name": "construction",
+      "material": "Construction",
+      "category": "GENERAL",
+      "categoryLabel": "General",
+      "aliases": [
+        "maintenance"
+      ]
+    },
+    {
+      "name": "engineering",
+      "material": "Engineering",
+      "category": "GENERAL",
+      "categoryLabel": "General",
+      "aliases": [
+        "engineer"
+      ]
+    },
+    {
+      "name": "handyman",
+      "material": "Handyman",
+      "category": "GENERAL",
+      "categoryLabel": "General",
+      "aliases": [
+        "repair"
+      ]
+    },
+    {
+      "name": "precision",
+      "material": "PrecisionManufacturing",
+      "category": "GENERAL",
+      "categoryLabel": "General",
+      "aliases": [
+        "machine"
+      ]
+    },
+    {
+      "name": "help_outline",
+      "material": "LiveHelp",
+      "category": "GENERAL",
+      "categoryLabel": "General",
+      "aliases": [
+        "live_help"
+      ]
+    },
+    {
+      "name": "favorite",
+      "material": "Favorite",
+      "category": "GENERAL",
+      "categoryLabel": "General",
+      "aliases": [
+        "heart",
+        "like_filled"
+      ]
+    },
+    {
+      "name": "bookmark",
+      "material": "Bookmark",
+      "category": "GENERAL",
+      "categoryLabel": "General",
+      "aliases": [
+        "saved"
+      ]
+    },
+    {
+      "name": "flag",
+      "material": "Flag",
+      "category": "GENERAL",
+      "categoryLabel": "General",
+      "aliases": [
+        "report_flag_alt"
+      ]
+    },
+    {
+      "name": "star",
+      "material": "Star",
+      "category": "GENERAL",
+      "categoryLabel": "General",
+      "aliases": [
+        "favourite",
+        "rating"
+      ]
+    },
+    {
+      "name": "stars",
+      "material": "Stars",
+      "category": "GENERAL",
+      "categoryLabel": "General",
+      "aliases": [
+        "featured"
+      ]
+    },
+    {
+      "name": "brush",
+      "material": "Brush",
+      "category": "GENERAL",
+      "categoryLabel": "General",
+      "aliases": [
+        "paint_brush"
+      ]
+    },
+    {
+      "name": "palette",
+      "material": "Palette",
+      "category": "GENERAL",
+      "categoryLabel": "General",
+      "aliases": [
+        "colors",
+        "theme"
+      ]
+    },
+    {
+      "name": "sun",
+      "material": "LightMode",
+      "category": "GENERAL",
+      "categoryLabel": "General",
+      "aliases": [
+        "light",
+        "brightness"
+      ]
+    },
+    {
+      "name": "wand",
+      "material": "AutoFixHigh",
+      "category": "GENERAL",
+      "categoryLabel": "General",
+      "aliases": [
+        "magic",
+        "enhance"
+      ]
+    },
+    {
+      "name": "blur",
+      "material": "BlurOn",
+      "category": "GENERAL",
+      "categoryLabel": "General",
+      "aliases": [
+        "blur_on",
+        "soften"
+      ]
+    },
+    {
+      "name": "format_paint",
+      "material": "FormatPaint",
+      "category": "GENERAL",
+      "categoryLabel": "General",
+      "aliases": [
+        "fill_color"
+      ]
+    },
+    {
+      "name": "calculate",
+      "material": "Calculate",
+      "category": "GENERAL",
+      "categoryLabel": "General",
+      "aliases": [
+        "calculator",
+        "math"
+      ]
+    },
+    {
+      "name": "functions",
+      "material": "Functions",
+      "category": "GENERAL",
+      "categoryLabel": "General",
+      "aliases": [
+        "formula"
+      ]
+    },
+    {
+      "name": "numbers",
+      "material": "Numbers",
+      "category": "GENERAL",
+      "categoryLabel": "General",
+      "aliases": [
+        "digits"
+      ]
+    },
+    {
+      "name": "summarize",
+      "material": "Summarize",
+      "category": "GENERAL",
+      "categoryLabel": "General",
+      "aliases": [
+        "summary",
+        "stats_summary"
+      ]
+    },
+    {
+      "name": "books",
+      "material": "MenuBook",
+      "category": "GENERAL",
+      "categoryLabel": "General",
+      "aliases": [
+        "menu_book",
+        "catalog_book"
+      ]
+    },
+    {
+      "name": "book",
+      "material": "Book",
+      "category": "GENERAL",
+      "categoryLabel": "General",
+      "aliases": [
+        "manual"
+      ]
+    },
+    {
+      "name": "import_contacts",
+      "material": "ImportContacts",
+      "category": "GENERAL",
+      "categoryLabel": "General",
+      "aliases": [
+        "contacts_book"
+      ]
+    },
+    {
+      "name": "school",
+      "material": "School",
+      "category": "GENERAL",
+      "categoryLabel": "General",
+      "aliases": [
+        "training",
+        "education"
+      ]
+    },
+    {
+      "name": "translate_alt",
+      "material": "GTranslate",
+      "category": "GENERAL",
+      "categoryLabel": "General",
+      "aliases": [
+        "g_translate"
+      ]
+    }
+  ]
+}

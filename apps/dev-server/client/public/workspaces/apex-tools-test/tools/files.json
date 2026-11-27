@@ -184,6 +184,7 @@
              }
             }
            ],
+           "subtitle": "tools://storage.files/write",
            "id": "tool_files_write_read_round_trip",
            "content_description": "files write"
           },
@@ -223,6 +224,7 @@
              "width": 1
             }
            },
+           "subtitle": "tools://storage.files/write",
            "id": "tool_files_append_extends",
            "content_description": "files write"
           },
@@ -255,6 +257,7 @@
              }
             }
            ],
+           "subtitle": "tools://storage.files/write",
            "id": "tool_files_copy_then_move",
            "content_description": "files write"
           },
@@ -293,6 +296,7 @@
              "width": 1
             }
            },
+           "subtitle": "tools://storage.files/mkdir",
            "id": "tool_files_list_and_info",
            "content_description": "files mkdir"
           },
@@ -325,6 +329,7 @@
              }
             }
            ],
+           "subtitle": "tools://storage.files/write",
            "id": "tool_files_delete_removes",
            "content_description": "files write"
           },
@@ -364,6 +369,7 @@
              "width": 1
             }
            },
+           "subtitle": "tools://storage.files/write",
            "id": "tool_files_uri_resolves",
            "content_description": "files write"
           },
@@ -395,6 +401,7 @@
              }
             }
            ],
+           "subtitle": "tools://storage.files/read",
            "id": "tool_files_read_missing_fails",
            "content_description": "files read"
           }

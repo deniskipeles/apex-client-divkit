@@ -186,6 +186,7 @@
              }
             }
            ],
+           "subtitle": "tools://network.transfer/serve",
            "id": "tool_net_hub_lifecycle",
            "content_description": "net serve"
           },
@@ -222,6 +223,7 @@
              "width": 1
             }
            },
+           "subtitle": "tools://network.transfer/status",
            "id": "tool_net_status_without_hub",
            "content_description": "net status"
           },
@@ -253,6 +255,7 @@
              }
             }
            ],
+           "subtitle": "tools://network.transfer/share",
            "id": "tool_net_share_without_content_fails",
            "content_description": "net share"
           },
@@ -292,6 +295,7 @@
              "width": 1
             }
            },
+           "subtitle": "tools://network.transfer/share",
            "id": "tool_net_share_without_hub_is_staged",
            "content_description": "net share"
           },
@@ -324,6 +328,7 @@
              }
             }
            ],
+           "subtitle": "tools://network.transfer/get",
            "id": "tool_net_get_unreachable_fails",
            "content_description": "net get"
           },
@@ -364,6 +369,7 @@
              "width": 1
             }
            },
+           "subtitle": "tools://network.transfer/post",
            "id": "tool_net_post_unreachable_fails",
            "content_description": "net post"
           },
@@ -396,6 +402,7 @@
              }
             }
            ],
+           "subtitle": "tools://network.transfer/download",
            "id": "tool_net_download_unreachable_fails",
            "content_description": "net download"
           },
@@ -436,6 +443,7 @@
              "width": 1
             }
            },
+           "subtitle": "tools://network.transfer/upload",
            "id": "tool_net_upload_unreachable_fails",
            "content_description": "net upload"
           },
@@ -469,6 +477,7 @@
              }
             }
            ],
+           "subtitle": "tools://network.transfer/request",
            "id": "tool_net_request_unreachable_fails",
            "content_description": "net request"
           },
@@ -505,6 +514,7 @@
              "width": 1
             }
            },
+           "subtitle": "tools://network.transfer/serve",
            "id": "tool_net_stop_twice_is_safe",
            "content_description": "net serve"
           }

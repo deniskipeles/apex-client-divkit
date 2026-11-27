@@ -1,3 +1,4 @@
+import { validateCardDocument } from '../../../packages/pos-ui/src/android-runtime/validate.ts'
 import type {
   WorkspaceBundle,
   WorkspaceDefinition,
@@ -83,8 +84,32 @@ export function validateWorkspace(def: WorkspaceDefinition): WorkspaceDefinition
     }
   }
 
+  for (const report of workspaceReports(def)) problems.push(...report.errors)
+
   if (problems.length > 0) throw new WorkspaceValidationError(def.slug, problems)
   return def
+}
+
+/**
+ * Vocabulary check per DivKit document. The device renders an unknown node as
+ * nothing and ignores an unknown action silently, so the same JSON can build,
+ * render in the browser and be blank on a handset. These reports are the only
+ * authoring-time signal before the APK.
+ */
+export function workspaceReports(def: WorkspaceDefinition): Array<{
+  file: string
+  errors: string[]
+  warnings: string[]
+}> {
+  const documents: Array<[string, unknown]> = [
+    ['card.json', def.hub],
+    ...def.cards.map((card): [string, unknown] => [`tools/${card.name}.json`, card.card]),
+  ]
+  const strict = def.targets?.android === true
+  return documents.map(([file, doc]) => {
+    const report = validateCardDocument(doc, `${def.manifestId}/${file}`, { strict })
+    return { file, errors: report.errors, warnings: report.warnings }
+  })
 }
 
 function manifestFor(def: WorkspaceDefinition): WorkspaceManifest {

@@ -181,6 +181,7 @@
                           }
                         }
                       ],
+                      "subtitle": "tools://MobileNetV4-small/classify",
                       "id": "tool_mobilenetv4_classify_without_image_fails_closed",
                       "content_description": "MobileNetV4-small classify"
                     },
@@ -217,6 +218,7 @@
                           "width": 1
                         }
                       },
+                      "subtitle": "tools://MobileNetV4-small/detect",
                       "id": "tool_mobilenetv4_detect_alias_fails_closed",
                       "content_description": "MobileNetV4-small detect"
                     },
@@ -246,6 +248,7 @@
                           }
                         }
                       ],
+                      "subtitle": "tools://MobileNetV4-small/predict",
                       "id": "tool_mobilenetv4_predict_alias_fails_closed",
                       "content_description": "MobileNetV4-small predict"
                     }

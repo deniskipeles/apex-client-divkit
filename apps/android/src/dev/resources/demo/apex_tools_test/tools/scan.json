@@ -210,6 +210,7 @@
                           }
                         }
                       ],
+                      "subtitle": "tools://scan/scan",
                       "id": "tool_scan_simulated_payload_decodes",
                       "content_description": "scan scan"
                     },
@@ -249,6 +250,7 @@
                           "width": 1
                         }
                       },
+                      "subtitle": "tools://scan/simulate",
                       "id": "tool_scan_simulate_returns_payload",
                       "content_description": "scan simulate"
                     },
@@ -281,6 +283,7 @@
                           }
                         }
                       ],
+                      "subtitle": "tools://scan/parse",
                       "id": "tool_scan_parse_extracts_symbology",
                       "content_description": "scan parse"
                     },
@@ -320,6 +323,7 @@
                           "width": 1
                         }
                       },
+                      "subtitle": "tools://scan/scan",
                       "id": "tool_scan_no_input_refuses",
                       "content_description": "scan scan"
                     },
@@ -351,6 +355,7 @@
                           }
                         }
                       ],
+                      "subtitle": "tools://scan/ocr",
                       "id": "tool_scan_ocr_without_host_refuses",
                       "content_description": "scan ocr"
                     },
@@ -391,6 +396,7 @@
                           "width": 1
                         }
                       },
+                      "subtitle": "tools://scan/scan",
                       "id": "tool_scan_format_mismatch_is_reported",
                       "content_description": "scan scan"
                     },
@@ -423,6 +429,7 @@
                           }
                         }
                       ],
+                      "subtitle": "tools://scan/continuous_scan",
                       "id": "tool_scan_continuous_scan_needs_host",
                       "content_description": "scan continuous_scan"
                     }

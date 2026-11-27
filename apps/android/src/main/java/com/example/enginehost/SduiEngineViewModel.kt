@@ -20,8 +20,11 @@ import engine.db.WorkspaceDriverFactory
 import engine.db.WorkspaceManager
 import engine.db.currentAndroidContext
 import com.example.enginehost.demo.DemoCardRepository
+import engine.fs.AppStorageReport
 import engine.fs.FileOpenWith
 import engine.fs.FsEntry
+import engine.fs.TempImageStore
+import engine.fs.appStorageReport
 import engine.fs.WorkspaceFileManager
 import engine.fs.WorkspaceFileSystem
 import engine.fs.WorkspaceFolder
@@ -119,6 +122,8 @@ data class SduiEngineUiState(
     val securityEvents: List<SecurityEventLog> = emptyList(),
     val activeDbFiles: List<String> = emptyList(),
     val workspaceFolders: List<WorkspaceFolder> = emptyList(),
+    /** Complete partition of the app's data footprint; null until the first refresh. */
+    val storageReport: AppStorageReport? = null,
     val fileBrowserFolder: WorkspaceFolder? = null,
     val fileBrowserPath: String = "",
     val fileEntries: List<FsEntry> = emptyList(),
@@ -217,6 +222,9 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                     ensureTenantInitiatedWithCachedSchema(spec)
                 }
                 refreshTenantCachedBadges()
+                // Fold each tenant's WAL back into its database once provisioning is done, so a
+                // cold start does not leave megabytes in a sidecar the Files tab now counts.
+                runCatching { workspaceManager.checkpointAll() }
                 val dbFiles = workspaceManager.activeDatabaseFileNames()
                 _uiState.update {
                     it.copy(
@@ -1708,15 +1716,43 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
 
     // ---- Workspace file manager ----
 
-    /** Refreshes the workspace folder list shown on the Files tab landing view. */
-    fun refreshWorkspaceFolders() {
-        viewModelScope.launch(Dispatchers.IO) {
+    /** Workspace folders plus the storage partition, computed off the main thread. */
+    private suspend fun buildWorkspaceSnapshot(): Pair<List<WorkspaceFolder>, AppStorageReport> =
+        withContext(Dispatchers.IO) {
             val state = _uiState.value
             val folders = fileManager.listWorkspaceFolders(
                 knownWorkspaceIds = state.workspaces.map { it.tenantId },
                 displayNames = state.workspaces.associate { it.tenantId to it.displayName }
             )
-            _uiState.update { it.copy(workspaceFolders = folders) }
+            folders to appStorageReport(context)
+        }
+
+    /** Refreshes the workspace folder list and the storage partition on the Files tab. */
+    fun refreshWorkspaceFolders() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val (folders, report) = buildWorkspaceSnapshot()
+            _uiState.update { it.copy(workspaceFolders = folders, storageReport = report) }
+        }
+    }
+
+    /**
+     * Clears the app cache and folds every tenant WAL back into its database, then republishes
+     * the snapshot. Workspace files and `offline_cache` are data, not cache, so they are kept.
+     */
+    fun reclaimStorage() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val cacheFreed = TempImageStore.clear(context.cacheDir)
+            val walFreed = runCatching { workspaceManager.checkpointAll() }.getOrDefault(0L)
+            val (folders, report) = buildWorkspaceSnapshot()
+            val message = "Reclaimed ${WorkspaceFileSystem.humanSize(cacheFreed + walFreed)} " +
+                "(cache ${WorkspaceFileSystem.humanSize(cacheFreed)} • WAL ${WorkspaceFileSystem.humanSize(walFreed)})"
+            _uiState.update {
+                it.copy(
+                    workspaceFolders = folders,
+                    storageReport = report,
+                    statusBannerMessage = message
+                )
+            }
         }
     }
 

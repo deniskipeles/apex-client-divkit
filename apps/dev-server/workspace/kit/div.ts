@@ -105,6 +105,7 @@ export const card = (items: DivNode[], opts: { padding?: number; id?: string } =
 
 export interface ButtonOptions {
   text: string
+  subtitle?: string
   actions: DivNode[]
   tone?: 'primary' | 'secondary' | 'danger' | 'ghost'
   width?: DivSize
@@ -137,6 +138,7 @@ export const button = (opts: ButtonOptions): DivNode => {
   if (tone === 'secondary' || tone === 'ghost') {
     node.border = { corner_radius: radius.md, stroke: { color: palette.line, width: 1 } }
   }
+  if (opts.subtitle) node.subtitle = opts.subtitle
   if (opts.id) node.id = opts.id
   if (opts.contentDescription) node.content_description = opts.contentDescription
   return node

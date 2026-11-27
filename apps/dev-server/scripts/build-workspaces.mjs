@@ -16,7 +16,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync
 import { dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { buildWorkspace, indexEntry, workspacePayload } from '../workspace/build.ts'
+import { buildWorkspace, indexEntry, workspacePayload, workspaceReports } from '../workspace/build.ts'
 import { ANDROID_OWNED, WORKSPACES } from '../workspace/registry.ts'
 
 const here = dirname(fileURLToPath(import.meta.url))
@@ -84,6 +84,13 @@ for (const definition of selected) {
     continue
   }
   index.push(indexEntry(bundle))
+
+  const warnings = workspaceReports(definition).flatMap((report) =>
+    report.warnings.map((warning) => `${definition.slug}: ${warning}`),
+  )
+  if (warnings.length > 0) {
+    for (const warning of warnings) console.warn(`warning: ${warning}`)
+  }
 
   for (const [path, value] of Object.entries(bundle.files)) {
     emit(join(publicRoot, bundle.slug, path), serialize(value, join(publicRoot, bundle.slug, path)))

@@ -1635,6 +1635,7 @@
                }
               }
              ],
+             "subtitle": "tools://scan/scan",
              "id": "tool_scan_simulated_payload_decodes",
              "content_description": "scan scan"
             },
@@ -1674,6 +1675,7 @@
                "width": 1
               }
              },
+             "subtitle": "tools://scan/simulate",
              "id": "tool_scan_simulate_returns_payload",
              "content_description": "scan simulate"
             },
@@ -1706,6 +1708,7 @@
                }
               }
              ],
+             "subtitle": "tools://scan/parse",
              "id": "tool_scan_parse_extracts_symbology",
              "content_description": "scan parse"
             },
@@ -1745,6 +1748,7 @@
                "width": 1
               }
              },
+             "subtitle": "tools://scan/scan",
              "id": "tool_scan_no_input_refuses",
              "content_description": "scan scan"
             },
@@ -1776,6 +1780,7 @@
                }
               }
              ],
+             "subtitle": "tools://scan/ocr",
              "id": "tool_scan_ocr_without_host_refuses",
              "content_description": "scan ocr"
             },
@@ -1816,6 +1821,7 @@
                "width": 1
               }
              },
+             "subtitle": "tools://scan/scan",
              "id": "tool_scan_format_mismatch_is_reported",
              "content_description": "scan scan"
             },
@@ -1848,6 +1854,7 @@
                }
               }
              ],
+             "subtitle": "tools://scan/continuous_scan",
              "id": "tool_scan_continuous_scan_needs_host",
              "content_description": "scan continuous_scan"
             }
@@ -2099,6 +2106,7 @@
                }
               }
              ],
+             "subtitle": "tools://device.haptics/click",
              "id": "tool_haptics_click_plays",
              "content_description": "haptics click"
             },
@@ -2135,6 +2143,7 @@
                "width": 1
               }
              },
+             "subtitle": "tools://device.haptics/heavy",
              "id": "tool_haptics_heavy_plays",
              "content_description": "haptics heavy"
             },
@@ -2167,6 +2176,7 @@
                }
               }
              ],
+             "subtitle": "tools://device.haptics/vibrate",
              "id": "tool_haptics_vibrate_one_shot",
              "content_description": "haptics vibrate"
             },
@@ -2203,6 +2213,7 @@
                "width": 1
               }
              },
+             "subtitle": "tools://device.haptics/stop",
              "id": "tool_haptics_stop_cancels",
              "content_description": "haptics stop"
             },
@@ -2232,6 +2243,7 @@
                }
               }
              ],
+             "subtitle": "tools://device.haptics/status",
              "id": "tool_haptics_status_reports_ready",
              "content_description": "haptics status"
             },
@@ -2270,6 +2282,7 @@
                "width": 1
               }
              },
+             "subtitle": "tools://device.haptics/perform",
              "id": "tool_haptics_perform_pattern",
              "content_description": "haptics perform"
             },
@@ -2299,6 +2312,7 @@
                }
               }
              ],
+             "subtitle": "tools://device.haptics/tick",
              "id": "tool_haptics_tick_plays",
              "content_description": "haptics tick"
             },
@@ -2335,6 +2349,7 @@
                "width": 1
               }
              },
+             "subtitle": "tools://device.haptics/success",
              "id": "tool_haptics_success_plays",
              "content_description": "haptics success"
             },
@@ -2364,6 +2379,7 @@
                }
               }
              ],
+             "subtitle": "tools://device.haptics/warning",
              "id": "tool_haptics_warning_plays",
              "content_description": "haptics warning"
             },
@@ -2400,6 +2416,7 @@
                "width": 1
               }
              },
+             "subtitle": "tools://device.haptics/error",
              "id": "tool_haptics_error_plays",
              "content_description": "haptics error"
             },
@@ -2431,6 +2448,7 @@
                }
               }
              ],
+             "subtitle": "tools://device.haptics/click",
              "id": "tool_haptics_repeat_is_stable",
              "content_description": "haptics click"
             }
@@ -2683,6 +2701,7 @@
                }
               }
              ],
+             "subtitle": "tools://device.beeper/tone",
              "id": "tool_beeper_tone_plays",
              "content_description": "beeper tone"
             },
@@ -2722,6 +2741,7 @@
                "width": 1
               }
              },
+             "subtitle": "tools://device.beeper/beep",
              "id": "tool_beeper_beep_alias",
              "content_description": "beeper beep"
             },
@@ -2751,6 +2771,7 @@
                }
               }
              ],
+             "subtitle": "tools://device.beeper/chime",
              "id": "tool_beeper_chime_sequence",
              "content_description": "beeper chime"
             },
@@ -2789,6 +2810,7 @@
                "width": 1
               }
              },
+             "subtitle": "tools://device.beeper/play",
              "id": "tool_beeper_play_alias",
              "content_description": "beeper play"
             },
@@ -2818,6 +2840,7 @@
                }
               }
              ],
+             "subtitle": "tools://device.beeper/stop",
              "id": "tool_beeper_stop_stops",
              "content_description": "beeper stop"
             },
@@ -2854,6 +2877,7 @@
                "width": 1
               }
              },
+             "subtitle": "tools://device.beeper/status",
              "id": "tool_beeper_status_reports",
              "content_description": "beeper status"
             }
@@ -3098,6 +3122,7 @@
                }
               }
              ],
+             "subtitle": "tools://camera/capture",
              "id": "tool_camera_capture_without_host_fails_closed",
              "content_description": "camera capture"
             },
@@ -3136,6 +3161,7 @@
                "width": 1
               }
              },
+             "subtitle": "tools://camera/torch_toggle",
              "id": "tool_camera_torch_without_host_fails_closed",
              "content_description": "camera torch_toggle"
             },
@@ -3165,6 +3191,7 @@
                }
               }
              ],
+             "subtitle": "tools://camera/get_status",
              "id": "tool_camera_status_reports",
              "content_description": "camera get_status"
             }
@@ -3422,6 +3449,7 @@
                }
               }
              ],
+             "subtitle": "tools://storage.files/write",
              "id": "tool_files_write_read_round_trip",
              "content_description": "files write"
             },
@@ -3461,6 +3489,7 @@
                "width": 1
               }
              },
+             "subtitle": "tools://storage.files/write",
              "id": "tool_files_append_extends",
              "content_description": "files write"
             },
@@ -3493,6 +3522,7 @@
                }
               }
              ],
+             "subtitle": "tools://storage.files/write",
              "id": "tool_files_copy_then_move",
              "content_description": "files write"
             },
@@ -3531,6 +3561,7 @@
                "width": 1
               }
              },
+             "subtitle": "tools://storage.files/mkdir",
              "id": "tool_files_list_and_info",
              "content_description": "files mkdir"
             },
@@ -3563,6 +3594,7 @@
                }
               }
              ],
+             "subtitle": "tools://storage.files/write",
              "id": "tool_files_delete_removes",
              "content_description": "files write"
             },
@@ -3602,6 +3634,7 @@
                "width": 1
               }
              },
+             "subtitle": "tools://storage.files/write",
              "id": "tool_files_uri_resolves",
              "content_description": "files write"
             },
@@ -3633,6 +3666,7 @@
                }
               }
              ],
+             "subtitle": "tools://storage.files/read",
              "id": "tool_files_read_missing_fails",
              "content_description": "files read"
             }
@@ -3884,6 +3918,7 @@
                }
               }
              ],
+             "subtitle": "tools://image-manipulation/process",
              "id": "tool_image-manipulation_process_without_image_fails",
              "content_description": "image-manipulation process"
             },
@@ -3923,6 +3958,7 @@
                "width": 1
               }
              },
+             "subtitle": "tools://image-manipulation/crop",
              "id": "tool_image-manipulation_crop_without_image_fails",
              "content_description": "image-manipulation crop"
             },
@@ -3955,6 +3991,7 @@
                }
               }
              ],
+             "subtitle": "tools://image-manipulation/resize",
              "id": "tool_image-manipulation_resize_without_image_fails",
              "content_description": "image-manipulation resize"
             },
@@ -3993,6 +4030,7 @@
                "width": 1
               }
              },
+             "subtitle": "tools://image-manipulation/threshold",
              "id": "tool_image-manipulation_threshold_without_image_fails",
              "content_description": "image-manipulation threshold"
             },
@@ -4024,6 +4062,7 @@
                }
               }
              ],
+             "subtitle": "tools://image-manipulation/adjust_color",
              "id": "tool_image-manipulation_adjust_color_without_image_fails",
              "content_description": "image-manipulation adjust_color"
             },
@@ -4060,6 +4099,7 @@
                "width": 1
               }
              },
+             "subtitle": "tools://image-manipulation/smooth",
              "id": "tool_image-manipulation_smooth_without_image_fails",
              "content_description": "image-manipulation smooth"
             },
@@ -4089,6 +4129,7 @@
                }
               }
              ],
+             "subtitle": "tools://image-manipulation/remove_background",
              "id": "tool_image-manipulation_remove_background_without_image_fails",
              "content_description": "image-manipulation remove_background"
             }
@@ -4355,6 +4396,7 @@
                }
               }
              ],
+             "subtitle": "tools://embedding/text",
              "id": "tool_embedding_text_embeds",
              "content_description": "embedding text"
             },
@@ -4394,6 +4436,7 @@
                "width": 1
               }
              },
+             "subtitle": "tools://embedding/text_similarity",
              "id": "tool_embedding_text_similarity_scores",
              "content_description": "embedding text_similarity"
             },
@@ -4423,6 +4466,7 @@
                }
               }
              ],
+             "subtitle": "tools://embedding/image",
              "id": "tool_embedding_image_without_host_fails",
              "content_description": "embedding image"
             },
@@ -4461,6 +4505,7 @@
                "width": 1
               }
              },
+             "subtitle": "tools://embedding/image_text",
              "id": "tool_embedding_image_text_without_host_fails",
              "content_description": "embedding image_text"
             },
@@ -4493,6 +4538,7 @@
                }
               }
              ],
+             "subtitle": "tools://embedding/similarity",
              "id": "tool_embedding_similarity_alias",
              "content_description": "embedding similarity"
             }
@@ -4739,6 +4785,7 @@
                }
               }
              ],
+             "subtitle": "tools://clipboard/copy",
              "id": "tool_clipboard_copy_then_paste",
              "content_description": "clipboard copy"
             },
@@ -4777,6 +4824,7 @@
                "width": 1
               }
              },
+             "subtitle": "tools://clipboard/copy",
              "id": "tool_clipboard_clear_empties",
              "content_description": "clipboard copy"
             }
@@ -5023,6 +5071,7 @@
                }
               }
              ],
+             "subtitle": "tools://auth.biometrics/authenticate",
              "id": "tool_biometrics_denied_without_host",
              "content_description": "biometrics authenticate"
             },
@@ -5061,6 +5110,7 @@
                "width": 1
               }
              },
+             "subtitle": "tools://auth.biometrics/authenticate",
              "id": "tool_biometrics_refusing_sink_denies",
              "content_description": "biometrics authenticate"
             },
@@ -5092,6 +5142,7 @@
                }
               }
              ],
+             "subtitle": "tools://auth.biometrics/authenticate",
              "id": "tool_biometrics_accepting_sink_succeeds",
              "content_description": "biometrics authenticate"
             }
@@ -5358,6 +5409,7 @@
                }
               }
              ],
+             "subtitle": "tools://libsignal/create_session",
              "id": "tool_libsignal_full_flow",
              "content_description": "libsignal create_session"
             },
@@ -5396,6 +5448,7 @@
                "width": 1
               }
              },
+             "subtitle": "tools://libsignal/setup_identity",
              "id": "tool_libsignal_identity_keys_setup",
              "content_description": "libsignal setup_identity"
             },
@@ -5427,6 +5480,7 @@
                }
               }
              ],
+             "subtitle": "tools://libsignal/create_session",
              "id": "tool_libsignal_status_reports_session",
              "content_description": "libsignal create_session"
             },
@@ -5465,6 +5519,7 @@
                "width": 1
               }
              },
+             "subtitle": "tools://libsignal/create_session",
              "id": "tool_libsignal_reset_clears_session",
              "content_description": "libsignal create_session"
             },
@@ -5496,6 +5551,7 @@
                }
               }
              ],
+             "subtitle": "tools://libsignal/create_session",
              "id": "tool_libsignal_ratchet_advances",
              "content_description": "libsignal create_session"
             },
@@ -5535,6 +5591,7 @@
                "width": 1
               }
              },
+             "subtitle": "tools://libsignal/decrypt",
              "id": "tool_libsignal_decrypt_without_session_fails",
              "content_description": "libsignal decrypt"
             },
@@ -5566,6 +5623,7 @@
                }
               }
              ],
+             "subtitle": "tools://libsignal/create_session",
              "id": "tool_libsignal_verify_wrong_number_mismatches",
              "content_description": "libsignal create_session"
             }
@@ -5820,6 +5878,7 @@
                }
               }
              ],
+             "subtitle": "tools://MobileNetV4-small/classify",
              "id": "tool_mobilenetv4_classify_without_image_fails_closed",
              "content_description": "MobileNetV4-small classify"
             },
@@ -5856,6 +5915,7 @@
                "width": 1
               }
              },
+             "subtitle": "tools://MobileNetV4-small/detect",
              "id": "tool_mobilenetv4_detect_alias_fails_closed",
              "content_description": "MobileNetV4-small detect"
             },
@@ -5885,6 +5945,7 @@
                }
               }
              ],
+             "subtitle": "tools://MobileNetV4-small/predict",
              "id": "tool_mobilenetv4_predict_alias_fails_closed",
              "content_description": "MobileNetV4-small predict"
             }
@@ -6134,6 +6195,7 @@
                }
               }
              ],
+             "subtitle": "tools://u-2-Net.tflite/segment",
              "id": "tool_u2net_segment_reports_unsupported",
              "content_description": "u-2-Net.tflite segment"
             },
@@ -6170,6 +6232,7 @@
                "width": 1
               }
              },
+             "subtitle": "tools://u-2-Net.tflite/infer",
              "id": "tool_u2net_infer_reports_unsupported",
              "content_description": "u-2-Net.tflite infer"
             },
@@ -6199,6 +6262,7 @@
                }
               }
              ],
+             "subtitle": "tools://u-2-Net.tflite/mask",
              "id": "tool_u2net_mask_reports_unsupported",
              "content_description": "u-2-Net.tflite mask"
             }
@@ -6451,6 +6515,7 @@
                }
               }
              ],
+             "subtitle": "tools://network.push/send_alert",
              "id": "tool_push_send_alert_posts",
              "content_description": "push send_alert"
             },
@@ -6490,6 +6555,7 @@
                "width": 1
               }
              },
+             "subtitle": "tools://network.push/notify",
              "id": "tool_push_notify_posts",
              "content_description": "push notify"
             },
@@ -6522,6 +6588,7 @@
                }
               }
              ],
+             "subtitle": "tools://network.push/send",
              "id": "tool_push_send_posts",
              "content_description": "push send"
             }
@@ -6774,6 +6841,7 @@
                }
               }
              ],
+             "subtitle": "tools://storage.offline_cache/cache",
              "id": "tool_offline-cache_cache_then_stats",
              "content_description": "offline-cache cache"
             },
@@ -6813,6 +6881,7 @@
                "width": 1
               }
              },
+             "subtitle": "tools://storage.offline_cache/cache",
              "id": "tool_offline-cache_clear_empties_cache",
              "content_description": "offline-cache cache"
             }
@@ -7065,6 +7134,7 @@
                }
               }
              ],
+             "subtitle": "tools://network.realtime/connect",
              "id": "tool_realtime-ws_connect_without_transport_fails",
              "content_description": "realtime-ws connect"
             },
@@ -7104,6 +7174,7 @@
                "width": 1
               }
              },
+             "subtitle": "tools://network.realtime/connect",
              "id": "tool_realtime-ws_connect_with_transport_succeeds",
              "content_description": "realtime-ws connect"
             },
@@ -7135,6 +7206,7 @@
                }
               }
              ],
+             "subtitle": "tools://network.realtime/subscribe",
              "id": "tool_realtime-ws_subscribe_without_endpoint_fails",
              "content_description": "realtime-ws subscribe"
             },
@@ -7174,6 +7246,7 @@
                "width": 1
               }
              },
+             "subtitle": "tools://network.realtime/send",
              "id": "tool_realtime-ws_send_without_endpoint_fails",
              "content_description": "realtime-ws send"
             },
@@ -7205,6 +7278,7 @@
                }
               }
              ],
+             "subtitle": "tools://network.realtime/disconnect",
              "id": "tool_realtime-ws_disconnect_is_safe",
              "content_description": "realtime-ws disconnect"
             }
@@ -7464,6 +7538,7 @@
                }
               }
              ],
+             "subtitle": "tools://network.transfer/serve",
              "id": "tool_net_hub_lifecycle",
              "content_description": "net serve"
             },
@@ -7500,6 +7575,7 @@
                "width": 1
               }
              },
+             "subtitle": "tools://network.transfer/status",
              "id": "tool_net_status_without_hub",
              "content_description": "net status"
             },
@@ -7531,6 +7607,7 @@
                }
               }
              ],
+             "subtitle": "tools://network.transfer/share",
              "id": "tool_net_share_without_content_fails",
              "content_description": "net share"
             },
@@ -7570,6 +7647,7 @@
                "width": 1
               }
              },
+             "subtitle": "tools://network.transfer/share",
              "id": "tool_net_share_without_hub_is_staged",
              "content_description": "net share"
             },
@@ -7602,6 +7680,7 @@
                }
               }
              ],
+             "subtitle": "tools://network.transfer/get",
              "id": "tool_net_get_unreachable_fails",
              "content_description": "net get"
             },
@@ -7642,6 +7721,7 @@
                "width": 1
               }
              },
+             "subtitle": "tools://network.transfer/post",
              "id": "tool_net_post_unreachable_fails",
              "content_description": "net post"
             },
@@ -7674,6 +7754,7 @@
                }
               }
              ],
+             "subtitle": "tools://network.transfer/download",
              "id": "tool_net_download_unreachable_fails",
              "content_description": "net download"
             },
@@ -7714,6 +7795,7 @@
                "width": 1
               }
              },
+             "subtitle": "tools://network.transfer/upload",
              "id": "tool_net_upload_unreachable_fails",
              "content_description": "net upload"
             },
@@ -7747,6 +7829,7 @@
                }
               }
              ],
+             "subtitle": "tools://network.transfer/request",
              "id": "tool_net_request_unreachable_fails",
              "content_description": "net request"
             },
@@ -7783,6 +7866,7 @@
                "width": 1
               }
              },
+             "subtitle": "tools://network.transfer/serve",
              "id": "tool_net_stop_twice_is_safe",
              "content_description": "net serve"
             }
@@ -8037,6 +8121,7 @@
                }
               }
              ],
+             "subtitle": "tools://device.printer/scan",
              "id": "tool_print_scan_reports_adapter_state",
              "content_description": "print scan"
             },
@@ -8073,6 +8158,7 @@
                "width": 1
               }
              },
+             "subtitle": "tools://device.printer/status",
              "id": "tool_print_status_reports_ready",
              "content_description": "print status"
             },
@@ -8104,6 +8190,7 @@
                }
               }
              ],
+             "subtitle": "tools://device.printer/connect",
              "id": "tool_print_connect_without_device_fails",
              "content_description": "print connect"
             },
@@ -8140,6 +8227,7 @@
                "width": 1
               }
              },
+             "subtitle": "tools://device.printer/print",
              "id": "tool_print_print_without_receipt_fails",
              "content_description": "print print"
             },
@@ -8172,6 +8260,7 @@
                }
               }
              ],
+             "subtitle": "tools://device.printer/print",
              "id": "tool_print_print_without_printer_fails",
              "content_description": "print print"
             },
@@ -8210,6 +8299,7 @@
                "width": 1
               }
              },
+             "subtitle": "tools://device.printer/pair",
              "id": "tool_print_pair_without_device_fails",
              "content_description": "print pair"
             },
@@ -8239,6 +8329,7 @@
                }
               }
              ],
+             "subtitle": "tools://device.printer/disconnect",
              "id": "tool_print_disconnect_is_safe",
              "content_description": "print disconnect"
             }
@@ -8562,6 +8653,7 @@
                }
               }
              ],
+             "subtitle": "tools://data.codec/base64",
              "id": "tool_codec_base64_round_trip",
              "content_description": "codec base64"
             },
@@ -8602,6 +8694,7 @@
                "width": 1
               }
              },
+             "subtitle": "tools://data.codec/base45",
              "id": "tool_codec_base45_round_trip",
              "content_description": "codec base45"
             },
@@ -8633,6 +8726,7 @@
                }
               }
              ],
+             "subtitle": "tools://data.codec/json/validate",
              "id": "tool_codec_json_validate_ok",
              "content_description": "codec json/validate"
             },
@@ -8671,6 +8765,7 @@
                "width": 1
               }
              },
+             "subtitle": "tools://data.codec/json/validate",
              "id": "tool_codec_json_validate_rejects",
              "content_description": "codec json/validate"
             },
@@ -8705,6 +8800,7 @@
                }
               }
              ],
+             "subtitle": "tools://data.codec/json/extract",
              "id": "tool_codec_json_extract_paths",
              "content_description": "codec json/extract"
             },
@@ -8748,6 +8844,7 @@
                "width": 1
               }
              },
+             "subtitle": "tools://data.codec/json/stringify",
              "id": "tool_codec_json_stringify",
              "content_description": "codec json/stringify"
             },
@@ -8780,6 +8877,7 @@
                }
               }
              ],
+             "subtitle": "tools://data.codec/json/chunk",
              "id": "tool_codec_chunk_assemble_round_trip",
              "content_description": "codec json/chunk"
             },
@@ -8820,6 +8918,7 @@
                "width": 1
               }
              },
+             "subtitle": "tools://data.codec/json/assemble",
              "id": "tool_codec_out_of_order_chunks_assemble",
              "content_description": "codec json/assemble"
             },
@@ -8852,6 +8951,7 @@
                }
               }
              ],
+             "subtitle": "tools://data.codec/json/assemble",
              "id": "tool_codec_missing_chunk_reports_partial",
              "content_description": "codec json/assemble"
             },
@@ -8892,6 +8992,7 @@
                "width": 1
               }
              },
+             "subtitle": "tools://data.codec/json/assemble",
              "id": "tool_codec_duplicate_chunk_does_not_complete",
              "content_description": "codec json/assemble"
             },
@@ -8924,6 +9025,7 @@
                }
               }
              ],
+             "subtitle": "tools://data.codec/json/assemble",
              "id": "tool_codec_corrupted_chunk_fails_checksum",
              "content_description": "codec json/assemble"
             }
@@ -9201,6 +9303,7 @@
                }
               }
              ],
+             "subtitle": "tools://code-generate/generate",
              "id": "tool_code-generate_qr_renders",
              "content_description": "code-generate generate"
             },
@@ -9242,6 +9345,7 @@
                "width": 1
               }
              },
+             "subtitle": "tools://code-generate/barcode",
              "id": "tool_code-generate_ean13_renders",
              "content_description": "code-generate barcode"
             },
@@ -9274,6 +9378,7 @@
                }
               }
              ],
+             "subtitle": "tools://code-generate/barcode",
              "id": "tool_code-generate_code128_renders",
              "content_description": "code-generate barcode"
             },
@@ -9312,6 +9417,7 @@
                "width": 1
               }
              },
+             "subtitle": "tools://code-generate/qr",
              "id": "tool_code-generate_qr_alias_renders",
              "content_description": "code-generate qr"
             },
@@ -9344,6 +9450,7 @@
                }
               }
              ],
+             "subtitle": "tools://code-generate/render",
              "id": "tool_code-generate_render_alias",
              "content_description": "code-generate render"
             },
@@ -9382,6 +9489,7 @@
                "width": 1
               }
              },
+             "subtitle": "tools://code-generate/generate",
              "id": "tool_code-generate_missing_content_fails",
              "content_description": "code-generate generate"
             }
@@ -9684,6 +9792,7 @@
                }
               }
              ],
+             "subtitle": "tools://device.screen/keep-awake",
              "id": "tool_screen_keep_awake_on",
              "content_description": "screen keep-awake"
             },
@@ -9722,6 +9831,7 @@
                "width": 1
               }
              },
+             "subtitle": "tools://device.screen/keep-awake",
              "id": "tool_screen_keep_awake_off",
              "content_description": "screen keep-awake"
             },
@@ -9753,6 +9863,7 @@
                }
               }
              ],
+             "subtitle": "tools://device.screen/screenshot",
              "id": "tool_screen_screenshot_without_host_fails",
              "content_description": "screen screenshot"
             },
@@ -9791,6 +9902,7 @@
                "width": 1
               }
              },
+             "subtitle": "tools://device.screen/recording",
              "id": "tool_screen_recording_without_host_fails",
              "content_description": "screen recording"
             },
@@ -9820,6 +9932,7 @@
                }
               }
              ],
+             "subtitle": "tools://device.screen/status",
              "id": "tool_screen_status_reports_state",
              "content_description": "screen status"
             }
@@ -10058,21 +10171,51 @@
            "custom_type": "sdui_chart",
            "custom_props": {
             "chart_type": "bar",
+            "title": "POS Analytics Chart",
             "subtitle": "",
             "label_field": "label",
             "value_field": "value",
             "value_prefix": "",
             "value_suffix": "",
-            "accent_color": "#38BDF8",
+            "accent_hex": "#38BDF8",
             "height": 160,
             "show_grid": true,
             "show_legend": true,
-            "interactive": true
+            "interactive": true,
+            "data_var": "user.chart_json"
            },
            "id": "samples_chart"
           },
           {
            "type": "json_list",
+           "data_var": "user.samples_json",
+           "empty_text": "No records",
+           "row_card": {
+            "type": "container",
+            "orientation": "horizontal",
+            "item_spacing": 8,
+            "paddings": {
+             "left": 12,
+             "top": 8,
+             "right": 12,
+             "bottom": 8
+            },
+            "items": [
+             {
+              "type": "text",
+              "text": "@{item.name}",
+              "font_size": 14,
+              "font_weight": "bold",
+              "text_color": "#F8FAFC"
+             },
+             {
+              "type": "text",
+              "text": "@{item.note}",
+              "font_size": 12,
+              "text_color": "#94A3B8"
+             }
+            ]
+           },
            "id": "samples_list"
           },
           {

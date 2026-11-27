@@ -165,21 +165,51 @@
          "custom_type": "sdui_chart",
          "custom_props": {
           "chart_type": "bar",
+          "title": "POS Analytics Chart",
           "subtitle": "",
           "label_field": "label",
           "value_field": "value",
           "value_prefix": "",
           "value_suffix": "",
-          "accent_color": "#38BDF8",
+          "accent_hex": "#38BDF8",
           "height": 160,
           "show_grid": true,
           "show_legend": true,
-          "interactive": true
+          "interactive": true,
+          "data_var": "user.chart_json"
          },
          "id": "samples_chart"
         },
         {
          "type": "json_list",
+         "data_var": "user.samples_json",
+         "empty_text": "No records",
+         "row_card": {
+          "type": "container",
+          "orientation": "horizontal",
+          "item_spacing": 8,
+          "paddings": {
+           "left": 12,
+           "top": 8,
+           "right": 12,
+           "bottom": 8
+          },
+          "items": [
+           {
+            "type": "text",
+            "text": "@{item.name}",
+            "font_size": 14,
+            "font_weight": "bold",
+            "text_color": "#F8FAFC"
+           },
+           {
+            "type": "text",
+            "text": "@{item.note}",
+            "font_size": 12,
+            "text_color": "#94A3B8"
+           }
+          ]
+         },
          "id": "samples_list"
         },
         {

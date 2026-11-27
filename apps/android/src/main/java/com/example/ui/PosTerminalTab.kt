@@ -15,6 +15,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -28,6 +29,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
@@ -68,7 +70,8 @@ private enum class ActiveHostOverlay {
  * - Renders the tenant's active cached DivKit JSON schema (`uiState.verifiedDivKitJson`)
  *   across 100% of the screen space.
  * - Top-center **Standout Pill** (zero shadow, high-contrast on both Dark and Light themes)
- *   opens the AppBar when clicked.
+ *   opens the AppBar when clicked. The whole pill — fill, border and handle — renders at 65%
+ *   opacity, and the 48 dp minimum touch target (not just the 56x20 dp bar) is the hit area.
  * - Once opened, the **AppBar remains open unless the active workspace screen is clicked
  *   or the Exit (`< Hub`) button is clicked**.
  * - Includes the Expanded AppBar (Back/Exit, QR, Bell, 3-Dot Menu with Workspace Settings,
@@ -236,38 +239,13 @@ fun PosTerminalTab(
 
         // 2. Top-Center Standout Pill (Collapsed State — Zero Shadow, High Contrast on Both Themes)
         if (!isAppBarExpanded) {
-            Box(
+            WorkspaceStandoutPill(
+                isDark = isDark,
+                onOpen = { isAppBarExpanded = true },
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .padding(top = 4.dp)
-                    .minimumInteractiveComponentSize()
-                    .clip(RoundedCornerShape(50))
-                    .clickable { isAppBarExpanded = true }
-                    .semantics { contentDescription = "Workspace menu and Hub navigation" }
-                    .testTag("workspace_standout_pill"),
-                contentAlignment = Alignment.Center
-            ) {
-                val pillFill = if (isDark) Color(0xFF64748B) else Color(0xFF8E95A2)
-                val pillBorder = if (isDark) Color(0xFFCBD5E1) else Color(0xFF475569)
-
-                Box(
-                    modifier = Modifier
-                        .width(56.dp)
-                        .height(20.dp)
-                        .clip(RoundedCornerShape(50))
-                        .background(pillFill)
-                        .border(1.dp, pillBorder, RoundedCornerShape(50)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .width(24.dp)
-                            .height(3.dp)
-                            .clip(RoundedCornerShape(2.dp))
-                            .background(Color.White)
-                    )
-                }
-            }
+            )
         }
 
         // 3. Expanded Top AppBar — Remains open unless the active workspace screen is clicked or Exit is clicked
@@ -907,4 +885,52 @@ private fun relativeCacheAge(receivedAt: Long): String {
     val hours = minutes / 60
     if (hours < 24) return "$hours h ago"
     return "${hours / 24} d ago"
+}
+
+/**
+ * The collapsed workspace pill.
+ *
+ * The visible bar is 56x20 dp and renders at 65% opacity — fill, border and handle together.
+ * `clickable` is applied *outside* `minimumInteractiveComponentSize()`, so the whole 48 dp
+ * minimum touch target opens the app bar instead of only the 20 dp-tall strip.
+ */
+@Composable
+internal fun WorkspaceStandoutPill(
+    isDark: Boolean,
+    onOpen: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val pillFill = if (isDark) Color(0xFF64748B) else Color(0xFF8E95A2)
+    val pillBorder = if (isDark) Color(0xFFCBD5E1) else Color(0xFF475569)
+
+    Box(
+        modifier = modifier
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ) { onOpen() }
+            .minimumInteractiveComponentSize()
+            .semantics { contentDescription = "Workspace menu and Hub navigation" }
+            .testTag("workspace_standout_pill"),
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .width(56.dp)
+                .height(20.dp)
+                .alpha(0.65f)
+                .clip(RoundedCornerShape(50))
+                .background(pillFill)
+                .border(1.dp, pillBorder, RoundedCornerShape(50)),
+            contentAlignment = Alignment.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .width(24.dp)
+                    .height(3.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(Color.White)
+            )
+        }
+    }
 }

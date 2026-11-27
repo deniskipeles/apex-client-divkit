@@ -173,6 +173,7 @@
                           }
                         }
                       ],
+                      "subtitle": "tools://auth.biometrics/authenticate",
                       "id": "tool_biometrics_denied_without_host",
                       "content_description": "biometrics authenticate"
                     },
@@ -211,6 +212,7 @@
                           "width": 1
                         }
                       },
+                      "subtitle": "tools://auth.biometrics/authenticate",
                       "id": "tool_biometrics_refusing_sink_denies",
                       "content_description": "biometrics authenticate"
                     },
@@ -242,6 +244,7 @@
                           }
                         }
                       ],
+                      "subtitle": "tools://auth.biometrics/authenticate",
                       "id": "tool_biometrics_accepting_sink_succeeds",
                       "content_description": "biometrics authenticate"
                     }

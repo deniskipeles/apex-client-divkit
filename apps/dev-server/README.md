@@ -117,3 +117,60 @@ public/                 built SPA (generated — commit-friendly artifact)
   rotation and a card-restart button.
 - The `db:*` scripts and the legacy `src/` Next.js scaffold remain from the
   original environment but are unused by the playground.
+
+## Android parity runtime (`@apex/pos-ui/android-runtime`)
+
+`apps/android` does **not** use the Yandex DivKit runtime; it renders a hand-written
+Compose interpreter of a DivKit subset. A workspace preview is only truthful if it runs
+that interpreter, so the workspace canvas (`client/src/workspace/WorkspaceCanvas.tsx`)
+renders through a browser port of it instead of `@divkitframework/divkit`.
+
+```
+packages/pos-ui/src/android-runtime/   pure TS, no React, no DivKit
+  vocabulary.ts    node types / native blocks / chart aliases / action types / URL schemes
+  expression.ts    the @{...} parser (functions, coercion, display formatting)
+  values.ts        DivValue display/number/row semantics
+  actions.ts       set_variable + array ops + URL dispatch, folded in order
+  renderModel.ts   card JSON -> render tree (defaults, visibility, blocks, json_list)
+  chart.ts         DivChartSpec: aggregation, price*qty, demo fallback
+  theme.ts         light/dark colour adaptation
+  icons.ts         icon catalog resolution (icons://native/<name>, aliases, Material ids)
+  validate.ts      authoring check: unknown node types, action schemes, name/expr confusion
+client/src/android/AndroidCard.tsx     the React renderer for that tree
+client/src/workspace/toolRuntime.ts    tool dispatch: codec runs, everything else reports
+```
+
+`packages/pos-ui` stays React-free on purpose: `apps/dev-server` uses React 19 while the
+package declares React 18, and a second copy would break hooks. The renderer lives in the
+app.
+
+### Generated artifacts (do not hand-edit)
+
+| Artifact | Generated from | Command |
+| --- | --- | --- |
+| `packages/contract/icons/native-icons.json` | `apps/android/.../NativeIconCatalog.kt` | `pnpm icons:build` |
+| `packages/divkit-subset/schema.json` | `packages/pos-ui/src/android-runtime/vocabulary.ts` | `pnpm divkit:schema` |
+| `apps/android/src/dev/resources/demo/**` + `client/public/workspaces/**` | `workspace/**` | `pnpm workspaces:build` |
+
+Each has a `--check` variant (`icons:check`, `divkit:schema:check`, `workspaces:check`) and
+every workspace build runs the vocabulary validator, so a card that the device would render
+blank fails here instead of on a handset.
+
+### What the preview can and cannot do
+
+- Navigation, variables (workspace-scoped like `EngineStateBridge`), `icons://`,
+  `div-action://set_variable` and the whole `data.codec@1` family run for real.
+- `local-db://op/*` runs against an in-memory mirror of the workspace collections
+  (`WorkspaceMemoryDb`, seeded from the bundle). It implements the registry's operations —
+  `db.insert`/`update`/`upsert`/`query`/`query_one`/`count`/`delete`,
+  `db.append_child`/`set_child_qty`/`remove_child`/`commit`, `doc.pack`/`append`/`unpack`,
+  `lookup.resolve` — including schema validation, roll-ups (`sum`, `round2`), the merge-by-key
+  child list with its stock ceiling, `editable_status` locks, canonical `lines_json`
+  projections, reference delete guards and the `C1|…` transfer envelopes. Records live for the
+  life of the page: a restart reloads the seed, exactly like a fresh workspace import.
+- Native-only capabilities (camera, print, LAN sockets, ML, `db.import_schema`, …) are
+  reported as **unavailable** and show up in the event log. They never return a fabricated
+  success — the point of the preview is to tell you when the device would do something it
+  cannot show you.
+- `sdui_numpad` / `sdui_signature` are web/desktop custom components that **Android renders
+  as nothing**; the validator warns about them and they only appear in web-only workspaces.

@@ -179,6 +179,7 @@
                           }
                         }
                       ],
+                      "subtitle": "tools://network.push/send_alert",
                       "id": "tool_push_send_alert_posts",
                       "content_description": "push send_alert"
                     },
@@ -218,6 +219,7 @@
                           "width": 1
                         }
                       },
+                      "subtitle": "tools://network.push/notify",
                       "id": "tool_push_notify_posts",
                       "content_description": "push notify"
                     },
@@ -250,6 +252,7 @@
                           }
                         }
                       ],
+                      "subtitle": "tools://network.push/send",
                       "id": "tool_push_send_posts",
                       "content_description": "push send"
                     }

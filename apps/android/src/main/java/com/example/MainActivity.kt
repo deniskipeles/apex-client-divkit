@@ -49,6 +49,7 @@ import com.example.ui.PosTerminalTab
 import com.example.ui.TenantLauncherScreen
 import com.example.ui.theme.MyApplicationTheme
 import com.google.zxing.BarcodeFormat
+import engine.fs.TempImageStore
 import engine.tools.NativeToolsSuite
 import engine.tools.impl.BiometricsTool
 import engine.tools.impl.CameraTool
@@ -146,12 +147,13 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    /** Persists bytes to the app cache and returns a decodable path, or null on failure. */
-    private fun writeTempImage(bytes: ByteArray, prefix: String): String? = runCatching {
-        val file = java.io.File(cacheDir, "${prefix}_${System.currentTimeMillis()}.jpg")
-        file.writeBytes(bytes)
-        file.absolutePath
-    }.getOrNull()
+    /**
+     * Persists bytes to the bounded image cache and returns a decodable path, or null on
+     * failure. [TempImageStore] prunes older sources, so repeated tool runs cannot grow
+     * `cache/` without limit.
+     */
+    private fun writeTempImage(bytes: ByteArray, prefix: String): String? =
+        TempImageStore.store(java.io.File(cacheDir, TempImageStore.DIR), bytes, prefix)?.absolutePath
 }
 
 private enum class LauncherSection {

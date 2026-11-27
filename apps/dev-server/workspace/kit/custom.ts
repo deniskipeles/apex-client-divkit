@@ -13,9 +13,13 @@ import type { DivAction } from './actions.ts'
 export interface ChartOptions {
   id?: string
   chartType?: 'bar' | 'line' | 'area' | 'donut' | 'pie'
-  title: string
+  /** Alias for `chartType`, kept for the generators written against the first kit. */
+  kind?: 'bar' | 'line' | 'area' | 'donut' | 'pie'
+  title?: string
   subtitle?: string
   dataVar?: string
+  /** Alias for `dataVar`. */
+  data?: string
   labelField?: string
   valueField?: string
   valuePrefix?: string
@@ -28,20 +32,21 @@ export interface ChartOptions {
 
 export const chart = (opts: ChartOptions): DivNode => {
   const props: Record<string, unknown> = {
-    chart_type: opts.chartType ?? 'bar',
-    title: opts.title,
+    chart_type: opts.chartType ?? opts.kind ?? 'bar',
+    title: opts.title ?? 'POS Analytics Chart',
     subtitle: opts.subtitle ?? '',
     label_field: opts.labelField ?? 'label',
     value_field: opts.valueField ?? 'value',
     value_prefix: opts.valuePrefix ?? '',
     value_suffix: opts.valueSuffix ?? '',
-    accent_color: opts.accentColor ?? palette.info,
+    accent_hex: opts.accentColor ?? palette.info,
     height: opts.height ?? 200,
     show_grid: true,
     show_legend: true,
     interactive: true,
   }
-  if (opts.dataVar) props.data_var = opts.dataVar
+  const dataVar = opts.dataVar ?? opts.data
+  if (dataVar) props.data_var = dataVar
   if (opts.selectionVar) props.selection_var = opts.selectionVar
   if (opts.points) props.points = opts.points
   const node: DivNode = { type: 'custom', custom_type: 'sdui_chart', custom_props: props }
@@ -51,21 +56,55 @@ export const chart = (opts: ChartOptions): DivNode => {
 
 export interface JsonListOptions {
   id?: string
-  dataVar: string
-  emptyText: string
-  rowCard: DivNode
+  dataVar?: string
+  /** Alias for `dataVar`. */
+  data?: string
+  emptyText?: string
+  rowCard?: DivNode
+  /** Build a two-line row card from these record keys when `rowCard` is absent. */
+  titleKey?: string
+  subtitleKey?: string
 }
 
 export const jsonList = (opts: JsonListOptions): DivNode => {
+  const dataVar = opts.dataVar ?? opts.data
+  if (!dataVar) throw new Error('jsonList: dataVar (or data) is required')
   const node: DivNode = {
     type: 'json_list',
-    data_var: opts.dataVar,
-    empty_text: opts.emptyText,
-    row_card: opts.rowCard,
+    data_var: dataVar,
+    empty_text: opts.emptyText ?? 'No records',
+    row_card: opts.rowCard ?? defaultRowCard(opts.titleKey ?? 'label', opts.subtitleKey),
   }
   if (opts.id) node.id = opts.id
   return node
 }
+
+/** Minimal record row: the title plus an optional second line. */
+const defaultRowCard = (titleKey: string, subtitleKey?: string): DivNode => ({
+  type: 'container',
+  orientation: 'horizontal',
+  item_spacing: space(2),
+  paddings: { left: space(3), top: space(2), right: space(3), bottom: space(2) },
+  items: [
+    {
+      type: 'text',
+      text: `@{item.${titleKey}}`,
+      font_size: ramp.body,
+      font_weight: 'bold',
+      text_color: palette.text,
+    },
+    ...(subtitleKey
+      ? [
+          {
+            type: 'text' as const,
+            text: `@{item.${subtitleKey}}`,
+            font_size: ramp.small,
+            text_color: palette.textMuted,
+          },
+        ]
+      : []),
+  ],
+})
 
 /** Web/desktop custom block: signature pad bound to a variable. */
 export const signature = (opts: { variable: string; label?: string; id?: string }): DivNode => {

@@ -6,7 +6,8 @@
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./navigation-core": "./src/navigation/core.ts"
+    "./navigation-core": "./src/navigation/core.ts",
+    "./android-runtime": "./src/android-runtime/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

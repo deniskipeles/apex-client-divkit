@@ -272,6 +272,35 @@ Adding a notification source = feed items through `NotificationCenter.add` into
 `NotificationType` whose `icon` names an existing catalog icon. Reference:
 `docs/tools/notifications-tray.md`.
 
+## Storage accounting (Files tab) and the collapsed pill
+
+Android Settings splits the app into **App** (the installed package) and **Data** (`dataDir`),
+so the Files tab reports those same two figures plus a disjoint breakdown between them:
+
+- `engine/fs/AppStorageReport.kt` — `AppStorageReportBuilder.build(dataDir, packageFiles)` is a
+  pure `java.io` partition: package, workspace sandboxes, tenant databases (incl.
+  `-wal`/`-shm`/`-journal`), other databases, `offline_cache`, other `files/`, `cache/`, other
+  data. Buckets never overlap, `totalBytes == packageBytes + dataBytes`, and an unreadable entry
+  counts as 0 instead of crashing the tab. `AppStorageReportTest` pins the arithmetic.
+- `WorkspaceFileManager.WorkspaceFolder` carries `sandboxBytes` and `databaseBytes`
+  (`sizeBytes` is their sum), so the UI can say "media … • db …". `databaseFiles(id)` includes
+  the SQLite sidecars, and a tenant database whose sandbox folder is gone is still listed as
+  `<id> (database only)` rather than disappearing from the total.
+- `engine/fs/TempImageStore.kt` bounds the vision-tool source images under
+  `cacheDir/image_source/` (keeps the newest 4 on write, 2 at app start) and prunes the legacy
+  `picked_*.jpg` / `captured_*.jpg` written at the cache root by earlier builds.
+- `WorkspaceDriverFactory` sets `PRAGMA journal_size_limit = 4194304`; `WorkspaceManager.checkpoint`
+  / `checkpointAll` run `PRAGMA wal_checkpoint(TRUNCATE)` (after provisioning and from the Files
+  tab's **Reclaim storage** action). A checkpoint blocked by a reader returns 0 and the next
+  refresh retries. Checkpointing moves WAL pages into the main `.db`; it does not shrink it.
+- The Files tab renders `storage_row_*` / `storage_total` / `storage_breakdown` test tags and a
+  `file_manager_reclaim_storage` action; `workspace_folder_split_<id>` shows the media/db split.
+
+The collapsed workspace pill is `WorkspaceStandoutPill` in `PosTerminalTab.kt`: the visible bar
+is 56x20 dp rendered at 65% opacity (fill, border and handle), and `clickable` sits *outside*
+`minimumInteractiveComponentSize()` so the whole 48 dp target opens the app bar.
+`WorkspaceStandoutPillTest` asserts the target size, the click callback and the accessible label.
+
 ## Web dashboard (`apps/web`), Desktop POS (`apps/desktop`) & DivKit dev server (`apps/dev-server`)
 
 Three independent pnpm-workspace apps consume the same `packages/pos-ui` and `packages/contract`
@@ -592,3 +621,51 @@ export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 ANDROID_HOME=$HOME/.apex-too
   `nativeTools_mobileNetV4DetectsSkuInLowLatency`); they now assert `UNSUPPORTED`/denial and real
   ranking instead. `DEMO_CARD_REVISION` is not the refresh trigger - `needsDemoCardRefresh` compares
   card content - so edited cards re-seed on the next launch.
+
+## Dev-server Android parity runtime (`packages/pos-ui/src/android-runtime`)
+
+The workspace preview must render what the handset renders, so `apps/dev-server` no longer
+uses `@divkitframework/divkit` for workspaces. It runs a browser port of the Compose
+interpreter (`DivKitMultiplatform.kt`), kept React-free in `packages/pos-ui` (subpath export
+`./android-runtime`) because the dev-server has React 19 and the package declares React 18 —
+a second React copy would break hooks. The React renderer lives in
+`apps/dev-server/client/src/android/AndroidCard.tsx`.
+
+Wired through:
+
+1. `vocabulary.ts` — the node/block/chart/action/scheme lists, mirrored from the `when`
+   branches in `RenderDivNode`/`RenderLayoutBlock`/`dispatchAllActions`.
+2. `expression.ts` + `values.ts` — `@{...}` parser, function table, number/row/display
+   semantics (`formatNumber` expands exponents like `BigDecimal.toPlainString`).
+3. `actions.ts` — `action` then `actions`, folded in order so a later action sees an earlier
+   write; `set_variable`/array ops are local, everything with a `url` goes to the host.
+4. `renderModel.ts` — card JSON → render tree; `gone` nodes are removed from children,
+   unknown types and `custom` blocks other than `json_list`/charts become `nothing`
+   (`buildCardModel` returns `null` when the root renders nothing).
+5. `validate.ts` — authoring check run by `pnpm workspaces:build`; unknown node types,
+   undispatchable schemes, undeclared writes and `data_var: "@{...}"` (a variable *name*
+   confused with an expression) are errors for Android targets and warnings otherwise.
+6. `packages/contract/icons/native-icons.json` — generated from `NativeIconCatalog.kt` by
+   `apps/dev-server/scripts/build-icon-catalog.mjs` (`pnpm icons:build` / `icons:check`).
+7. `packages/divkit-subset/schema.json` — generated from `vocabulary.ts` by
+   `apps/dev-server/scripts/build-divkit-schema.mjs` (`pnpm divkit:schema`).
+
+Behaviour that bites:
+
+- `sdui_signature` / `sdui_numpad` are web/desktop custom components; `type: "custom"` only
+  reaches `json_list` and the chart aliases, so Android renders those two as nothing.
+- `chart` reads `accent_hex` (not `accent_color`), and `data_var`/`text_variable`/`chunks_var`
+  are variable *names*; the old kit builders silently dropped `data`/`rowCard`/`subtitle`, so
+  the generated `apex_tools_test` chart had no `data_var` and its `json_list` had no rows.
+- `data.codec@1` runs in the browser (`client/src/workspace/toolRuntime.ts`); native-only
+  tools report `unavailable` and are logged — never a fabricated success.
+- `local-db://op/*` runs against `WorkspaceMemoryDb` (`packages/pos-ui/src/android-runtime/
+  memoryDb.ts`, wired in `client/src/workspace/localDb.ts`), a port of `ApexKitDatabaseEngine`
+  + `SchemaOps`: record ids are text, `created`/`updated` are epoch-millisecond strings, the
+  query path mirrors `QueryEngine`/`FilterNode` (`{field: value}`, `{field: {$op: value}}`,
+  `$and`/`$or`, `-field` sort, `select`, `single`), and the schema rules (validation, roll-ups,
+  merge-by-key child lists with the stock ceiling, `editable_status`, canonical
+  `lines_json`/`line_count`, reference delete guards, `C1|…` chunk envelopes) are read from
+  the collection bundle. `localDb.test.ts` drives the kiosk cards' exact payloads.
+- Still pending: the remaining native `tools://` inventory (camera, print, LAN, ML) and
+  `db.import_schema` for the preview.

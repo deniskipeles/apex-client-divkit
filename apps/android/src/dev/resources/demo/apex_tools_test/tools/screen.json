@@ -229,6 +229,7 @@
                           }
                         }
                       ],
+                      "subtitle": "tools://device.screen/keep-awake",
                       "id": "tool_screen_keep_awake_on",
                       "content_description": "screen keep-awake"
                     },
@@ -267,6 +268,7 @@
                           "width": 1
                         }
                       },
+                      "subtitle": "tools://device.screen/keep-awake",
                       "id": "tool_screen_keep_awake_off",
                       "content_description": "screen keep-awake"
                     },
@@ -298,6 +300,7 @@
                           }
                         }
                       ],
+                      "subtitle": "tools://device.screen/screenshot",
                       "id": "tool_screen_screenshot_without_host_fails",
                       "content_description": "screen screenshot"
                     },
@@ -336,6 +339,7 @@
                           "width": 1
                         }
                       },
+                      "subtitle": "tools://device.screen/recording",
                       "id": "tool_screen_recording_without_host_fails",
                       "content_description": "screen recording"
                     },
@@ -365,6 +369,7 @@
                           }
                         }
                       ],
+                      "subtitle": "tools://device.screen/status",
                       "id": "tool_screen_status_reports_state",
                       "content_description": "screen status"
                     }

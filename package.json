@@ -14,6 +14,11 @@
     "workspaces:build": "pnpm -C apps/dev-server run workspaces:build",
     "test:dev-server": "pnpm -C apps/dev-server run test",
     "toolcases:build": "pnpm -C apps/dev-server run toolcases:build",
-    "toolcases:check": "pnpm -C apps/dev-server run toolcases:check"
+    "toolcases:check": "pnpm -C apps/dev-server run toolcases:check",
+    "icons:build": "pnpm -C apps/dev-server run icons:build",
+    "icons:check": "pnpm -C apps/dev-server run icons:check",
+    "divkit:schema": "pnpm -C apps/dev-server run divkit:schema",
+    "divkit:schema:check": "pnpm -C apps/dev-server run divkit:schema:check",
+    "workspaces:check": "pnpm -C apps/dev-server run workspaces:check"
   }
 }

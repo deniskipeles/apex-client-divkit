@@ -24,6 +24,7 @@ import androidx.compose.ui.window.Dialog
 import com.example.enginehost.FilePreview
 import com.example.enginehost.SduiEngineUiState
 import com.example.enginehost.SduiEngineViewModel
+import engine.fs.AppStorageReport
 import engine.fs.FsEntry
 import engine.fs.WorkspaceFileSystem
 import engine.fs.WorkspaceFolder
@@ -83,11 +84,17 @@ fun FileManagerTab(
         FileManagerHeader(
             folder = folder,
             folders = uiState.workspaceFolders,
+            report = uiState.storageReport,
             onRefresh = {
                 if (folder == null) viewModel.refreshWorkspaceFolders()
                 else viewModel.openWorkspaceFolder(folder)
-            }
+            },
+            onReclaim = viewModel::reclaimStorage
         )
+
+        // The full partition is what makes the Android Settings figures add up: every bucket
+        // here is disjoint, so `Total` equals App + Data instead of a partial sum.
+        uiState.storageReport?.let { report -> StorageBreakdownCard(report) }
 
         uiState.statusBannerMessage?.let { message ->
             Surface(color = SurfaceDarker, shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth()) {
@@ -187,7 +194,9 @@ fun FileManagerTab(
 private fun FileManagerHeader(
     folder: WorkspaceFolder?,
     folders: List<WorkspaceFolder>,
-    onRefresh: () -> Unit
+    report: AppStorageReport?,
+    onRefresh: () -> Unit,
+    onReclaim: () -> Unit
 ) {
     val totalBytes = folders.sumOf { it.sizeBytes }
     Surface(
@@ -228,12 +237,84 @@ private fun FileManagerHeader(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
+                } else if (report != null) {
+                    // The same two figures Android Settings shows, so they can be compared.
+                    Text(
+                        text = "Data ${WorkspaceFileSystem.humanSize(report.dataBytes)} • " +
+                            "App ${WorkspaceFileSystem.humanSize(report.packageBytes)}",
+                        fontSize = 11.sp,
+                        fontFamily = FontFamily.Monospace,
+                        color = AccentAmber,
+                        modifier = Modifier.testTag("file_manager_storage_summary")
+                    )
                 }
+            }
+            IconButton(onClick = onReclaim, modifier = Modifier.testTag("file_manager_reclaim_storage")) {
+                Icon(Icons.Default.Delete, contentDescription = "Reclaim storage", tint = AccentAmber)
             }
             IconButton(onClick = onRefresh, modifier = Modifier.testTag("file_manager_refresh")) {
                 Icon(Icons.Default.Refresh, contentDescription = "Refresh", tint = AccentBlue)
             }
         }
+    }
+}
+
+/**
+ * One row per disjoint storage bucket plus a total, so the Files tab accounts for every byte
+ * Android Settings reports instead of only `files/workspaces` and each main `.db`.
+ */
+@Composable
+private fun StorageBreakdownCard(report: AppStorageReport) {
+    Surface(
+        color = SurfaceDark,
+        shape = RoundedCornerShape(12.dp),
+        border = BorderStroke(1.dp, CardBorder),
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("storage_breakdown")
+    ) {
+        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(
+                text = "STORAGE BREAKDOWN",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = AccentGreen
+            )
+            StorageRow("Package (App)", report.packageBytes, "storage_row_package")
+            StorageRow("Workspace files", report.workspaceBytes, "storage_row_workspace")
+            StorageRow("Tenant databases (+WAL)", report.tenantDatabaseBytes, "storage_row_tenant_db")
+            StorageRow("Other databases", report.otherDatabaseBytes, "storage_row_other_db")
+            StorageRow("Offline cache", report.offlineCacheBytes, "storage_row_offline")
+            StorageRow("Other files/", report.otherFileBytes, "storage_row_files")
+            StorageRow("Cache", report.cacheBytes, "storage_row_cache")
+            StorageRow("Other data", report.otherDataBytes, "storage_row_other")
+            HorizontalDivider(color = CardBorder)
+            StorageRow("Total", report.totalBytes, "storage_total", emphasised = true)
+        }
+    }
+}
+
+@Composable
+private fun StorageRow(label: String, bytes: Long, tag: String, emphasised: Boolean = false) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag(tag),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = label,
+            fontSize = if (emphasised) 12.sp else 11.sp,
+            fontWeight = if (emphasised) FontWeight.Bold else FontWeight.Normal,
+            color = if (emphasised) TextPrimary else TextMuted
+        )
+        Text(
+            text = WorkspaceFileSystem.humanSize(bytes),
+            fontSize = if (emphasised) 12.sp else 11.sp,
+            fontWeight = if (emphasised) FontWeight.Bold else FontWeight.Normal,
+            fontFamily = FontFamily.Monospace,
+            color = if (emphasised) AccentAmber else TextPrimary
+        )
     }
 }
 
@@ -288,6 +369,18 @@ private fun WorkspaceFolderList(
                                 fontFamily = FontFamily.Monospace,
                                 color = TextMuted
                             )
+                            if (folder.databaseBytes > 0L) {
+                                // Splits the folder total so an 11 MB sandbox is immediately
+                                // attributable to media or SQLite (usually its WAL).
+                                Text(
+                                    text = "media ${WorkspaceFileSystem.humanSize(folder.sandboxBytes)} • " +
+                                        "db ${WorkspaceFileSystem.humanSize(folder.databaseBytes)}",
+                                    fontSize = 10.sp,
+                                    fontFamily = FontFamily.Monospace,
+                                    color = AccentBlue,
+                                    modifier = Modifier.testTag("workspace_folder_split_${folder.workspaceId}")
+                                )
+                            }
                         }
                         Icon(Icons.Default.ChevronRight, contentDescription = null, tint = TextMuted)
                     }

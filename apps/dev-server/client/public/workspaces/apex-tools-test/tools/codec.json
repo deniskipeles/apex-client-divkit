@@ -250,6 +250,7 @@
                           }
                         }
                       ],
+                      "subtitle": "tools://data.codec/base64",
                       "id": "tool_codec_base64_round_trip",
                       "content_description": "codec base64"
                     },
@@ -290,6 +291,7 @@
                           "width": 1
                         }
                       },
+                      "subtitle": "tools://data.codec/base45",
                       "id": "tool_codec_base45_round_trip",
                       "content_description": "codec base45"
                     },
@@ -321,6 +323,7 @@
                           }
                         }
                       ],
+                      "subtitle": "tools://data.codec/json/validate",
                       "id": "tool_codec_json_validate_ok",
                       "content_description": "codec json/validate"
                     },
@@ -359,6 +362,7 @@
                           "width": 1
                         }
                       },
+                      "subtitle": "tools://data.codec/json/validate",
                       "id": "tool_codec_json_validate_rejects",
                       "content_description": "codec json/validate"
                     },
@@ -393,6 +397,7 @@
                           }
                         }
                       ],
+                      "subtitle": "tools://data.codec/json/extract",
                       "id": "tool_codec_json_extract_paths",
                       "content_description": "codec json/extract"
                     },
@@ -436,6 +441,7 @@
                           "width": 1
                         }
                       },
+                      "subtitle": "tools://data.codec/json/stringify",
                       "id": "tool_codec_json_stringify",
                       "content_description": "codec json/stringify"
                     },
@@ -468,6 +474,7 @@
                           }
                         }
                       ],
+                      "subtitle": "tools://data.codec/json/chunk",
                       "id": "tool_codec_chunk_assemble_round_trip",
                       "content_description": "codec json/chunk"
                     },
@@ -508,6 +515,7 @@
                           "width": 1
                         }
                       },
+                      "subtitle": "tools://data.codec/json/assemble",
                       "id": "tool_codec_out_of_order_chunks_assemble",
                       "content_description": "codec json/assemble"
                     },
@@ -540,6 +548,7 @@
                           }
                         }
                       ],
+                      "subtitle": "tools://data.codec/json/assemble",
                       "id": "tool_codec_missing_chunk_reports_partial",
                       "content_description": "codec json/assemble"
                     },
@@ -580,6 +589,7 @@
                           "width": 1
                         }
                       },
+                      "subtitle": "tools://data.codec/json/assemble",
                       "id": "tool_codec_duplicate_chunk_does_not_complete",
                       "content_description": "codec json/assemble"
                     },
@@ -612,6 +622,7 @@
                           }
                         }
                       ],
+                      "subtitle": "tools://data.codec/json/assemble",
                       "id": "tool_codec_corrupted_chunk_fails_checksum",
                       "content_description": "codec json/assemble"
                     }
