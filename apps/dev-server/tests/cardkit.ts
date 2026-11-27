@@ -12,6 +12,7 @@ import {
   action, navPop, palette, space, stringVar, text, type as ramp,
 } from '../workspace/kit/index.ts'
 import type { DivNode } from '../workspace/kit/div.ts'
+import type { DivVariable } from '../workspace/kit/variables.ts'
 import type { ToolCase, ToolTestModule } from './types.ts'
 import { operationOf } from './types.ts'
 
@@ -35,7 +36,7 @@ const isCardSpec = (value: unknown): value is ToolCardSpec =>
   !!value && typeof value === 'object' && 'statusExpr' in (value as Record<string, unknown>)
 
 /** Declares every `user.*` the card reads: the mapped outputs plus the readouts. */
-function cardVariables(module: Omit<ToolTestModule, 'card'>, spec: ToolCardSpec): unknown[] {
+function cardVariables(module: Omit<ToolTestModule, 'card'>, spec: ToolCardSpec): DivVariable[] {
   const names = new Set<string>(STANDARD_VARIABLES)
   for (const target of Object.values(module.outputMapping)) names.add(target)
   if (spec.statusExpr.startsWith('user.')) names.add(spec.statusExpr)

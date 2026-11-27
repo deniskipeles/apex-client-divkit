@@ -176,6 +176,7 @@
                           }
                         }
                       ],
+                      "subtitle": "tools://u-2-Net.tflite/segment",
                       "id": "tool_u2net_segment_reports_unsupported",
                       "content_description": "u-2-Net.tflite segment"
                     },
@@ -212,6 +213,7 @@
                           "width": 1
                         }
                       },
+                      "subtitle": "tools://u-2-Net.tflite/infer",
                       "id": "tool_u2net_infer_reports_unsupported",
                       "content_description": "u-2-Net.tflite infer"
                     },
@@ -241,6 +243,7 @@
                           }
                         }
                       ],
+                      "subtitle": "tools://u-2-Net.tflite/mask",
                       "id": "tool_u2net_mask_reports_unsupported",
                       "content_description": "u-2-Net.tflite mask"
                     }

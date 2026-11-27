@@ -193,6 +193,7 @@
                           }
                         }
                       ],
+                      "subtitle": "tools://embedding/text",
                       "id": "tool_embedding_text_embeds",
                       "content_description": "embedding text"
                     },
@@ -232,6 +233,7 @@
                           "width": 1
                         }
                       },
+                      "subtitle": "tools://embedding/text_similarity",
                       "id": "tool_embedding_text_similarity_scores",
                       "content_description": "embedding text_similarity"
                     },
@@ -261,6 +263,7 @@
                           }
                         }
                       ],
+                      "subtitle": "tools://embedding/image",
                       "id": "tool_embedding_image_without_host_fails",
                       "content_description": "embedding image"
                     },
@@ -299,6 +302,7 @@
                           "width": 1
                         }
                       },
+                      "subtitle": "tools://embedding/image_text",
                       "id": "tool_embedding_image_text_without_host_fails",
                       "content_description": "embedding image_text"
                     },
@@ -331,6 +335,7 @@
                           }
                         }
                       ],
+                      "subtitle": "tools://embedding/similarity",
                       "id": "tool_embedding_similarity_alias",
                       "content_description": "embedding similarity"
                     }

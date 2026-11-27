@@ -179,6 +179,7 @@
                           }
                         }
                       ],
+                      "subtitle": "tools://storage.offline_cache/cache",
                       "id": "tool_offline-cache_cache_then_stats",
                       "content_description": "offline-cache cache"
                     },
@@ -218,6 +219,7 @@
                           "width": 1
                         }
                       },
+                      "subtitle": "tools://storage.offline_cache/cache",
                       "id": "tool_offline-cache_clear_empties_cache",
                       "content_description": "offline-cache cache"
                     }

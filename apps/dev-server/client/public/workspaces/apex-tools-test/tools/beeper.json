@@ -179,6 +179,7 @@
                           }
                         }
                       ],
+                      "subtitle": "tools://device.beeper/tone",
                       "id": "tool_beeper_tone_plays",
                       "content_description": "beeper tone"
                     },
@@ -218,6 +219,7 @@
                           "width": 1
                         }
                       },
+                      "subtitle": "tools://device.beeper/beep",
                       "id": "tool_beeper_beep_alias",
                       "content_description": "beeper beep"
                     },
@@ -247,6 +249,7 @@
                           }
                         }
                       ],
+                      "subtitle": "tools://device.beeper/chime",
                       "id": "tool_beeper_chime_sequence",
                       "content_description": "beeper chime"
                     },
@@ -285,6 +288,7 @@
                           "width": 1
                         }
                       },
+                      "subtitle": "tools://device.beeper/play",
                       "id": "tool_beeper_play_alias",
                       "content_description": "beeper play"
                     },
@@ -314,6 +318,7 @@
                           }
                         }
                       ],
+                      "subtitle": "tools://device.beeper/stop",
                       "id": "tool_beeper_stop_stops",
                       "content_description": "beeper stop"
                     },
@@ -350,6 +355,7 @@
                           "width": 1
                         }
                       },
+                      "subtitle": "tools://device.beeper/status",
                       "id": "tool_beeper_status_reports",
                       "content_description": "beeper status"
                     }

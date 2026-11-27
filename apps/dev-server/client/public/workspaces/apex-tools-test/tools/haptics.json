@@ -178,6 +178,7 @@
              }
             }
            ],
+           "subtitle": "tools://device.haptics/click",
            "id": "tool_haptics_click_plays",
            "content_description": "haptics click"
           },
@@ -214,6 +215,7 @@
              "width": 1
             }
            },
+           "subtitle": "tools://device.haptics/heavy",
            "id": "tool_haptics_heavy_plays",
            "content_description": "haptics heavy"
           },
@@ -246,6 +248,7 @@
              }
             }
            ],
+           "subtitle": "tools://device.haptics/vibrate",
            "id": "tool_haptics_vibrate_one_shot",
            "content_description": "haptics vibrate"
           },
@@ -282,6 +285,7 @@
              "width": 1
             }
            },
+           "subtitle": "tools://device.haptics/stop",
            "id": "tool_haptics_stop_cancels",
            "content_description": "haptics stop"
           },
@@ -311,6 +315,7 @@
              }
             }
            ],
+           "subtitle": "tools://device.haptics/status",
            "id": "tool_haptics_status_reports_ready",
            "content_description": "haptics status"
           },
@@ -349,6 +354,7 @@
              "width": 1
             }
            },
+           "subtitle": "tools://device.haptics/perform",
            "id": "tool_haptics_perform_pattern",
            "content_description": "haptics perform"
           },
@@ -378,6 +384,7 @@
              }
             }
            ],
+           "subtitle": "tools://device.haptics/tick",
            "id": "tool_haptics_tick_plays",
            "content_description": "haptics tick"
           },
@@ -414,6 +421,7 @@
              "width": 1
             }
            },
+           "subtitle": "tools://device.haptics/success",
            "id": "tool_haptics_success_plays",
            "content_description": "haptics success"
           },
@@ -443,6 +451,7 @@
              }
             }
            ],
+           "subtitle": "tools://device.haptics/warning",
            "id": "tool_haptics_warning_plays",
            "content_description": "haptics warning"
           },
@@ -479,6 +488,7 @@
              "width": 1
             }
            },
+           "subtitle": "tools://device.haptics/error",
            "id": "tool_haptics_error_plays",
            "content_description": "haptics error"
           },
@@ -510,6 +520,7 @@
              }
             }
            ],
+           "subtitle": "tools://device.haptics/click",
            "id": "tool_haptics_repeat_is_stable",
            "content_description": "haptics click"
           }

@@ -173,6 +173,7 @@
              }
             }
            ],
+           "subtitle": "tools://clipboard/copy",
            "id": "tool_clipboard_copy_then_paste",
            "content_description": "clipboard copy"
           },
@@ -211,6 +212,7 @@
              "width": 1
             }
            },
+           "subtitle": "tools://clipboard/copy",
            "id": "tool_clipboard_clear_empties",
            "content_description": "clipboard copy"
           }

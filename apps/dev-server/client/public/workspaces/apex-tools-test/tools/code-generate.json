@@ -204,6 +204,7 @@
                           }
                         }
                       ],
+                      "subtitle": "tools://code-generate/generate",
                       "id": "tool_code-generate_qr_renders",
                       "content_description": "code-generate generate"
                     },
@@ -245,6 +246,7 @@
                           "width": 1
                         }
                       },
+                      "subtitle": "tools://code-generate/barcode",
                       "id": "tool_code-generate_ean13_renders",
                       "content_description": "code-generate barcode"
                     },
@@ -277,6 +279,7 @@
                           }
                         }
                       ],
+                      "subtitle": "tools://code-generate/barcode",
                       "id": "tool_code-generate_code128_renders",
                       "content_description": "code-generate barcode"
                     },
@@ -315,6 +318,7 @@
                           "width": 1
                         }
                       },
+                      "subtitle": "tools://code-generate/qr",
                       "id": "tool_code-generate_qr_alias_renders",
                       "content_description": "code-generate qr"
                     },
@@ -347,6 +351,7 @@
                           }
                         }
                       ],
+                      "subtitle": "tools://code-generate/render",
                       "id": "tool_code-generate_render_alias",
                       "content_description": "code-generate render"
                     },
@@ -385,6 +390,7 @@
                           "width": 1
                         }
                       },
+                      "subtitle": "tools://code-generate/generate",
                       "id": "tool_code-generate_missing_content_fails",
                       "content_description": "code-generate generate"
                     }

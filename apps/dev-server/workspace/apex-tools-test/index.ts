@@ -96,8 +96,8 @@ const dataViewsCard = divKitCard({
               text({ text: expression('user.samples_count'), size: ramp.display, weight: 'bold', color: palette.accent }),
               inlineBanner({ text: expression("user.tools_error == '' ? 'No errors' : user.tools_error"), tone: 'warn' }),
             ]),
-            chart({ data: expression('user.chart_json'), kind: 'bar', height: space(40), id: 'samples_chart' }),
-            jsonList({ data: expression('user.samples_json'), titleKey: 'name', subtitleKey: 'note', id: 'samples_list' }),
+            chart({ dataVar: 'user.chart_json', chartType: 'bar', height: space(40), id: 'samples_chart' }),
+            jsonList({ dataVar: 'user.samples_json', titleKey: 'name', subtitleKey: 'note', id: 'samples_list' }),
             card([
               button({ text: 'Refresh samples', actions: [dbQuery()], height: space(11), size: ramp.small, id: 'data_refresh' }),
             ]),

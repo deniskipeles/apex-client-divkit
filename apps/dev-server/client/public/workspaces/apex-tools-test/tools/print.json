@@ -181,6 +181,7 @@
              }
             }
            ],
+           "subtitle": "tools://device.printer/scan",
            "id": "tool_print_scan_reports_adapter_state",
            "content_description": "print scan"
           },
@@ -217,6 +218,7 @@
              "width": 1
             }
            },
+           "subtitle": "tools://device.printer/status",
            "id": "tool_print_status_reports_ready",
            "content_description": "print status"
           },
@@ -248,6 +250,7 @@
              }
             }
            ],
+           "subtitle": "tools://device.printer/connect",
            "id": "tool_print_connect_without_device_fails",
            "content_description": "print connect"
           },
@@ -284,6 +287,7 @@
              "width": 1
             }
            },
+           "subtitle": "tools://device.printer/print",
            "id": "tool_print_print_without_receipt_fails",
            "content_description": "print print"
           },
@@ -316,6 +320,7 @@
              }
             }
            ],
+           "subtitle": "tools://device.printer/print",
            "id": "tool_print_print_without_printer_fails",
            "content_description": "print print"
           },
@@ -354,6 +359,7 @@
              "width": 1
             }
            },
+           "subtitle": "tools://device.printer/pair",
            "id": "tool_print_pair_without_device_fails",
            "content_description": "print pair"
           },
@@ -383,6 +389,7 @@
              }
             }
            ],
+           "subtitle": "tools://device.printer/disconnect",
            "id": "tool_print_disconnect_is_safe",
            "content_description": "print disconnect"
           }

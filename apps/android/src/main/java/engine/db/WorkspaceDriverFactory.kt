@@ -14,6 +14,9 @@ class WorkspaceDriverFactory(private val context: Context) {
         ).apply {
             // PRAGMAs must run outside SQLDelight's schema-creation transaction.
             executeUpdate(null, "PRAGMA journal_mode = WAL;", 0)
+            // Without a size limit a checkpointed WAL keeps its high-water mark, so a tenant
+            // could hold tens of MB in a `-wal` the Files tab never counted.
+            executeUpdate(null, "PRAGMA journal_size_limit = 4194304;", 0)
             executeUpdate(null, "PRAGMA synchronous = NORMAL;", 0)
             executeUpdate(null, "PRAGMA foreign_keys = ON;", 0)
         }

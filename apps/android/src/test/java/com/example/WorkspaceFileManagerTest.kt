@@ -106,4 +106,51 @@ class WorkspaceFileManagerTest {
         assertEquals(4096L, folder.sizeBytes)
         assertEquals("4.0 KB", WorkspaceFileSystem.humanSize(folder.sizeBytes))
     }
+
+    @Test
+    fun `counts wal and shm sidecars in the folder total`() {
+        val manager = WorkspaceFileManager(context)
+        createWorkspace("acme_pos")
+        createDatabase("acme_pos", bytes = 100)
+        val wal = context.getDatabasePath("workspace_acme_pos.db-wal").apply { writeBytes(ByteArray(200) { 2 }) }
+        val shm = context.getDatabasePath("workspace_acme_pos.db-shm").apply { writeBytes(ByteArray(50) { 3 }) }
+        assertTrue(wal.exists() && shm.exists())
+
+        val folder = manager.listWorkspaceFolders(listOf("acme_pos")).single()
+        assertEquals(350L, folder.databaseBytes)
+        assertEquals(350L, folder.sizeBytes)
+
+        val names = manager.entriesForFolder(folder).map { it.name }
+        assertTrue(names.contains("workspace_acme_pos.db"))
+        assertTrue(names.contains("workspace_acme_pos.db-wal"))
+        assertTrue(names.contains("workspace_acme_pos.db-shm"))
+    }
+
+    @Test
+    fun `surfaces a database whose sandbox folder is gone`() {
+        val manager = WorkspaceFileManager(context)
+        createDatabase("ghost_tenant", bytes = 512)
+
+        val folders = manager.listWorkspaceFolders(knownWorkspaceIds = emptyList())
+
+        val ghost = folders.single { it.workspaceId == "ghost_tenant" }
+        assertTrue(ghost.displayName.endsWith("(database only)"))
+        assertEquals(0L, ghost.sandboxBytes)
+        assertEquals(512L, ghost.databaseBytes)
+        assertEquals(512L, ghost.sizeBytes)
+        assertTrue(manager.entriesForFolder(ghost).any { it.name == "workspace_ghost_tenant.db" })
+    }
+
+    @Test
+    fun `reports sandbox and database bytes separately`() {
+        val manager = WorkspaceFileManager(context)
+        createWorkspace("acme_pos", mapOf("media/logo.txt" to "hello"))
+        createDatabase("acme_pos", bytes = 1024)
+
+        val folder = manager.listWorkspaceFolders(listOf("acme_pos")).single()
+
+        assertEquals(5L, folder.sandboxBytes)
+        assertEquals(1024L, folder.databaseBytes)
+        assertEquals(1029L, folder.sizeBytes)
+    }
 }

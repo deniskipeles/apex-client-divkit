@@ -179,6 +179,7 @@
                           }
                         }
                       ],
+                      "subtitle": "tools://network.realtime/connect",
                       "id": "tool_realtime-ws_connect_without_transport_fails",
                       "content_description": "realtime-ws connect"
                     },
@@ -218,6 +219,7 @@
                           "width": 1
                         }
                       },
+                      "subtitle": "tools://network.realtime/connect",
                       "id": "tool_realtime-ws_connect_with_transport_succeeds",
                       "content_description": "realtime-ws connect"
                     },
@@ -249,6 +251,7 @@
                           }
                         }
                       ],
+                      "subtitle": "tools://network.realtime/subscribe",
                       "id": "tool_realtime-ws_subscribe_without_endpoint_fails",
                       "content_description": "realtime-ws subscribe"
                     },
@@ -288,6 +291,7 @@
                           "width": 1
                         }
                       },
+                      "subtitle": "tools://network.realtime/send",
                       "id": "tool_realtime-ws_send_without_endpoint_fails",
                       "content_description": "realtime-ws send"
                     },
@@ -319,6 +323,7 @@
                           }
                         }
                       ],
+                      "subtitle": "tools://network.realtime/disconnect",
                       "id": "tool_realtime-ws_disconnect_is_safe",
                       "content_description": "realtime-ws disconnect"
                     }

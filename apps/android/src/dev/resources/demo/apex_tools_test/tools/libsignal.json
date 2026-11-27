@@ -193,6 +193,7 @@
                           }
                         }
                       ],
+                      "subtitle": "tools://libsignal/create_session",
                       "id": "tool_libsignal_full_flow",
                       "content_description": "libsignal create_session"
                     },
@@ -231,6 +232,7 @@
                           "width": 1
                         }
                       },
+                      "subtitle": "tools://libsignal/setup_identity",
                       "id": "tool_libsignal_identity_keys_setup",
                       "content_description": "libsignal setup_identity"
                     },
@@ -262,6 +264,7 @@
                           }
                         }
                       ],
+                      "subtitle": "tools://libsignal/create_session",
                       "id": "tool_libsignal_status_reports_session",
                       "content_description": "libsignal create_session"
                     },
@@ -300,6 +303,7 @@
                           "width": 1
                         }
                       },
+                      "subtitle": "tools://libsignal/create_session",
                       "id": "tool_libsignal_reset_clears_session",
                       "content_description": "libsignal create_session"
                     },
@@ -331,6 +335,7 @@
                           }
                         }
                       ],
+                      "subtitle": "tools://libsignal/create_session",
                       "id": "tool_libsignal_ratchet_advances",
                       "content_description": "libsignal create_session"
                     },
@@ -370,6 +375,7 @@
                           "width": 1
                         }
                       },
+                      "subtitle": "tools://libsignal/decrypt",
                       "id": "tool_libsignal_decrypt_without_session_fails",
                       "content_description": "libsignal decrypt"
                     },
@@ -401,6 +407,7 @@
                           }
                         }
                       ],
+                      "subtitle": "tools://libsignal/create_session",
                       "id": "tool_libsignal_verify_wrong_number_mismatches",
                       "content_description": "libsignal create_session"
                     }

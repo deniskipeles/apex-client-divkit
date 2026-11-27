@@ -1,119 +1,28 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { DivJson } from '@divkitframework/divkit/client'
 import { DivCardNavigator, parseNavigationUrl } from '@apex/pos-ui/navigation-core'
+import {
+  WorkspaceMemoryDb,
+  findIcon,
+  isValidVariableName,
+  seedVariables,
+  type CollectionDefinition,
+  type DivValue,
+  type DivVars,
+} from '@apex/pos-ui/android-runtime'
 import type { PlaygroundEvent, VarSnapshot } from '../divkit/DivKitScreen'
-import { getCustomComponents } from '../divkit/customComponents'
-import { cardVariables, projectCardForWeb } from '../divkit/androidProjection'
+import { AndroidCard } from '../android/AndroidCard'
+import { dispatchWorkspaceUrl, type ToolRuntimeReport } from './toolRuntime'
 import type { WorkspacePayload } from '../lib/api'
 
 // ---------------------------------------------------------------------------
-// WorkspaceCanvas — a live stack of DivKit cards for one generated workspace.
+// WorkspaceCanvas — a live stack of DivKit cards rendered by the Android runtime.
 //
-// Navigation is the shared state machine from `@apex/pos-ui/navigation-core`
-// (the same parser/registry the React host uses), so a `nav://push` in the
-// preview behaves like the device. Visited cards stay mounted with
-// `display: none` so going back keeps their DivKit variables.
+// This surface is the Compose interpreter (`@apex/pos-ui/android-runtime`), not a
+// DivKit client: variables are workspace-scoped like `EngineStateBridge`, cards
+// keep their state while the stack is live, and `nav://` runs the same navigator
+// as the device. Anything the runtime cannot execute is reported, never faked.
 // ---------------------------------------------------------------------------
-
-interface DivkitDebugInstance {
-  $destroy: () => void
-  getDebugAllVariables: () => Map<string, { getName(): string; getValue(): unknown; getType(): string }>
-}
-
-interface CardHostProps {
-  cardId: string
-  json: DivJson
-  visible: boolean
-  restartKey: number
-  onEvent: (event: PlaygroundEvent) => void
-  onVariables: (cardId: string, vars: VarSnapshot[]) => void
-  onAction: (url: string) => void
-}
-
-function CardHost({ cardId, json, visible, restartKey, onEvent, onVariables, onAction }: CardHostProps) {
-  const hostRef = useRef<HTMLDivElement | null>(null)
-
-  useEffect(() => {
-    const host = hostRef.current
-    if (!host) return
-    let instance: DivkitDebugInstance | null = null
-    let alive = true
-    let poll: ReturnType<typeof setInterval> | undefined
-
-    const variables = cardVariables(json)
-    const projected = projectCardForWeb(json, variables)
-
-    import('@divkitframework/divkit/client-devtool')
-      .then(({ render }) => {
-        if (!alive || !hostRef.current) return
-        const el = hostRef.current
-        el.innerHTML = ''
-        instance = render({
-          target: el,
-          id: `workspace-${cardId}`,
-          json: projected as DivJson,
-          platform: 'touch',
-          customComponents: getCustomComponents(),
-          onStat: (stat: unknown) => {
-            const s = stat as { type?: string; action?: { log_id?: string; url?: string } }
-            onEvent({ t: Date.now(), kind: 'stat', text: `${cardId}: ${s?.action?.log_id ?? s?.action?.url ?? s?.type ?? 'event'}` })
-          },
-          onCustomAction: (action: unknown) => {
-            const url =
-              typeof action === 'string'
-                ? action
-                : ((action as { url?: string })?.url ?? (action as { log_id?: string })?.log_id ?? String(action))
-            onAction(String(url))
-          },
-          onError: (err: unknown) => {
-            let detail = ''
-            try {
-              const obj = err as { message?: string; msg?: string }
-              detail = err instanceof Error ? err.message : (obj?.message ?? obj?.msg ?? JSON.stringify(err).slice(0, 300))
-            } catch {
-              detail = String(err)
-            }
-            onEvent({ t: Date.now(), kind: 'error', text: `${cardId}: ${detail.slice(0, 160)}` })
-          },
-        }) as unknown as DivkitDebugInstance
-
-        const rootEl = el.firstElementChild as HTMLElement | null
-        if (rootEl) rootEl.style.height = '100%'
-
-        const snapshot = () => {
-          if (!instance || !alive) return
-          try {
-            const map = instance.getDebugAllVariables()
-            onVariables(
-              cardId,
-              [...map.values()].map((v) => ({ name: v.getName(), type: v.getType(), value: v.getValue() })),
-            )
-          } catch {
-            /* instance mid-destroy */
-          }
-        }
-        snapshot()
-        poll = setInterval(snapshot, 600)
-      })
-      .catch((err: unknown) => {
-        if (alive) onEvent({ t: Date.now(), kind: 'error', text: `${cardId}: runtime load failed: ${String(err)}` })
-      })
-
-    return () => {
-      alive = false
-      if (poll) clearInterval(poll)
-      try {
-        instance?.$destroy()
-      } catch {
-        /* noop */
-      }
-      if (hostRef.current) hostRef.current.innerHTML = ''
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cardId, restartKey])
-
-  return <div ref={hostRef} className="divkit-host" style={{ display: visible ? 'block' : 'none', height: '100%' }} />
-}
 
 export interface WorkspaceCanvasProps {
   workspace: WorkspacePayload
@@ -123,45 +32,82 @@ export interface WorkspaceCanvasProps {
   onEvent: (event: PlaygroundEvent) => void
   onVariables: (cardId: string, vars: VarSnapshot[]) => void
   onRoute: (cardId: string, depth: number) => void
+  onToolReport?: (report: ToolRuntimeReport) => void
 }
 
-export function WorkspaceCanvas({ workspace, restartKey, openRequest, onEvent, onVariables, onRoute }: WorkspaceCanvasProps) {
+function snapshotVariables(vars: DivVars): VarSnapshot[] {
+  return Object.entries(vars).map(([name, value]) => ({
+    name,
+    type: Array.isArray(value) ? 'array' : value === null ? 'null' : typeof value,
+    value,
+  }))
+}
+
+export function WorkspaceCanvas({
+  workspace,
+  restartKey,
+  openRequest,
+  onEvent,
+  onVariables,
+  onRoute,
+  onToolReport,
+}: WorkspaceCanvasProps) {
+  const varsRef = useRef<DivVars>({})
+  const [vars, setVars] = useState<DivVars>({})
   const cards = useRef<Map<string, DivJson>>(new Map())
+  const database = useRef<WorkspaceMemoryDb | null>(null)
   const navigatorRef = useRef<DivCardNavigator | null>(null)
   const [liveIds, setLiveIds] = useState<string[]>([])
   const [currentId, setCurrentId] = useState('')
   const [sheetId, setSheetId] = useState<string | null>(null)
 
+  const setVariable = useCallback((name: string, value: DivValue) => {
+    if (!isValidVariableName(name)) return
+    varsRef.current = { ...varsRef.current, [name]: value }
+    setVars(varsRef.current)
+  }, [])
+
+  const getVariables = useCallback(() => varsRef.current, [])
+
   // Rebuild the registry + navigator whenever the workspace changes.
   useEffect(() => {
     const registry = new Map<string, DivJson>()
-    // The hub is a full card document; the Android tool cards are bare divs that the device
-    // wraps in the tenant card, so the preview wraps them with the hub's seeded variables.
-    const hubCard = (workspace.hub as { card?: { variables?: { name: string; value: unknown }[] } }).card
-    // The browser has no SQLite plane, so the catalog variable starts from the collection seed
-    // the device would have loaded, otherwise every `json_list` renders its empty state.
-    const inventory = workspace.collections['inventory.json'] as { seed?: unknown[] } | undefined
-    const seeded: Record<string, string> =
-      Array.isArray(inventory?.seed) && inventory.seed.length > 0
-        ? { 'user.catalog_json': JSON.stringify(inventory.seed) }
-        : {}
-    const seedVariables = (hubCard?.variables ?? []).map((variable) =>
-      seeded[variable.name] === undefined ? variable : { ...variable, value: seeded[variable.name] },
-    )
+    const collectionSeeds: DivVars = {}
+    const definitions: CollectionDefinition[] = []
+    for (const [file, value] of Object.entries(workspace.collections ?? {})) {
+      const definition = value as CollectionDefinition
+      if (!definition || typeof definition !== 'object') continue
+      definitions.push({ ...definition, name: definition.name ?? file.replace(/\.json$/, '') })
+      const seed = definition.seed
+      if (!Array.isArray(seed) || seed.length === 0) continue
+      const name = file.replace(/\.json$/, '')
+      // The kiosk catalog variable is the one the device fills from the seeded table.
+      collectionSeeds[name === 'inventory' ? 'user.catalog_json' : `user.${name}_json`] = JSON.stringify(seed)
+    }
+    // One database per workspace load: the device reseeds a workspace when its bundle
+    // changes, and a restart must not carry records across.
+    database.current = new WorkspaceMemoryDb(definitions)
+
+    let seeded = seedVariables(workspace.hub, { ...collectionSeeds })
     const asCard = (raw: unknown, id: string): DivJson => {
       const node = raw as Record<string, unknown>
-      if (node && typeof node === 'object' && 'card' in node) return node as unknown as DivJson
+      if (node && typeof node === 'object' && 'card' in node) return raw as DivJson
       return {
-        card: {
-          log_id: `workspace-${workspace.meta.slug}-${id}`,
-          variables: seedVariables,
-          states: [{ state_id: 0, div: node }],
-        },
+        card: { log_id: `workspace-${workspace.meta.slug}-${id}`, states: [{ state_id: 0, div: node }] },
       } as unknown as DivJson
     }
+
     registry.set('hub', asCard(workspace.hub, 'hub'))
-    for (const [id, card] of Object.entries(workspace.cards)) registry.set(id, asCard(card, id))
+    for (const [id, card] of Object.entries(workspace.cards ?? {})) registry.set(id, asCard(card, id))
+    // The device seeds a card's declared variables on first render, never overwriting
+    // a live value. Seeding the whole registry up front is the same result without a
+    // mount-order race.
+    for (const card of registry.values()) seeded = seedVariables(card, seeded)
+
     cards.current = registry
+    varsRef.current = seeded
+    setVars(seeded)
+
     const navigator = new DivCardNavigator([{ id: 'hub', data: registry.get('hub')! }], 12)
     navigatorRef.current = navigator
     setLiveIds(['hub'])
@@ -170,10 +116,15 @@ export function WorkspaceCanvas({ workspace, restartKey, openRequest, onEvent, o
     onRoute('hub', 1)
   }, [workspace, restartKey, onRoute])
 
+  // Publish the live variable table to the inspector.
+  useEffect(() => {
+    if (!currentId) return
+    onVariables(currentId, snapshotVariables(vars))
+  }, [vars, currentId, onVariables])
+
   const open = useCallback(
     (id: string): boolean => {
-      const card = cards.current.get(id)
-      if (!card) {
+      if (!cards.current.has(id)) {
         onEvent({ t: Date.now(), kind: 'error', text: `unknown card "${id}"` })
         return false
       }
@@ -184,67 +135,100 @@ export function WorkspaceCanvas({ workspace, restartKey, openRequest, onEvent, o
   )
 
   const handleAction = useCallback(
-    (url: string) => {
+    async (url: string, payload: unknown) => {
       const nav = parseNavigationUrl(url)
-      if (!nav) {
-        const kind = url.startsWith('tools://') || url.startsWith('local-db://') || url.startsWith('icons://') ? 'action' : 'stat'
-        onEvent({ t: Date.now(), kind, text: `dispatch ${url}` })
+      if (nav) {
+        const navigator = navigatorRef.current
+        if (!navigator) return
+        if (nav.op === 'push' || nav.op === 'replace' || nav.op === 'reset') {
+          if (!open(nav.cardId)) return
+          const entry = { id: nav.cardId, data: cards.current.get(nav.cardId)! }
+          if (nav.op === 'push') navigator.push(entry)
+          else if (nav.op === 'replace') navigator.replace(entry)
+          else navigator.reset(entry)
+        } else if (nav.op === 'pop') {
+          navigator.pop()
+        } else if (nav.op === 'sheet-present') {
+          if (!open(nav.cardId)) return
+          setSheetId(nav.cardId)
+        } else if (nav.op === 'sheet-dismiss') {
+          setSheetId(null)
+        }
+        const current = navigator.current
+        if (current) {
+          setCurrentId(current.id)
+          onRoute(current.id, navigator.currentIndex + 1)
+        }
+        onEvent({ t: Date.now(), kind: 'action', text: `${nav.op} → ${'cardId' in nav ? nav.cardId : 'back'}` })
         return
       }
-      const navigator = navigatorRef.current
-      if (!navigator) return
 
-      if (nav.op === 'push' || nav.op === 'replace' || nav.op === 'reset') {
-        if (!open(nav.cardId)) return
-        const entry = { id: nav.cardId, data: cards.current.get(nav.cardId)! }
-        if (nav.op === 'push') navigator.push(entry)
-        else if (nav.op === 'replace') navigator.replace(entry)
-        else navigator.reset(entry)
-      } else if (nav.op === 'pop') {
-        navigator.pop()
-      } else if (nav.op === 'sheet-present') {
-        if (!open(nav.cardId)) return
-        setSheetId(nav.cardId)
-        onEvent({ t: Date.now(), kind: 'action', text: `sheet ${nav.cardId}` })
-        return
-      } else if (nav.op === 'sheet-dismiss') {
-        setSheetId(null)
-        onEvent({ t: Date.now(), kind: 'action', text: 'sheet dismissed' })
+      // `div-action://set_variable?name=&value=` writes a string, like the device.
+      if (url.startsWith('div-action://set_variable')) {
+        const query = new URLSearchParams(url.slice(url.indexOf('?') + 1))
+        const name = query.get('name')
+        if (name) setVariable(name, query.get('value') ?? '')
+        onEvent({ t: Date.now(), kind: 'action', text: `set_variable ${name ?? '?'}` })
         return
       }
 
-      const current = navigator.current
-      if (current) {
-        setCurrentId(current.id)
-        onRoute(current.id, navigator.currentIndex + 1)
+      // `icons://` publishes the resolved icon so a card can read it back.
+      if (url.startsWith('icons://')) {
+        const icon = findIcon(url)
+        if (icon) {
+          setVariable('user.icon_name', icon.name)
+          setVariable('user.icon_material', icon.material)
+          setVariable('user.icon_category', icon.categoryLabel)
+          onEvent({ t: Date.now(), kind: 'action', text: `icon ${icon.name} · ${icon.categoryLabel}` })
+        } else {
+          onEvent({ t: Date.now(), kind: 'error', text: `unknown icon ${url}` })
+        }
+        return
       }
-      onEvent({ t: Date.now(), kind: 'action', text: `${nav.op} → ${'cardId' in nav ? nav.cardId : 'back'}` })
+
+      const report = await dispatchWorkspaceUrl(url, payload, getVariables(), {
+        collections: workspace.collections,
+        workspace: workspace.meta,
+        db: database.current,
+      })
+      for (const [name, value] of Object.entries(report.updates)) setVariable(name, value)
+      onToolReport?.(report)
+      onEvent({
+        t: Date.now(),
+        kind: report.status === 'ok' ? 'action' : 'error',
+        text: `${url} → ${report.status}${report.message ? ` (${report.message})` : ''}`,
+      })
     },
-    [onEvent, onRoute, open],
+    [getVariables, onEvent, onRoute, onToolReport, open, setVariable],
   )
 
   useEffect(() => {
     if (!openRequest) return
-    handleAction(`nav://push?id=${openRequest.cardId}`)
+    void handleAction(`nav://push?id=${openRequest.cardId}`, undefined)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openRequest?.nonce])
 
+  const cardsForRender = useMemo(() => liveIds.filter((id) => cards.current.has(id)), [liveIds])
+
   return (
     <div className="relative h-full w-full overflow-hidden bg-[#0B1120]">
-      {liveIds.map((id) => (
-        <CardHost
+      {cardsForRender.map((id) => (
+        <div
           key={`${workspace.meta.slug}-${id}-${restartKey}`}
-          cardId={id}
-          json={cards.current.get(id)!}
-          visible={id === currentId && sheetId === null}
-          restartKey={restartKey}
-          onEvent={onEvent}
-          onVariables={onVariables}
-          onAction={handleAction}
-        />
+          style={{ display: id === currentId && sheetId === null ? 'block' : 'none', height: '100%' }}
+        >
+          <AndroidCard
+            card={cards.current.get(id)}
+            variables={vars}
+            getVariables={getVariables}
+            onAction={handleAction}
+            onSetVariable={setVariable}
+            onEvent={(text) => onEvent({ t: Date.now(), kind: 'action', text: `${id}: ${text}` })}
+          />
+        </div>
       ))}
 
-      {sheetId && cards.current.get(sheetId) ? (
+      {sheetId && cards.current.has(sheetId) ? (
         <div className="absolute inset-0 flex flex-col justify-end bg-black/60">
           <div className="max-h-[80%] overflow-y-auto rounded-t-2xl bg-[#0B1120] pb-3 shadow-2xl">
             <div className="flex items-center justify-between px-4 py-2">
@@ -260,15 +244,13 @@ export function WorkspaceCanvas({ workspace, restartKey, openRequest, onEvent, o
                 Close
               </button>
             </div>
-            <CardHost
-              key={`${workspace.meta.slug}-sheet-${sheetId}-${restartKey}`}
-              cardId={`sheet-${sheetId}`}
-              json={cards.current.get(sheetId)!}
-              visible
-              restartKey={restartKey}
-              onEvent={onEvent}
-              onVariables={onVariables}
+            <AndroidCard
+              card={cards.current.get(sheetId)}
+              variables={vars}
+              getVariables={getVariables}
               onAction={handleAction}
+              onSetVariable={setVariable}
+              onEvent={(text) => onEvent({ t: Date.now(), kind: 'action', text: `sheet: ${text}` })}
             />
           </div>
         </div>

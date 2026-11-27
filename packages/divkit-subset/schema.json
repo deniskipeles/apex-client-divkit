@@ -2,114 +2,221 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://apex-client-divkit/contract/divkit-subset/v1/schema.json",
   "title": "DivKit Subset (v1)",
-  "description": "The restricted DivKit document surface the terminal renders. Component types outside this list are rejected before render. Types are the values emitted by SduiOnFlyBuilder.",
+  "description": "The DivKit document surface the terminal renders. Generated from packages/pos-ui/src/android-runtime/vocabulary.ts, which mirrors the Android renderer dispatch. `custom_type` values listed under web-only are rendered by the web/desktop custom-component registry but NOT by apps/android, where they render nothing.",
   "$ref": "#/$defs/component",
   "$defs": {
     "component": {
       "type": "object",
-      "required": ["type"],
+      "required": [
+        "type"
+      ],
       "properties": {
-        "type": { "enum": ["container", "text", "button", "grid", "input", "custom", "image", "json_list"] },
-        "id": { "type": "string" },
-        "visibility": {
-          "description": "DivKit visibility. `gone` removes the node from layout, `invisible` keeps its space. Accepts an @{...} expression.",
-          "type": "string",
-          "enum": ["visible", "invisible", "gone"]
+        "type": {
+          "enum": [
+            "container",
+            "gallery",
+            "grid",
+            "text",
+            "button",
+            "input",
+            "separator",
+            "image",
+            "json_list",
+            "custom",
+            "sticky_footer",
+            "segmented",
+            "bottom_tabs",
+            "progress_ring",
+            "text_field",
+            "scan_chips",
+            "qr_controls",
+            "fab",
+            "toast",
+            "form_modal",
+            "bottom_sheet",
+            "camera_viewfinder",
+            "inline_banner"
+          ]
         },
-        "items": { "type": "array", "items": { "$ref": "#/$defs/component" } },
-        "text": { "type": "string" },
-        "actions": { "type": "array", "items": { "$ref": "#/$defs/action" } },
-        "data_var": { "type": "string", "minLength": 1 },
-        "empty_text": { "type": "string" },
-        "row_card": { "$ref": "#/$defs/component" },
-        "width": { "$ref": "#/$defs/size" },
-        "height": { "$ref": "#/$defs/size" },
-        "margins": { "$ref": "#/$defs/spacing" },
-        "paddings": { "$ref": "#/$defs/spacing" },
+        "id": {
+          "type": "string"
+        },
+        "visibility": {
+          "description": "`gone` removes the node from layout, `invisible` keeps its space. Accepts an @{...} expression.",
+          "type": "string",
+          "enum": [
+            "visible",
+            "invisible",
+            "gone"
+          ]
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/component"
+          }
+        },
+        "text": {
+          "type": "string"
+        },
+        "subtitle": {
+          "type": "string"
+        },
+        "action": {
+          "$ref": "#/$defs/action"
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/action"
+          }
+        },
+        "data_var": {
+          "type": "string",
+          "minLength": 1
+        },
+        "empty_text": {
+          "type": "string"
+        },
+        "row_card": {
+          "$ref": "#/$defs/component"
+        },
+        "width": {
+          "$ref": "#/$defs/size"
+        },
+        "height": {
+          "$ref": "#/$defs/size"
+        },
+        "margins": {
+          "$ref": "#/$defs/spacing"
+        },
+        "paddings": {
+          "$ref": "#/$defs/spacing"
+        },
         "custom_type": {
           "type": "string",
-          "enum": ["sdui_chart", "sdui_numpad", "sdui_signature", "json_list", "bottom_sheet"]
+          "enum": [
+            "json_list",
+            "sdui_chart",
+            "chart",
+            "bar_chart",
+            "line_chart",
+            "area_chart",
+            "donut_chart",
+            "pie_chart",
+            "sdui_signature",
+            "sdui_numpad"
+          ],
+          "description": "Only `json_list` and the chart aliases are implemented by apps/android. sdui_signature and sdui_numpad are web-only."
         },
-        "custom_props": { "type": "object", "additionalProperties": true }
-      },
-      "allOf": [
-        {
-          "if": {
-            "properties": { "custom_type": { "const": "bottom_sheet" } },
-            "required": ["custom_type"]
-          },
-          "then": {
-            "properties": {
-              "custom_props": {
-                "type": "object",
-                "required": ["card_id"],
-                "properties": {
-                  "card_id": { "type": "string", "minLength": 1 },
-                  "present_on_appear": { "type": "boolean", "default": false }
-                }
-              }
-            }
-          }
-        },
-        {
-          "if": {
-            "properties": { "type": { "const": "json_list" } },
-            "required": ["type"]
-          },
-          "then": {
-            "required": ["data_var", "row_card"],
-            "properties": {
-              "data_var": { "type": "string", "minLength": 1 },
-              "empty_text": { "type": "string" },
-              "row_card": { "$ref": "#/$defs/component" }
-            }
-          }
-        }
-      ],
-      "additionalProperties": true
-    },
-    "bottom_sheet": {
-      "type": "object",
-      "required": ["custom_type", "custom_props"],
-      "properties": {
-        "type": { "const": "custom" },
-        "custom_type": { "const": "bottom_sheet" },
         "custom_props": {
           "type": "object",
-          "required": ["card_id"],
-          "properties": {
-            "card_id": { "type": "string", "minLength": 1 },
-            "present_on_appear": { "type": "boolean", "default": false }
-          }
+          "additionalProperties": true
         }
-      }
+      },
+      "additionalProperties": true
     },
     "action": {
       "type": "object",
       "properties": {
-        "url": { "type": "string" },
-        "log_id": { "type": "string" },
-        "payload": {}
+        "type": {
+          "enum": [
+            "set_variable",
+            "array_insert_value",
+            "array_remove_value",
+            "array_set_value",
+            "array_delete_value"
+          ]
+        },
+        "variable_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "value": {},
+        "index": {},
+        "position": {
+          "enum": [
+            "start",
+            "end"
+          ]
+        },
+        "url": {
+          "type": "string",
+          "minLength": 1
+        },
+        "payload": {
+          "type": "object"
+        },
+        "log_id": {
+          "type": "string"
+        }
       },
+      "anyOf": [
+        {
+          "required": [
+            "url"
+          ]
+        },
+        {
+          "required": [
+            "type"
+          ]
+        }
+      ],
       "additionalProperties": true
     },
     "size": {
-      "oneOf": [
-        { "type": "integer" },
-        { "type": "string", "enum": ["match_parent", "wrap_content"] }
-      ]
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "match_parent",
+            "wrap_content",
+            "fixed",
+            "weighted"
+          ]
+        },
+        "value": {
+          "type": "number"
+        },
+        "weight": {
+          "type": "number"
+        }
+      },
+      "additionalProperties": true
     },
     "spacing": {
       "type": "object",
       "properties": {
-        "top": { "type": "integer" },
-        "bottom": { "type": "integer" },
-        "left": { "type": "integer" },
-        "right": { "type": "integer" },
-        "start": { "type": "integer" },
-        "end": { "type": "integer" }
+        "left": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "top": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "right": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "bottom": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "start": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "end": {
+          "type": "integer",
+          "minimum": 0
+        }
       },
-      "additionalProperties": true
+      "additionalProperties": false
     }
   }
 }
