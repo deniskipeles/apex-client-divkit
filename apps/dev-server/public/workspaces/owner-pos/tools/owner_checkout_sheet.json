@@ -1,0 +1,185 @@
+{
+  "id": "owner_checkout_sheet",
+  "type": "bottom_sheet",
+  "custom_props": {
+    "visible": true,
+    "title": "Confirm order",
+    "body": [
+      {
+        "type": "json_list",
+        "data_var": "owner.cart_lines",
+        "empty_text": "No records",
+        "item_spacing": 8,
+        "row_card": {
+          "type": "container",
+          "alignment_vertical": "center",
+          "items": [
+            {
+              "type": "text",
+              "font_size": 16,
+              "text": "@{item.name_and_qty}",
+              "text_color": "#111319",
+              "width": {
+                "type": "match_parent",
+                "weight": 1
+              }
+            },
+            {
+              "type": "text",
+              "font_feature_settings": "tnum",
+              "font_size": 22,
+              "font_weight": "bold",
+              "line_height": 28,
+              "text": "@{item.line_total_display}",
+              "text_color": "#111319"
+            }
+          ],
+          "orientation": "horizontal",
+          "paddings": {
+            "top": 8,
+            "bottom": 8
+          },
+          "width": {
+            "type": "match_parent"
+          }
+        }
+      },
+      {
+        "type": "separator",
+        "delimiter_style": {
+          "color": "#E6E8EF",
+          "orientation": "horizontal"
+        },
+        "margins": {
+          "top": 16,
+          "bottom": 16
+        },
+        "width": {
+          "type": "match_parent"
+        }
+      },
+      {
+        "type": "container",
+        "alignment_vertical": "center",
+        "items": [
+          {
+            "type": "text",
+            "font_size": 22,
+            "font_weight": "bold",
+            "text": "Total",
+            "text_color": "#111319",
+            "width": {
+              "type": "match_parent",
+              "weight": 1
+            }
+          },
+          {
+            "type": "text",
+            "font_feature_settings": "tnum",
+            "font_size": 22,
+            "font_weight": "bold",
+            "line_height": 28,
+            "text": "@{owner.cart_total}",
+            "text_color": "#111319"
+          }
+        ],
+        "margins": {
+          "bottom": 24
+        },
+        "orientation": "horizontal",
+        "width": {
+          "type": "match_parent"
+        }
+      },
+      {
+        "type": "container",
+        "alignment_vertical": "center",
+        "items": [
+          {
+            "type": "container",
+            "actions": [
+              {
+                "log_id": "cancel_checkout",
+                "url": "sheet://dismiss"
+              }
+            ],
+            "content_alignment_vertical": "center",
+            "height": {
+              "type": "fixed",
+              "value": 48
+            },
+            "items": [
+              {
+                "type": "text",
+                "font_size": 16,
+                "font_weight": "regular",
+                "line_height": 22,
+                "text": "Cancel",
+                "text_color": "#5B6070"
+              }
+            ],
+            "paddings": {
+              "left": 16,
+              "right": 20
+            }
+          },
+          {
+            "type": "container",
+            "actions": [
+              {
+                "log_id": "checkout_qr",
+                "url": "local-db://op/pos.checkout?order_id=%40%7Bowner.cart_id%7D&chunk_bytes=500"
+              },
+              {
+                "log_id": "open_qr_sequence",
+                "url": "nav://push?id=owner_qr_sequence"
+              }
+            ],
+            "background": [
+              {
+                "type": "solid",
+                "color": "#6D4AFF"
+              }
+            ],
+            "border": {
+              "corner_radius": 12
+            },
+            "content_alignment_horizontal": "center",
+            "content_alignment_vertical": "center",
+            "height": {
+              "type": "fixed",
+              "value": 56
+            },
+            "items": [
+              {
+                "type": "text",
+                "font_size": 16,
+                "font_weight": "bold",
+                "text": "Generate QR",
+                "text_alignment_horizontal": "center",
+                "text_color": "#FFFFFF"
+              }
+            ],
+            "width": {
+              "type": "match_parent",
+              "weight": 1
+            }
+          }
+        ],
+        "orientation": "horizontal",
+        "width": {
+          "type": "match_parent"
+        }
+      }
+    ],
+    "height_fraction": 0.65,
+    "dismiss": {
+      "actions": [
+        {
+          "log_id": "sheet_dismiss",
+          "url": "sheet://dismiss"
+        }
+      ]
+    }
+  }
+}

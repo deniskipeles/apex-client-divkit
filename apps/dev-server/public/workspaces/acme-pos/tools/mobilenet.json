@@ -1,0 +1,108 @@
+{
+  "type": "container",
+  "border": {
+    "corner_radius": 12,
+    "stroke": {
+      "color": "#6366F1",
+      "width": 1
+    }
+  },
+  "items": [
+    {
+      "type": "text",
+      "font_size": 11,
+      "font_weight": "bold",
+      "text": "🧠 MobileNetV4-Small INT8 IMAGE CLASSIFIER (tools://MobileNetV4-small)",
+      "text_color": "#A5B4FC"
+    },
+    {
+      "type": "text",
+      "font_family": "monospace",
+      "font_size": 12,
+      "text": "Prediction: @{user.ai_prediction_label} • Conf: @{user.ai_confidence_score} • Latency: @{user.tool_last_latency}ms",
+      "text_color": "#E0E7FF"
+    },
+    {
+      "type": "image",
+      "image_url": "@{user.ai_source_image_uri}"
+    },
+    {
+      "type": "container",
+      "item_spacing": 8,
+      "items": [
+        {
+          "type": "container",
+          "items": [
+            {
+              "type": "button",
+              "id": "tool_MobileNetV4-small_classify",
+              "text": "📷 Classify What The Camera Sees",
+              "subtitle": "Captures a frame, runs real INT8 inference",
+              "icon": "camera",
+              "background_color": "#4F46E5",
+              "text_color": "#FFFFFF",
+              "corner_radius": 10,
+              "action": {
+                "log_id": "exec_tool_MobileNetV4-small_classify",
+                "url": "tools://MobileNetV4-small/classify",
+                "payload": {
+                  "operation": "classify",
+                  "options": {
+                    "top_k": "3",
+                    "min_confidence": "0.40",
+                    "camera": "true"
+                  },
+                  "output": {
+                    "prediction_label": "user.ai_prediction_label",
+                    "confidence": "user.ai_confidence_score",
+                    "source_image": "user.ai_source_image_uri"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "container",
+          "items": [
+            {
+              "type": "button",
+              "id": "tool_MobileNetV4-small_classify_file",
+              "text": "🖼 Classify A Photo",
+              "subtitle": "Pick an existing image",
+              "icon": "image",
+              "background_color": "#3730A3",
+              "text_color": "#FFFFFF",
+              "corner_radius": 10,
+              "action": {
+                "log_id": "exec_tool_MobileNetV4-small_classify_file",
+                "url": "tools://MobileNetV4-small/classify",
+                "payload": {
+                  "operation": "classify",
+                  "options": {
+                    "top_k": "3",
+                    "min_confidence": "0.40",
+                    "camera": "false"
+                  },
+                  "output": {
+                    "prediction_label": "user.ai_prediction_label",
+                    "confidence": "user.ai_confidence_score",
+                    "source_image": "user.ai_source_image_uri"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "orientation": "horizontal"
+    }
+  ],
+  "orientation": "vertical",
+  "paddings": {
+    "left": 12,
+    "right": 12,
+    "top": 10,
+    "bottom": 10
+  }
+}

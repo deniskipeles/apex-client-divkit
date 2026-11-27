@@ -1,14 +1,5 @@
 {
  "type": "container",
- "orientation": "vertical",
- "background_color": "#111C2E",
- "corner_radius": 12,
- "paddings": {
-  "left": 12,
-  "right": 12,
-  "top": 10,
-  "bottom": 10
- },
  "border": {
   "corner_radius": 12,
   "stroke": {
@@ -19,39 +10,37 @@
  "items": [
   {
    "type": "text",
-   "text": "🌐 NETWORK TRANSFER (Ktor) & LAN HUB (tools://net)",
    "font_size": 11,
    "font_weight": "bold",
+   "text": "🌐 NETWORK TRANSFER (Ktor) & LAN HUB (tools://net)",
    "text_color": "#93C5FD"
   },
   {
    "type": "text",
-   "text": "Start the hub, share a file into it, then fetch the hub's own /health endpoint over loopback. Nothing here is simulated: a real Ktor CIO server is listening while you press these buttons.",
    "font_size": 11,
+   "text": "Start the hub, share a file into it, then fetch the hub's own /health endpoint over loopback. Nothing here is simulated: a real Ktor CIO server is listening while you press these buttons.",
    "text_color": "#BFDBFE"
   },
   {
    "type": "text",
-   "text": "Status: @{user.net_status} • Port: @{user.net_hub_port} • Shares: @{user.net_share_count}",
+   "font_family": "monospace",
    "font_size": 12,
-   "text_color": "#DBEAFE",
-   "font_family": "monospace"
+   "text": "Status: @{user.net_status} • Port: @{user.net_hub_port} • Shares: @{user.net_share_count}",
+   "text_color": "#DBEAFE"
   },
   {
    "type": "text",
-   "text": "HTTP: @{user.net_http_status} • Bytes: @{user.net_bytes}",
+   "font_family": "monospace",
    "font_size": 12,
-   "text_color": "#DBEAFE",
-   "font_family": "monospace"
+   "text": "HTTP: @{user.net_http_status} • Bytes: @{user.net_bytes}",
+   "text_color": "#DBEAFE"
   },
   {
    "type": "container",
-   "orientation": "horizontal",
    "item_spacing": 8,
    "items": [
     {
      "type": "container",
-     "weight": 1.0,
      "items": [
       {
        "type": "button",
@@ -79,7 +68,6 @@
     },
     {
      "type": "container",
-     "weight": 1.0,
      "items": [
       {
        "type": "button",
@@ -107,16 +95,15 @@
       }
      ]
     }
-   ]
+   ],
+   "orientation": "horizontal"
   },
   {
    "type": "container",
-   "orientation": "horizontal",
    "item_spacing": 8,
    "items": [
     {
      "type": "container",
-     "weight": 1.0,
      "items": [
       {
        "type": "button",
@@ -145,7 +132,6 @@
     },
     {
      "type": "container",
-     "weight": 1.0,
      "items": [
       {
        "type": "button",
@@ -169,7 +155,8 @@
       }
      ]
     }
-   ]
+   ],
+   "orientation": "horizontal"
   },
   {
    "type": "button",
@@ -192,5 +179,12 @@
     }
    }
   }
- ]
+ ],
+ "orientation": "vertical",
+ "paddings": {
+  "left": 12,
+  "right": 12,
+  "top": 10,
+  "bottom": 10
+ }
 }

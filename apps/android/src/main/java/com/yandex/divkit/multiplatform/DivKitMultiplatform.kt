@@ -331,6 +331,31 @@ private fun RenderDivNode(
     }
 
     when (type) {
+        "state" -> {
+            val states = node["states"]?.jsonArray ?: JsonArray(emptyList())
+            val varName = node["state_id_variable"]?.jsonPrimitive?.contentOrNull
+            val varValue = varName?.let { name -> (variables[name] as? JsonPrimitive)?.contentOrNull }
+            val defaultId = node["default_state_id"]?.jsonPrimitive?.contentOrNull
+            val active = states.firstOrNull { state ->
+                val id = state.jsonObject["state_id"]?.jsonPrimitive?.contentOrNull
+                id == (varValue ?: defaultId)
+            } ?: states.firstOrNull()
+            val activeDiv = active?.jsonObject?.get("div")?.jsonObject
+            if (activeDiv != null) {
+                Box(modifier = Modifier.fillMaxWidth().then(boxModifier)) {
+                    RenderDivNode(
+                        node = activeDiv,
+                        variables = variables,
+                        rowContext = rowContext,
+                        isDark = isDark,
+                        scope = scope,
+                        onDispatchAction = onDispatchAction,
+                        fillWidth = fillWidth,
+                        surfaceHex = resolvedSurface
+                    )
+                }
+            }
+        }
         "sticky_footer", "segmented", "bottom_tabs", "progress_ring", "text_field",
         "scan_chips", "qr_controls", "fab", "toast", "form_modal", "bottom_sheet",
         "camera_viewfinder", "inline_banner" -> {
@@ -716,6 +741,52 @@ private fun RenderDivNode(
                                 }
                             }
                         }
+                    }
+                }
+            } else if (customType == "sdui_nav") {
+                val props = node["custom_props"]?.jsonObject ?: node
+                val pages = props["cards"]?.jsonArray?.mapNotNull { it as? JsonObject } ?: emptyList()
+                val pageById = pages.associateBy { it["id"]?.jsonPrimitive?.contentOrNull ?: "" }
+                val initialId = props["initial"]?.jsonPrimitive?.contentOrNull
+                    ?: pageById.keys.firstOrNull().orEmpty()
+                var stack by remember(initialId) { mutableStateOf(listOf(initialId)) }
+                val activeId = stack.lastOrNull() ?: initialId
+                val activeDiv = pageById[activeId]?.get("div")?.jsonObject
+                val navDispatch: suspend (String, String?) -> Unit = { url, payload ->
+                    val targetId = url.substringAfter("id=", "").substringBefore('&')
+                    val handled = when {
+                        url.startsWith("nav://push?id=") && pageById.containsKey(targetId) -> {
+                            stack = stack + targetId
+                            true
+                        }
+                        url == "nav://pop" -> {
+                            if (stack.size > 1) stack = stack.dropLast(1)
+                            true
+                        }
+                        url.startsWith("nav://replace?id=") && pageById.containsKey(targetId) -> {
+                            stack = stack.dropLast(1) + targetId
+                            true
+                        }
+                        url.startsWith("nav://reset?id=") && pageById.containsKey(targetId) -> {
+                            stack = listOf(targetId)
+                            true
+                        }
+                        else -> false
+                    }
+                    if (!handled) onDispatchAction(url, payload)
+                }
+                if (activeDiv != null) {
+                    Box(modifier = Modifier.fillMaxWidth().then(boxModifier)) {
+                        RenderDivNode(
+                            node = activeDiv,
+                            variables = variables,
+                            rowContext = rowContext,
+                            isDark = isDark,
+                            scope = scope,
+                            onDispatchAction = navDispatch,
+                            fillWidth = fillWidth,
+                            surfaceHex = resolvedSurface
+                        )
                     }
                 }
             }

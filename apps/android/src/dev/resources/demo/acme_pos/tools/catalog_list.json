@@ -1,30 +1,20 @@
 {
     "type": "container",
-    "orientation": "vertical",
     "item_spacing": 8,
     "items": [
         {
             "type": "text",
-            "text": "CATALOG · LIVE FROM INVENTORY",
             "font_size": 11,
             "font_weight": "bold",
+            "text": "CATALOG · LIVE FROM INVENTORY",
             "text_color": "#34D399"
         },
         {
             "type": "json_list",
             "data_var": "user.catalog_json",
-            "empty_text": "No SKUs in ${tenantId}_catalog",
+            "empty_text": "No SKUs in acme_pos_catalog",
             "row_card": {
                 "type": "container",
-                "orientation": "horizontal",
-                "background_color": "#0F172A",
-                "corner_radius": 10,
-                "paddings": {
-                    "left": 12,
-                    "right": 12,
-                    "top": 8,
-                    "bottom": 8
-                },
                 "border": {
                     "corner_radius": 10,
                     "stroke": {
@@ -35,24 +25,23 @@
                 "items": [
                     {
                         "type": "container",
-                        "orientation": "vertical",
-                        "weight": 1.0,
                         "items": [
                             {
                                 "type": "text",
-                                "text": "@{item.item_name} (@{item.category})",
                                 "font_size": 13,
                                 "font_weight": "bold",
+                                "text": "@{item.item_name} (@{item.category})",
                                 "text_color": "#F8FAFC"
                             },
                             {
                                 "type": "text",
-                                "text": "SKU: @{item.sku} • $@{item.price_display} • Stock: @{item.stock}",
+                                "font_family": "monospace",
                                 "font_size": 11,
-                                "text_color": "#34D399",
-                                "font_family": "monospace"
+                                "text": "SKU: @{item.sku} • $@{item.price_display} • Stock: @{item.stock}",
+                                "text_color": "#34D399"
                             }
-                        ]
+                        ],
+                        "orientation": "vertical"
                     },
                     {
                         "type": "button",
@@ -72,7 +61,7 @@
                                         "sku": "@{item.sku}",
                                         "price": "@{item.price}",
                                         "qty": 1,
-                                        "terminal_id": "${terminalCode}",
+                                        "terminal_id": "POS-TERM-01",
                                         "status": "OPEN"
                                     },
                                     "output": {
@@ -105,8 +94,16 @@
                             }
                         ]
                     }
-                ]
+                ],
+                "orientation": "horizontal",
+                "paddings": {
+                    "left": 12,
+                    "right": 12,
+                    "top": 8,
+                    "bottom": 8
+                }
             }
         }
-    ]
+    ],
+    "orientation": "vertical"
 }

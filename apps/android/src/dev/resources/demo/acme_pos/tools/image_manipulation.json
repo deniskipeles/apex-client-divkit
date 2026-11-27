@@ -1,14 +1,5 @@
 {
     "type": "container",
-    "orientation": "vertical",
-    "background_color": "#1E1B2E",
-    "corner_radius": 12,
-    "paddings": {
-        "left": 12,
-        "right": 12,
-        "top": 10,
-        "bottom": 10
-    },
     "border": {
         "corner_radius": 12,
         "stroke": {
@@ -19,67 +10,59 @@
     "items": [
         {
             "type": "text",
+            "font_size": 11,
+            "font_weight": "bold",
             "text": "🎛️ IMAGE MANIPULATION — REAL PIXELS IN, REAL PIXELS OUT (tools://image-manipulation)",
-            "font_size": 11,
-            "text_color": "#C4B5FD",
-            "font_weight": "bold"
+            "text_color": "#C4B5FD"
         },
         {
             "type": "text",
+            "font_size": 11,
             "text": "Every button below runs a real transform on the source shown underneath and writes a new PNG into the tenant media sandbox.",
-            "font_size": 11,
-            "text_color": "#A5B4FC"
+            "text_color": "#5B21B6"
         },
         {
             "type": "text",
+            "font_size": 11,
+            "font_weight": "bold",
             "text": "Source image",
-            "font_size": 11,
-            "text_color": "#DDD6FE",
-            "font_weight": "bold"
+            "text_color": "#DDD6FE"
         },
         {
             "type": "image",
-            "image_url": "@{user.processed_source_uri}",
-            "preview_height": 160,
-            "corner_radius": 10,
-            "content_description": "Source image being manipulated"
+            "image_url": "@{user.processed_source_uri}"
         },
         {
             "type": "text",
+            "font_size": 11,
+            "font_weight": "bold",
             "text": "Output",
-            "font_size": 11,
-            "text_color": "#DDD6FE",
-            "font_weight": "bold"
+            "text_color": "#DDD6FE"
         },
         {
             "type": "image",
-            "image_url": "@{user.processed_image_uri}",
-            "preview_height": 200,
-            "corner_radius": 10,
-            "content_description": "Manipulated output image"
+            "image_url": "@{user.processed_image_uri}"
         },
         {
             "type": "text",
+            "font_family": "monospace",
+            "font_size": 11,
             "text": "Status: @{user.image_processing_status} • @{user.processed_width}×@{user.processed_height}",
-            "font_size": 11,
-            "text_color": "#EDE9FE",
-            "font_family": "monospace"
+            "text_color": "#EDE9FE"
         },
         {
             "type": "text",
-            "text": "Background removal",
             "font_size": 11,
-            "text_color": "#DDD6FE",
-            "font_weight": "bold"
+            "font_weight": "bold",
+            "text": "Background removal",
+            "text_color": "#DDD6FE"
         },
         {
             "type": "container",
-            "orientation": "horizontal",
             "item_spacing": 8,
             "items": [
                 {
                     "type": "container",
-                    "weight": 1.0,
                     "items": [
                         {
                             "type": "button",
@@ -114,7 +97,6 @@
                 },
                 {
                     "type": "container",
-                    "weight": 1.0,
                     "items": [
                         {
                             "type": "button",
@@ -147,23 +129,22 @@
                         }
                     ]
                 }
-            ]
+            ],
+            "orientation": "horizontal"
         },
         {
             "type": "text",
-            "text": "Smoothing",
             "font_size": 11,
-            "text_color": "#DDD6FE",
-            "font_weight": "bold"
+            "font_weight": "bold",
+            "text": "Smoothing",
+            "text_color": "#DDD6FE"
         },
         {
             "type": "container",
-            "orientation": "horizontal",
             "item_spacing": 8,
             "items": [
                 {
                     "type": "container",
-                    "weight": 1.0,
                     "items": [
                         {
                             "type": "button",
@@ -199,7 +180,6 @@
                 },
                 {
                     "type": "container",
-                    "weight": 1.0,
                     "items": [
                         {
                             "type": "button",
@@ -233,23 +213,22 @@
                         }
                     ]
                 }
-            ]
+            ],
+            "orientation": "horizontal"
         },
         {
             "type": "text",
-            "text": "Tone & colour",
             "font_size": 11,
-            "text_color": "#DDD6FE",
-            "font_weight": "bold"
+            "font_weight": "bold",
+            "text": "Tone & colour",
+            "text_color": "#DDD6FE"
         },
         {
             "type": "container",
-            "orientation": "horizontal",
             "item_spacing": 8,
             "items": [
                 {
                     "type": "container",
-                    "weight": 1.0,
                     "items": [
                         {
                             "type": "button",
@@ -284,7 +263,6 @@
                 },
                 {
                     "type": "container",
-                    "weight": 1.0,
                     "items": [
                         {
                             "type": "button",
@@ -318,16 +296,15 @@
                         }
                     ]
                 }
-            ]
+            ],
+            "orientation": "horizontal"
         },
         {
             "type": "container",
-            "orientation": "horizontal",
             "item_spacing": 8,
             "items": [
                 {
                     "type": "container",
-                    "weight": 1.0,
                     "items": [
                         {
                             "type": "button",
@@ -362,7 +339,6 @@
                 },
                 {
                     "type": "container",
-                    "weight": 1.0,
                     "items": [
                         {
                             "type": "button",
@@ -395,23 +371,22 @@
                         }
                     ]
                 }
-            ]
+            ],
+            "orientation": "horizontal"
         },
         {
             "type": "text",
-            "text": "Geometry",
             "font_size": 11,
-            "text_color": "#DDD6FE",
-            "font_weight": "bold"
+            "font_weight": "bold",
+            "text": "Geometry",
+            "text_color": "#DDD6FE"
         },
         {
             "type": "container",
-            "orientation": "horizontal",
             "item_spacing": 8,
             "items": [
                 {
                     "type": "container",
-                    "weight": 1.0,
                     "items": [
                         {
                             "type": "button",
@@ -450,7 +425,6 @@
                 },
                 {
                     "type": "container",
-                    "weight": 1.0,
                     "items": [
                         {
                             "type": "button",
@@ -483,16 +457,15 @@
                         }
                     ]
                 }
-            ]
+            ],
+            "orientation": "horizontal"
         },
         {
             "type": "container",
-            "orientation": "horizontal",
             "item_spacing": 8,
             "items": [
                 {
                     "type": "container",
-                    "weight": 1.0,
                     "items": [
                         {
                             "type": "button",
@@ -527,7 +500,6 @@
                 },
                 {
                     "type": "container",
-                    "weight": 1.0,
                     "items": [
                         {
                             "type": "button",
@@ -561,18 +533,18 @@
                         }
                     ]
                 }
-            ]
+            ],
+            "orientation": "horizontal"
         },
         {
             "type": "text",
-            "text": "Pipeline",
             "font_size": 11,
-            "text_color": "#DDD6FE",
-            "font_weight": "bold"
+            "font_weight": "bold",
+            "text": "Pipeline",
+            "text_color": "#DDD6FE"
         },
         {
             "type": "container",
-            "weight": 1.0,
             "items": [
                 {
                     "type": "button",
@@ -605,5 +577,12 @@
                 }
             ]
         }
-    ]
+    ],
+    "orientation": "vertical",
+    "paddings": {
+        "left": 12,
+        "right": 12,
+        "top": 10,
+        "bottom": 10
+    }
 }

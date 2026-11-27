@@ -18,6 +18,7 @@ export const NODE_TYPES = [
   'separator',
   'image',
   'json_list',
+  'state',
   'custom',
 ] as const
 
@@ -51,10 +52,13 @@ export const CHART_TYPES = [
 
 /**
  * `custom_type` values the subset schema used to advertise. Android only routes
- * `json_list` and the chart aliases through the `custom` branch, so anything
- * else under `type: "custom"` renders nothing.
+ * `json_list`, the chart aliases and `sdui_nav` through the `custom` branch, so
+ * anything else under `type: "custom"` renders nothing.
  */
 export const UNRENDERED_CUSTOM_TYPES = ['sdui_signature', 'sdui_numpad'] as const
+
+/** Custom navigation div: a multi-page push/pop stack inside one card. */
+export const NAV_TYPES = ['sdui_nav'] as const
 
 /** Action object types folded by `dispatchAllActions`. */
 export const ACTION_TYPES = [
@@ -99,6 +103,7 @@ export const NODE_PROPS: Record<string, string[]> = {
   separator: [],
   image: ['image_url', 'icon', 'width', 'height', 'size', 'tint', 'text_color', 'alignment_horizontal', 'content_description'],
   json_list: ['data_var', 'empty_text', 'row_card'],
+  state: ['states', 'state_id_variable', 'default_state_id'],
   custom: ['custom_type', 'custom_props'],
   sticky_footer: ['body', 'footer'],
   segmented: ['items', 'active_value'],
@@ -166,6 +171,7 @@ export function renderability(type: string, customType?: string | null): Rendera
     if (type !== 'custom') return 'rendered'
     const custom = customType ?? ''
     if (custom === 'json_list' || isChartCustomType(custom)) return 'rendered'
+    if ((NAV_TYPES as readonly string[]).includes(custom)) return 'rendered'
     return 'renders-nothing'
   }
   return 'renders-nothing'

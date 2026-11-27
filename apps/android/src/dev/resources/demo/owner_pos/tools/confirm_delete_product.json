@@ -1,0 +1,22 @@
+{
+  "type": "container",
+  "items": [
+    {
+      "type": "text",
+      "font_size": 20,
+      "font_weight": "bold",
+      "text": "Delete this product?",
+      "text_color": "#111319"
+    }
+  ],
+  "orientation": "vertical",
+  "paddings": {
+    "left": 20,
+    "right": 20,
+    "top": 20,
+    "bottom": 20
+  },
+  "width": {
+    "type": "match_parent"
+  }
+}

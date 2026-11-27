@@ -53,7 +53,7 @@
     {
       "item_name": "Truffle Parmesan Fries",
       "sku": "ACM-102",
-      "price": 8.0,
+      "price": 8,
       "qty": 2,
       "terminal_id": "POS-TERM-01",
       "status": "OPEN"

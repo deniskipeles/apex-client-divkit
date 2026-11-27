@@ -1,0 +1,181 @@
+{
+  "type": "container",
+  "border": {
+    "corner_radius": 12,
+    "stroke": {
+      "color": "#22D3EE",
+      "width": 1
+    }
+  },
+  "items": [
+    {
+      "type": "text",
+      "font_size": 11,
+      "font_weight": "bold",
+      "text": "📸 CAMERA — LIVE PREVIEW & CAPTURE (tools://camera)",
+      "text_color": "#67E8F9"
+    },
+    {
+      "type": "text",
+      "font_family": "monospace",
+      "font_size": 12,
+      "text": "Last capture: @{if(user.camera_capture_uri == '', 'none yet — tap Capture', user.camera_capture_uri)}",
+      "text_color": "#CFFAFE"
+    },
+    {
+      "type": "image",
+      "image_url": "@{user.camera_capture_uri}"
+    },
+    {
+      "type": "text",
+      "font_family": "monospace",
+      "font_size": 12,
+      "text": "Torch: @{user.camera_torch_state}",
+      "text_color": "#CFFAFE"
+    },
+    {
+      "type": "text",
+      "font_size": 11,
+      "font_weight": "bold",
+      "text": "Capture opens the viewfinder; press the shutter to take the photo",
+      "text_color": "#A5F3FC"
+    },
+    {
+      "type": "container",
+      "item_spacing": 8,
+      "items": [
+        {
+          "type": "container",
+          "items": [
+            {
+              "type": "button",
+              "id": "tool_camera_capture",
+              "text": "Capture Photo (Back)",
+              "subtitle": "Rear camera, opens preview",
+              "icon": "camera",
+              "background_color": "#0891B2",
+              "text_color": "#FFFFFF",
+              "corner_radius": 10,
+              "action": {
+                "log_id": "exec_tool_camera_capture",
+                "url": "tools://camera/capture",
+                "payload": {
+                  "operation": "capture",
+                  "options": {
+                    "facing": "back",
+                    "max_dimension": "1920",
+                    "encoding": "uri"
+                  },
+                  "output": {
+                    "uri": "user.camera_capture_uri"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "container",
+          "items": [
+            {
+              "type": "button",
+              "id": "tool_camera_capture_front",
+              "text": "Capture Photo (Front)",
+              "subtitle": "Front camera, opens preview",
+              "icon": "camera",
+              "background_color": "#0E7490",
+              "text_color": "#FFFFFF",
+              "corner_radius": 10,
+              "action": {
+                "log_id": "exec_tool_camera_capture_front",
+                "url": "tools://camera/capture",
+                "payload": {
+                  "operation": "capture",
+                  "options": {
+                    "facing": "front",
+                    "max_dimension": "1920",
+                    "encoding": "uri"
+                  },
+                  "output": {
+                    "uri": "user.camera_capture_uri"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "orientation": "horizontal"
+    },
+    {
+      "type": "container",
+      "item_spacing": 8,
+      "items": [
+        {
+          "type": "container",
+          "items": [
+            {
+              "type": "button",
+              "id": "tool_camera_torch_on",
+              "text": "Torch On",
+              "subtitle": "Rear flash LED",
+              "icon": "camera",
+              "background_color": "#B45309",
+              "text_color": "#FFFFFF",
+              "corner_radius": 10,
+              "action": {
+                "log_id": "exec_tool_camera_torch_on",
+                "url": "tools://camera/torch_toggle",
+                "payload": {
+                  "operation": "torch_toggle",
+                  "options": {
+                    "state": "on"
+                  },
+                  "output": {
+                    "torch_state": "user.camera_torch_state"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "container",
+          "items": [
+            {
+              "type": "button",
+              "id": "tool_camera_torch_off",
+              "text": "Torch Off",
+              "subtitle": "Rear flash LED",
+              "icon": "camera",
+              "background_color": "#78350F",
+              "text_color": "#FFFFFF",
+              "corner_radius": 10,
+              "action": {
+                "log_id": "exec_tool_camera_torch_off",
+                "url": "tools://camera/torch_toggle",
+                "payload": {
+                  "operation": "torch_toggle",
+                  "options": {
+                    "state": "off"
+                  },
+                  "output": {
+                    "torch_state": "user.camera_torch_state"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "orientation": "horizontal"
+    }
+  ],
+  "orientation": "vertical",
+  "paddings": {
+    "left": 12,
+    "right": 12,
+    "top": 10,
+    "bottom": 10
+  }
+}

@@ -131,6 +131,25 @@ export interface JsonListNode extends NodeBase {
   rows: RenderNode[]
 }
 
+export interface StateNode extends NodeBase {
+  kind: 'state'
+  /** Variable whose string value selects `stateId`, when declared. */
+  stateVariable?: string
+  stateId: string
+  child: RenderNode
+}
+
+export interface NavPage {
+  id: string
+  node: RenderNode
+}
+
+export interface NavNode extends NodeBase {
+  kind: 'nav'
+  initial: string
+  pages: NavPage[]
+}
+
 export interface ChartNode extends NodeBase {
   kind: 'chart'
   spec: ChartSpec
@@ -181,6 +200,8 @@ export type RenderNode =
   | SeparatorNode
   | ImageNode
   | JsonListNode
+  | StateNode
+  | NavNode
   | ChartNode
   | BlockNode
 
@@ -299,6 +320,20 @@ function buildNode(
     }
     case 'json_list':
       return { ...base, kind: 'json_list', ...jsonListProps(node, vars, row, path) }
+    case 'state': {
+      const states = stateEntries(node, vars, row, path, base)
+      const variable = str(node.state_id_variable)
+      const requested = variable ? display(vars[variable] ?? '') : ''
+      const defaultId = str(node.default_state_id) ?? states[0]?.id ?? ''
+      const active = states.find((entry) => entry.id === (requested || defaultId)) ?? states[0]
+      return {
+        ...base,
+        kind: 'state',
+        stateVariable: variable ?? undefined,
+        stateId: active?.id ?? defaultId,
+        child: active?.node ?? { ...base, kind: 'nothing', type: rawType },
+      }
+    }
     default:
       break
   }
@@ -310,12 +345,47 @@ function buildNode(
   if (customType === 'json_list') {
     return { ...base, kind: 'json_list', ...jsonListProps(node, vars, row, path) }
   }
+  if (customType === 'sdui_nav') {
+    const props = (node.custom_props as Record<string, unknown>) ?? node
+    const rawPages = Array.isArray(props.cards) ? props.cards : []
+    const pages = rawPages
+      .filter((entry): entry is Record<string, unknown> => !!entry && typeof entry === 'object')
+      .map((entry, index) => {
+        const id = str(entry.id) ?? `page${index}`
+        const div = entry.div as Record<string, unknown> | undefined
+        return {
+          id,
+          node: div ? buildNode(div, vars, row, `${path}/nav${index}`) : { ...base, kind: 'nothing' as const, type: 'container' },
+        }
+      })
+    return { ...base, kind: 'nav', initial: str(props.initial) ?? pages[0]?.id ?? '', pages }
+  }
   if (BLOCK_TYPES.has(rawType)) {
     return { ...base, kind: 'block', block: blockProps(rawType, node, vars, row, path) }
   }
   // Unknown type, or a `custom` block Android does not implement (sdui_signature,
   // sdui_numpad, plugin types): the device renders nothing.
   return { ...base, kind: 'nothing', type: rawType }
+}
+
+function stateEntries(
+  node: Record<string, unknown>,
+  vars: DivVars,
+  row: RowContext,
+  path: string,
+  base: NodeBase,
+): Array<{ id: string; node: RenderNode }> {
+  const raw = Array.isArray(node.states) ? node.states : []
+  return raw
+    .filter((entry): entry is Record<string, unknown> => !!entry && typeof entry === 'object')
+    .map((entry, index) => {
+      const id = str(entry.state_id) ?? String(index)
+      const div = entry.div as Record<string, unknown> | undefined
+      return {
+        id,
+        node: div ? buildNode(div, vars, row, `${path}/state${index}`) : { ...base, kind: 'nothing' as const, type: 'state' },
+      }
+    })
 }
 
 function jsonListProps(

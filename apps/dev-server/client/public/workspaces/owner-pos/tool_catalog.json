@@ -1,0 +1,83 @@
+{
+  "title": "Owner POS",
+  "subtitle": "Choose a screen",
+  "entries": [
+    {
+      "file": "owner_pos",
+      "label": "owner pos",
+      "icon": "pos",
+      "accent_color": "#6D4AFF",
+      "subtitle": ""
+    },
+    {
+      "file": "owner_inventory",
+      "label": "owner inventory",
+      "icon": "pos",
+      "accent_color": "#6D4AFF",
+      "subtitle": ""
+    },
+    {
+      "file": "owner_checkout_sheet",
+      "label": "owner checkout sheet",
+      "icon": "pos",
+      "accent_color": "#6D4AFF",
+      "subtitle": ""
+    },
+    {
+      "file": "owner_qr_sequence",
+      "label": "owner qr sequence",
+      "icon": "pos",
+      "accent_color": "#6D4AFF",
+      "subtitle": ""
+    },
+    {
+      "file": "product_modal",
+      "label": "product modal",
+      "icon": "pos",
+      "accent_color": "#6D4AFF",
+      "subtitle": ""
+    },
+    {
+      "file": "owner_scan_sheet",
+      "label": "owner scan sheet",
+      "icon": "pos",
+      "accent_color": "#6D4AFF",
+      "subtitle": ""
+    },
+    {
+      "file": "customer_shop",
+      "label": "customer shop",
+      "icon": "pos",
+      "accent_color": "#6D4AFF",
+      "subtitle": ""
+    },
+    {
+      "file": "customer_history",
+      "label": "customer history",
+      "icon": "pos",
+      "accent_color": "#6D4AFF",
+      "subtitle": ""
+    },
+    {
+      "file": "customer_scan",
+      "label": "customer scan",
+      "icon": "pos",
+      "accent_color": "#6D4AFF",
+      "subtitle": ""
+    },
+    {
+      "file": "map_barcode_picker",
+      "label": "map barcode picker",
+      "icon": "pos",
+      "accent_color": "#6D4AFF",
+      "subtitle": ""
+    },
+    {
+      "file": "confirm_delete_product",
+      "label": "confirm delete product",
+      "icon": "pos",
+      "accent_color": "#6D4AFF",
+      "subtitle": ""
+    }
+  ]
+}

@@ -1,205 +1,191 @@
 {
  "type": "container",
- "orientation": "vertical",
  "item_spacing": 16,
  "items": [
   {
    "type": "container",
-   "orientation": "vertical",
    "item_spacing": 10,
    "items": [
     {
      "type": "container",
-     "orientation": "horizontal",
      "item_spacing": 8,
      "items": [
       {
        "type": "container",
-       "orientation": "vertical",
        "item_spacing": 4,
        "items": [
         {
          "type": "text",
-         "text": "QR transfer",
          "font_size": 24,
-         "text_color": "#F8FAFC",
-         "font_weight": "bold"
+         "font_weight": "bold",
+         "text": "QR transfer",
+         "text_color": "#F8FAFC"
         },
         {
          "type": "text",
-         "text": "Move the live order between terminals as QR chunks",
          "font_size": 12,
+         "text": "Move the live order between terminals as QR chunks",
          "text_color": "#94A3B8"
         }
        ],
-       "weight": 1
+       "orientation": "vertical"
       }
-     ]
+     ],
+     "orientation": "horizontal"
     },
     {
      "type": "text",
-     "text": "@{if(user.qr_status == 'IDLE', 'Ready', if(user.qr_status == 'BUILDING', 'Building QR set…', if(user.qr_status == 'SUCCESS', 'QR set ready', user.qr_status)))}",
      "font_size": 11,
      "font_weight": "bold",
-     "text_color": "#F8FAFC",
-     "background_color": "#1B2740",
-     "corner_radius": 20,
+     "margins": {
+      "top": 6
+     },
      "paddings": {
       "left": 10,
       "right": 10,
       "top": 5,
       "bottom": 5
      },
-     "margins": {
-      "top": 6
-     }
+     "text": "@{if(user.qr_status == 'IDLE', 'Ready', if(user.qr_status == 'BUILDING', 'Building QR set…', if(user.qr_status == 'SUCCESS', 'QR set ready', user.qr_status)))}",
+     "text_color": "#F8FAFC"
     },
     {
      "type": "container",
-     "orientation": "horizontal",
      "item_spacing": 8,
      "items": [
       {
        "type": "text",
+       "font_size": 11,
        "text": "Chunk",
-       "font_size": 11,
        "text_color": "#64748B"
       },
       {
        "type": "text",
-       "text": "@{if(user.qr_count == 0, 'none yet', (toInteger(user.qr_index) + 1) + ' of ' + user.qr_count)}",
+       "font_family": "monospace",
        "font_size": 13,
-       "text_color": "#F8FAFC",
        "font_weight": "bold",
-       "font_family": "monospace"
+       "text": "@{if(user.qr_count == 0, 'none yet', (toInteger(user.qr_index) + 1) + ' of ' + user.qr_count)}",
+       "text_color": "#F8FAFC"
       },
       {
        "type": "text",
-       "text": "·",
        "font_size": 11,
+       "text": "·",
        "text_color": "#64748B"
       },
       {
        "type": "text",
-       "text": "checksum @{if(user.qr_checksum == '', '—', user.qr_checksum)}",
+       "font_family": "monospace",
        "font_size": 12,
-       "text_color": "#94A3B8",
-       "font_family": "monospace"
+       "text": "checksum @{if(user.qr_checksum == '', '—', user.qr_checksum)}",
+       "text_color": "#94A3B8"
       }
-     ]
+     ],
+     "orientation": "horizontal"
     }
-   ]
+   ],
+   "orientation": "vertical"
   },
   {
    "type": "container",
-   "orientation": "horizontal",
+   "id": "kiosk_transfer_error",
    "item_spacing": 8,
-   "background_color": "#3F1D24",
-   "corner_radius": 10,
-   "paddings": {
-    "left": 12,
-    "right": 12,
-    "top": 10,
-    "bottom": 10
-   },
    "items": [
     {
      "type": "text",
+     "font_size": 12,
+     "max_lines": 3,
      "text": "@{user.engine_error}",
-     "font_size": 12,
-     "text_color": "#FCA5A5",
-     "max_lines": 3
+     "text_color": "#FCA5A5"
     }
    ],
-   "visibility": "@{if(user.engine_error != '', 'visible', 'gone')}",
-   "id": "kiosk_transfer_error"
-  },
-  {
-   "type": "container",
    "orientation": "horizontal",
-   "item_spacing": 8,
-   "background_color": "#1B2740",
-   "corner_radius": 10,
    "paddings": {
     "left": 12,
     "right": 12,
     "top": 10,
     "bottom": 10
    },
-   "items": [
-    {
-     "type": "text",
-     "text": "@{user.kiosk_notice}",
-     "font_size": 12,
-     "text_color": "#F8FAFC",
-     "max_lines": 3
-    }
-   ],
-   "visibility": "@{if(user.kiosk_notice != '', 'visible', 'gone')}",
-   "id": "kiosk_transfer_notice"
+   "visibility": "@{if(user.engine_error != '', 'visible', 'gone')}"
   },
   {
    "type": "container",
-   "orientation": "vertical",
+   "id": "kiosk_transfer_notice",
+   "item_spacing": 8,
+   "items": [
+    {
+     "type": "text",
+     "font_size": 12,
+     "max_lines": 3,
+     "text": "@{user.kiosk_notice}",
+     "text_color": "#F8FAFC"
+    }
+   ],
+   "orientation": "horizontal",
+   "paddings": {
+    "left": 12,
+    "right": 12,
+    "top": 10,
+    "bottom": 10
+   },
+   "visibility": "@{if(user.kiosk_notice != '', 'visible', 'gone')}"
+  },
+  {
+   "type": "container",
    "item_spacing": 8,
    "items": [
     {
      "type": "container",
-     "orientation": "horizontal",
      "item_spacing": 8,
      "items": [
       {
        "type": "text",
-       "text": "Send",
        "font_size": 11,
-       "text_color": "#94A3B8",
-       "font_weight": "bold"
+       "font_weight": "bold",
+       "text": "Send",
+       "text_color": "#94A3B8"
       },
       {
        "type": "text",
-       "text": "chunk @{if(user.qr_count == 0, '—', (toInteger(user.qr_index) + 1))} of @{user.qr_count}",
        "font_size": 11,
-       "text_color": "#64748B",
-       "weight": 1
+       "text": "chunk @{if(user.qr_count == 0, '—', (toInteger(user.qr_index) + 1))} of @{user.qr_count}",
+       "text_color": "#64748B"
       }
-     ]
+     ],
+     "orientation": "horizontal"
     },
     {
      "type": "container",
-     "orientation": "vertical",
      "item_spacing": 12,
      "items": [
       {
        "type": "image",
-       "image_url": "@{user.qr_img_current}",
        "height": {
         "type": "fixed",
         "value": 260
        },
-       "content_description": "Transfer QR chunk"
+       "image_url": "@{user.qr_img_current}"
       }
      ],
-     "background_color": "#FFFFFF",
+     "orientation": "vertical",
      "paddings": {
       "left": 12,
       "right": 12,
       "top": 12,
       "bottom": 12
      },
-     "corner_radius": 12,
      "visibility": "@{if(user.qr_img_current == '', 'gone', 'visible')}"
     },
     {
      "type": "text",
-     "text": "No QR yet — tap Build QR set.",
      "font_size": 12,
-     "text_color": "#64748B",
      "id": "kiosk_transfer_qr_empty",
+     "text": "No QR yet — tap Build QR set.",
+     "text_color": "#64748B",
      "visibility": "@{if(user.qr_img_current == '', 'visible', 'gone')}"
     },
     {
      "type": "container",
-     "orientation": "horizontal",
      "item_spacing": 8,
      "items": [
       {
@@ -391,45 +377,44 @@
        "id": "kiosk_qr_next",
        "background_color": "#E2E8F0"
       }
-     ]
+     ],
+     "orientation": "horizontal"
     }
-   ]
+   ],
+   "orientation": "vertical"
   },
   {
    "type": "container",
-   "orientation": "vertical",
    "item_spacing": 8,
    "items": [
     {
      "type": "container",
-     "orientation": "horizontal",
      "item_spacing": 8,
      "items": [
       {
        "type": "text",
-       "text": "Receive",
        "font_size": 11,
-       "text_color": "#94A3B8",
-       "font_weight": "bold"
+       "font_weight": "bold",
+       "text": "Receive",
+       "text_color": "#94A3B8"
       },
       {
        "type": "text",
-       "text": "@{len(user.scanned_chunks)} scanned",
        "font_size": 11,
-       "text_color": "#64748B",
-       "weight": 1
+       "text": "@{len(user.scanned_chunks)} scanned",
+       "text_color": "#64748B"
       }
-     ]
+     ],
+     "orientation": "horizontal"
     },
     {
      "type": "text",
-     "text": "Take each chunk in order, then assemble and verify the checksum.",
      "font_size": 12,
+     "text": "Take each chunk in order, then assemble and verify the checksum.",
      "text_color": "#64748B"
     },
     {
      "type": "container",
-     "orientation": "horizontal",
      "item_spacing": 8,
      "items": [
       {
@@ -526,11 +511,11 @@
        "id": "kiosk_clear_scanned",
        "background_color": "#E2E8F0"
       }
-     ]
+     ],
+     "orientation": "horizontal"
     },
     {
      "type": "container",
-     "orientation": "horizontal",
      "item_spacing": 8,
      "items": [
       {
@@ -619,186 +604,181 @@
        "id": "kiosk_corrupt_chunk",
        "background_color": "#E2E8F0"
       }
-     ]
+     ],
+     "orientation": "horizontal"
     }
-   ]
+   ],
+   "orientation": "vertical"
   },
   {
    "type": "container",
-   "orientation": "vertical",
-   "item_spacing": 8,
-   "items": [
-    {
-     "type": "container",
-     "orientation": "horizontal",
-     "item_spacing": 8,
-     "items": [
-      {
-       "type": "text",
-       "text": "Result",
-       "font_size": 12,
-       "text_color": "#94A3B8",
-       "weight": 1
-      },
-      {
-       "type": "text",
-       "text": "@{if(user.receipt_status == 'IDLE', 'Nothing scanned yet', if(user.receipt_status == 'COMPLETE', 'Verified — payload restored', if(user.receipt_status == 'PARTIAL', 'Incomplete — chunks missing', if(user.receipt_status == 'FAILED', 'Checksum mismatch', if(user.receipt_status == 'SCANNED', 'Chunk added — keep scanning', user.receipt_status)))))}",
-       "font_size": 13,
-       "text_color": "#F8FAFC",
-       "font_weight": "bold",
-       "font_family": "monospace"
-      }
-     ]
-    },
-    {
-     "type": "container",
-     "orientation": "horizontal",
-     "item_spacing": 8,
-     "items": [
-      {
-       "type": "text",
-       "text": "Checksum",
-       "font_size": 12,
-       "text_color": "#94A3B8",
-       "weight": 1
-      },
-      {
-       "type": "text",
-       "text": "@{if(user.receipt_checksum_ok, 'MATCH', 'NOT VERIFIED')}",
-       "font_size": 13,
-       "text_color": "#94A3B8",
-       "font_weight": "bold",
-       "font_family": "monospace"
-      }
-     ]
-    },
-    {
-     "type": "container",
-     "orientation": "horizontal",
-     "item_spacing": 8,
-     "items": [
-      {
-       "type": "text",
-       "text": "Missing",
-       "font_size": 12,
-       "text_color": "#94A3B8",
-       "weight": 1
-      },
-      {
-       "type": "text",
-       "text": "@{if(len(user.receipt_missing) == 0, 'none', 'chunks ' + user.receipt_missing)}",
-       "font_size": 13,
-       "text_color": "#94A3B8",
-       "font_weight": "bold",
-       "font_family": "monospace"
-      }
-     ]
-    },
-    {
-     "type": "container",
-     "orientation": "horizontal",
-     "item_spacing": 8,
-     "items": [
-      {
-       "type": "text",
-       "text": "Reason",
-       "font_size": 12,
-       "text_color": "#94A3B8",
-       "weight": 1
-      },
-      {
-       "type": "text",
-       "text": "@{if(user.receipt_error == '', 'none', user.receipt_error)}",
-       "font_size": 12,
-       "text_color": "#FCA5A5",
-       "font_weight": "bold"
-      }
-     ]
-    }
-   ],
-   "background_color": "#131C2E",
-   "paddings": {
-    "left": 16,
-    "right": 16,
-    "top": 16,
-    "bottom": 16
-   },
-   "corner_radius": 14,
    "border": {
     "corner_radius": 14,
     "stroke": {
      "color": "#24304A",
      "width": 1
     }
-   }
-  },
-  {
-   "type": "container",
-   "orientation": "vertical",
+   },
    "item_spacing": 8,
    "items": [
     {
      "type": "container",
-     "orientation": "horizontal",
      "item_spacing": 8,
      "items": [
       {
        "type": "text",
-       "text": "Reconstructed payload",
-       "font_size": 11,
-       "text_color": "#94A3B8",
-       "font_weight": "bold"
+       "font_size": 12,
+       "text": "Result",
+       "text_color": "#94A3B8"
+      },
+      {
+       "type": "text",
+       "font_family": "monospace",
+       "font_size": 13,
+       "font_weight": "bold",
+       "text": "@{if(user.receipt_status == 'IDLE', 'Nothing scanned yet', if(user.receipt_status == 'COMPLETE', 'Verified — payload restored', if(user.receipt_status == 'PARTIAL', 'Incomplete — chunks missing', if(user.receipt_status == 'FAILED', 'Checksum mismatch', if(user.receipt_status == 'SCANNED', 'Chunk added — keep scanning', user.receipt_status)))))}",
+       "text_color": "#F8FAFC"
       }
-     ]
+     ],
+     "orientation": "horizontal"
     },
     {
      "type": "container",
-     "orientation": "vertical",
-     "item_spacing": 12,
+     "item_spacing": 8,
      "items": [
       {
        "type": "text",
-       "text": "@{if(user.receipt_json == '', 'Nothing assembled yet.', if(user.receipt_checksum_ok, 'Checksum verified — the payload below is what the sending terminal packed.', 'Payload assembled but not verified.'))}",
-       "font_size": 11,
-       "text_color": "#94A3B8",
-       "font_family": "monospace",
-       "max_lines": 6
+       "font_size": 12,
+       "text": "Checksum",
+       "text_color": "#94A3B8"
       },
       {
        "type": "text",
-       "id": "kiosk_receipt_compare",
-       "text": "@{if(user.receipt_json == '' || user.kiosk_payload_json == '', '', if(user.receipt_json == user.kiosk_payload_json, 'Matches the live order payload exactly', 'Differs from the live order payload'))}",
-       "font_size": 11,
-       "text_color": "#047857",
-       "visibility": "@{if(user.receipt_json != '' && user.kiosk_payload_json != '', 'visible', 'gone')}"
-      },
-      {
-       "type": "text",
-       "id": "kiosk_receipt_json",
-       "text": "@{user.receipt_json}",
-       "font_size": 11,
        "font_family": "monospace",
-       "text_color": "#334155",
-       "visibility": "@{if(user.receipt_json == '', 'gone', 'visible')}"
+       "font_size": 13,
+       "font_weight": "bold",
+       "text": "@{if(user.receipt_checksum_ok, 'MATCH', 'NOT VERIFIED')}",
+       "text_color": "#94A3B8"
       }
      ],
-     "background_color": "#131C2E",
-     "paddings": {
-      "left": 12,
-      "right": 12,
-      "top": 12,
-      "bottom": 12
-     },
-     "corner_radius": 12,
+     "orientation": "horizontal"
+    },
+    {
+     "type": "container",
+     "item_spacing": 8,
+     "items": [
+      {
+       "type": "text",
+       "font_size": 12,
+       "text": "Missing",
+       "text_color": "#94A3B8"
+      },
+      {
+       "type": "text",
+       "font_family": "monospace",
+       "font_size": 13,
+       "font_weight": "bold",
+       "text": "@{if(len(user.receipt_missing) == 0, 'none', 'chunks ' + user.receipt_missing)}",
+       "text_color": "#94A3B8"
+      }
+     ],
+     "orientation": "horizontal"
+    },
+    {
+     "type": "container",
+     "item_spacing": 8,
+     "items": [
+      {
+       "type": "text",
+       "font_size": 12,
+       "text": "Reason",
+       "text_color": "#94A3B8"
+      },
+      {
+       "type": "text",
+       "font_size": 12,
+       "font_weight": "bold",
+       "text": "@{if(user.receipt_error == '', 'none', user.receipt_error)}",
+       "text_color": "#FCA5A5"
+      }
+     ],
+     "orientation": "horizontal"
+    }
+   ],
+   "orientation": "vertical",
+   "paddings": {
+    "left": 16,
+    "right": 16,
+    "top": 16,
+    "bottom": 16
+   }
+  },
+  {
+   "type": "container",
+   "item_spacing": 8,
+   "items": [
+    {
+     "type": "container",
+     "item_spacing": 8,
+     "items": [
+      {
+       "type": "text",
+       "font_size": 11,
+       "font_weight": "bold",
+       "text": "Reconstructed payload",
+       "text_color": "#94A3B8"
+      }
+     ],
+     "orientation": "horizontal"
+    },
+    {
+     "type": "container",
      "border": {
       "corner_radius": 12,
       "stroke": {
        "color": "#24304A",
        "width": 1
       }
+     },
+     "item_spacing": 12,
+     "items": [
+      {
+       "type": "text",
+       "font_family": "monospace",
+       "font_size": 11,
+       "max_lines": 6,
+       "text": "@{if(user.receipt_json == '', 'Nothing assembled yet.', if(user.receipt_checksum_ok, 'Checksum verified — the payload below is what the sending terminal packed.', 'Payload assembled but not verified.'))}",
+       "text_color": "#94A3B8"
+      },
+      {
+       "type": "text",
+       "font_size": 11,
+       "id": "kiosk_receipt_compare",
+       "text": "@{if(user.receipt_json == '' || user.kiosk_payload_json == '', '', if(user.receipt_json == user.kiosk_payload_json, 'Matches the live order payload exactly', 'Differs from the live order payload'))}",
+       "text_color": "#047857",
+       "visibility": "@{if(user.receipt_json != '' && user.kiosk_payload_json != '', 'visible', 'gone')}"
+      },
+      {
+       "type": "text",
+       "font_family": "monospace",
+       "font_size": 11,
+       "id": "kiosk_receipt_json",
+       "text": "@{user.receipt_json}",
+       "text_color": "#334155",
+       "visibility": "@{if(user.receipt_json == '', 'gone', 'visible')}"
+      }
+     ],
+     "orientation": "vertical",
+     "paddings": {
+      "left": 12,
+      "right": 12,
+      "top": 12,
+      "bottom": 12
      }
     }
-   ]
+   ],
+   "orientation": "vertical"
   }
- ]
+ ],
+ "orientation": "vertical"
 }

@@ -1,0 +1,38 @@
+{
+  "name": "order_lines",
+  "schema": {
+    "fields": {
+      "order_id": {
+        "type": "string",
+        "required": true
+      },
+      "sku": {
+        "type": "string",
+        "required": true
+      },
+      "item_name": {
+        "type": "string"
+      },
+      "unit_price": {
+        "type": "number",
+        "min": 0
+      },
+      "quantity": {
+        "type": "number",
+        "min": 0
+      }
+    },
+    "append": {
+      "parent": "orders",
+      "parent_field": "order_id",
+      "merge_key": "sku",
+      "quantity_field": "quantity",
+      "stock": {
+        "collection": "inventory",
+        "match_field": "sku",
+        "stock_field": "stock"
+      }
+    }
+  },
+  "seed": []
+}

@@ -1,0 +1,874 @@
+{
+  "type": "container",
+  "background": [
+    {
+      "type": "solid",
+      "color": "#F7F8FB"
+    }
+  ],
+  "height": {
+    "type": "match_parent"
+  },
+  "items": [
+    {
+      "id": "global_toast",
+      "type": "toast",
+      "visibility": "owner.toast_visible ? 'visible' : 'gone'",
+      "custom_props": {
+        "text": "owner.toast_msg",
+        "severity_var": "owner.toast_severity",
+        "action_label_var": "owner.toast_action",
+        "dwell_ms": 4000,
+        "actions": [
+          {
+            "log_id": "owner_toast_act",
+            "url": "local-db://op/pos.toast_action"
+          }
+        ]
+      }
+    },
+    {
+      "type": "gallery",
+      "height": {
+        "type": "match_parent",
+        "weight": 1
+      },
+      "items": [
+        {
+          "type": "container",
+          "background": [
+            {
+              "type": "solid",
+              "color": "#FEF3C7"
+            }
+          ],
+          "border": {
+            "corner_radius": 12
+          },
+          "id": "pending_qr_banner",
+          "items": [
+            {
+              "type": "text",
+              "font_size": 13,
+              "line_height": 18,
+              "text": "@{owner.pending_qr_msg}",
+              "text_color": "#111319"
+            },
+            {
+              "type": "container",
+              "items": [
+                {
+                  "type": "container",
+                  "actions": [
+                    {
+                      "log_id": "reopen_qr",
+                      "url": "local-db://op/pos.regenerate_qr?order_id=%40%7Bowner.pending_qr_order_id%7D"
+                    }
+                  ],
+                  "content_alignment_vertical": "center",
+                  "height": {
+                    "type": "fixed",
+                    "value": 48
+                  },
+                  "items": [
+                    {
+                      "type": "text",
+                      "font_size": 13,
+                      "font_weight": "bold",
+                      "text": "Reopen QR",
+                      "text_color": "#92400E"
+                    }
+                  ],
+                  "paddings": {
+                    "right": 16
+                  }
+                }
+              ],
+              "margins": {
+                "top": 8
+              },
+              "orientation": "horizontal"
+            }
+          ],
+          "orientation": "vertical",
+          "paddings": {
+            "left": 14,
+            "right": 14,
+            "top": 12,
+            "bottom": 12
+          },
+          "visibility": "@{owner.pending_qr_visible ? 'visible' : 'gone'}",
+          "width": {
+            "type": "match_parent"
+          }
+        },
+        {
+          "type": "container",
+          "background": [
+            {
+              "type": "solid",
+              "color": "#FEF3C7"
+            }
+          ],
+          "border": {
+            "corner_radius": 12
+          },
+          "id": "resumed_draft_banner",
+          "items": [
+            {
+              "type": "text",
+              "font_size": 13,
+              "line_height": 18,
+              "text": "@{owner.draft_resumed_msg}",
+              "text_color": "#111319"
+            },
+            {
+              "type": "container",
+              "items": [
+                {
+                  "type": "container",
+                  "actions": [
+                    {
+                      "log_id": "discard_draft",
+                      "url": "local-db://op/pos.discard_draft"
+                    }
+                  ],
+                  "content_alignment_vertical": "center",
+                  "height": {
+                    "type": "fixed",
+                    "value": 48
+                  },
+                  "items": [
+                    {
+                      "type": "text",
+                      "font_size": 13,
+                      "font_weight": "bold",
+                      "text": "Start new",
+                      "text_color": "#92400E"
+                    }
+                  ],
+                  "paddings": {
+                    "right": 16
+                  }
+                }
+              ],
+              "margins": {
+                "top": 8
+              },
+              "orientation": "horizontal"
+            }
+          ],
+          "orientation": "vertical",
+          "paddings": {
+            "left": 14,
+            "right": 14,
+            "top": 12,
+            "bottom": 12
+          },
+          "visibility": "@{owner.draft_resumed_visible ? 'visible' : 'gone'}",
+          "width": {
+            "type": "match_parent"
+          }
+        },
+        {
+          "type": "container",
+          "items": [
+            {
+              "type": "container",
+              "background": [
+                {
+                  "type": "solid",
+                  "color": "#E6E8EF"
+                }
+              ],
+              "border": {
+                "corner_radius": 12
+              },
+              "height": {
+                "type": "fixed",
+                "value": 48
+              },
+              "items": [
+                {
+                  "type": "container",
+                  "actions": [
+                    {
+                      "log_id": "seg_barcode",
+                      "url": "div-action://set_variable?name=owner.mode&value=barcode"
+                    }
+                  ],
+                  "background": [
+                    {
+                      "type": "solid",
+                      "color": "@{owner.mode == 'barcode' ? '#FFFFFF' : '#00000000'}"
+                    }
+                  ],
+                  "border": {
+                    "corner_radius": 10
+                  },
+                  "content_alignment_horizontal": "center",
+                  "content_alignment_vertical": "center",
+                  "height": {
+                    "type": "match_parent"
+                  },
+                  "items": [
+                    {
+                      "type": "text",
+                      "font_size": 13,
+                      "font_weight": "medium",
+                      "line_height": 18,
+                      "text": "Barcode",
+                      "text_alignment_horizontal": "center",
+                      "text_color": "@{owner.mode == 'barcode' ? '#111319' : '#5B6070'}"
+                    }
+                  ],
+                  "width": {
+                    "type": "match_parent",
+                    "weight": 1
+                  }
+                },
+                {
+                  "type": "container",
+                  "actions": [
+                    {
+                      "log_id": "seg_qr",
+                      "url": "div-action://set_variable?name=owner.mode&value=qr"
+                    }
+                  ],
+                  "background": [
+                    {
+                      "type": "solid",
+                      "color": "@{owner.mode == 'qr' ? '#FFFFFF' : '#00000000'}"
+                    }
+                  ],
+                  "border": {
+                    "corner_radius": 10
+                  },
+                  "content_alignment_horizontal": "center",
+                  "content_alignment_vertical": "center",
+                  "height": {
+                    "type": "match_parent"
+                  },
+                  "items": [
+                    {
+                      "type": "text",
+                      "font_size": 13,
+                      "font_weight": "medium",
+                      "line_height": 18,
+                      "text": "QR",
+                      "text_alignment_horizontal": "center",
+                      "text_color": "@{owner.mode == 'qr' ? '#111319' : '#5B6070'}"
+                    }
+                  ],
+                  "width": {
+                    "type": "match_parent",
+                    "weight": 1
+                  }
+                },
+                {
+                  "type": "container",
+                  "actions": [
+                    {
+                      "log_id": "seg_ocr",
+                      "url": "div-action://set_variable?name=owner.mode&value=ocr"
+                    }
+                  ],
+                  "background": [
+                    {
+                      "type": "solid",
+                      "color": "@{owner.mode == 'ocr' ? '#FFFFFF' : '#00000000'}"
+                    }
+                  ],
+                  "border": {
+                    "corner_radius": 10
+                  },
+                  "content_alignment_horizontal": "center",
+                  "content_alignment_vertical": "center",
+                  "height": {
+                    "type": "match_parent"
+                  },
+                  "items": [
+                    {
+                      "type": "text",
+                      "font_size": 13,
+                      "font_weight": "medium",
+                      "line_height": 18,
+                      "text": "OCR",
+                      "text_alignment_horizontal": "center",
+                      "text_color": "@{owner.mode == 'ocr' ? '#111319' : '#5B6070'}"
+                    }
+                  ],
+                  "width": {
+                    "type": "match_parent",
+                    "weight": 1
+                  }
+                }
+              ],
+              "orientation": "horizontal",
+              "paddings": {
+                "top": 4,
+                "bottom": 4,
+                "left": 4,
+                "right": 4
+              },
+              "width": {
+                "type": "match_parent"
+              }
+            }
+          ],
+          "margins": {
+            "top": 8,
+            "bottom": 16
+          },
+          "width": {
+            "type": "match_parent"
+          }
+        },
+        {
+          "id": "pos_viewfinder",
+          "type": "camera_viewfinder",
+          "custom_props": {
+            "hint": "@{owner.mode == 'qr' ? 'Center the QR code' : owner.mode == 'ocr' ? 'Align the product label' : 'Center the barcode'}",
+            "unavailable_copy": "Camera unavailable on this device — enter the code manually",
+            "mode_var": "owner.mode",
+            "on_scan_op": "pos.scan_resolve",
+            "on_scan_args": {
+              "raw": "$scan.raw",
+              "mode": "@{owner.mode}"
+            }
+          },
+          "actions": [
+            {
+              "log_id": "pos_manual_code",
+              "url": "sheet://present?card_id=owner_scan_sheet"
+            }
+          ]
+        },
+        {
+          "type": "container",
+          "background": [
+            {
+              "type": "solid",
+              "color": "#FFFFFF"
+            }
+          ],
+          "border": {
+            "corner_radius": 16
+          },
+          "items": [
+            {
+              "type": "text",
+              "font_size": 13,
+              "font_weight": "medium",
+              "line_height": 18,
+              "text": "Tap a match to add",
+              "text_color": "#5B6070"
+            },
+            {
+              "type": "json_list",
+              "data_var": "owner.ocr_candidates",
+              "empty_text": "No records",
+              "item_spacing": 8,
+              "row_card": {
+                "type": "container",
+                "actions": [
+                  {
+                    "log_id": "ocr_pick",
+                    "url": "local-db://op/pos.add_by_sku?sku=%24item.sku&qty=1"
+                  }
+                ],
+                "background": [
+                  {
+                    "type": "solid",
+                    "color": "#F1EDFF"
+                  }
+                ],
+                "border": {
+                  "corner_radius": 999
+                },
+                "content_alignment_horizontal": "center",
+                "content_alignment_vertical": "center",
+                "height": {
+                  "type": "fixed",
+                  "value": 48
+                },
+                "items": [
+                  {
+                    "type": "text",
+                    "font_size": 14,
+                    "font_weight": "medium",
+                    "text": "@{item.name}",
+                    "text_color": "#5A3BE0"
+                  }
+                ],
+                "paddings": {
+                  "left": 12,
+                  "right": 12
+                }
+              }
+            }
+          ],
+          "margins": {
+            "top": 12
+          },
+          "paddings": {
+            "left": 16,
+            "right": 16,
+            "top": 16,
+            "bottom": 16
+          },
+          "visibility": "@{owner.mode == 'ocr' && owner.ocr_candidates_count > 0 ? 'visible' : 'gone'}",
+          "width": {
+            "type": "match_parent"
+          }
+        },
+        {
+          "type": "container",
+          "alignment_vertical": "center",
+          "background": [
+            {
+              "type": "solid",
+              "color": "#FFFFFF"
+            }
+          ],
+          "border": {
+            "corner_radius": 16
+          },
+          "items": [
+            {
+              "type": "text",
+              "font_size": 16,
+              "text": "@{owner.last_scan}",
+              "text_color": "#111319",
+              "width": {
+                "type": "match_parent",
+                "weight": 1
+              }
+            },
+            {
+              "type": "container",
+              "actions": [
+                {
+                  "log_id": "undo_scan",
+                  "url": "local-db://op/pos.undo_last"
+                }
+              ],
+              "content_alignment_vertical": "center",
+              "height": {
+                "type": "fixed",
+                "value": 48
+              },
+              "items": [
+                {
+                  "type": "text",
+                  "font_size": 16,
+                  "font_weight": "bold",
+                  "text": "Undo",
+                  "text_color": "#5A3BE0"
+                }
+              ],
+              "paddings": {
+                "left": 12,
+                "right": 4
+              },
+              "visibility": "@{owner.last_scan_can_undo ? 'visible' : 'gone'}"
+            }
+          ],
+          "margins": {
+            "top": 12
+          },
+          "orientation": "horizontal",
+          "paddings": {
+            "left": 16,
+            "right": 16,
+            "top": 14,
+            "bottom": 14
+          },
+          "visibility": "@{owner.last_scan_visible ? 'visible' : 'gone'}",
+          "width": {
+            "type": "match_parent"
+          }
+        },
+        {
+          "type": "container",
+          "background": [
+            {
+              "type": "solid",
+              "color": "#FEE2E2"
+            }
+          ],
+          "border": {
+            "corner_radius": 12
+          },
+          "id": "scan_error_banner",
+          "items": [
+            {
+              "type": "text",
+              "font_size": 13,
+              "line_height": 18,
+              "text": "@{owner.scan_error_msg}",
+              "text_color": "#111319"
+            },
+            {
+              "type": "container",
+              "items": [
+                {
+                  "type": "container",
+                  "actions": [
+                    {
+                      "log_id": "open_map_picker",
+                      "url": "sheet://present?card_id=map_barcode_picker"
+                    }
+                  ],
+                  "content_alignment_vertical": "center",
+                  "height": {
+                    "type": "fixed",
+                    "value": 48
+                  },
+                  "items": [
+                    {
+                      "type": "text",
+                      "font_size": 13,
+                      "font_weight": "bold",
+                      "text": "Map to product",
+                      "text_color": "#C81E1E"
+                    }
+                  ],
+                  "paddings": {
+                    "right": 16
+                  }
+                }
+              ],
+              "margins": {
+                "top": 8
+              },
+              "orientation": "horizontal"
+            }
+          ],
+          "orientation": "vertical",
+          "paddings": {
+            "left": 14,
+            "right": 14,
+            "top": 12,
+            "bottom": 12
+          },
+          "visibility": "@{owner.scan_error_visible ? 'visible' : 'gone'}",
+          "width": {
+            "type": "match_parent"
+          }
+        },
+        {
+          "type": "container",
+          "items": [
+            {
+              "type": "json_list",
+              "data_var": "owner.cart_lines",
+              "empty_text": "No records",
+              "item_spacing": 12,
+              "row_card": {
+                "type": "container",
+                "alignment_vertical": "center",
+                "background": [
+                  {
+                    "type": "solid",
+                    "color": "#FFFFFF"
+                  }
+                ],
+                "border": {
+                  "corner_radius": 16
+                },
+                "items": [
+                  {
+                    "type": "container",
+                    "items": [
+                      {
+                        "type": "text",
+                        "font_size": 16,
+                        "font_weight": "regular",
+                        "line_height": 22,
+                        "text": "@{item.name}",
+                        "text_color": "#111319"
+                      },
+                      {
+                        "type": "text",
+                        "font_feature_settings": "tnum",
+                        "font_size": 13,
+                        "text": "@{item.unit_price_display}",
+                        "text_color": "#5B6070"
+                      }
+                    ],
+                    "orientation": "vertical",
+                    "width": {
+                      "type": "match_parent",
+                      "weight": 1
+                    }
+                  },
+                  {
+                    "type": "container",
+                    "alignment_vertical": "center",
+                    "height": {
+                      "type": "fixed",
+                      "value": 48
+                    },
+                    "items": [
+                      {
+                        "type": "container",
+                        "actions": [
+                          {
+                            "log_id": "qty_minus",
+                            "url": "local-db://op/pos.set_qty?line_id=item.line_id&qty=item.qty%20-%201"
+                          }
+                        ],
+                        "content_alignment_horizontal": "center",
+                        "content_alignment_vertical": "center",
+                        "height": {
+                          "type": "fixed",
+                          "value": 40
+                        },
+                        "items": [
+                          {
+                            "type": "text",
+                            "font_size": 20,
+                            "text": "−",
+                            "text_color": "#111319"
+                          }
+                        ],
+                        "width": {
+                          "type": "fixed",
+                          "value": 40
+                        }
+                      },
+                      {
+                        "type": "text",
+                        "font_size": 16,
+                        "font_weight": "bold",
+                        "text": {},
+                        "text_color": "#111319"
+                      },
+                      {
+                        "type": "container",
+                        "actions": [
+                          {
+                            "log_id": "qty_plus",
+                            "url": "local-db://op/pos.set_qty?line_id=item.line_id&qty=item.qty%20%2B%201"
+                          }
+                        ],
+                        "content_alignment_horizontal": "center",
+                        "content_alignment_vertical": "center",
+                        "height": {
+                          "type": "fixed",
+                          "value": 40
+                        },
+                        "items": [
+                          {
+                            "type": "text",
+                            "font_size": 20,
+                            "text": "+",
+                            "text_color": "#111319"
+                          }
+                        ],
+                        "width": {
+                          "type": "fixed",
+                          "value": 40
+                        }
+                      }
+                    ],
+                    "orientation": "horizontal",
+                    "width": {
+                      "type": "wrap_content"
+                    }
+                  },
+                  {
+                    "type": "text",
+                    "font_feature_settings": "tnum",
+                    "font_size": 22,
+                    "font_weight": "bold",
+                    "line_height": 28,
+                    "margins": {
+                      "left": 8
+                    },
+                    "text": "@{item.line_total_display}",
+                    "text_alignment_horizontal": "end",
+                    "text_color": "#111319",
+                    "width": {
+                      "type": "fixed",
+                      "value": 84
+                    }
+                  },
+                  {
+                    "type": "container",
+                    "actions": [
+                      {
+                        "log_id": "remove_line",
+                        "url": "local-db://op/pos.remove_line?line_id=%24item.line_id"
+                      }
+                    ],
+                    "content_alignment_horizontal": "center",
+                    "content_alignment_vertical": "center",
+                    "height": {
+                      "type": "fixed",
+                      "value": 48
+                    },
+                    "items": [
+                      {
+                        "type": "text",
+                        "font_size": 20,
+                        "text": "⋯",
+                        "text_color": "#5B6070"
+                      }
+                    ],
+                    "width": {
+                      "type": "fixed",
+                      "value": 48
+                    }
+                  }
+                ],
+                "orientation": "horizontal",
+                "paddings": {
+                  "left": 16,
+                  "right": 12,
+                  "top": 14,
+                  "bottom": 14
+                },
+                "width": {
+                  "type": "match_parent"
+                }
+              }
+            }
+          ],
+          "margins": {
+            "top": 16
+          },
+          "visibility": "@{owner.cart_count > 0 ? 'visible' : 'gone'}",
+          "width": {
+            "type": "match_parent"
+          }
+        }
+      ],
+      "orientation": "vertical",
+      "paddings": {
+        "left": 20,
+        "right": 20,
+        "top": 16,
+        "bottom": 20
+      },
+      "width": {
+        "type": "match_parent"
+      }
+    },
+    {
+      "type": "container",
+      "alignment_vertical": "center",
+      "background": [
+        {
+          "type": "solid",
+          "color": "#FFFFFF"
+        }
+      ],
+      "border": {
+        "stroke": {
+          "color": "#E6E8EF",
+          "width": 1
+        }
+      },
+      "items": [
+        {
+          "type": "text",
+          "font_feature_settings": "tnum",
+          "font_size": 22,
+          "font_weight": "bold",
+          "line_height": 28,
+          "text": "@{owner.cart_footer_summary}",
+          "text_color": "#111319",
+          "width": {
+            "type": "match_parent",
+            "weight": 1
+          }
+        },
+        {
+          "type": "container",
+          "actions": [
+            {
+              "log_id": "open_checkout",
+              "url": "sheet://present?card_id=owner_checkout_sheet"
+            }
+          ],
+          "alpha": "@{owner.cart_count > 0 ? 1.0 : 0.4}",
+          "background": [
+            {
+              "type": "solid",
+              "color": "@{owner.cart_count > 0 ? '#5A3BE0' : '#E6E8EF'}"
+            }
+          ],
+          "border": {
+            "corner_radius": 12
+          },
+          "content_alignment_horizontal": "center",
+          "content_alignment_vertical": "center",
+          "height": {
+            "type": "fixed",
+            "value": 56
+          },
+          "items": [
+            {
+              "type": "text",
+              "font_size": 16,
+              "font_weight": "bold",
+              "text": "Checkout",
+              "text_alignment_horizontal": "center",
+              "text_color": "@{owner.cart_count > 0 ? '#FFFFFF' : '#5B6070'}"
+            }
+          ],
+          "width": {
+            "type": "fixed",
+            "value": 160
+          }
+        }
+      ],
+      "orientation": "horizontal",
+      "paddings": {
+        "left": 20,
+        "right": 20,
+        "top": 12,
+        "bottom": 12
+      },
+      "width": {
+        "type": "match_parent"
+      }
+    },
+    {
+      "type": "bottom_tabs",
+      "custom_props": {
+        "active_value": "owner.tab",
+        "items": [
+          {
+            "value": "pos",
+            "label": "POS",
+            "icon": "pos",
+            "actions": [
+              {
+                "log_id": "tab_pos",
+                "url": "nav://push?id=owner_pos"
+              }
+            ]
+          },
+          {
+            "value": "inventory",
+            "label": "Inventory",
+            "icon": "inventory",
+            "actions": [
+              {
+                "log_id": "tab_inventory",
+                "url": "nav://push?id=owner_inventory"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "orientation": "vertical",
+  "width": {
+    "type": "match_parent"
+  }
+}

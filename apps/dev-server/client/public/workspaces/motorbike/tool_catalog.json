@@ -1,34 +1,5 @@
 {
  "title": "Today",
- "subtitle": "Pick a workflow to begin.",
- "entries": [
-  {
-   "file": "trip",
-   "label": "Record a trip",
-   "icon": "add_circle",
-   "accent_color": "#F59E0B",
-   "subtitle": "Fare, route and payment"
-  },
-  {
-   "file": "earnings",
-   "label": "Earnings",
-   "icon": "trending_up",
-   "accent_color": "#F59E0B",
-   "subtitle": "Fares by day"
-  },
-  {
-   "file": "expenses",
-   "label": "Expenses",
-   "icon": "receipt",
-   "accent_color": "#F59E0B",
-   "subtitle": "Fuel and repairs"
-  },
-  {
-   "file": "handover",
-   "label": "Handover",
-   "icon": "check_circle",
-   "accent_color": "#F59E0B",
-   "subtitle": "Close the day"
-  }
- ]
+ "subtitle": "Home, trip, earnings and expenses in one card.",
+ "entries": []
 }

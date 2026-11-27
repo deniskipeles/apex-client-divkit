@@ -1,0 +1,198 @@
+{
+  "type": "container",
+  "border": {
+    "corner_radius": 12,
+    "stroke": {
+      "color": "#F59E0B",
+      "width": 1
+    }
+  },
+  "items": [
+    {
+      "type": "text",
+      "font_size": 11,
+      "font_weight": "bold",
+      "text": "📳 HAPTIC TACTILE ENGINE (device.haptics@1 • tools://haptics)",
+      "text_color": "#FCD34D"
+    },
+    {
+      "type": "text",
+      "font_size": 11,
+      "text": "Each button drives the device vibrator with the pattern named on it and reports the pattern and duration that were actually applied.",
+      "text_color": "#FDE68A"
+    },
+    {
+      "type": "text",
+      "font_family": "monospace",
+      "font_size": 12,
+      "text": "State: @{user.haptic_state} • Pattern: @{user.haptic_pattern} • Duration: @{user.haptic_duration} ms",
+      "text_color": "#FEF3C7"
+    },
+    {
+      "type": "container",
+      "item_spacing": 8,
+      "items": [
+        {
+          "type": "button",
+          "weight": 1,
+          "id": "haptic_click",
+          "text": "Click",
+          "icon": "haptics",
+          "background_color": "#374151",
+          "text_color": "#F9FAFB",
+          "corner_radius": 8,
+          "action": {
+            "log_id": "haptic_click",
+            "url": "tools://haptics/click",
+            "payload": {
+              "output": {
+                "status": "user.haptic_state",
+                "pattern": "user.haptic_pattern",
+                "duration_ms": "user.haptic_duration"
+              }
+            }
+          }
+        },
+        {
+          "type": "button",
+          "weight": 1,
+          "id": "haptic_heavy",
+          "text": "Heavy",
+          "icon": "haptics",
+          "background_color": "#D97706",
+          "text_color": "#FFFFFF",
+          "corner_radius": 8,
+          "action": {
+            "log_id": "haptic_heavy",
+            "url": "tools://haptics/heavy",
+            "payload": {
+              "output": {
+                "status": "user.haptic_state",
+                "pattern": "user.haptic_pattern",
+                "duration_ms": "user.haptic_duration"
+              }
+            }
+          }
+        },
+        {
+          "type": "button",
+          "weight": 1,
+          "id": "haptic_success",
+          "text": "Success",
+          "icon": "check",
+          "background_color": "#059669",
+          "text_color": "#FFFFFF",
+          "corner_radius": 8,
+          "action": {
+            "log_id": "haptic_success",
+            "url": "tools://haptics/success",
+            "payload": {
+              "output": {
+                "status": "user.haptic_state",
+                "pattern": "user.haptic_pattern",
+                "duration_ms": "user.haptic_duration"
+              }
+            }
+          }
+        }
+      ],
+      "orientation": "horizontal"
+    },
+    {
+      "type": "container",
+      "item_spacing": 8,
+      "items": [
+        {
+          "type": "button",
+          "weight": 1,
+          "id": "haptic_warning",
+          "text": "Warning",
+          "icon": "notification",
+          "background_color": "#B45309",
+          "text_color": "#FFFFFF",
+          "corner_radius": 8,
+          "action": {
+            "log_id": "haptic_warning",
+            "url": "tools://haptics/warning",
+            "payload": {
+              "output": {
+                "status": "user.haptic_state",
+                "pattern": "user.haptic_pattern",
+                "duration_ms": "user.haptic_duration"
+              }
+            }
+          }
+        },
+        {
+          "type": "button",
+          "weight": 1,
+          "id": "haptic_error",
+          "text": "Error Buzz",
+          "icon": "clear",
+          "background_color": "#DC2626",
+          "text_color": "#FFFFFF",
+          "corner_radius": 8,
+          "action": {
+            "log_id": "haptic_error",
+            "url": "tools://haptics/error",
+            "payload": {
+              "output": {
+                "status": "user.haptic_state",
+                "pattern": "user.haptic_pattern",
+                "duration_ms": "user.haptic_duration"
+              }
+            }
+          }
+        },
+        {
+          "type": "button",
+          "weight": 1,
+          "id": "haptic_tick",
+          "text": "Tick",
+          "icon": "haptics",
+          "background_color": "#4B5563",
+          "text_color": "#F9FAFB",
+          "corner_radius": 8,
+          "action": {
+            "log_id": "haptic_tick",
+            "url": "tools://haptics/tick",
+            "payload": {
+              "output": {
+                "status": "user.haptic_state",
+                "pattern": "user.haptic_pattern",
+                "duration_ms": "user.haptic_duration"
+              }
+            }
+          }
+        }
+      ],
+      "orientation": "horizontal"
+    },
+    {
+      "type": "button",
+      "id": "haptic_stop",
+      "text": "Stop vibration",
+      "subtitle": "tools://haptics/stop",
+      "icon": "clear",
+      "background_color": "#334155",
+      "text_color": "#FFFFFF",
+      "corner_radius": 8,
+      "action": {
+        "log_id": "haptic_stop",
+        "url": "tools://haptics/stop",
+        "payload": {
+          "output": {
+            "status": "user.haptic_state"
+          }
+        }
+      }
+    }
+  ],
+  "orientation": "vertical",
+  "paddings": {
+    "left": 12,
+    "right": 12,
+    "top": 10,
+    "bottom": 10
+  }
+}

@@ -1,10 +1,8 @@
 {
     "type": "custom",
-    "custom_type": "sdui_chart",
-    "id": "onfly_chart_bar_orders",
     "custom_props": {
         "chart_type": "bar",
-        "title": "LIVE REVENUE BY SKU (${terminalCode})",
+        "title": "LIVE REVENUE BY SKU (POS-TERM-01)",
         "subtitle": "Live revenue per SKU from today's orders",
         "data_var": "user.orders_json",
         "label_field": "sku",
@@ -16,5 +14,7 @@
         "show_grid": true,
         "show_legend": true,
         "interactive": true
-    }
+    },
+    "custom_type": "sdui_chart",
+    "id": "onfly_chart_bar_orders"
 }

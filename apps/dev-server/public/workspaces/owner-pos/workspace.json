@@ -1,0 +1,58 @@
+{
+  "format": "apex.workspace/1",
+  "id": "owner_pos",
+  "title": "APEX Owner",
+  "subtitle": "Owner POS, inventory and customer handoff",
+  "terminal": "POS-001",
+  "accent": "#6D4AFF",
+  "mode": "HYBRID",
+  "capabilities": [
+    "scanner",
+    "printer",
+    "haptics",
+    "beeper",
+    "clipboard"
+  ],
+  "tools": {
+    "hapticVibration": true,
+    "hardwareBeeperAudio": true,
+    "cameraBarcodeScanner": true,
+    "clipboardAccess": true,
+    "backgroundAlertsPush": true,
+    "offlinePageCaching": true,
+    "realtimeEngineWsSse": true
+  },
+  "urls": {
+    "tunnel": "https://apex-owner.local/",
+    "lan": "http://192.168.1.21:8089",
+    "client_id": "pk_live_bdbc75560c43b6605370bf4a"
+  },
+  "unread": 0,
+  "hub": "card.json",
+  "catalog": "tool_catalog.json",
+  "collections": {
+    "dir": "collections",
+    "files": [
+      "inventory.json",
+      "orders.json",
+      "order_lines.json",
+      "cust_history.json"
+    ]
+  },
+  "cards": {
+    "dir": "tools",
+    "order": [
+      "owner_pos",
+      "owner_inventory",
+      "owner_checkout_sheet",
+      "owner_qr_sequence",
+      "product_modal",
+      "owner_scan_sheet",
+      "customer_shop",
+      "customer_history",
+      "customer_scan",
+      "map_barcode_picker",
+      "confirm_delete_product"
+    ]
+  }
+}

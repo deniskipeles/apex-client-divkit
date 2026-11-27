@@ -1,14 +1,5 @@
 {
     "type": "container",
-    "orientation": "vertical",
-    "background_color": "#142834",
-    "corner_radius": 12,
-    "paddings": {
-        "left": 12,
-        "right": 12,
-        "top": 10,
-        "bottom": 10
-    },
     "border": {
         "corner_radius": 12,
         "stroke": {
@@ -19,33 +10,28 @@
     "items": [
         {
             "type": "text",
-            "text": "🪄 BACKGROUND REMOVAL — U-2-NETP (tools://u-2-Net.tflite · model not bundled)",
             "font_size": 11,
             "font_weight": "bold",
+            "text": "🪄 BACKGROUND REMOVAL — U-2-NETP (tools://u-2-Net.tflite · model not bundled)",
             "text_color": "#67E8F9"
         },
         {
             "type": "text",
-            "text": "Status: @{user.bg_remove_status}",
+            "font_family": "monospace",
             "font_size": 12,
-            "text_color": "#E0F2FE",
-            "font_family": "monospace"
+            "text": "Status: @{user.bg_remove_status}",
+            "text_color": "#E0F2FE"
         },
         {
             "type": "image",
-            "image_url": "@{user.u2net_mask_uri}",
-            "preview_height": 200,
-            "corner_radius": 10,
-            "content_description": "Background-removed image"
+            "image_url": "@{user.u2net_mask_uri}"
         },
         {
             "type": "container",
-            "orientation": "horizontal",
             "item_spacing": 8,
             "items": [
                 {
                     "type": "container",
-                    "weight": 1.0,
                     "items": [
                         {
                             "type": "button",
@@ -76,7 +62,6 @@
                 },
                 {
                     "type": "container",
-                    "weight": 1.0,
                     "items": [
                         {
                             "type": "button",
@@ -105,7 +90,15 @@
                         }
                     ]
                 }
-            ]
+            ],
+            "orientation": "horizontal"
         }
-    ]
+    ],
+    "orientation": "vertical",
+    "paddings": {
+        "left": 12,
+        "right": 12,
+        "top": 10,
+        "bottom": 10
+    }
 }

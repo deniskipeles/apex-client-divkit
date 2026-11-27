@@ -8,9 +8,6 @@ import {
   type DivVars,
   type RenderNode,
 } from '@apex/pos-ui/android-runtime'
-import kioskCustomer from '../../../workspace/apex-kiosk/cards/kiosk_customer.json'
-import kioskHub from '../../../workspace/apex-kiosk/cards/card.json'
-import kioskTransfer from '../../../workspace/apex-kiosk/cards/kiosk_transfer.json'
 
 const card = (div: Record<string, unknown>, variables: unknown[] = []) => ({
   card: { log_id: 'test', variables, states: [{ state_id: 0, div }] },
@@ -297,42 +294,5 @@ describe('validation', () => {
     )
     expect(report.errors).toEqual([])
     expect(report.warnings.join('\n')).toContain('does not declare')
-  })
-})
-
-describe('real cards', () => {
-  it('builds the kiosk hub with every declared variable seeded', () => {
-    const declarations = (kioskHub as { card: { variables: Array<{ name: string }> } }).card.variables
-    const vars = seedVariables(kioskHub, {})
-    expect(Object.keys(vars)).toHaveLength(declarations.length)
-
-    const model = buildCardModel(kioskHub, vars)
-    expect(model?.kind).toBe('container')
-    // Nothing in the hub may be a node the device would silently drop.
-    expect(collect(model).filter((node) => node.kind === 'nothing')).toEqual([])
-  })
-
-  it('builds a tool card and keeps only device-rendered node kinds', () => {
-    const model = buildCardModel(kioskCustomer, { 'user.catalog_json': '[]' } as DivVars)
-    const kinds = new Set(collect(model).map((node) => node.kind))
-    expect([...kinds].sort()).toEqual(expect.arrayContaining(['container', 'text', 'button', 'json_list']))
-    expect(kinds.has('nothing')).toBe(false)
-  })
-
-  it('keeps the kiosk transfer actions and leaves no unresolved expression', () => {
-    const model = buildCardModel(kioskTransfer, {
-      'user.qr_chunks': JSON.stringify([{ chunk: 'C1' }, { chunk: 'C2' }]),
-      'user.qr_index': 1,
-      'user.qr_count': 2,
-      'user.qr_status': 'READY',
-    } as DivVars)
-    const nodes = collect(model)
-    const actions = nodes.flatMap((node) => node.actions).map((action) => action.node)
-    const urls = actions.map((action) => action.url).filter((url): url is string => typeof url === 'string')
-    expect(urls.some((url) => url.startsWith('tools://code-generate/'))).toBe(true)
-    expect(actions.some((action) => action.type === 'array_insert_value')).toBe(true)
-
-    const texts = nodes.filter((node) => node.kind === 'text').map((node) => (node.kind === 'text' ? node.text : ''))
-    expect(texts.join(' ')).not.toContain('@{')
   })
 })

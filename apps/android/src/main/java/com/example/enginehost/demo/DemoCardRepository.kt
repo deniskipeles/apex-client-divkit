@@ -339,11 +339,12 @@ object DemoCardRepository {
         bundle: WorkspaceBundle? = bundleFor(spec)
     ): JsonObject? {
         val rawBody = toolCard(spec, name, bundle) ?: return null
-        val timers = rawBody["_timers"]
+        val timers = rawBody["_timers"] ?: (rawBody["card"] as? JsonObject)?.get("_timers")
+        val unwrapped = unwrapCardBody(rawBody)
         val body = if (timers != null) {
-            JsonObject(rawBody.filterKeys { it != "_timers" })
+            JsonObject(unwrapped.filterKeys { it != "_timers" })
         } else {
-            rawBody
+            unwrapped
         }
         val variables = sharedVariables(spec, bundle)
 
@@ -383,6 +384,13 @@ object DemoCardRepository {
                 }
             }
         }
+    }
+
+    /** Generated tool cards are raw divs; unwrap a full `{card:{states:[{div}]}}` document for older imports. */
+    private fun unwrapCardBody(raw: JsonObject): JsonObject {
+        val card = raw["card"] as? JsonObject ?: return raw
+        val firstState = card["states"]?.jsonArray?.firstOrNull()?.jsonObject
+        return firstState?.get("div")?.jsonObject ?: card["div"]?.jsonObject ?: raw
     }
 
     /**

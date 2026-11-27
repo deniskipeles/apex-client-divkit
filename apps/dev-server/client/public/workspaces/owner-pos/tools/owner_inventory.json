@@ -1,0 +1,456 @@
+{
+  "type": "container",
+  "background": [
+    {
+      "type": "solid",
+      "color": "#F7F8FB"
+    }
+  ],
+  "height": {
+    "type": "match_parent"
+  },
+  "items": [
+    {
+      "id": "global_toast",
+      "type": "toast",
+      "visibility": "owner.toast_visible ? 'visible' : 'gone'",
+      "custom_props": {
+        "text": "owner.toast_msg",
+        "severity_var": "owner.toast_severity",
+        "action_label_var": "owner.toast_action",
+        "dwell_ms": 4000,
+        "actions": [
+          {
+            "log_id": "inv_toast_act",
+            "url": "local-db://op/inventory.toast_action"
+          }
+        ]
+      }
+    },
+    {
+      "type": "container",
+      "height": {
+        "type": "match_parent",
+        "weight": 1
+      },
+      "items": [
+        {
+          "type": "gallery",
+          "height": {
+            "type": "match_parent"
+          },
+          "items": [
+            {
+              "type": "text",
+              "font_size": 32,
+              "font_weight": "bold",
+              "line_height": 40,
+              "text": "Inventory",
+              "text_color": "#111319"
+            },
+            {
+              "type": "container",
+              "items": [
+                {
+                  "type": "container",
+                  "items": [
+                    {
+                      "type": "text",
+                      "font_size": 13,
+                      "font_weight": "medium",
+                      "line_height": 18,
+                      "text": "",
+                      "text_color": "#111319"
+                    },
+                    {
+                      "type": "container",
+                      "alignment_vertical": "center",
+                      "background": [
+                        {
+                          "type": "solid",
+                          "color": "#FFFFFF"
+                        }
+                      ],
+                      "border": {
+                        "corner_radius": 12,
+                        "stroke": {
+                          "color": "#E6E8EF",
+                          "width": 1
+                        }
+                      },
+                      "height": {
+                        "type": "fixed",
+                        "value": 52
+                      },
+                      "items": [
+                        {
+                          "type": "input",
+                          "focus": {
+                            "on_blur": [
+                              {
+                                "log_id": "search_inv",
+                                "url": "local-db://op/inventory.list?filter=%40%7Bowner.inv_query%7D"
+                              }
+                            ]
+                          },
+                          "font_size": 16,
+                          "hint_color": "#5B6070",
+                          "hint_text": "Search name, SKU, or code",
+                          "id": "inv_search",
+                          "keyboard_type": "single_line_text",
+                          "max_visible_lines": 1,
+                          "text_color": "#111319",
+                          "text_variable": "owner.inv_query",
+                          "width": {
+                            "type": "match_parent",
+                            "weight": 1
+                          }
+                        }
+                      ],
+                      "margins": {
+                        "top": 6
+                      },
+                      "orientation": "horizontal",
+                      "paddings": {
+                        "left": 14,
+                        "right": 14,
+                        "top": 8,
+                        "bottom": 8
+                      },
+                      "width": {
+                        "type": "match_parent"
+                      }
+                    }
+                  ],
+                  "margins": {
+                    "bottom": 24
+                  },
+                  "orientation": "vertical",
+                  "width": {
+                    "type": "match_parent"
+                  }
+                }
+              ],
+              "margins": {
+                "top": 16,
+                "bottom": 12
+              },
+              "width": {
+                "type": "match_parent"
+              }
+            },
+            {
+              "type": "container",
+              "content_alignment_horizontal": "center",
+              "items": [
+                {
+                  "type": "text",
+                  "font_size": 22,
+                  "font_weight": "bold",
+                  "line_height": 28,
+                  "text": "No products yet",
+                  "text_color": "#111319"
+                },
+                {
+                  "type": "text",
+                  "font_size": 16,
+                  "margins": {
+                    "top": 8,
+                    "bottom": 20
+                  },
+                  "text": "Add the first one to start scanning",
+                  "text_alignment_horizontal": "center",
+                  "text_color": "#5B6070"
+                },
+                {
+                  "type": "container",
+                  "actions": [
+                    {
+                      "log_id": "empty_add_prod",
+                      "url": "local-db://op/inventory.open_form?mode=new"
+                    },
+                    {
+                      "log_id": "open_product_modal",
+                      "url": "nav://push?id=product_modal"
+                    }
+                  ],
+                  "background": [
+                    {
+                      "type": "solid",
+                      "color": "#F1EDFF"
+                    }
+                  ],
+                  "border": {
+                    "corner_radius": 12
+                  },
+                  "content_alignment_horizontal": "center",
+                  "content_alignment_vertical": "center",
+                  "height": {
+                    "type": "fixed",
+                    "value": 48
+                  },
+                  "items": [
+                    {
+                      "type": "text",
+                      "font_size": 16,
+                      "font_weight": "bold",
+                      "text": "Add product",
+                      "text_color": "#5A3BE0"
+                    }
+                  ],
+                  "paddings": {
+                    "left": 20,
+                    "right": 20
+                  }
+                }
+              ],
+              "orientation": "vertical",
+              "paddings": {
+                "top": 48,
+                "bottom": 48,
+                "left": 20,
+                "right": 20
+              },
+              "visibility": "@{owner.inv_count == 0 ? 'visible' : 'gone'}",
+              "width": {
+                "type": "match_parent"
+              }
+            },
+            {
+              "type": "json_list",
+              "data_var": "owner.inv_items",
+              "empty_text": "No records",
+              "item_spacing": 12,
+              "row_card": {
+                "type": "container",
+                "actions": [
+                  {
+                    "log_id": "edit_prod",
+                    "url": "local-db://op/inventory.open_form?mode=edit&id=%24item.id"
+                  },
+                  {
+                    "log_id": "open_product_modal",
+                    "url": "nav://push?id=product_modal"
+                  }
+                ],
+                "alignment_vertical": "center",
+                "background": [
+                  {
+                    "type": "solid",
+                    "color": "#FFFFFF"
+                  }
+                ],
+                "border": {
+                  "corner_radius": 16
+                },
+                "items": [
+                  {
+                    "type": "image",
+                    "border": {
+                      "corner_radius": 12
+                    },
+                    "height": {
+                      "type": "fixed",
+                      "value": 48
+                    },
+                    "image_url": "@{item.photo_url}",
+                    "margins": {
+                      "right": 14
+                    },
+                    "placeholder_color": "#E6E8EF",
+                    "width": {
+                      "type": "fixed",
+                      "value": 48
+                    }
+                  },
+                  {
+                    "type": "container",
+                    "items": [
+                      {
+                        "type": "text",
+                        "font_size": 16,
+                        "font_weight": "regular",
+                        "line_height": 22,
+                        "text": "@{item.name}",
+                        "text_color": "#111319"
+                      },
+                      {
+                        "type": "text",
+                        "font_size": 13,
+                        "font_weight": "medium",
+                        "line_height": 18,
+                        "text": "@{item.sku}",
+                        "text_color": "#5B6070"
+                      },
+                      {
+                        "type": "container",
+                        "alignment_vertical": "center",
+                        "items": [
+                          {
+                            "type": "text",
+                            "font_size": 13,
+                            "font_weight": "medium",
+                            "line_height": 18,
+                            "text": "@{item.code_display}",
+                            "text_color": "#5B6070"
+                          },
+                          {
+                            "type": "container",
+                            "actions": [
+                              {
+                                "log_id": "row_map_code",
+                                "url": "sheet://present?card_id=owner_scan_sheet"
+                              }
+                            ],
+                            "items": [
+                              {
+                                "type": "text",
+                                "font_size": 13,
+                                "font_weight": "medium",
+                                "line_height": 18,
+                                "text": "Map",
+                                "text_color": "#5A3BE0"
+                              }
+                            ],
+                            "paddings": {
+                              "left": 8
+                            },
+                            "visibility": {}
+                          }
+                        ],
+                        "orientation": "horizontal"
+                      }
+                    ],
+                    "orientation": "vertical",
+                    "width": {
+                      "type": "match_parent",
+                      "weight": 1
+                    }
+                  },
+                  {
+                    "type": "container",
+                    "alignment_horizontal": "end",
+                    "items": [
+                      {
+                        "type": "text",
+                        "font_feature_settings": "tnum",
+                        "font_size": 22,
+                        "font_weight": "bold",
+                        "line_height": 28,
+                        "text": "@{item.price_display}",
+                        "text_color": "#111319"
+                      },
+                      {
+                        "type": "container",
+                        "background": [
+                          {
+                            "type": "solid",
+                            "color": "#FEF3C7"
+                          }
+                        ],
+                        "border": {
+                          "corner_radius": 999
+                        },
+                        "items": [
+                          {
+                            "type": "text",
+                            "font_size": 11,
+                            "font_weight": "bold",
+                            "text": "@{item.stock == 0 ? 'Out' : 'Low'}",
+                            "text_color": "#92400E"
+                          }
+                        ],
+                        "paddings": {
+                          "left": 8,
+                          "right": 8,
+                          "top": 2,
+                          "bottom": 2
+                        }
+                      }
+                    ],
+                    "orientation": "vertical"
+                  }
+                ],
+                "orientation": "horizontal",
+                "paddings": {
+                  "left": 16,
+                  "right": 16,
+                  "top": 14,
+                  "bottom": 14
+                },
+                "width": {
+                  "type": "match_parent"
+                }
+              }
+            }
+          ],
+          "orientation": "vertical",
+          "paddings": {
+            "left": 20,
+            "right": 20,
+            "top": 16,
+            "bottom": 88
+          },
+          "width": {
+            "type": "match_parent"
+          }
+        },
+        {
+          "type": "fab",
+          "custom_props": {
+            "label": "Add product",
+            "icon": "add",
+            "actions": [
+              {
+                "log_id": "fab_add_prod",
+                "url": "local-db://op/inventory.open_form?mode=new"
+              },
+              {
+                "log_id": "open_product_modal",
+                "url": "nav://push?id=product_modal"
+              }
+            ]
+          }
+        }
+      ],
+      "orientation": "vertical",
+      "width": {
+        "type": "match_parent"
+      }
+    },
+    {
+      "type": "bottom_tabs",
+      "custom_props": {
+        "active_value": "owner.tab",
+        "items": [
+          {
+            "value": "pos",
+            "label": "POS",
+            "icon": "pos",
+            "actions": [
+              {
+                "log_id": "tab_pos",
+                "url": "nav://push?id=owner_pos"
+              }
+            ]
+          },
+          {
+            "value": "inventory",
+            "label": "Inventory",
+            "icon": "inventory",
+            "actions": [
+              {
+                "log_id": "tab_inventory",
+                "url": "nav://push?id=owner_inventory"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "orientation": "vertical",
+  "width": {
+    "type": "match_parent"
+  }
+}

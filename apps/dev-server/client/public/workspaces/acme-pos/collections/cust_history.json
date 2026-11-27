@@ -1,0 +1,54 @@
+{
+  "id": 5,
+  "name": "cust_history",
+  "schema": {
+    "fields": {
+      "shop_terminal": {
+        "type": "string",
+        "required": false,
+        "uid": "cust_history_shop_terminal"
+      },
+      "shop_name": {
+        "type": "string",
+        "required": false,
+        "uid": "cust_history_shop_name"
+      },
+      "order_id": {
+        "type": "string",
+        "required": false,
+        "uid": "cust_history_order_id"
+      },
+      "payload_json": {
+        "type": "string",
+        "required": false,
+        "uid": "cust_history_payload_json"
+      },
+      "checksum": {
+        "type": "string",
+        "required": false,
+        "uid": "cust_history_checksum"
+      },
+      "item_count": {
+        "type": "number",
+        "required": false,
+        "uid": "cust_history_item_count"
+      },
+      "total": {
+        "type": "number",
+        "required": false,
+        "uid": "cust_history_total"
+      },
+      "received_at": {
+        "type": "string",
+        "required": false,
+        "uid": "cust_history_received_at"
+      }
+    },
+    "policies": {
+      "read": "public",
+      "create": "public",
+      "update": "public",
+      "delete": "public"
+    }
+  }
+}

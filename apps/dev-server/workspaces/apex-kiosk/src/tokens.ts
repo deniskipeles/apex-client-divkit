@@ -1,0 +1,22 @@
+export const TOKENS = {
+  color: {
+    accent: '#5A3BE0',
+    accentPressed: '#5A3BE0',
+    accentTint: '#F1EDFF',
+    ink: '#111319',
+    muted: '#5B6070',
+    line: '#E6E8EF',
+    surface: '#FFFFFF',
+    canvas: '#F7F8FB',
+    success: '#057A55',
+    successTint: '#E6F6F0',
+    warning: '#92400E',
+    warningTint: '#FEF3C7',
+    danger: '#C81E1E',
+    dangerTint: '#FEE2E2',
+  },
+  radius: { card: 16, button: 12, photo: 12, pill: 999 },
+  space: { gutter: 20, group: 24, grid: 4 },
+  touch: { primary: 56, secondary: 48 },
+  motion: { stateMs: 180, pushMs: 240, modalMs: 320 },
+} as const

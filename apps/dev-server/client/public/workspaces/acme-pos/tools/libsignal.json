@@ -1,0 +1,391 @@
+{
+  "type": "container",
+  "border": {
+    "corner_radius": 14,
+    "stroke": {
+      "color": "#334155",
+      "width": 1
+    }
+  },
+  "items": [
+    {
+      "type": "container",
+      "item_spacing": 10,
+      "items": [
+        {
+          "type": "container",
+          "item_spacing": 2,
+          "items": [
+            {
+              "type": "text",
+              "font_size": 18,
+              "font_weight": "bold",
+              "text": "Libsignal E2EE",
+              "text_color": "#F8FAFC"
+            },
+            {
+              "type": "text",
+              "font_size": 11,
+              "text": "Signal Protocol · Double Ratchet · X3DH",
+              "text_color": "#CBD5E1"
+            }
+          ],
+          "orientation": "vertical"
+        }
+      ],
+      "orientation": "horizontal"
+    },
+    {
+      "type": "text",
+      "font_size": 11,
+      "font_weight": "bold",
+      "margins": {
+        "top": 6
+      },
+      "paddings": {
+        "left": 10,
+        "right": 10,
+        "top": 5,
+        "bottom": 5
+      },
+      "text": "@{user.signal_status}",
+      "text_color": "#F8FAFC"
+    },
+    {
+      "type": "text",
+      "font_family": "monospace",
+      "font_size": 10,
+      "text": "Peer @{user.signal_peer_id} · @{if(user.signal_session_id == '', 'no session', user.signal_session_id)}",
+      "text_color": "#CBD5E1"
+    },
+    {
+      "type": "container",
+      "item_spacing": 2,
+      "items": [
+        {
+          "type": "text",
+          "font_size": 10,
+          "font_weight": "bold",
+          "text": "Safety number",
+          "text_color": "#CBD5E1"
+        },
+        {
+          "type": "text",
+          "font_family": "monospace",
+          "font_size": 12,
+          "font_weight": "bold",
+          "max_lines": 3,
+          "text": "@{if(user.signal_fingerprint_display == '', '—', user.signal_fingerprint_display)}",
+          "text_color": "#F8FAFC"
+        }
+      ],
+      "orientation": "vertical"
+    },
+    {
+      "type": "container",
+      "item_spacing": 2,
+      "items": [
+        {
+          "type": "text",
+          "font_size": 10,
+          "font_weight": "bold",
+          "text": "Verification",
+          "text_color": "#CBD5E1"
+        },
+        {
+          "type": "text",
+          "font_size": 12,
+          "font_weight": "bold",
+          "text": "@{user.signal_verification}",
+          "text_color": "@{if(user.signal_verification == 'VERIFIED', '#34D399', '#F87171')}"
+        }
+      ],
+      "orientation": "vertical"
+    },
+    {
+      "type": "container",
+      "item_spacing": 8,
+      "items": [
+        {
+          "type": "button",
+          "text": "Establish",
+          "icon": "lock",
+          "background_color": "#7C3AED",
+          "text_color": "#FFFFFF",
+          "corner_radius": 12,
+          "font_size": 14,
+          "font_weight": "bold",
+          "weight": 1,
+          "action": {
+            "log_id": "exec_tool_libsignal_create_session",
+            "url": "tools://libsignal/create_session",
+            "payload": {
+              "peer_id": "@{user.signal_peer_id}",
+              "output": {
+                "status": "user.signal_status",
+                "session_id": "user.signal_session_id",
+                "fingerprint": "user.signal_fingerprint",
+                "safety_number_display": "user.signal_fingerprint_display",
+                "verification_status": "user.signal_verification",
+                "ciphertext": "user.signal_ciphertext",
+                "plaintext": "user.signal_plaintext"
+              }
+            }
+          },
+          "id": "tool_libsignal_create_session"
+        },
+        {
+          "type": "button",
+          "text": "Encrypt",
+          "icon": "e2ee",
+          "background_color": "#6D28D9",
+          "text_color": "#FFFFFF",
+          "corner_radius": 12,
+          "font_size": 14,
+          "font_weight": "bold",
+          "weight": 1,
+          "action": {
+            "log_id": "exec_tool_libsignal_encrypt",
+            "url": "tools://libsignal/encrypt",
+            "payload": {
+              "peer_id": "@{user.signal_peer_id}",
+              "data": "{\"order\":\"#1042\",\"total\":\"18.50\",\"terminal\":\"till-07\"}",
+              "output": {
+                "status": "user.signal_status",
+                "ciphertext": "user.signal_ciphertext",
+                "safety_number": "user.signal_fingerprint",
+                "safety_number_display": "user.signal_fingerprint_display"
+              }
+            }
+          },
+          "id": "tool_libsignal_encrypt"
+        }
+      ],
+      "orientation": "horizontal"
+    },
+    {
+      "type": "container",
+      "item_spacing": 8,
+      "items": [
+        {
+          "type": "button",
+          "text": "Decrypt",
+          "icon": "shield",
+          "background_color": "#5B21B6",
+          "text_color": "#FFFFFF",
+          "corner_radius": 12,
+          "font_size": 14,
+          "font_weight": "bold",
+          "weight": 1,
+          "action": {
+            "log_id": "exec_tool_libsignal_decrypt",
+            "url": "tools://libsignal/decrypt",
+            "payload": {
+              "peer_id": "@{user.signal_peer_id}",
+              "ciphertext": "@{user.signal_ciphertext}",
+              "output": {
+                "status": "user.signal_status",
+                "plaintext": "user.signal_plaintext",
+                "safety_number_display": "user.signal_fingerprint_display"
+              }
+            }
+          },
+          "id": "tool_libsignal_decrypt"
+        },
+        {
+          "type": "button",
+          "text": "Verify identity",
+          "icon": "verified",
+          "background_color": "#4C1D95",
+          "text_color": "#FFFFFF",
+          "corner_radius": 12,
+          "font_size": 13,
+          "font_weight": "bold",
+          "weight": 1,
+          "action": {
+            "log_id": "exec_tool_libsignal_verify_identity",
+            "url": "tools://libsignal/verify_identity",
+            "payload": {
+              "peer_id": "@{user.signal_peer_id}",
+              "safety_number": "@{user.signal_fingerprint}",
+              "output": {
+                "status": "user.signal_verification",
+                "safety_number": "user.signal_fingerprint",
+                "safety_number_display": "user.signal_fingerprint_display"
+              }
+            }
+          },
+          "id": "tool_libsignal_verify_identity"
+        }
+      ],
+      "orientation": "horizontal"
+    },
+    {
+      "type": "container",
+      "item_spacing": 4,
+      "items": [
+        {
+          "type": "text",
+          "font_size": 11,
+          "font_weight": "bold",
+          "text": "@{if(user.signal_ciphertext == '', 'Ciphertext', 'Ciphertext · ' + len(user.signal_ciphertext) + ' chars (3-line preview)')}",
+          "text_color": "#CBD5E1"
+        },
+        {
+          "type": "text",
+          "font_family": "monospace",
+          "font_size": 11,
+          "max_lines": 3,
+          "text": "@{if(user.signal_ciphertext == '', 'Nothing encrypted yet.', user.signal_ciphertext)}",
+          "text_color": "#CBD5E1"
+        }
+      ],
+      "orientation": "vertical",
+      "paddings": {
+        "left": 12,
+        "right": 12,
+        "top": 10,
+        "bottom": 10
+      }
+    },
+    {
+      "type": "container",
+      "item_spacing": 4,
+      "items": [
+        {
+          "type": "text",
+          "font_size": 11,
+          "font_weight": "bold",
+          "text": "Decrypted plaintext",
+          "text_color": "#CBD5E1"
+        },
+        {
+          "type": "text",
+          "font_family": "monospace",
+          "font_size": 11,
+          "max_lines": 3,
+          "text": "@{if(user.signal_plaintext == '', 'Nothing decrypted yet.', user.signal_plaintext)}",
+          "text_color": "#F8FAFC"
+        }
+      ],
+      "orientation": "vertical",
+      "paddings": {
+        "left": 12,
+        "right": 12,
+        "top": 10,
+        "bottom": 10
+      }
+    },
+    {
+      "type": "text",
+      "font_family": "monospace",
+      "font_size": 11,
+      "max_lines": 3,
+      "text": "@{if(user.engine_error != '', 'Error: ' + user.engine_error, if(user.signal_status == 'NO_SESSION', 'Ready — establish a session to begin.', if(user.signal_status == 'VERIFIED', 'Round trip verified · identity trusted for this peer.', if(user.signal_status == 'DECRYPTED', 'Round trip confirmed · plaintext matches the payload.', 'Session live · encrypt then decrypt to confirm the round trip.'))))}",
+      "text_color": "@{if(user.engine_error == '', '#64748B', '#F87171')}"
+    },
+    {
+      "type": "button",
+      "text": "Tamper test",
+      "icon": "warning",
+      "background_color": "#7F1D1D",
+      "text_color": "#FFFFFF",
+      "corner_radius": 12,
+      "font_size": 14,
+      "font_weight": "bold",
+      "weight": 1,
+      "action": {
+        "log_id": "exec_tool_libsignal_tamper_decrypt",
+        "url": "tools://libsignal/decrypt",
+        "payload": {
+          "peer_id": "@{user.signal_peer_id}",
+          "ciphertext": "@{user.signal_ciphertext}",
+          "output": {
+            "status": "user.signal_status",
+            "plaintext": "user.signal_plaintext",
+            "safety_number_display": "user.signal_fingerprint_display"
+          },
+          "tamper": "1"
+        }
+      },
+      "id": "tool_libsignal_tamper"
+    },
+    {
+      "type": "button",
+      "text": "Reset session",
+      "icon": "refresh",
+      "background_color": "#334155",
+      "text_color": "#F8FAFC",
+      "corner_radius": 12,
+      "font_size": 12,
+      "font_weight": "bold",
+      "weight": 1,
+      "action": {
+        "log_id": "exec_tool_libsignal_reset_session",
+        "url": "tools://libsignal/reset_session",
+        "payload": {
+          "peer_id": "@{user.signal_peer_id}",
+          "output": {
+            "status": "user.signal_status",
+            "session_id": "user.signal_session_id",
+            "fingerprint": "user.signal_fingerprint",
+            "safety_number_display": "user.signal_fingerprint_display",
+            "verification_status": "user.signal_verification",
+            "ciphertext": "user.signal_ciphertext",
+            "plaintext": "user.signal_plaintext"
+          }
+        }
+      },
+      "id": "tool_libsignal_reset_session"
+    }
+  ],
+  "orientation": "vertical",
+  "paddings": {
+    "left": 16,
+    "right": 16,
+    "top": 16,
+    "bottom": 16
+  },
+  "variables": [
+    {
+      "name": "user.signal_peer_id",
+      "type": "string",
+      "value": "acme_peer_01"
+    },
+    {
+      "name": "user.signal_session_id",
+      "type": "string",
+      "value": ""
+    },
+    {
+      "name": "user.signal_fingerprint",
+      "type": "string",
+      "value": ""
+    },
+    {
+      "name": "user.signal_fingerprint_display",
+      "type": "string",
+      "value": ""
+    },
+    {
+      "name": "user.signal_status",
+      "type": "string",
+      "value": "NO_SESSION"
+    },
+    {
+      "name": "user.signal_verification",
+      "type": "string",
+      "value": "UNVERIFIED"
+    },
+    {
+      "name": "user.signal_ciphertext",
+      "type": "string",
+      "value": ""
+    },
+    {
+      "name": "user.signal_plaintext",
+      "type": "string",
+      "value": ""
+    }
+  ]
+}

@@ -1,0 +1,4244 @@
+{
+  "card": {
+    "log_id": "owner_hub",
+    "variables": [
+      {
+        "type": "string",
+        "name": "owner.tab",
+        "value": "pos"
+      },
+      {
+        "type": "string",
+        "name": "owner.mode",
+        "value": "barcode"
+      },
+      {
+        "type": "boolean",
+        "name": "owner.viewfinder_expanded",
+        "value": false
+      },
+      {
+        "type": "string",
+        "name": "owner.last_scan",
+        "value": ""
+      },
+      {
+        "type": "string",
+        "name": "owner.last_scan_raw",
+        "value": ""
+      },
+      {
+        "type": "boolean",
+        "name": "owner.last_scan_visible",
+        "value": false
+      },
+      {
+        "type": "boolean",
+        "name": "owner.last_scan_can_undo",
+        "value": false
+      },
+      {
+        "type": "boolean",
+        "name": "owner.scan_error_visible",
+        "value": false
+      },
+      {
+        "type": "string",
+        "name": "owner.scan_error_msg",
+        "value": ""
+      },
+      {
+        "type": "boolean",
+        "name": "owner.scan_error_can_map",
+        "value": false
+      },
+      {
+        "type": "string",
+        "name": "owner.cart_id",
+        "value": ""
+      },
+      {
+        "type": "number",
+        "name": "owner.cart_count",
+        "value": 0
+      },
+      {
+        "type": "string",
+        "name": "owner.cart_total",
+        "value": "$0.00"
+      },
+      {
+        "type": "string",
+        "name": "owner.cart_footer_summary",
+        "value": "0 items · $0.00"
+      },
+      {
+        "type": "array",
+        "name": "owner.cart_lines",
+        "value": []
+      },
+      {
+        "type": "array",
+        "name": "owner.ocr_candidates",
+        "value": []
+      },
+      {
+        "type": "number",
+        "name": "owner.ocr_candidates_count",
+        "value": 0
+      },
+      {
+        "type": "array",
+        "name": "owner.mappable_products",
+        "value": []
+      },
+      {
+        "type": "boolean",
+        "name": "owner.draft_resumed_visible",
+        "value": false
+      },
+      {
+        "type": "string",
+        "name": "owner.draft_resumed_msg",
+        "value": ""
+      },
+      {
+        "type": "boolean",
+        "name": "owner.pending_qr_visible",
+        "value": false
+      },
+      {
+        "type": "string",
+        "name": "owner.pending_qr_msg",
+        "value": ""
+      },
+      {
+        "type": "string",
+        "name": "owner.pending_qr_order_id",
+        "value": ""
+      },
+      {
+        "type": "array",
+        "name": "owner.qr_chunks",
+        "value": []
+      },
+      {
+        "type": "number",
+        "name": "owner.qr_index",
+        "value": 0
+      },
+      {
+        "type": "number",
+        "name": "owner.qr_total",
+        "value": 0
+      },
+      {
+        "type": "boolean",
+        "name": "owner.qr_auto",
+        "value": true
+      },
+      {
+        "type": "string",
+        "name": "owner.qr_progress_label",
+        "value": "Chunk 1 of 1"
+      },
+      {
+        "type": "string",
+        "name": "owner.qr_order_label",
+        "value": ""
+      },
+      {
+        "type": "boolean",
+        "name": "owner.qr_confirmed",
+        "value": false
+      },
+      {
+        "type": "string",
+        "name": "owner.inv_query",
+        "value": ""
+      },
+      {
+        "type": "string",
+        "name": "owner.inv_category",
+        "value": "All"
+      },
+      {
+        "type": "array",
+        "name": "owner.inv_categories",
+        "value": [
+          "All"
+        ]
+      },
+      {
+        "type": "array",
+        "name": "owner.inv_items",
+        "value": []
+      },
+      {
+        "type": "number",
+        "name": "owner.inv_count",
+        "value": 0
+      },
+      {
+        "type": "string",
+        "name": "owner.highlighted_product_id",
+        "value": ""
+      },
+      {
+        "type": "boolean",
+        "name": "owner.toast_visible",
+        "value": false
+      },
+      {
+        "type": "string",
+        "name": "owner.toast_msg",
+        "value": ""
+      },
+      {
+        "type": "string",
+        "name": "owner.toast_action",
+        "value": ""
+      },
+      {
+        "type": "string",
+        "name": "owner.toast_severity",
+        "value": "info"
+      },
+      {
+        "type": "string",
+        "name": "product.id",
+        "value": ""
+      },
+      {
+        "type": "string",
+        "name": "product.name",
+        "value": ""
+      },
+      {
+        "type": "string",
+        "name": "product.price",
+        "value": ""
+      },
+      {
+        "type": "string",
+        "name": "product.photo_url",
+        "value": ""
+      },
+      {
+        "type": "string",
+        "name": "product.code",
+        "value": ""
+      },
+      {
+        "type": "boolean",
+        "name": "product.code_scanned",
+        "value": false
+      },
+      {
+        "type": "string",
+        "name": "product.code_dup_warning",
+        "value": ""
+      },
+      {
+        "type": "string",
+        "name": "product.code_dup_sku",
+        "value": ""
+      },
+      {
+        "type": "string",
+        "name": "product.sku",
+        "value": ""
+      },
+      {
+        "type": "string",
+        "name": "product.sku_suggestion",
+        "value": ""
+      },
+      {
+        "type": "string",
+        "name": "product.description",
+        "value": ""
+      },
+      {
+        "type": "dict",
+        "name": "product.errors",
+        "value": {}
+      },
+      {
+        "type": "boolean",
+        "name": "product.dirty",
+        "value": false
+      },
+      {
+        "type": "boolean",
+        "name": "product.valid",
+        "value": false
+      },
+      {
+        "type": "boolean",
+        "name": "product.is_edit",
+        "value": false
+      },
+      {
+        "type": "boolean",
+        "name": "product.scan_ready",
+        "value": false
+      },
+      {
+        "type": "string",
+        "name": "product.scan_pending_code",
+        "value": ""
+      },
+      {
+        "type": "string",
+        "name": "cust.tab",
+        "value": "shop"
+      },
+      {
+        "type": "string",
+        "name": "cust.shop_name",
+        "value": "APEX Market"
+      },
+      {
+        "type": "string",
+        "name": "cust.shop_terminal",
+        "value": "Register"
+      },
+      {
+        "type": "dict",
+        "name": "cust.recent_order",
+        "value": {}
+      },
+      {
+        "type": "boolean",
+        "name": "cust.has_recent_order",
+        "value": false
+      },
+      {
+        "type": "array",
+        "name": "cust.catalog_preview",
+        "value": []
+      },
+      {
+        "type": "number",
+        "name": "cust.catalog_count",
+        "value": 0
+      },
+      {
+        "type": "array",
+        "name": "cust.scan_chunks",
+        "value": []
+      },
+      {
+        "type": "array",
+        "name": "cust.scan_collected",
+        "value": []
+      },
+      {
+        "type": "array",
+        "name": "cust.scan_corrupt",
+        "value": []
+      },
+      {
+        "type": "string",
+        "name": "cust.scan_state",
+        "value": "idle"
+      },
+      {
+        "type": "number",
+        "name": "cust.scan_current",
+        "value": 0
+      },
+      {
+        "type": "number",
+        "name": "cust.scan_total",
+        "value": 0
+      },
+      {
+        "type": "string",
+        "name": "cust.scan_ring_label",
+        "value": "0 / 0"
+      },
+      {
+        "type": "string",
+        "name": "cust.scan_hint",
+        "value": "Center the QR code"
+      },
+      {
+        "type": "string",
+        "name": "cust.scan_error_msg",
+        "value": ""
+      },
+      {
+        "type": "dict",
+        "name": "cust.received_order",
+        "value": {}
+      },
+      {
+        "type": "array",
+        "name": "cust.history",
+        "value": []
+      },
+      {
+        "type": "number",
+        "name": "cust.history_count",
+        "value": 0
+      },
+      {
+        "type": "dict",
+        "name": "cust.detail_order",
+        "value": {}
+      }
+    ],
+    "states": [
+      {
+        "state_id": 0,
+        "div": {
+          "type": "custom",
+          "custom_props": {
+            "initial": "owner_pos",
+            "cards": [
+              {
+                "id": "owner_pos",
+                "div": {
+                  "type": "container",
+                  "background": [
+                    {
+                      "type": "solid",
+                      "color": "#F7F8FB"
+                    }
+                  ],
+                  "height": {
+                    "type": "match_parent"
+                  },
+                  "items": [
+                    {
+                      "id": "global_toast",
+                      "type": "toast",
+                      "visibility": "owner.toast_visible ? 'visible' : 'gone'",
+                      "custom_props": {
+                        "text": "owner.toast_msg",
+                        "severity_var": "owner.toast_severity",
+                        "action_label_var": "owner.toast_action",
+                        "dwell_ms": 4000,
+                        "actions": [
+                          {
+                            "log_id": "owner_toast_act",
+                            "url": "local-db://op/pos.toast_action"
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "type": "gallery",
+                      "height": {
+                        "type": "match_parent",
+                        "weight": 1
+                      },
+                      "items": [
+                        {
+                          "type": "container",
+                          "background": [
+                            {
+                              "type": "solid",
+                              "color": "#FEF3C7"
+                            }
+                          ],
+                          "border": {
+                            "corner_radius": 12
+                          },
+                          "id": "pending_qr_banner",
+                          "items": [
+                            {
+                              "type": "text",
+                              "font_size": 13,
+                              "line_height": 18,
+                              "text": "@{owner.pending_qr_msg}",
+                              "text_color": "#111319"
+                            },
+                            {
+                              "type": "container",
+                              "items": [
+                                {
+                                  "type": "container",
+                                  "actions": [
+                                    {
+                                      "log_id": "reopen_qr",
+                                      "url": "local-db://op/pos.regenerate_qr?order_id=%40%7Bowner.pending_qr_order_id%7D"
+                                    }
+                                  ],
+                                  "content_alignment_vertical": "center",
+                                  "height": {
+                                    "type": "fixed",
+                                    "value": 48
+                                  },
+                                  "items": [
+                                    {
+                                      "type": "text",
+                                      "font_size": 13,
+                                      "font_weight": "bold",
+                                      "text": "Reopen QR",
+                                      "text_color": "#92400E"
+                                    }
+                                  ],
+                                  "paddings": {
+                                    "right": 16
+                                  }
+                                }
+                              ],
+                              "margins": {
+                                "top": 8
+                              },
+                              "orientation": "horizontal"
+                            }
+                          ],
+                          "orientation": "vertical",
+                          "paddings": {
+                            "left": 14,
+                            "right": 14,
+                            "top": 12,
+                            "bottom": 12
+                          },
+                          "visibility": "@{owner.pending_qr_visible ? 'visible' : 'gone'}",
+                          "width": {
+                            "type": "match_parent"
+                          }
+                        },
+                        {
+                          "type": "container",
+                          "background": [
+                            {
+                              "type": "solid",
+                              "color": "#FEF3C7"
+                            }
+                          ],
+                          "border": {
+                            "corner_radius": 12
+                          },
+                          "id": "resumed_draft_banner",
+                          "items": [
+                            {
+                              "type": "text",
+                              "font_size": 13,
+                              "line_height": 18,
+                              "text": "@{owner.draft_resumed_msg}",
+                              "text_color": "#111319"
+                            },
+                            {
+                              "type": "container",
+                              "items": [
+                                {
+                                  "type": "container",
+                                  "actions": [
+                                    {
+                                      "log_id": "discard_draft",
+                                      "url": "local-db://op/pos.discard_draft"
+                                    }
+                                  ],
+                                  "content_alignment_vertical": "center",
+                                  "height": {
+                                    "type": "fixed",
+                                    "value": 48
+                                  },
+                                  "items": [
+                                    {
+                                      "type": "text",
+                                      "font_size": 13,
+                                      "font_weight": "bold",
+                                      "text": "Start new",
+                                      "text_color": "#92400E"
+                                    }
+                                  ],
+                                  "paddings": {
+                                    "right": 16
+                                  }
+                                }
+                              ],
+                              "margins": {
+                                "top": 8
+                              },
+                              "orientation": "horizontal"
+                            }
+                          ],
+                          "orientation": "vertical",
+                          "paddings": {
+                            "left": 14,
+                            "right": 14,
+                            "top": 12,
+                            "bottom": 12
+                          },
+                          "visibility": "@{owner.draft_resumed_visible ? 'visible' : 'gone'}",
+                          "width": {
+                            "type": "match_parent"
+                          }
+                        },
+                        {
+                          "type": "container",
+                          "items": [
+                            {
+                              "type": "container",
+                              "background": [
+                                {
+                                  "type": "solid",
+                                  "color": "#E6E8EF"
+                                }
+                              ],
+                              "border": {
+                                "corner_radius": 12
+                              },
+                              "height": {
+                                "type": "fixed",
+                                "value": 48
+                              },
+                              "items": [
+                                {
+                                  "type": "container",
+                                  "actions": [
+                                    {
+                                      "log_id": "seg_barcode",
+                                      "url": "div-action://set_variable?name=owner.mode&value=barcode"
+                                    }
+                                  ],
+                                  "background": [
+                                    {
+                                      "type": "solid",
+                                      "color": "@{owner.mode == 'barcode' ? '#FFFFFF' : '#00000000'}"
+                                    }
+                                  ],
+                                  "border": {
+                                    "corner_radius": 10
+                                  },
+                                  "content_alignment_horizontal": "center",
+                                  "content_alignment_vertical": "center",
+                                  "height": {
+                                    "type": "match_parent"
+                                  },
+                                  "items": [
+                                    {
+                                      "type": "text",
+                                      "font_size": 13,
+                                      "font_weight": "medium",
+                                      "line_height": 18,
+                                      "text": "Barcode",
+                                      "text_alignment_horizontal": "center",
+                                      "text_color": "@{owner.mode == 'barcode' ? '#111319' : '#5B6070'}"
+                                    }
+                                  ],
+                                  "width": {
+                                    "type": "match_parent",
+                                    "weight": 1
+                                  }
+                                },
+                                {
+                                  "type": "container",
+                                  "actions": [
+                                    {
+                                      "log_id": "seg_qr",
+                                      "url": "div-action://set_variable?name=owner.mode&value=qr"
+                                    }
+                                  ],
+                                  "background": [
+                                    {
+                                      "type": "solid",
+                                      "color": "@{owner.mode == 'qr' ? '#FFFFFF' : '#00000000'}"
+                                    }
+                                  ],
+                                  "border": {
+                                    "corner_radius": 10
+                                  },
+                                  "content_alignment_horizontal": "center",
+                                  "content_alignment_vertical": "center",
+                                  "height": {
+                                    "type": "match_parent"
+                                  },
+                                  "items": [
+                                    {
+                                      "type": "text",
+                                      "font_size": 13,
+                                      "font_weight": "medium",
+                                      "line_height": 18,
+                                      "text": "QR",
+                                      "text_alignment_horizontal": "center",
+                                      "text_color": "@{owner.mode == 'qr' ? '#111319' : '#5B6070'}"
+                                    }
+                                  ],
+                                  "width": {
+                                    "type": "match_parent",
+                                    "weight": 1
+                                  }
+                                },
+                                {
+                                  "type": "container",
+                                  "actions": [
+                                    {
+                                      "log_id": "seg_ocr",
+                                      "url": "div-action://set_variable?name=owner.mode&value=ocr"
+                                    }
+                                  ],
+                                  "background": [
+                                    {
+                                      "type": "solid",
+                                      "color": "@{owner.mode == 'ocr' ? '#FFFFFF' : '#00000000'}"
+                                    }
+                                  ],
+                                  "border": {
+                                    "corner_radius": 10
+                                  },
+                                  "content_alignment_horizontal": "center",
+                                  "content_alignment_vertical": "center",
+                                  "height": {
+                                    "type": "match_parent"
+                                  },
+                                  "items": [
+                                    {
+                                      "type": "text",
+                                      "font_size": 13,
+                                      "font_weight": "medium",
+                                      "line_height": 18,
+                                      "text": "OCR",
+                                      "text_alignment_horizontal": "center",
+                                      "text_color": "@{owner.mode == 'ocr' ? '#111319' : '#5B6070'}"
+                                    }
+                                  ],
+                                  "width": {
+                                    "type": "match_parent",
+                                    "weight": 1
+                                  }
+                                }
+                              ],
+                              "orientation": "horizontal",
+                              "paddings": {
+                                "top": 4,
+                                "bottom": 4,
+                                "left": 4,
+                                "right": 4
+                              },
+                              "width": {
+                                "type": "match_parent"
+                              }
+                            }
+                          ],
+                          "margins": {
+                            "top": 8,
+                            "bottom": 16
+                          },
+                          "width": {
+                            "type": "match_parent"
+                          }
+                        },
+                        {
+                          "id": "pos_viewfinder",
+                          "type": "camera_viewfinder",
+                          "custom_props": {
+                            "hint": "@{owner.mode == 'qr' ? 'Center the QR code' : owner.mode == 'ocr' ? 'Align the product label' : 'Center the barcode'}",
+                            "unavailable_copy": "Camera unavailable on this device — enter the code manually",
+                            "mode_var": "owner.mode",
+                            "on_scan_op": "pos.scan_resolve",
+                            "on_scan_args": {
+                              "raw": "$scan.raw",
+                              "mode": "@{owner.mode}"
+                            }
+                          },
+                          "actions": [
+                            {
+                              "log_id": "pos_manual_code",
+                              "url": "sheet://present?card_id=owner_scan_sheet"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "container",
+                          "background": [
+                            {
+                              "type": "solid",
+                              "color": "#FFFFFF"
+                            }
+                          ],
+                          "border": {
+                            "corner_radius": 16
+                          },
+                          "items": [
+                            {
+                              "type": "text",
+                              "font_size": 13,
+                              "font_weight": "medium",
+                              "line_height": 18,
+                              "text": "Tap a match to add",
+                              "text_color": "#5B6070"
+                            },
+                            {
+                              "type": "json_list",
+                              "data_var": "owner.ocr_candidates",
+                              "empty_text": "No records",
+                              "item_spacing": 8,
+                              "row_card": {
+                                "type": "container",
+                                "actions": [
+                                  {
+                                    "log_id": "ocr_pick",
+                                    "url": "local-db://op/pos.add_by_sku?sku=%24item.sku&qty=1"
+                                  }
+                                ],
+                                "background": [
+                                  {
+                                    "type": "solid",
+                                    "color": "#F1EDFF"
+                                  }
+                                ],
+                                "border": {
+                                  "corner_radius": 999
+                                },
+                                "content_alignment_horizontal": "center",
+                                "content_alignment_vertical": "center",
+                                "height": {
+                                  "type": "fixed",
+                                  "value": 48
+                                },
+                                "items": [
+                                  {
+                                    "type": "text",
+                                    "font_size": 14,
+                                    "font_weight": "medium",
+                                    "text": "@{item.name}",
+                                    "text_color": "#5A3BE0"
+                                  }
+                                ],
+                                "paddings": {
+                                  "left": 12,
+                                  "right": 12
+                                }
+                              }
+                            }
+                          ],
+                          "margins": {
+                            "top": 12
+                          },
+                          "paddings": {
+                            "left": 16,
+                            "right": 16,
+                            "top": 16,
+                            "bottom": 16
+                          },
+                          "visibility": "@{owner.mode == 'ocr' && owner.ocr_candidates_count > 0 ? 'visible' : 'gone'}",
+                          "width": {
+                            "type": "match_parent"
+                          }
+                        },
+                        {
+                          "type": "container",
+                          "alignment_vertical": "center",
+                          "background": [
+                            {
+                              "type": "solid",
+                              "color": "#FFFFFF"
+                            }
+                          ],
+                          "border": {
+                            "corner_radius": 16
+                          },
+                          "items": [
+                            {
+                              "type": "text",
+                              "font_size": 16,
+                              "text": "@{owner.last_scan}",
+                              "text_color": "#111319",
+                              "width": {
+                                "type": "match_parent",
+                                "weight": 1
+                              }
+                            },
+                            {
+                              "type": "container",
+                              "actions": [
+                                {
+                                  "log_id": "undo_scan",
+                                  "url": "local-db://op/pos.undo_last"
+                                }
+                              ],
+                              "content_alignment_vertical": "center",
+                              "height": {
+                                "type": "fixed",
+                                "value": 48
+                              },
+                              "items": [
+                                {
+                                  "type": "text",
+                                  "font_size": 16,
+                                  "font_weight": "bold",
+                                  "text": "Undo",
+                                  "text_color": "#5A3BE0"
+                                }
+                              ],
+                              "paddings": {
+                                "left": 12,
+                                "right": 4
+                              },
+                              "visibility": "@{owner.last_scan_can_undo ? 'visible' : 'gone'}"
+                            }
+                          ],
+                          "margins": {
+                            "top": 12
+                          },
+                          "orientation": "horizontal",
+                          "paddings": {
+                            "left": 16,
+                            "right": 16,
+                            "top": 14,
+                            "bottom": 14
+                          },
+                          "visibility": "@{owner.last_scan_visible ? 'visible' : 'gone'}",
+                          "width": {
+                            "type": "match_parent"
+                          }
+                        },
+                        {
+                          "type": "container",
+                          "background": [
+                            {
+                              "type": "solid",
+                              "color": "#FEE2E2"
+                            }
+                          ],
+                          "border": {
+                            "corner_radius": 12
+                          },
+                          "id": "scan_error_banner",
+                          "items": [
+                            {
+                              "type": "text",
+                              "font_size": 13,
+                              "line_height": 18,
+                              "text": "@{owner.scan_error_msg}",
+                              "text_color": "#111319"
+                            },
+                            {
+                              "type": "container",
+                              "items": [
+                                {
+                                  "type": "container",
+                                  "actions": [
+                                    {
+                                      "log_id": "open_map_picker",
+                                      "url": "sheet://present?card_id=map_barcode_picker"
+                                    }
+                                  ],
+                                  "content_alignment_vertical": "center",
+                                  "height": {
+                                    "type": "fixed",
+                                    "value": 48
+                                  },
+                                  "items": [
+                                    {
+                                      "type": "text",
+                                      "font_size": 13,
+                                      "font_weight": "bold",
+                                      "text": "Map to product",
+                                      "text_color": "#C81E1E"
+                                    }
+                                  ],
+                                  "paddings": {
+                                    "right": 16
+                                  }
+                                }
+                              ],
+                              "margins": {
+                                "top": 8
+                              },
+                              "orientation": "horizontal"
+                            }
+                          ],
+                          "orientation": "vertical",
+                          "paddings": {
+                            "left": 14,
+                            "right": 14,
+                            "top": 12,
+                            "bottom": 12
+                          },
+                          "visibility": "@{owner.scan_error_visible ? 'visible' : 'gone'}",
+                          "width": {
+                            "type": "match_parent"
+                          }
+                        },
+                        {
+                          "type": "container",
+                          "items": [
+                            {
+                              "type": "json_list",
+                              "data_var": "owner.cart_lines",
+                              "empty_text": "No records",
+                              "item_spacing": 12,
+                              "row_card": {
+                                "type": "container",
+                                "alignment_vertical": "center",
+                                "background": [
+                                  {
+                                    "type": "solid",
+                                    "color": "#FFFFFF"
+                                  }
+                                ],
+                                "border": {
+                                  "corner_radius": 16
+                                },
+                                "items": [
+                                  {
+                                    "type": "container",
+                                    "items": [
+                                      {
+                                        "type": "text",
+                                        "font_size": 16,
+                                        "font_weight": "regular",
+                                        "line_height": 22,
+                                        "text": "@{item.name}",
+                                        "text_color": "#111319"
+                                      },
+                                      {
+                                        "type": "text",
+                                        "font_feature_settings": "tnum",
+                                        "font_size": 13,
+                                        "text": "@{item.unit_price_display}",
+                                        "text_color": "#5B6070"
+                                      }
+                                    ],
+                                    "orientation": "vertical",
+                                    "width": {
+                                      "type": "match_parent",
+                                      "weight": 1
+                                    }
+                                  },
+                                  {
+                                    "type": "container",
+                                    "alignment_vertical": "center",
+                                    "height": {
+                                      "type": "fixed",
+                                      "value": 48
+                                    },
+                                    "items": [
+                                      {
+                                        "type": "container",
+                                        "actions": [
+                                          {
+                                            "log_id": "qty_minus",
+                                            "url": "local-db://op/pos.set_qty?line_id=item.line_id&qty=item.qty%20-%201"
+                                          }
+                                        ],
+                                        "content_alignment_horizontal": "center",
+                                        "content_alignment_vertical": "center",
+                                        "height": {
+                                          "type": "fixed",
+                                          "value": 40
+                                        },
+                                        "items": [
+                                          {
+                                            "type": "text",
+                                            "font_size": 20,
+                                            "text": "−",
+                                            "text_color": "#111319"
+                                          }
+                                        ],
+                                        "width": {
+                                          "type": "fixed",
+                                          "value": 40
+                                        }
+                                      },
+                                      {
+                                        "type": "text",
+                                        "font_size": 16,
+                                        "font_weight": "bold",
+                                        "text": {},
+                                        "text_color": "#111319"
+                                      },
+                                      {
+                                        "type": "container",
+                                        "actions": [
+                                          {
+                                            "log_id": "qty_plus",
+                                            "url": "local-db://op/pos.set_qty?line_id=item.line_id&qty=item.qty%20%2B%201"
+                                          }
+                                        ],
+                                        "content_alignment_horizontal": "center",
+                                        "content_alignment_vertical": "center",
+                                        "height": {
+                                          "type": "fixed",
+                                          "value": 40
+                                        },
+                                        "items": [
+                                          {
+                                            "type": "text",
+                                            "font_size": 20,
+                                            "text": "+",
+                                            "text_color": "#111319"
+                                          }
+                                        ],
+                                        "width": {
+                                          "type": "fixed",
+                                          "value": 40
+                                        }
+                                      }
+                                    ],
+                                    "orientation": "horizontal",
+                                    "width": {
+                                      "type": "wrap_content"
+                                    }
+                                  },
+                                  {
+                                    "type": "text",
+                                    "font_feature_settings": "tnum",
+                                    "font_size": 22,
+                                    "font_weight": "bold",
+                                    "line_height": 28,
+                                    "margins": {
+                                      "left": 8
+                                    },
+                                    "text": "@{item.line_total_display}",
+                                    "text_alignment_horizontal": "end",
+                                    "text_color": "#111319",
+                                    "width": {
+                                      "type": "fixed",
+                                      "value": 84
+                                    }
+                                  },
+                                  {
+                                    "type": "container",
+                                    "actions": [
+                                      {
+                                        "log_id": "remove_line",
+                                        "url": "local-db://op/pos.remove_line?line_id=%24item.line_id"
+                                      }
+                                    ],
+                                    "content_alignment_horizontal": "center",
+                                    "content_alignment_vertical": "center",
+                                    "height": {
+                                      "type": "fixed",
+                                      "value": 48
+                                    },
+                                    "items": [
+                                      {
+                                        "type": "text",
+                                        "font_size": 20,
+                                        "text": "⋯",
+                                        "text_color": "#5B6070"
+                                      }
+                                    ],
+                                    "width": {
+                                      "type": "fixed",
+                                      "value": 48
+                                    }
+                                  }
+                                ],
+                                "orientation": "horizontal",
+                                "paddings": {
+                                  "left": 16,
+                                  "right": 12,
+                                  "top": 14,
+                                  "bottom": 14
+                                },
+                                "width": {
+                                  "type": "match_parent"
+                                }
+                              }
+                            }
+                          ],
+                          "margins": {
+                            "top": 16
+                          },
+                          "visibility": "@{owner.cart_count > 0 ? 'visible' : 'gone'}",
+                          "width": {
+                            "type": "match_parent"
+                          }
+                        }
+                      ],
+                      "orientation": "vertical",
+                      "paddings": {
+                        "left": 20,
+                        "right": 20,
+                        "top": 16,
+                        "bottom": 20
+                      },
+                      "width": {
+                        "type": "match_parent"
+                      }
+                    },
+                    {
+                      "type": "container",
+                      "alignment_vertical": "center",
+                      "background": [
+                        {
+                          "type": "solid",
+                          "color": "#FFFFFF"
+                        }
+                      ],
+                      "border": {
+                        "stroke": {
+                          "color": "#E6E8EF",
+                          "width": 1
+                        }
+                      },
+                      "items": [
+                        {
+                          "type": "text",
+                          "font_feature_settings": "tnum",
+                          "font_size": 22,
+                          "font_weight": "bold",
+                          "line_height": 28,
+                          "text": "@{owner.cart_footer_summary}",
+                          "text_color": "#111319",
+                          "width": {
+                            "type": "match_parent",
+                            "weight": 1
+                          }
+                        },
+                        {
+                          "type": "container",
+                          "actions": [
+                            {
+                              "log_id": "open_checkout",
+                              "url": "sheet://present?card_id=owner_checkout_sheet"
+                            }
+                          ],
+                          "alpha": "@{owner.cart_count > 0 ? 1.0 : 0.4}",
+                          "background": [
+                            {
+                              "type": "solid",
+                              "color": "@{owner.cart_count > 0 ? '#5A3BE0' : '#E6E8EF'}"
+                            }
+                          ],
+                          "border": {
+                            "corner_radius": 12
+                          },
+                          "content_alignment_horizontal": "center",
+                          "content_alignment_vertical": "center",
+                          "height": {
+                            "type": "fixed",
+                            "value": 56
+                          },
+                          "items": [
+                            {
+                              "type": "text",
+                              "font_size": 16,
+                              "font_weight": "bold",
+                              "text": "Checkout",
+                              "text_alignment_horizontal": "center",
+                              "text_color": "@{owner.cart_count > 0 ? '#FFFFFF' : '#5B6070'}"
+                            }
+                          ],
+                          "width": {
+                            "type": "fixed",
+                            "value": 160
+                          }
+                        }
+                      ],
+                      "orientation": "horizontal",
+                      "paddings": {
+                        "left": 20,
+                        "right": 20,
+                        "top": 12,
+                        "bottom": 12
+                      },
+                      "width": {
+                        "type": "match_parent"
+                      }
+                    },
+                    {
+                      "type": "bottom_tabs",
+                      "custom_props": {
+                        "active_value": "owner.tab",
+                        "items": [
+                          {
+                            "value": "pos",
+                            "label": "POS",
+                            "icon": "pos",
+                            "actions": [
+                              {
+                                "log_id": "tab_pos",
+                                "url": "nav://push?id=owner_pos"
+                              }
+                            ]
+                          },
+                          {
+                            "value": "inventory",
+                            "label": "Inventory",
+                            "icon": "inventory",
+                            "actions": [
+                              {
+                                "log_id": "tab_inventory",
+                                "url": "nav://push?id=owner_inventory"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "orientation": "vertical",
+                  "width": {
+                    "type": "match_parent"
+                  }
+                }
+              },
+              {
+                "id": "owner_inventory",
+                "div": {
+                  "type": "container",
+                  "background": [
+                    {
+                      "type": "solid",
+                      "color": "#F7F8FB"
+                    }
+                  ],
+                  "height": {
+                    "type": "match_parent"
+                  },
+                  "items": [
+                    {
+                      "id": "global_toast",
+                      "type": "toast",
+                      "visibility": "owner.toast_visible ? 'visible' : 'gone'",
+                      "custom_props": {
+                        "text": "owner.toast_msg",
+                        "severity_var": "owner.toast_severity",
+                        "action_label_var": "owner.toast_action",
+                        "dwell_ms": 4000,
+                        "actions": [
+                          {
+                            "log_id": "inv_toast_act",
+                            "url": "local-db://op/inventory.toast_action"
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "type": "container",
+                      "height": {
+                        "type": "match_parent",
+                        "weight": 1
+                      },
+                      "items": [
+                        {
+                          "type": "gallery",
+                          "height": {
+                            "type": "match_parent"
+                          },
+                          "items": [
+                            {
+                              "type": "text",
+                              "font_size": 32,
+                              "font_weight": "bold",
+                              "line_height": 40,
+                              "text": "Inventory",
+                              "text_color": "#111319"
+                            },
+                            {
+                              "type": "container",
+                              "items": [
+                                {
+                                  "type": "container",
+                                  "items": [
+                                    {
+                                      "type": "text",
+                                      "font_size": 13,
+                                      "font_weight": "medium",
+                                      "line_height": 18,
+                                      "text": "",
+                                      "text_color": "#111319"
+                                    },
+                                    {
+                                      "type": "container",
+                                      "alignment_vertical": "center",
+                                      "background": [
+                                        {
+                                          "type": "solid",
+                                          "color": "#FFFFFF"
+                                        }
+                                      ],
+                                      "border": {
+                                        "corner_radius": 12,
+                                        "stroke": {
+                                          "color": "#E6E8EF",
+                                          "width": 1
+                                        }
+                                      },
+                                      "height": {
+                                        "type": "fixed",
+                                        "value": 52
+                                      },
+                                      "items": [
+                                        {
+                                          "type": "input",
+                                          "focus": {
+                                            "on_blur": [
+                                              {
+                                                "log_id": "search_inv",
+                                                "url": "local-db://op/inventory.list?filter=%40%7Bowner.inv_query%7D"
+                                              }
+                                            ]
+                                          },
+                                          "font_size": 16,
+                                          "hint_color": "#5B6070",
+                                          "hint_text": "Search name, SKU, or code",
+                                          "id": "inv_search",
+                                          "keyboard_type": "single_line_text",
+                                          "max_visible_lines": 1,
+                                          "text_color": "#111319",
+                                          "text_variable": "owner.inv_query",
+                                          "width": {
+                                            "type": "match_parent",
+                                            "weight": 1
+                                          }
+                                        }
+                                      ],
+                                      "margins": {
+                                        "top": 6
+                                      },
+                                      "orientation": "horizontal",
+                                      "paddings": {
+                                        "left": 14,
+                                        "right": 14,
+                                        "top": 8,
+                                        "bottom": 8
+                                      },
+                                      "width": {
+                                        "type": "match_parent"
+                                      }
+                                    }
+                                  ],
+                                  "margins": {
+                                    "bottom": 24
+                                  },
+                                  "orientation": "vertical",
+                                  "width": {
+                                    "type": "match_parent"
+                                  }
+                                }
+                              ],
+                              "margins": {
+                                "top": 16,
+                                "bottom": 12
+                              },
+                              "width": {
+                                "type": "match_parent"
+                              }
+                            },
+                            {
+                              "type": "container",
+                              "content_alignment_horizontal": "center",
+                              "items": [
+                                {
+                                  "type": "text",
+                                  "font_size": 22,
+                                  "font_weight": "bold",
+                                  "line_height": 28,
+                                  "text": "No products yet",
+                                  "text_color": "#111319"
+                                },
+                                {
+                                  "type": "text",
+                                  "font_size": 16,
+                                  "margins": {
+                                    "top": 8,
+                                    "bottom": 20
+                                  },
+                                  "text": "Add the first one to start scanning",
+                                  "text_alignment_horizontal": "center",
+                                  "text_color": "#5B6070"
+                                },
+                                {
+                                  "type": "container",
+                                  "actions": [
+                                    {
+                                      "log_id": "empty_add_prod",
+                                      "url": "local-db://op/inventory.open_form?mode=new"
+                                    },
+                                    {
+                                      "log_id": "open_product_modal",
+                                      "url": "nav://push?id=product_modal"
+                                    }
+                                  ],
+                                  "background": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#F1EDFF"
+                                    }
+                                  ],
+                                  "border": {
+                                    "corner_radius": 12
+                                  },
+                                  "content_alignment_horizontal": "center",
+                                  "content_alignment_vertical": "center",
+                                  "height": {
+                                    "type": "fixed",
+                                    "value": 48
+                                  },
+                                  "items": [
+                                    {
+                                      "type": "text",
+                                      "font_size": 16,
+                                      "font_weight": "bold",
+                                      "text": "Add product",
+                                      "text_color": "#5A3BE0"
+                                    }
+                                  ],
+                                  "paddings": {
+                                    "left": 20,
+                                    "right": 20
+                                  }
+                                }
+                              ],
+                              "orientation": "vertical",
+                              "paddings": {
+                                "top": 48,
+                                "bottom": 48,
+                                "left": 20,
+                                "right": 20
+                              },
+                              "visibility": "@{owner.inv_count == 0 ? 'visible' : 'gone'}",
+                              "width": {
+                                "type": "match_parent"
+                              }
+                            },
+                            {
+                              "type": "json_list",
+                              "data_var": "owner.inv_items",
+                              "empty_text": "No records",
+                              "item_spacing": 12,
+                              "row_card": {
+                                "type": "container",
+                                "actions": [
+                                  {
+                                    "log_id": "edit_prod",
+                                    "url": "local-db://op/inventory.open_form?mode=edit&id=%24item.id"
+                                  },
+                                  {
+                                    "log_id": "open_product_modal",
+                                    "url": "nav://push?id=product_modal"
+                                  }
+                                ],
+                                "alignment_vertical": "center",
+                                "background": [
+                                  {
+                                    "type": "solid",
+                                    "color": "#FFFFFF"
+                                  }
+                                ],
+                                "border": {
+                                  "corner_radius": 16
+                                },
+                                "items": [
+                                  {
+                                    "type": "image",
+                                    "border": {
+                                      "corner_radius": 12
+                                    },
+                                    "height": {
+                                      "type": "fixed",
+                                      "value": 48
+                                    },
+                                    "image_url": "@{item.photo_url}",
+                                    "margins": {
+                                      "right": 14
+                                    },
+                                    "placeholder_color": "#E6E8EF",
+                                    "width": {
+                                      "type": "fixed",
+                                      "value": 48
+                                    }
+                                  },
+                                  {
+                                    "type": "container",
+                                    "items": [
+                                      {
+                                        "type": "text",
+                                        "font_size": 16,
+                                        "font_weight": "regular",
+                                        "line_height": 22,
+                                        "text": "@{item.name}",
+                                        "text_color": "#111319"
+                                      },
+                                      {
+                                        "type": "text",
+                                        "font_size": 13,
+                                        "font_weight": "medium",
+                                        "line_height": 18,
+                                        "text": "@{item.sku}",
+                                        "text_color": "#5B6070"
+                                      },
+                                      {
+                                        "type": "container",
+                                        "alignment_vertical": "center",
+                                        "items": [
+                                          {
+                                            "type": "text",
+                                            "font_size": 13,
+                                            "font_weight": "medium",
+                                            "line_height": 18,
+                                            "text": "@{item.code_display}",
+                                            "text_color": "#5B6070"
+                                          },
+                                          {
+                                            "type": "container",
+                                            "actions": [
+                                              {
+                                                "log_id": "row_map_code",
+                                                "url": "sheet://present?card_id=owner_scan_sheet"
+                                              }
+                                            ],
+                                            "items": [
+                                              {
+                                                "type": "text",
+                                                "font_size": 13,
+                                                "font_weight": "medium",
+                                                "line_height": 18,
+                                                "text": "Map",
+                                                "text_color": "#5A3BE0"
+                                              }
+                                            ],
+                                            "paddings": {
+                                              "left": 8
+                                            },
+                                            "visibility": {}
+                                          }
+                                        ],
+                                        "orientation": "horizontal"
+                                      }
+                                    ],
+                                    "orientation": "vertical",
+                                    "width": {
+                                      "type": "match_parent",
+                                      "weight": 1
+                                    }
+                                  },
+                                  {
+                                    "type": "container",
+                                    "alignment_horizontal": "end",
+                                    "items": [
+                                      {
+                                        "type": "text",
+                                        "font_feature_settings": "tnum",
+                                        "font_size": 22,
+                                        "font_weight": "bold",
+                                        "line_height": 28,
+                                        "text": "@{item.price_display}",
+                                        "text_color": "#111319"
+                                      },
+                                      {
+                                        "type": "container",
+                                        "background": [
+                                          {
+                                            "type": "solid",
+                                            "color": "#FEF3C7"
+                                          }
+                                        ],
+                                        "border": {
+                                          "corner_radius": 999
+                                        },
+                                        "items": [
+                                          {
+                                            "type": "text",
+                                            "font_size": 11,
+                                            "font_weight": "bold",
+                                            "text": "@{item.stock == 0 ? 'Out' : 'Low'}",
+                                            "text_color": "#92400E"
+                                          }
+                                        ],
+                                        "paddings": {
+                                          "left": 8,
+                                          "right": 8,
+                                          "top": 2,
+                                          "bottom": 2
+                                        }
+                                      }
+                                    ],
+                                    "orientation": "vertical"
+                                  }
+                                ],
+                                "orientation": "horizontal",
+                                "paddings": {
+                                  "left": 16,
+                                  "right": 16,
+                                  "top": 14,
+                                  "bottom": 14
+                                },
+                                "width": {
+                                  "type": "match_parent"
+                                }
+                              }
+                            }
+                          ],
+                          "orientation": "vertical",
+                          "paddings": {
+                            "left": 20,
+                            "right": 20,
+                            "top": 16,
+                            "bottom": 88
+                          },
+                          "width": {
+                            "type": "match_parent"
+                          }
+                        },
+                        {
+                          "type": "fab",
+                          "custom_props": {
+                            "label": "Add product",
+                            "icon": "add",
+                            "actions": [
+                              {
+                                "log_id": "fab_add_prod",
+                                "url": "local-db://op/inventory.open_form?mode=new"
+                              },
+                              {
+                                "log_id": "open_product_modal",
+                                "url": "nav://push?id=product_modal"
+                              }
+                            ]
+                          }
+                        }
+                      ],
+                      "orientation": "vertical",
+                      "width": {
+                        "type": "match_parent"
+                      }
+                    },
+                    {
+                      "type": "bottom_tabs",
+                      "custom_props": {
+                        "active_value": "owner.tab",
+                        "items": [
+                          {
+                            "value": "pos",
+                            "label": "POS",
+                            "icon": "pos",
+                            "actions": [
+                              {
+                                "log_id": "tab_pos",
+                                "url": "nav://push?id=owner_pos"
+                              }
+                            ]
+                          },
+                          {
+                            "value": "inventory",
+                            "label": "Inventory",
+                            "icon": "inventory",
+                            "actions": [
+                              {
+                                "log_id": "tab_inventory",
+                                "url": "nav://push?id=owner_inventory"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "orientation": "vertical",
+                  "width": {
+                    "type": "match_parent"
+                  }
+                }
+              },
+              {
+                "id": "owner_checkout_sheet",
+                "div": {
+                  "id": "owner_checkout_sheet",
+                  "type": "bottom_sheet",
+                  "custom_props": {
+                    "visible": true,
+                    "title": "Confirm order",
+                    "body": [
+                      {
+                        "type": "json_list",
+                        "data_var": "owner.cart_lines",
+                        "empty_text": "No records",
+                        "item_spacing": 8,
+                        "row_card": {
+                          "type": "container",
+                          "alignment_vertical": "center",
+                          "items": [
+                            {
+                              "type": "text",
+                              "font_size": 16,
+                              "text": "@{item.name_and_qty}",
+                              "text_color": "#111319",
+                              "width": {
+                                "type": "match_parent",
+                                "weight": 1
+                              }
+                            },
+                            {
+                              "type": "text",
+                              "font_feature_settings": "tnum",
+                              "font_size": 22,
+                              "font_weight": "bold",
+                              "line_height": 28,
+                              "text": "@{item.line_total_display}",
+                              "text_color": "#111319"
+                            }
+                          ],
+                          "orientation": "horizontal",
+                          "paddings": {
+                            "top": 8,
+                            "bottom": 8
+                          },
+                          "width": {
+                            "type": "match_parent"
+                          }
+                        }
+                      },
+                      {
+                        "type": "separator",
+                        "delimiter_style": {
+                          "color": "#E6E8EF",
+                          "orientation": "horizontal"
+                        },
+                        "margins": {
+                          "top": 16,
+                          "bottom": 16
+                        },
+                        "width": {
+                          "type": "match_parent"
+                        }
+                      },
+                      {
+                        "type": "container",
+                        "alignment_vertical": "center",
+                        "items": [
+                          {
+                            "type": "text",
+                            "font_size": 22,
+                            "font_weight": "bold",
+                            "text": "Total",
+                            "text_color": "#111319",
+                            "width": {
+                              "type": "match_parent",
+                              "weight": 1
+                            }
+                          },
+                          {
+                            "type": "text",
+                            "font_feature_settings": "tnum",
+                            "font_size": 22,
+                            "font_weight": "bold",
+                            "line_height": 28,
+                            "text": "@{owner.cart_total}",
+                            "text_color": "#111319"
+                          }
+                        ],
+                        "margins": {
+                          "bottom": 24
+                        },
+                        "orientation": "horizontal",
+                        "width": {
+                          "type": "match_parent"
+                        }
+                      },
+                      {
+                        "type": "container",
+                        "alignment_vertical": "center",
+                        "items": [
+                          {
+                            "type": "container",
+                            "actions": [
+                              {
+                                "log_id": "cancel_checkout",
+                                "url": "sheet://dismiss"
+                              }
+                            ],
+                            "content_alignment_vertical": "center",
+                            "height": {
+                              "type": "fixed",
+                              "value": 48
+                            },
+                            "items": [
+                              {
+                                "type": "text",
+                                "font_size": 16,
+                                "font_weight": "regular",
+                                "line_height": 22,
+                                "text": "Cancel",
+                                "text_color": "#5B6070"
+                              }
+                            ],
+                            "paddings": {
+                              "left": 16,
+                              "right": 20
+                            }
+                          },
+                          {
+                            "type": "container",
+                            "actions": [
+                              {
+                                "log_id": "checkout_qr",
+                                "url": "local-db://op/pos.checkout?order_id=%40%7Bowner.cart_id%7D&chunk_bytes=500"
+                              },
+                              {
+                                "log_id": "open_qr_sequence",
+                                "url": "nav://push?id=owner_qr_sequence"
+                              }
+                            ],
+                            "background": [
+                              {
+                                "type": "solid",
+                                "color": "#5A3BE0"
+                              }
+                            ],
+                            "border": {
+                              "corner_radius": 12
+                            },
+                            "content_alignment_horizontal": "center",
+                            "content_alignment_vertical": "center",
+                            "height": {
+                              "type": "fixed",
+                              "value": 56
+                            },
+                            "items": [
+                              {
+                                "type": "text",
+                                "font_size": 16,
+                                "font_weight": "bold",
+                                "text": "Generate QR",
+                                "text_alignment_horizontal": "center",
+                                "text_color": "#FFFFFF"
+                              }
+                            ],
+                            "width": {
+                              "type": "match_parent",
+                              "weight": 1
+                            }
+                          }
+                        ],
+                        "orientation": "horizontal",
+                        "width": {
+                          "type": "match_parent"
+                        }
+                      }
+                    ],
+                    "height_fraction": 0.65,
+                    "dismiss": {
+                      "actions": [
+                        {
+                          "log_id": "sheet_dismiss",
+                          "url": "sheet://dismiss"
+                        }
+                      ]
+                    }
+                  }
+                }
+              },
+              {
+                "id": "owner_qr_sequence",
+                "div": {
+                  "type": "container",
+                  "background": [
+                    {
+                      "type": "solid",
+                      "color": "#F7F8FB"
+                    }
+                  ],
+                  "height": {
+                    "type": "match_parent"
+                  },
+                  "items": [
+                    {
+                      "type": "container",
+                      "alignment_vertical": "center",
+                      "height": {
+                        "type": "fixed",
+                        "value": 56
+                      },
+                      "items": [
+                        {
+                          "type": "container",
+                          "actions": [
+                            {
+                              "log_id": "qr_back",
+                              "url": "local-db://op/pos.leave_qr?order_id=%40%7Bowner.cart_id%7D"
+                            },
+                            {
+                              "log_id": "qr_back_nav",
+                              "url": "nav://pop"
+                            }
+                          ],
+                          "content_alignment_horizontal": "center",
+                          "content_alignment_vertical": "center",
+                          "height": {
+                            "type": "fixed",
+                            "value": 48
+                          },
+                          "items": [
+                            {
+                              "type": "text",
+                              "font_size": 22,
+                              "text": "←",
+                              "text_color": "#111319"
+                            }
+                          ],
+                          "width": {
+                            "type": "fixed",
+                            "value": 48
+                          }
+                        },
+                        {
+                          "type": "text",
+                          "font_size": 22,
+                          "font_weight": "bold",
+                          "line_height": 28,
+                          "text": "@{owner.qr_order_label}",
+                          "text_color": "#111319"
+                        }
+                      ],
+                      "orientation": "horizontal",
+                      "width": {
+                        "type": "match_parent"
+                      }
+                    },
+                    {
+                      "type": "container",
+                      "background": [
+                        {
+                          "type": "solid",
+                          "color": "#FFFFFF"
+                        }
+                      ],
+                      "border": {
+                        "corner_radius": 16
+                      },
+                      "content_alignment_horizontal": "center",
+                      "items": [
+                        {
+                          "type": "qr_controls",
+                          "custom_props": {
+                            "index": "owner.qr_index",
+                            "count": "owner.qr_auto",
+                            "chunks_var": "owner.qr_chunks",
+                            "auto_ms": 3000
+                          }
+                        },
+                        {
+                          "type": "text",
+                          "font_size": 16,
+                          "font_weight": "bold",
+                          "margins": {
+                            "top": 16,
+                            "bottom": 8
+                          },
+                          "text": "@{owner.qr_progress_label}",
+                          "text_alignment_horizontal": "center",
+                          "text_color": "#111319"
+                        },
+                        {
+                          "type": "progress_ring",
+                          "custom_props": {
+                            "value": "owner.qr_index / (owner.qr_total || 1)",
+                            "label": "owner.qr_index",
+                            "caption": "owner.qr_total"
+                          }
+                        },
+                        {
+                          "type": "container",
+                          "alignment_vertical": "center",
+                          "items": [
+                            {
+                              "type": "container",
+                              "actions": [
+                                {
+                                  "log_id": "qr_prev",
+                                  "url": "local-db://op/pos.qr_step?delta=-1"
+                                }
+                              ],
+                              "content_alignment_vertical": "center",
+                              "height": {
+                                "type": "fixed",
+                                "value": 48
+                              },
+                              "items": [
+                                {
+                                  "type": "text",
+                                  "font_size": 16,
+                                  "font_weight": "regular",
+                                  "line_height": 22,
+                                  "text": "Prev",
+                                  "text_color": "#5B6070"
+                                }
+                              ],
+                              "paddings": {
+                                "left": 12,
+                                "right": 12
+                              }
+                            },
+                            {
+                              "type": "container",
+                              "actions": [
+                                {
+                                  "log_id": "toggle_auto",
+                                  "url": "div-action://set_variable?name=owner.qr_auto&value=%40%7B!owner.qr_auto%7D"
+                                }
+                              ],
+                              "background": [
+                                {
+                                  "type": "solid",
+                                  "color": "#F1EDFF"
+                                }
+                              ],
+                              "border": {
+                                "corner_radius": 999
+                              },
+                              "content_alignment_horizontal": "center",
+                              "content_alignment_vertical": "center",
+                              "height": {
+                                "type": "fixed",
+                                "value": 48
+                              },
+                              "items": [
+                                {
+                                  "type": "text",
+                                  "font_size": 13,
+                                  "font_weight": "medium",
+                                  "text": "@{owner.qr_auto ? 'Auto-advance on' : 'Auto-advance paused'}",
+                                  "text_alignment_horizontal": "center",
+                                  "text_color": "#5A3BE0"
+                                }
+                              ],
+                              "width": {
+                                "type": "match_parent",
+                                "weight": 1
+                              }
+                            },
+                            {
+                              "type": "container",
+                              "actions": [
+                                {
+                                  "log_id": "qr_next",
+                                  "url": "local-db://op/pos.qr_step?delta=1"
+                                }
+                              ],
+                              "content_alignment_vertical": "center",
+                              "height": {
+                                "type": "fixed",
+                                "value": 48
+                              },
+                              "items": [
+                                {
+                                  "type": "text",
+                                  "font_size": 16,
+                                  "font_weight": "regular",
+                                  "line_height": 22,
+                                  "text": "Next",
+                                  "text_color": "#5A3BE0"
+                                }
+                              ],
+                              "paddings": {
+                                "left": 12,
+                                "right": 12
+                              }
+                            }
+                          ],
+                          "margins": {
+                            "top": 20
+                          },
+                          "orientation": "horizontal",
+                          "width": {
+                            "type": "match_parent"
+                          }
+                        }
+                      ],
+                      "margins": {
+                        "top": 12
+                      },
+                      "orientation": "vertical",
+                      "paddings": {
+                        "left": 24,
+                        "right": 24,
+                        "top": 24,
+                        "bottom": 24
+                      },
+                      "width": {
+                        "type": "match_parent"
+                      }
+                    },
+                    {
+                      "type": "text",
+                      "font_size": 13,
+                      "line_height": 18,
+                      "margins": {
+                        "top": 16,
+                        "bottom": 20
+                      },
+                      "text": "Customer scans each chunk in order. Auto-advances every 3 seconds.",
+                      "text_alignment_horizontal": "center",
+                      "text_color": "#5B6070"
+                    },
+                    {
+                      "type": "container",
+                      "items": [
+                        {
+                          "type": "text",
+                          "font_size": 16,
+                          "font_weight": "bold",
+                          "text": "Advanced",
+                          "text_color": "#111319"
+                        },
+                        {
+                          "type": "container",
+                          "items": [
+                            {
+                              "type": "container",
+                              "actions": [
+                                {
+                                  "log_id": "regen_qr",
+                                  "url": "local-db://op/pos.regenerate_qr?order_id=%40%7Bowner.cart_id%7D"
+                                }
+                              ],
+                              "content_alignment_vertical": "center",
+                              "height": {
+                                "type": "fixed",
+                                "value": 48
+                              },
+                              "items": [
+                                {
+                                  "type": "text",
+                                  "font_size": 16,
+                                  "font_weight": "regular",
+                                  "line_height": 22,
+                                  "text": "Regenerate QR",
+                                  "text_color": "#5A3BE0"
+                                }
+                              ],
+                              "paddings": {
+                                "right": 20
+                              }
+                            },
+                            {
+                              "type": "container",
+                              "actions": [
+                                {
+                                  "log_id": "copy_qr_payload",
+                                  "url": "local-db://op/pos.copy_qr_payload?order_id=%40%7Bowner.cart_id%7D"
+                                }
+                              ],
+                              "content_alignment_vertical": "center",
+                              "height": {
+                                "type": "fixed",
+                                "value": 48
+                              },
+                              "items": [
+                                {
+                                  "type": "text",
+                                  "font_size": 16,
+                                  "font_weight": "regular",
+                                  "line_height": 22,
+                                  "text": "Copy payload",
+                                  "text_color": "#5B6070"
+                                }
+                              ]
+                            }
+                          ],
+                          "orientation": "horizontal",
+                          "width": {
+                            "type": "match_parent"
+                          }
+                        }
+                      ],
+                      "orientation": "vertical",
+                      "width": {
+                        "type": "match_parent"
+                      }
+                    }
+                  ],
+                  "orientation": "vertical",
+                  "paddings": {
+                    "left": 20,
+                    "right": 20,
+                    "top": 16,
+                    "bottom": 24
+                  },
+                  "width": {
+                    "type": "match_parent"
+                  }
+                }
+              },
+              {
+                "id": "product_modal",
+                "div": {
+                  "id": "product_form_modal",
+                  "type": "form_modal",
+                  "custom_props": {
+                    "visible": true,
+                    "title": "@{product.is_edit ? 'Edit product' : 'New product'}",
+                    "body": [
+                      {
+                        "type": "container",
+                        "items": [
+                          {
+                            "type": "container",
+                            "items": [
+                              {
+                                "type": "container",
+                                "background": [
+                                  {
+                                    "type": "solid",
+                                    "color": "#E6E8EF"
+                                  }
+                                ],
+                                "border": {
+                                  "corner_radius": 12
+                                },
+                                "content_alignment_horizontal": "center",
+                                "content_alignment_vertical": "center",
+                                "height": {
+                                  "type": "fixed",
+                                  "value": 96
+                                },
+                                "items": [
+                                  {
+                                    "type": "image",
+                                    "border": {
+                                      "corner_radius": 12
+                                    },
+                                    "height": {
+                                      "type": "fixed",
+                                      "value": 72
+                                    },
+                                    "image_url": "product.photo_url",
+                                    "placeholder_color": "#E6E8EF",
+                                    "width": {
+                                      "type": "fixed",
+                                      "value": 96
+                                    }
+                                  },
+                                  {
+                                    "type": "text",
+                                    "font_size": 11,
+                                    "text": "Add photo",
+                                    "text_color": "#5B6070"
+                                  }
+                                ],
+                                "orientation": "vertical",
+                                "width": {
+                                  "type": "fixed",
+                                  "value": 96
+                                }
+                              }
+                            ],
+                            "margins": {
+                              "bottom": 24
+                            }
+                          },
+                          {
+                            "type": "container",
+                            "items": [
+                              {
+                                "type": "text",
+                                "font_size": 13,
+                                "font_weight": "medium",
+                                "line_height": 18,
+                                "text": "Name",
+                                "text_color": "#111319"
+                              },
+                              {
+                                "type": "container",
+                                "alignment_vertical": "center",
+                                "background": [
+                                  {
+                                    "type": "solid",
+                                    "color": "#FFFFFF"
+                                  }
+                                ],
+                                "border": {
+                                  "corner_radius": 12,
+                                  "stroke": {
+                                    "color": "@{product.errors.name != '' ? '#C81E1E' : '#E6E8EF'}",
+                                    "width": 1
+                                  }
+                                },
+                                "height": {
+                                  "type": "fixed",
+                                  "value": 52
+                                },
+                                "items": [
+                                  {
+                                    "type": "input",
+                                    "font_size": 16,
+                                    "hint_color": "#5B6070",
+                                    "hint_text": "Latte",
+                                    "id": "field_name",
+                                    "keyboard_type": "single_line_text",
+                                    "max_visible_lines": 1,
+                                    "text_color": "#111319",
+                                    "text_variable": "product.name",
+                                    "width": {
+                                      "type": "match_parent",
+                                      "weight": 1
+                                    }
+                                  }
+                                ],
+                                "margins": {
+                                  "top": 6
+                                },
+                                "orientation": "horizontal",
+                                "paddings": {
+                                  "left": 14,
+                                  "right": 14,
+                                  "top": 8,
+                                  "bottom": 8
+                                },
+                                "width": {
+                                  "type": "match_parent"
+                                }
+                              },
+                              {
+                                "type": "text",
+                                "font_size": 13,
+                                "margins": {
+                                  "top": 4
+                                },
+                                "text": "@{product.errors.name}",
+                                "text_color": "#C81E1E",
+                                "visibility": "@{product.errors.name != '' ? 'visible' : 'gone'}"
+                              }
+                            ],
+                            "margins": {
+                              "bottom": 24
+                            },
+                            "orientation": "vertical",
+                            "width": {
+                              "type": "match_parent"
+                            }
+                          },
+                          {
+                            "type": "container",
+                            "items": [
+                              {
+                                "type": "text",
+                                "font_size": 13,
+                                "font_weight": "medium",
+                                "line_height": 18,
+                                "text": "Price",
+                                "text_color": "#111319"
+                              },
+                              {
+                                "type": "container",
+                                "alignment_vertical": "center",
+                                "background": [
+                                  {
+                                    "type": "solid",
+                                    "color": "#FFFFFF"
+                                  }
+                                ],
+                                "border": {
+                                  "corner_radius": 12,
+                                  "stroke": {
+                                    "color": "@{product.errors.price != '' ? '#C81E1E' : '#E6E8EF'}",
+                                    "width": 1
+                                  }
+                                },
+                                "height": {
+                                  "type": "fixed",
+                                  "value": 52
+                                },
+                                "items": [
+                                  {
+                                    "type": "text",
+                                    "font_size": 16,
+                                    "margins": {
+                                      "right": 6
+                                    },
+                                    "text": "$",
+                                    "text_color": "#5B6070"
+                                  },
+                                  {
+                                    "type": "input",
+                                    "focus": {
+                                      "on_blur": [
+                                        {
+                                          "log_id": "fmt_price",
+                                          "url": "local-db://op/inventory.format_price"
+                                        }
+                                      ]
+                                    },
+                                    "font_size": 16,
+                                    "hint_color": "#5B6070",
+                                    "hint_text": "0.00",
+                                    "id": "field_price",
+                                    "keyboard_type": "number",
+                                    "max_visible_lines": 1,
+                                    "text_color": "#111319",
+                                    "text_variable": "product.price",
+                                    "width": {
+                                      "type": "match_parent",
+                                      "weight": 1
+                                    }
+                                  }
+                                ],
+                                "margins": {
+                                  "top": 6
+                                },
+                                "orientation": "horizontal",
+                                "paddings": {
+                                  "left": 14,
+                                  "right": 14,
+                                  "top": 8,
+                                  "bottom": 8
+                                },
+                                "width": {
+                                  "type": "match_parent"
+                                }
+                              },
+                              {
+                                "type": "text",
+                                "font_size": 13,
+                                "margins": {
+                                  "top": 4
+                                },
+                                "text": "@{product.errors.price}",
+                                "text_color": "#C81E1E",
+                                "visibility": "@{product.errors.price != '' ? 'visible' : 'gone'}"
+                              }
+                            ],
+                            "margins": {
+                              "bottom": 24
+                            },
+                            "orientation": "vertical",
+                            "width": {
+                              "type": "match_parent"
+                            }
+                          },
+                          {
+                            "type": "container",
+                            "items": [
+                              {
+                                "type": "text",
+                                "font_size": 13,
+                                "font_weight": "medium",
+                                "line_height": 18,
+                                "text": "Code",
+                                "text_color": "#111319"
+                              },
+                              {
+                                "type": "container",
+                                "alignment_vertical": "center",
+                                "background": [
+                                  {
+                                    "type": "solid",
+                                    "color": "#FFFFFF"
+                                  }
+                                ],
+                                "border": {
+                                  "corner_radius": 12,
+                                  "stroke": {
+                                    "color": "@{product.errors.code != '' ? '#C81E1E' : '#E6E8EF'}",
+                                    "width": 1
+                                  }
+                                },
+                                "height": {
+                                  "type": "fixed",
+                                  "value": 52
+                                },
+                                "items": [
+                                  {
+                                    "type": "input",
+                                    "focus": {
+                                      "on_blur": [
+                                        {
+                                          "log_id": "check_dup_code",
+                                          "url": "local-db://op/inventory.check_code?code=%40%7Bproduct.code%7D&exclude_sku=%40%7Bproduct.sku%7D"
+                                        }
+                                      ]
+                                    },
+                                    "font_size": 16,
+                                    "hint_color": "#5B6070",
+                                    "hint_text": "Barcode or QR value",
+                                    "id": "field_code",
+                                    "keyboard_type": "single_line_text",
+                                    "max_visible_lines": 1,
+                                    "text_color": "#111319",
+                                    "text_variable": "product.code",
+                                    "width": {
+                                      "type": "match_parent",
+                                      "weight": 1
+                                    }
+                                  },
+                                  {
+                                    "type": "container",
+                                    "background": [
+                                      {
+                                        "type": "solid",
+                                        "color": "#E6F6F0"
+                                      }
+                                    ],
+                                    "border": {
+                                      "corner_radius": 999
+                                    },
+                                    "items": [
+                                      {
+                                        "type": "text",
+                                        "font_size": 13,
+                                        "font_weight": "medium",
+                                        "text": "✓ scanned",
+                                        "text_color": "#057A55"
+                                      }
+                                    ],
+                                    "margins": {
+                                      "right": 8
+                                    },
+                                    "paddings": {
+                                      "left": 10,
+                                      "right": 10,
+                                      "top": 4,
+                                      "bottom": 4
+                                    },
+                                    "visibility": "@{product.code_scanned ? 'visible' : 'gone'}"
+                                  },
+                                  {
+                                    "type": "container",
+                                    "actions": [
+                                      {
+                                        "log_id": "open_code_scan_sheet",
+                                        "url": "sheet://present?card_id=owner_scan_sheet"
+                                      }
+                                    ],
+                                    "background": [
+                                      {
+                                        "type": "solid",
+                                        "color": "#F1EDFF"
+                                      }
+                                    ],
+                                    "border": {
+                                      "corner_radius": 10
+                                    },
+                                    "content_alignment_horizontal": "center",
+                                    "content_alignment_vertical": "center",
+                                    "height": {
+                                      "type": "fixed",
+                                      "value": 48
+                                    },
+                                    "items": [
+                                      {
+                                        "type": "text",
+                                        "font_size": 13,
+                                        "font_weight": "bold",
+                                        "text": "Scan",
+                                        "text_alignment_horizontal": "center",
+                                        "text_color": "#5A3BE0"
+                                      }
+                                    ],
+                                    "width": {
+                                      "type": "fixed",
+                                      "value": 52
+                                    }
+                                  }
+                                ],
+                                "margins": {
+                                  "top": 6
+                                },
+                                "orientation": "horizontal",
+                                "paddings": {
+                                  "left": 14,
+                                  "right": 4,
+                                  "top": 8,
+                                  "bottom": 8
+                                },
+                                "width": {
+                                  "type": "match_parent"
+                                }
+                              },
+                              {
+                                "type": "text",
+                                "font_size": 13,
+                                "font_weight": "medium",
+                                "line_height": 18,
+                                "text": "Scan the barcode or type it in",
+                                "text_color": "#5B6070"
+                              },
+                              {
+                                "type": "text",
+                                "font_size": 13,
+                                "margins": {
+                                  "top": 4
+                                },
+                                "text": "@{product.errors.code}",
+                                "text_color": "#C81E1E",
+                                "visibility": "@{product.errors.code != '' ? 'visible' : 'gone'}"
+                              }
+                            ],
+                            "margins": {
+                              "bottom": 24
+                            },
+                            "orientation": "vertical",
+                            "width": {
+                              "type": "match_parent"
+                            }
+                          },
+                          {
+                            "type": "container",
+                            "background": [
+                              {
+                                "type": "solid",
+                                "color": "#FEF3C7"
+                              }
+                            ],
+                            "border": {
+                              "corner_radius": 12
+                            },
+                            "id": "dup_code_banner",
+                            "items": [
+                              {
+                                "type": "text",
+                                "font_size": 13,
+                                "line_height": 18,
+                                "text": "@{product.code_dup_warning}",
+                                "text_color": "#111319"
+                              },
+                              {
+                                "type": "container",
+                                "items": [
+                                  {
+                                    "type": "container",
+                                    "actions": [
+                                      {
+                                        "log_id": "view_dup_code",
+                                        "url": "local-db://op/inventory.open_form?mode=edit&sku=%40%7Bproduct.code_dup_sku%7D"
+                                      },
+                                      {
+                                        "log_id": "open_dup_product",
+                                        "url": "nav://push?id=product_modal"
+                                      }
+                                    ],
+                                    "content_alignment_vertical": "center",
+                                    "height": {
+                                      "type": "fixed",
+                                      "value": 48
+                                    },
+                                    "items": [
+                                      {
+                                        "type": "text",
+                                        "font_size": 13,
+                                        "font_weight": "bold",
+                                        "text": "View",
+                                        "text_color": "#92400E"
+                                      }
+                                    ],
+                                    "paddings": {
+                                      "right": 16
+                                    }
+                                  },
+                                  {
+                                    "type": "container",
+                                    "actions": [
+                                      {
+                                        "log_id": "dismiss_dup_code",
+                                        "url": "div-action://set_variable?name=product.code_dup_warning&value="
+                                      }
+                                    ],
+                                    "content_alignment_vertical": "center",
+                                    "height": {
+                                      "type": "fixed",
+                                      "value": 48
+                                    },
+                                    "items": [
+                                      {
+                                        "type": "text",
+                                        "font_size": 13,
+                                        "font_weight": "medium",
+                                        "text": "Use anyway",
+                                        "text_color": "#5B6070"
+                                      }
+                                    ]
+                                  }
+                                ],
+                                "margins": {
+                                  "top": 8
+                                },
+                                "orientation": "horizontal"
+                              }
+                            ],
+                            "orientation": "vertical",
+                            "paddings": {
+                              "left": 14,
+                              "right": 14,
+                              "top": 12,
+                              "bottom": 12
+                            },
+                            "visibility": "@{product.code_dup_warning != '' ? 'visible' : 'gone'}",
+                            "width": {
+                              "type": "match_parent"
+                            }
+                          },
+                          {
+                            "type": "container",
+                            "items": [
+                              {
+                                "type": "text",
+                                "font_size": 13,
+                                "font_weight": "medium",
+                                "line_height": 18,
+                                "text": "SKU",
+                                "text_color": "#111319"
+                              },
+                              {
+                                "type": "container",
+                                "alignment_vertical": "center",
+                                "background": [
+                                  {
+                                    "type": "solid",
+                                    "color": "#FFFFFF"
+                                  }
+                                ],
+                                "border": {
+                                  "corner_radius": 12,
+                                  "stroke": {
+                                    "color": "@{product.errors.sku != '' ? '#C81E1E' : '#E6E8EF'}",
+                                    "width": 1
+                                  }
+                                },
+                                "height": {
+                                  "type": "fixed",
+                                  "value": 52
+                                },
+                                "items": [
+                                  {
+                                    "type": "input",
+                                    "focus": {
+                                      "on_blur": [
+                                        {
+                                          "log_id": "upper_sku",
+                                          "url": "local-db://op/inventory.normalize_sku"
+                                        }
+                                      ]
+                                    },
+                                    "font_size": 16,
+                                    "hint_color": "#5B6070",
+                                    "hint_text": "LAT-01",
+                                    "id": "field_sku",
+                                    "keyboard_type": "single_line_text",
+                                    "max_visible_lines": 1,
+                                    "text_color": "#111319",
+                                    "text_variable": "product.sku",
+                                    "width": {
+                                      "type": "match_parent",
+                                      "weight": 1
+                                    }
+                                  },
+                                  {
+                                    "type": "container",
+                                    "actions": [
+                                      {
+                                        "log_id": "suggest_sku",
+                                        "url": "local-db://op/inventory.suggest_sku?name=%40%7Bproduct.name%7D"
+                                      }
+                                    ],
+                                    "content_alignment_horizontal": "center",
+                                    "content_alignment_vertical": "center",
+                                    "height": {
+                                      "type": "fixed",
+                                      "value": 48
+                                    },
+                                    "items": [
+                                      {
+                                        "type": "text",
+                                        "font_size": 14,
+                                        "font_weight": "medium",
+                                        "text": "✨",
+                                        "text_color": "#5A3BE0"
+                                      }
+                                    ],
+                                    "paddings": {
+                                      "left": 10,
+                                      "right": 10
+                                    }
+                                  }
+                                ],
+                                "margins": {
+                                  "top": 6
+                                },
+                                "orientation": "horizontal",
+                                "paddings": {
+                                  "left": 14,
+                                  "right": 14,
+                                  "top": 8,
+                                  "bottom": 8
+                                },
+                                "width": {
+                                  "type": "match_parent"
+                                }
+                              },
+                              {
+                                "type": "text",
+                                "font_size": 13,
+                                "margins": {
+                                  "top": 4
+                                },
+                                "text": "@{product.errors.sku}",
+                                "text_color": "#C81E1E",
+                                "visibility": "@{product.errors.sku != '' ? 'visible' : 'gone'}"
+                              }
+                            ],
+                            "margins": {
+                              "bottom": 24
+                            },
+                            "orientation": "vertical",
+                            "width": {
+                              "type": "match_parent"
+                            }
+                          },
+                          {
+                            "type": "container",
+                            "items": [
+                              {
+                                "type": "text",
+                                "font_size": 13,
+                                "font_weight": "medium",
+                                "line_height": 18,
+                                "text": "Description",
+                                "text_color": "#111319"
+                              },
+                              {
+                                "type": "container",
+                                "alignment_vertical": "center",
+                                "background": [
+                                  {
+                                    "type": "solid",
+                                    "color": "#FFFFFF"
+                                  }
+                                ],
+                                "border": {
+                                  "corner_radius": 12,
+                                  "stroke": {
+                                    "color": "#E6E8EF",
+                                    "width": 1
+                                  }
+                                },
+                                "height": {
+                                  "type": "fixed",
+                                  "value": 52
+                                },
+                                "items": [
+                                  {
+                                    "type": "input",
+                                    "font_size": 16,
+                                    "hint_color": "#5B6070",
+                                    "hint_text": "Optional notes",
+                                    "id": "field_desc",
+                                    "keyboard_type": "multi_line_text",
+                                    "max_visible_lines": 4,
+                                    "text_color": "#111319",
+                                    "text_variable": "product.description",
+                                    "width": {
+                                      "type": "match_parent",
+                                      "weight": 1
+                                    }
+                                  }
+                                ],
+                                "margins": {
+                                  "top": 6
+                                },
+                                "orientation": "horizontal",
+                                "paddings": {
+                                  "left": 14,
+                                  "right": 14,
+                                  "top": 8,
+                                  "bottom": 8
+                                },
+                                "width": {
+                                  "type": "match_parent"
+                                }
+                              },
+                              {
+                                "type": "text",
+                                "font_size": 13,
+                                "font_weight": "medium",
+                                "line_height": 18,
+                                "text": "Up to 240 characters",
+                                "text_color": "#5B6070"
+                              }
+                            ],
+                            "margins": {
+                              "bottom": 24
+                            },
+                            "orientation": "vertical",
+                            "width": {
+                              "type": "match_parent"
+                            }
+                          },
+                          {
+                            "type": "container",
+                            "actions": [
+                              {
+                                "log_id": "confirm_delete_prod",
+                                "url": "sheet://present?card_id=confirm_delete_product"
+                              }
+                            ],
+                            "content_alignment_horizontal": "center",
+                            "content_alignment_vertical": "center",
+                            "height": {
+                              "type": "fixed",
+                              "value": 48
+                            },
+                            "items": [
+                              {
+                                "type": "text",
+                                "font_size": 16,
+                                "text": "Delete product",
+                                "text_color": "#5B6070"
+                              }
+                            ],
+                            "margins": {
+                              "top": 8
+                            },
+                            "visibility": "@{product.is_edit ? 'visible' : 'gone'}",
+                            "width": {
+                              "type": "match_parent"
+                            }
+                          }
+                        ],
+                        "orientation": "vertical",
+                        "paddings": {
+                          "left": 20,
+                          "right": 20,
+                          "top": 20,
+                          "bottom": 32
+                        },
+                        "width": {
+                          "type": "match_parent"
+                        }
+                      }
+                    ],
+                    "primary_label": "Save",
+                    "primary": {
+                      "actions": [
+                        {
+                          "log_id": "save_product_form",
+                          "url": "local-db://op/inventory.upsert"
+                        }
+                      ]
+                    },
+                    "secondary_label": "Cancel",
+                    "secondary": {
+                      "actions": [
+                        {
+                          "log_id": "cancel_product_form",
+                          "url": "local-db://op/inventory.cancel_form"
+                        }
+                      ]
+                    },
+                    "dirty_var": "product.dirty",
+                    "valid_var": "product.valid"
+                  }
+                }
+              },
+              {
+                "id": "owner_scan_sheet",
+                "div": {
+                  "id": "owner_scan_sheet",
+                  "type": "bottom_sheet",
+                  "custom_props": {
+                    "visible": true,
+                    "title": "Scan code",
+                    "body": [
+                      {
+                        "id": "sheet_viewfinder",
+                        "type": "camera_viewfinder",
+                        "custom_props": {
+                          "hint": "Center the barcode",
+                          "unavailable_copy": "Camera unavailable on this device — enter the code manually",
+                          "mode_var": "",
+                          "on_scan_op": "inventory.scan_resolve",
+                          "on_scan_args": {
+                            "raw": "$scan.raw"
+                          }
+                        }
+                      },
+                      {
+                        "type": "container",
+                        "items": [
+                          {
+                            "type": "container",
+                            "items": [
+                              {
+                                "type": "text",
+                                "font_size": 13,
+                                "font_weight": "medium",
+                                "line_height": 18,
+                                "text": "Manual entry",
+                                "text_color": "#111319"
+                              },
+                              {
+                                "type": "container",
+                                "alignment_vertical": "center",
+                                "background": [
+                                  {
+                                    "type": "solid",
+                                    "color": "#FFFFFF"
+                                  }
+                                ],
+                                "border": {
+                                  "corner_radius": 12,
+                                  "stroke": {
+                                    "color": "#E6E8EF",
+                                    "width": 1
+                                  }
+                                },
+                                "height": {
+                                  "type": "fixed",
+                                  "value": 52
+                                },
+                                "items": [
+                                  {
+                                    "type": "input",
+                                    "font_size": 16,
+                                    "hint_color": "#5B6070",
+                                    "hint_text": "Enter barcode or SKU",
+                                    "id": "sheet_manual_code",
+                                    "keyboard_type": "single_line_text",
+                                    "max_visible_lines": 1,
+                                    "text_color": "#111319",
+                                    "text_variable": "product.scan_pending_code",
+                                    "width": {
+                                      "type": "match_parent",
+                                      "weight": 1
+                                    }
+                                  }
+                                ],
+                                "margins": {
+                                  "top": 6
+                                },
+                                "orientation": "horizontal",
+                                "paddings": {
+                                  "left": 14,
+                                  "right": 14,
+                                  "top": 8,
+                                  "bottom": 8
+                                },
+                                "width": {
+                                  "type": "match_parent"
+                                }
+                              }
+                            ],
+                            "margins": {
+                              "bottom": 24
+                            },
+                            "orientation": "vertical",
+                            "width": {
+                              "type": "match_parent"
+                            }
+                          }
+                        ],
+                        "margins": {
+                          "top": 20
+                        },
+                        "width": {
+                          "type": "match_parent"
+                        }
+                      },
+                      {
+                        "type": "container",
+                        "actions": [
+                          {
+                            "log_id": "use_scanned_code",
+                            "url": "local-db://op/inventory.accept_scanned_code"
+                          }
+                        ],
+                        "alpha": "@{product.scan_pending_code != '' ? 1.0 : 0.4}",
+                        "background": [
+                          {
+                            "type": "solid",
+                            "color": "#5A3BE0"
+                          }
+                        ],
+                        "border": {
+                          "corner_radius": 12
+                        },
+                        "content_alignment_horizontal": "center",
+                        "content_alignment_vertical": "center",
+                        "height": {
+                          "type": "fixed",
+                          "value": 56
+                        },
+                        "items": [
+                          {
+                            "type": "text",
+                            "font_size": 16,
+                            "font_weight": "bold",
+                            "text": "Use this code",
+                            "text_color": "#FFFFFF"
+                          }
+                        ],
+                        "width": {
+                          "type": "match_parent"
+                        }
+                      }
+                    ],
+                    "height_fraction": 0.9,
+                    "dismiss": {
+                      "actions": [
+                        {
+                          "log_id": "sheet_dismiss",
+                          "url": "sheet://dismiss"
+                        }
+                      ]
+                    }
+                  }
+                }
+              },
+              {
+                "id": "customer_shop",
+                "div": {
+                  "type": "container",
+                  "background": [
+                    {
+                      "type": "solid",
+                      "color": "#F7F8FB"
+                    }
+                  ],
+                  "height": {
+                    "type": "match_parent"
+                  },
+                  "items": [
+                    {
+                      "type": "container",
+                      "height": {
+                        "type": "match_parent",
+                        "weight": 1
+                      },
+                      "items": [
+                        {
+                          "type": "gallery",
+                          "height": {
+                            "type": "match_parent"
+                          },
+                          "items": [
+                            {
+                              "type": "text",
+                              "font_size": 32,
+                              "font_weight": "bold",
+                              "line_height": 40,
+                              "text": "@{cust.shop_name}",
+                              "text_color": "#111319"
+                            },
+                            {
+                              "type": "text",
+                              "font_size": 13,
+                              "font_weight": "medium",
+                              "line_height": 18,
+                              "text": "@{cust.shop_terminal}",
+                              "text_color": "#5B6070"
+                            },
+                            {
+                              "type": "container",
+                              "background": [
+                                {
+                                  "type": "solid",
+                                  "color": "#FFFFFF"
+                                }
+                              ],
+                              "border": {
+                                "corner_radius": 16
+                              },
+                              "items": [
+                                {
+                                  "type": "text",
+                                  "font_size": 13,
+                                  "font_weight": "medium",
+                                  "line_height": 18,
+                                  "text": "Your last order",
+                                  "text_color": "#5B6070"
+                                },
+                                {
+                                  "type": "container",
+                                  "alignment_vertical": "center",
+                                  "items": [
+                                    {
+                                      "type": "container",
+                                      "items": [
+                                        {
+                                          "type": "text",
+                                          "font_size": 22,
+                                          "font_weight": "bold",
+                                          "line_height": 28,
+                                          "text": "@{cust.recent_order.short_id}",
+                                          "text_color": "#111319"
+                                        },
+                                        {
+                                          "type": "text",
+                                          "font_size": 13,
+                                          "font_weight": "medium",
+                                          "line_height": 18,
+                                          "text": "@{cust.recent_order.subtitle}",
+                                          "text_color": "#5B6070"
+                                        }
+                                      ],
+                                      "orientation": "vertical",
+                                      "width": {
+                                        "type": "match_parent",
+                                        "weight": 1
+                                      }
+                                    },
+                                    {
+                                      "type": "text",
+                                      "font_feature_settings": "tnum",
+                                      "font_size": 22,
+                                      "font_weight": "bold",
+                                      "line_height": 28,
+                                      "text": "@{cust.recent_order.total}",
+                                      "text_color": "#111319"
+                                    }
+                                  ],
+                                  "margins": {
+                                    "top": 8
+                                  },
+                                  "orientation": "horizontal",
+                                  "width": {
+                                    "type": "match_parent"
+                                  }
+                                },
+                                {
+                                  "type": "container",
+                                  "actions": [
+                                    {
+                                      "log_id": "view_recent_hist",
+                                      "url": "nav://push?id=customer_history"
+                                    }
+                                  ],
+                                  "content_alignment_vertical": "center",
+                                  "height": {
+                                    "type": "fixed",
+                                    "value": 48
+                                  },
+                                  "items": [
+                                    {
+                                      "type": "text",
+                                      "font_size": 16,
+                                      "font_weight": "regular",
+                                      "line_height": 22,
+                                      "text": "View",
+                                      "text_color": "#5A3BE0"
+                                    }
+                                  ],
+                                  "margins": {
+                                    "top": 8
+                                  }
+                                }
+                              ],
+                              "margins": {
+                                "top": 24
+                              },
+                              "paddings": {
+                                "left": 16,
+                                "right": 16,
+                                "top": 16,
+                                "bottom": 16
+                              },
+                              "visibility": "@{cust.has_recent_order ? 'visible' : 'gone'}",
+                              "width": {
+                                "type": "match_parent"
+                              }
+                            },
+                            {
+                              "type": "container",
+                              "content_alignment_horizontal": "center",
+                              "items": [
+                                {
+                                  "type": "text",
+                                  "font_size": 16,
+                                  "text": "Nothing yet — tap scan to receive your order ↘",
+                                  "text_alignment_horizontal": "center",
+                                  "text_color": "#5B6070"
+                                }
+                              ],
+                              "paddings": {
+                                "top": 56,
+                                "bottom": 24
+                              },
+                              "visibility": "@{cust.catalog_count == 0 ? 'visible' : 'gone'}",
+                              "width": {
+                                "type": "match_parent"
+                              }
+                            },
+                            {
+                              "type": "container",
+                              "items": [
+                                {
+                                  "type": "container",
+                                  "items": [
+                                    {
+                                      "type": "text",
+                                      "font_size": 16,
+                                      "font_weight": "bold",
+                                      "text": "Catalog preview",
+                                      "text_color": "#111319"
+                                    },
+                                    {
+                                      "type": "json_list",
+                                      "data_var": "cust.catalog_preview",
+                                      "empty_text": "No records",
+                                      "item_spacing": 4,
+                                      "row_card": {
+                                        "type": "container",
+                                        "items": [
+                                          {
+                                            "type": "text",
+                                            "font_size": 16,
+                                            "font_weight": "regular",
+                                            "line_height": 22,
+                                            "text": "@{item.name}",
+                                            "text_color": "#111319"
+                                          },
+                                          {
+                                            "type": "container",
+                                            "items": [],
+                                            "width": {
+                                              "type": "match_parent",
+                                              "weight": 1
+                                            }
+                                          },
+                                          {
+                                            "type": "text",
+                                            "font_size": 16,
+                                            "font_weight": "regular",
+                                            "line_height": 22,
+                                            "text": "@{item.price_display}",
+                                            "text_color": "#111319"
+                                          }
+                                        ],
+                                        "orientation": "horizontal",
+                                        "paddings": {
+                                          "top": 10,
+                                          "bottom": 10
+                                        },
+                                        "width": {
+                                          "type": "match_parent"
+                                        }
+                                      }
+                                    }
+                                  ],
+                                  "orientation": "vertical",
+                                  "width": {
+                                    "type": "match_parent"
+                                  }
+                                }
+                              ],
+                              "margins": {
+                                "top": 24
+                              },
+                              "visibility": "@{cust.catalog_count > 0 ? 'visible' : 'gone'}",
+                              "width": {
+                                "type": "match_parent"
+                              }
+                            }
+                          ],
+                          "orientation": "vertical",
+                          "paddings": {
+                            "left": 20,
+                            "right": 20,
+                            "top": 20,
+                            "bottom": 88
+                          },
+                          "width": {
+                            "type": "match_parent"
+                          }
+                        },
+                        {
+                          "type": "fab",
+                          "custom_props": {
+                            "label": "Scan order",
+                            "icon": "qr_code_scanner",
+                            "actions": [
+                              {
+                                "log_id": "push_cust_scan",
+                                "url": "nav://push?id=customer_scan"
+                              }
+                            ]
+                          }
+                        }
+                      ],
+                      "width": {
+                        "type": "match_parent"
+                      }
+                    },
+                    {
+                      "type": "bottom_tabs",
+                      "custom_props": {
+                        "active_value": "cust.tab",
+                        "items": [
+                          {
+                            "value": "shop",
+                            "label": "Shop",
+                            "icon": "storefront",
+                            "actions": [
+                              {
+                                "log_id": "tab_shop",
+                                "url": "nav://push?id=customer_shop"
+                              }
+                            ]
+                          },
+                          {
+                            "value": "history",
+                            "label": "History",
+                            "icon": "receipt_long",
+                            "actions": [
+                              {
+                                "log_id": "tab_history",
+                                "url": "nav://push?id=customer_history"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "orientation": "vertical",
+                  "width": {
+                    "type": "match_parent"
+                  }
+                }
+              },
+              {
+                "id": "customer_history",
+                "div": {
+                  "type": "container",
+                  "background": [
+                    {
+                      "type": "solid",
+                      "color": "#F7F8FB"
+                    }
+                  ],
+                  "height": {
+                    "type": "match_parent"
+                  },
+                  "items": [
+                    {
+                      "type": "container",
+                      "height": {
+                        "type": "match_parent",
+                        "weight": 1
+                      },
+                      "items": [
+                        {
+                          "type": "gallery",
+                          "height": {
+                            "type": "match_parent"
+                          },
+                          "items": [
+                            {
+                              "type": "text",
+                              "font_size": 32,
+                              "font_weight": "bold",
+                              "line_height": 40,
+                              "text": "History",
+                              "text_color": "#111319"
+                            },
+                            {
+                              "type": "container",
+                              "items": [
+                                {
+                                  "type": "text",
+                                  "font_size": 16,
+                                  "text": "No orders yet — tap scan to receive your first one.",
+                                  "text_alignment_horizontal": "center",
+                                  "text_color": "#5B6070"
+                                }
+                              ],
+                              "paddings": {
+                                "top": 56
+                              },
+                              "visibility": "@{cust.history_count == 0 ? 'visible' : 'gone'}",
+                              "width": {
+                                "type": "match_parent"
+                              }
+                            },
+                            {
+                              "type": "json_list",
+                              "data_var": "cust.history",
+                              "empty_text": "No records",
+                              "item_spacing": 12,
+                              "row_card": {
+                                "type": "container",
+                                "actions": [
+                                  {
+                                    "log_id": "open_hist_detail",
+                                    "url": "local-db://op/cust.open_history_detail?id=%24item.id"
+                                  }
+                                ],
+                                "alignment_vertical": "center",
+                                "background": [
+                                  {
+                                    "type": "solid",
+                                    "color": "#FFFFFF"
+                                  }
+                                ],
+                                "border": {
+                                  "corner_radius": 16
+                                },
+                                "items": [
+                                  {
+                                    "type": "container",
+                                    "items": [
+                                      {
+                                        "type": "text",
+                                        "font_size": 16,
+                                        "font_weight": "regular",
+                                        "line_height": 22,
+                                        "text": "@{item.short_id}",
+                                        "text_color": "#111319"
+                                      },
+                                      {
+                                        "type": "text",
+                                        "font_size": 13,
+                                        "font_weight": "medium",
+                                        "line_height": 18,
+                                        "text": "@{item.meta_line}",
+                                        "text_color": "#5B6070"
+                                      }
+                                    ],
+                                    "orientation": "vertical",
+                                    "width": {
+                                      "type": "match_parent",
+                                      "weight": 1
+                                    }
+                                  },
+                                  {
+                                    "type": "text",
+                                    "font_feature_settings": "tnum",
+                                    "font_size": 22,
+                                    "font_weight": "bold",
+                                    "line_height": 28,
+                                    "text": "@{item.total}",
+                                    "text_color": "#111319"
+                                  }
+                                ],
+                                "orientation": "horizontal",
+                                "paddings": {
+                                  "left": 16,
+                                  "right": 16,
+                                  "top": 14,
+                                  "bottom": 14
+                                },
+                                "width": {
+                                  "type": "match_parent"
+                                }
+                              }
+                            }
+                          ],
+                          "orientation": "vertical",
+                          "paddings": {
+                            "left": 20,
+                            "right": 20,
+                            "top": 20,
+                            "bottom": 88
+                          },
+                          "width": {
+                            "type": "match_parent"
+                          }
+                        },
+                        {
+                          "type": "fab",
+                          "custom_props": {
+                            "label": "Scan order",
+                            "icon": "qr_code_scanner",
+                            "actions": [
+                              {
+                                "log_id": "hist_push_scan",
+                                "url": "nav://push?id=customer_scan"
+                              }
+                            ]
+                          }
+                        }
+                      ],
+                      "width": {
+                        "type": "match_parent"
+                      }
+                    },
+                    {
+                      "type": "bottom_tabs",
+                      "custom_props": {
+                        "active_value": "cust.tab",
+                        "items": [
+                          {
+                            "value": "shop",
+                            "label": "Shop",
+                            "icon": "storefront",
+                            "actions": [
+                              {
+                                "log_id": "tab_shop",
+                                "url": "nav://push?id=customer_shop"
+                              }
+                            ]
+                          },
+                          {
+                            "value": "history",
+                            "label": "History",
+                            "icon": "receipt_long",
+                            "actions": [
+                              {
+                                "log_id": "tab_history",
+                                "url": "nav://push?id=customer_history"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "orientation": "vertical",
+                  "width": {
+                    "type": "match_parent"
+                  }
+                }
+              },
+              {
+                "id": "customer_scan",
+                "div": {
+                  "type": "container",
+                  "background": [
+                    {
+                      "type": "solid",
+                      "color": "#F7F8FB"
+                    }
+                  ],
+                  "height": {
+                    "type": "match_parent"
+                  },
+                  "items": [
+                    {
+                      "type": "container",
+                      "items": [
+                        {
+                          "id": "cust_viewfinder",
+                          "type": "camera_viewfinder",
+                          "custom_props": {
+                            "hint": "@{cust.scan_hint}",
+                            "unavailable_copy": "Camera unavailable on this device — enter the order chunk manually",
+                            "mode_var": "",
+                            "on_scan_op": "cust.scan_append",
+                            "on_scan_args": {
+                              "chunk_string": "$scan.raw"
+                            }
+                          }
+                        },
+                        {
+                          "type": "container",
+                          "content_alignment_horizontal": "center",
+                          "items": [
+                            {
+                              "type": "progress_ring",
+                              "custom_props": {
+                                "value": "cust.scan_current / (cust.scan_total || 1)",
+                                "label": "cust.scan_current",
+                                "caption": "cust.scan_total",
+                                "state_var": "cust.scan_state"
+                              }
+                            },
+                            {
+                              "type": "text",
+                              "font_size": 16,
+                              "font_weight": "bold",
+                              "margins": {
+                                "top": 8
+                              },
+                              "text": "@{cust.scan_ring_label}",
+                              "text_alignment_horizontal": "center",
+                              "text_color": "#111319"
+                            }
+                          ],
+                          "margins": {
+                            "top": 20
+                          }
+                        },
+                        {
+                          "type": "container",
+                          "items": [
+                            {
+                              "type": "scan_chips",
+                              "custom_props": {
+                                "chunks_var": "cust.scan_chunks",
+                                "expected": "cust.scan_chunks.length",
+                                "collected_var": "cust.scan_collected",
+                                "corrupt_var": "cust.scan_corrupt"
+                              }
+                            }
+                          ],
+                          "margins": {
+                            "top": 16
+                          }
+                        }
+                      ],
+                      "orientation": "vertical",
+                      "visibility": "@{cust.scan_state == 'idle' || cust.scan_state == 'scanning' ? 'visible' : 'gone'}",
+                      "width": {
+                        "type": "match_parent"
+                      }
+                    },
+                    {
+                      "type": "container",
+                      "content_alignment_horizontal": "center",
+                      "items": [
+                        {
+                          "type": "text",
+                          "font_size": 22,
+                          "font_weight": "bold",
+                          "line_height": 28,
+                          "text": "Verifying checksum…",
+                          "text_color": "#111319"
+                        },
+                        {
+                          "type": "container",
+                          "items": [
+                            {
+                              "type": "progress_ring",
+                              "custom_props": {
+                                "value": "cust.scan_current / (cust.scan_total || 1)",
+                                "label": "cust.scan_current",
+                                "caption": "cust.scan_total"
+                              }
+                            }
+                          ],
+                          "margins": {
+                            "top": 16
+                          },
+                          "width": {
+                            "type": "match_parent"
+                          }
+                        }
+                      ],
+                      "orientation": "vertical",
+                      "paddings": {
+                        "top": 96
+                      },
+                      "visibility": "@{cust.scan_state == 'assembling' ? 'visible' : 'gone'}",
+                      "width": {
+                        "type": "match_parent"
+                      }
+                    },
+                    {
+                      "type": "container",
+                      "height": {
+                        "type": "match_parent",
+                        "weight": 1
+                      },
+                      "items": [
+                        {
+                          "type": "text",
+                          "font_size": 32,
+                          "font_weight": "bold",
+                          "line_height": 40,
+                          "text": "✓ Order received",
+                          "text_color": "#057A55"
+                        },
+                        {
+                          "type": "text",
+                          "font_size": 22,
+                          "font_weight": "bold",
+                          "line_height": 28,
+                          "text": "@{cust.received_order.short_id}",
+                          "text_color": "#111319"
+                        },
+                        {
+                          "type": "text",
+                          "font_size": 13,
+                          "font_weight": "medium",
+                          "line_height": 18,
+                          "text": "@{cust.received_order.summary}",
+                          "text_color": "#5B6070"
+                        },
+                        {
+                          "type": "container",
+                          "background": [
+                            {
+                              "type": "solid",
+                              "color": "#E6F6F0"
+                            }
+                          ],
+                          "border": {
+                            "corner_radius": 999
+                          },
+                          "items": [
+                            {
+                              "type": "text",
+                              "font_size": 13,
+                              "font_weight": "medium",
+                              "line_height": 18,
+                              "text": "✓ Checksum verified",
+                              "text_color": "#057A55"
+                            }
+                          ],
+                          "margins": {
+                            "top": 12,
+                            "bottom": 20
+                          },
+                          "paddings": {
+                            "left": 12,
+                            "right": 12,
+                            "top": 6,
+                            "bottom": 6
+                          }
+                        },
+                        {
+                          "type": "json_list",
+                          "data_var": "cust.received_order.lines",
+                          "empty_text": "No records",
+                          "item_spacing": 4,
+                          "row_card": {
+                            "type": "container",
+                            "items": [
+                              {
+                                "type": "text",
+                                "font_size": 16,
+                                "text": "@{item.name_and_qty}",
+                                "text_color": "#111319",
+                                "width": {
+                                  "type": "match_parent",
+                                  "weight": 1
+                                }
+                              },
+                              {
+                                "type": "text",
+                                "font_feature_settings": "tnum",
+                                "font_size": 22,
+                                "font_weight": "bold",
+                                "line_height": 28,
+                                "text": "@{item.line_total_display}",
+                                "text_color": "#111319"
+                              }
+                            ],
+                            "orientation": "horizontal",
+                            "paddings": {
+                              "top": 8,
+                              "bottom": 8
+                            },
+                            "width": {
+                              "type": "match_parent"
+                            }
+                          }
+                        },
+                        {
+                          "type": "container",
+                          "height": {
+                            "type": "match_parent",
+                            "weight": 1
+                          },
+                          "items": [],
+                          "width": {
+                            "type": "match_parent",
+                            "weight": 1
+                          }
+                        },
+                        {
+                          "type": "container",
+                          "actions": [
+                            {
+                              "log_id": "save_cust_order",
+                              "url": "local-db://op/cust.save_order"
+                            },
+                            {
+                              "log_id": "save_to_history",
+                              "url": "nav://push?id=customer_history"
+                            }
+                          ],
+                          "background": [
+                            {
+                              "type": "solid",
+                              "color": "#5A3BE0"
+                            }
+                          ],
+                          "border": {
+                            "corner_radius": 12
+                          },
+                          "content_alignment_horizontal": "center",
+                          "content_alignment_vertical": "center",
+                          "height": {
+                            "type": "fixed",
+                            "value": 56
+                          },
+                          "items": [
+                            {
+                              "type": "text",
+                              "font_size": 16,
+                              "font_weight": "bold",
+                              "text": "Save to history",
+                              "text_color": "#FFFFFF"
+                            }
+                          ],
+                          "width": {
+                            "type": "match_parent"
+                          }
+                        }
+                      ],
+                      "orientation": "vertical",
+                      "visibility": "@{cust.scan_state == 'verified' ? 'visible' : 'gone'}",
+                      "width": {
+                        "type": "match_parent"
+                      }
+                    },
+                    {
+                      "type": "container",
+                      "items": [
+                        {
+                          "type": "text",
+                          "font_size": 32,
+                          "font_weight": "bold",
+                          "line_height": 40,
+                          "text": "✗ Checksum mismatch",
+                          "text_color": "#C81E1E"
+                        },
+                        {
+                          "type": "text",
+                          "font_size": 16,
+                          "font_weight": "regular",
+                          "line_height": 22,
+                          "text": "The order did not arrive intact. Ask the owner to regenerate the QR and rescan.",
+                          "text_color": "#5B6070"
+                        },
+                        {
+                          "type": "container",
+                          "items": [
+                            {
+                              "type": "container",
+                              "actions": [
+                                {
+                                  "log_id": "cancel_scan",
+                                  "url": "nav://pop"
+                                }
+                              ],
+                              "content_alignment_vertical": "center",
+                              "height": {
+                                "type": "fixed",
+                                "value": 48
+                              },
+                              "items": [
+                                {
+                                  "type": "text",
+                                  "font_size": 16,
+                                  "font_weight": "regular",
+                                  "line_height": 22,
+                                  "text": "Cancel",
+                                  "text_color": "#5B6070"
+                                }
+                              ],
+                              "paddings": {
+                                "right": 20
+                              }
+                            },
+                            {
+                              "type": "container",
+                              "actions": [
+                                {
+                                  "log_id": "rescan_order",
+                                  "url": "local-db://op/cust.scan_reset"
+                                }
+                              ],
+                              "background": [
+                                {
+                                  "type": "solid",
+                                  "color": "#5A3BE0"
+                                }
+                              ],
+                              "border": {
+                                "corner_radius": 12
+                              },
+                              "content_alignment_horizontal": "center",
+                              "content_alignment_vertical": "center",
+                              "height": {
+                                "type": "fixed",
+                                "value": 56
+                              },
+                              "items": [
+                                {
+                                  "type": "text",
+                                  "font_size": 16,
+                                  "font_weight": "bold",
+                                  "text": "Rescan",
+                                  "text_color": "#FFFFFF"
+                                }
+                              ],
+                              "width": {
+                                "type": "match_parent",
+                                "weight": 1
+                              }
+                            }
+                          ],
+                          "margins": {
+                            "top": 24
+                          },
+                          "orientation": "horizontal",
+                          "width": {
+                            "type": "match_parent"
+                          }
+                        }
+                      ],
+                      "orientation": "vertical",
+                      "paddings": {
+                        "top": 64
+                      },
+                      "visibility": "@{cust.scan_state == 'error' ? 'visible' : 'gone'}",
+                      "width": {
+                        "type": "match_parent"
+                      }
+                    },
+                    {
+                      "type": "container",
+                      "items": [
+                        {
+                          "type": "text",
+                          "font_size": 16,
+                          "font_weight": "bold",
+                          "text": "Advanced",
+                          "text_color": "#111319"
+                        },
+                        {
+                          "type": "container",
+                          "items": [
+                            {
+                              "type": "container",
+                              "actions": [
+                                {
+                                  "log_id": "demo_inject",
+                                  "url": "local-db://op/cust.demo_inject_chunk"
+                                }
+                              ],
+                              "height": {
+                                "type": "fixed",
+                                "value": 48
+                              },
+                              "items": [
+                                {
+                                  "type": "text",
+                                  "font_size": 13,
+                                  "font_weight": "medium",
+                                  "line_height": 18,
+                                  "text": "Inject chunk",
+                                  "text_color": "#5A3BE0"
+                                }
+                              ],
+                              "paddings": {
+                                "right": 12
+                              }
+                            },
+                            {
+                              "type": "container",
+                              "actions": [
+                                {
+                                  "log_id": "demo_corrupt",
+                                  "url": "local-db://op/cust.demo_inject_corrupt"
+                                }
+                              ],
+                              "height": {
+                                "type": "fixed",
+                                "value": 48
+                              },
+                              "items": [
+                                {
+                                  "type": "text",
+                                  "font_size": 13,
+                                  "font_weight": "medium",
+                                  "line_height": 18,
+                                  "text": "Inject corrupt chunk",
+                                  "text_color": "#C81E1E"
+                                }
+                              ],
+                              "paddings": {
+                                "right": 12
+                              }
+                            },
+                            {
+                              "type": "container",
+                              "actions": [
+                                {
+                                  "log_id": "demo_reset",
+                                  "url": "local-db://op/cust.scan_reset"
+                                }
+                              ],
+                              "height": {
+                                "type": "fixed",
+                                "value": 48
+                              },
+                              "items": [
+                                {
+                                  "type": "text",
+                                  "font_size": 13,
+                                  "font_weight": "medium",
+                                  "line_height": 18,
+                                  "text": "Reset",
+                                  "text_color": "#5B6070"
+                                }
+                              ]
+                            }
+                          ],
+                          "orientation": "horizontal",
+                          "width": {
+                            "type": "match_parent"
+                          }
+                        }
+                      ],
+                      "orientation": "vertical",
+                      "width": {
+                        "type": "match_parent"
+                      }
+                    }
+                  ],
+                  "orientation": "vertical",
+                  "paddings": {
+                    "left": 20,
+                    "right": 20,
+                    "top": 16,
+                    "bottom": 24
+                  },
+                  "width": {
+                    "type": "match_parent"
+                  }
+                }
+              },
+              {
+                "id": "map_barcode_picker",
+                "div": {
+                  "type": "container",
+                  "items": [
+                    {
+                      "type": "text",
+                      "font_size": 20,
+                      "font_weight": "bold",
+                      "text": "Map barcode to a product",
+                      "text_color": "#111319"
+                    }
+                  ],
+                  "orientation": "vertical",
+                  "paddings": {
+                    "left": 20,
+                    "right": 20,
+                    "top": 20,
+                    "bottom": 20
+                  },
+                  "width": {
+                    "type": "match_parent"
+                  }
+                }
+              },
+              {
+                "id": "confirm_delete_product",
+                "div": {
+                  "type": "container",
+                  "items": [
+                    {
+                      "type": "text",
+                      "font_size": 20,
+                      "font_weight": "bold",
+                      "text": "Delete this product?",
+                      "text_color": "#111319"
+                    }
+                  ],
+                  "orientation": "vertical",
+                  "paddings": {
+                    "left": 20,
+                    "right": 20,
+                    "top": 20,
+                    "bottom": 20
+                  },
+                  "width": {
+                    "type": "match_parent"
+                  }
+                }
+              }
+            ]
+          },
+          "custom_type": "sdui_nav"
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,293 @@
+{
+  "type": "container",
+  "border": {
+    "corner_radius": 14,
+    "stroke": {
+      "color": "#F59E0B",
+      "width": 2
+    }
+  },
+  "items": [
+    {
+      "type": "text",
+      "font_size": 12,
+      "font_weight": "bold",
+      "margins": {
+        "bottom": 4
+      },
+      "text": "🔳 CODE GENERATOR — ZXing QR & 1D Barcodes (tools://code-generate)",
+      "text_color": "#FCD34D"
+    },
+    {
+      "type": "text",
+      "font_size": 11,
+      "margins": {
+        "bottom": 10
+      },
+      "text": "Generates scannable PNGs saved to the tenant media sandbox. Generated codes can be scanned immediately with the Scanner card.",
+      "text_color": "#FEF3C7"
+    },
+    {
+      "type": "container",
+      "items": [
+        {
+          "type": "text",
+          "font_family": "monospace",
+          "font_size": 11,
+          "text": "Format: @{user.code_format}",
+          "text_color": "#FDE68A"
+        },
+        {
+          "type": "text",
+          "font_family": "monospace",
+          "font_size": 11,
+          "text": "Kind:   @{user.code_kind}",
+          "text_color": "#FDE68A"
+        },
+        {
+          "type": "text",
+          "font_family": "monospace",
+          "font_size": 11,
+          "text": "Content: @{user.code_content}",
+          "text_color": "#FDE68A"
+        },
+        {
+          "type": "text",
+          "font_family": "monospace",
+          "font_size": 11,
+          "text": "Code id: @{user.code_id}",
+          "text_color": "#FDE68A"
+        },
+        {
+          "type": "text",
+          "font_family": "monospace",
+          "font_size": 10,
+          "text": "Image: @{if(user.code_image_uri == '', 'not generated yet — tap Generate', user.code_image_uri)}",
+          "text_color": "#FDE68A"
+        }
+      ],
+      "margins": {
+        "bottom": 10
+      },
+      "orientation": "vertical",
+      "paddings": {
+        "left": 10,
+        "right": 10,
+        "top": 8,
+        "bottom": 8
+      }
+    },
+    {
+      "type": "container",
+      "items": [
+        {
+          "type": "image",
+          "image_url": "@{user.code_image_uri}"
+        }
+      ],
+      "margins": {
+        "bottom": 10
+      },
+      "orientation": "vertical",
+      "paddings": {
+        "left": 6,
+        "right": 6,
+        "top": 6,
+        "bottom": 6
+      }
+    },
+    {
+      "type": "container",
+      "item_spacing": 8,
+      "items": [
+        {
+          "type": "container",
+          "items": [
+            {
+              "type": "button",
+              "id": "tool_code-generate_generate",
+              "text": "Generate Order QR",
+              "subtitle": "tools://code-generate/generate (QR_CODE)",
+              "icon": "qr_code",
+              "background_color": "#D97706",
+              "text_color": "#FFFFFF",
+              "corner_radius": 10,
+              "action": {
+                "log_id": "exec_tool_code-generate_generate",
+                "url": "tools://code-generate/generate",
+                "payload": {
+                  "operation": "generate",
+                  "options": {
+                    "content": "apexpos://order/pickup?terminal=POS-TERM-01",
+                    "format": "qr",
+                    "width": "512",
+                    "ec_level": "M",
+                    "encoding": "uri"
+                  },
+                  "output": {
+                    "uri": "user.code_image_uri",
+                    "format": "user.code_format",
+                    "kind": "user.code_kind",
+                    "content": "user.code_content",
+                    "code_id": "user.code_id"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "container",
+          "items": [
+            {
+              "type": "button",
+              "id": "tool_code-generate_barcode",
+              "text": "Generate SKU Barcode",
+              "subtitle": "tools://code-generate/barcode (EAN_13)",
+              "icon": "barcode",
+              "background_color": "#B45309",
+              "text_color": "#FFFFFF",
+              "corner_radius": 10,
+              "action": {
+                "log_id": "exec_tool_code-generate_barcode",
+                "url": "tools://code-generate/barcode",
+                "payload": {
+                  "operation": "barcode",
+                  "options": {
+                    "content": "9780201633610",
+                    "format": "EAN_13",
+                    "width": "400",
+                    "height": "160"
+                  },
+                  "output": {
+                    "uri": "user.code_image_uri",
+                    "format": "user.code_format",
+                    "kind": "user.code_kind",
+                    "content": "user.code_content",
+                    "code_id": "user.code_id"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "margins": {
+        "bottom": 8
+      },
+      "orientation": "horizontal"
+    },
+    {
+      "type": "container",
+      "item_spacing": 8,
+      "items": [
+        {
+          "type": "container",
+          "items": [
+            {
+              "type": "button",
+              "id": "tool_code-generate_table_qr",
+              "text": "Generate Table QR",
+              "subtitle": "APEX://table/T12 • ec_level H",
+              "icon": "qr_code",
+              "background_color": "#92400E",
+              "text_color": "#FFFFFF",
+              "corner_radius": 10,
+              "action": {
+                "log_id": "exec_tool_code-generate_table_qr",
+                "url": "tools://code-generate/generate",
+                "payload": {
+                  "operation": "generate",
+                  "options": {
+                    "content": "APEX://table/T12?guests=4&server=Maria",
+                    "format": "qr",
+                    "width": "512",
+                    "ec_level": "H"
+                  },
+                  "output": {
+                    "uri": "user.code_image_uri",
+                    "format": "user.code_format",
+                    "kind": "user.code_kind",
+                    "content": "user.code_content",
+                    "code_id": "user.code_id"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "container",
+          "items": [
+            {
+              "type": "button",
+              "id": "tool_code-generate_receipt_barcode",
+              "text": "Receipt Barcode",
+              "subtitle": "CODE_128 • 600×180",
+              "icon": "barcode",
+              "background_color": "#78350F",
+              "text_color": "#FFFFFF",
+              "corner_radius": 10,
+              "action": {
+                "log_id": "exec_tool_code-generate_receipt_barcode",
+                "url": "tools://code-generate/barcode",
+                "payload": {
+                  "operation": "barcode",
+                  "options": {
+                    "content": "REC-20261122-POS-TERM-01",
+                    "format": "CODE_128",
+                    "width": "600",
+                    "height": "180"
+                  },
+                  "output": {
+                    "uri": "user.code_image_uri",
+                    "format": "user.code_format",
+                    "kind": "user.code_kind",
+                    "content": "user.code_content",
+                    "code_id": "user.code_id"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "margins": {
+        "bottom": 12
+      },
+      "orientation": "horizontal"
+    },
+    {
+      "type": "container",
+      "items": [
+        {
+          "type": "text",
+          "font_size": 11,
+          "font_weight": "bold",
+          "text": "▶  SCAN YOUR GENERATED CODE",
+          "text_color": "#22D3EE"
+        },
+        {
+          "type": "text",
+          "font_size": 11,
+          "text": "Switch to Scanner card and point the camera at the code above",
+          "text_color": "#67E8F9"
+        }
+      ],
+      "orientation": "vertical",
+      "paddings": {
+        "left": 10,
+        "right": 10,
+        "top": 8,
+        "bottom": 8
+      }
+    }
+  ],
+  "orientation": "vertical",
+  "paddings": {
+    "left": 14,
+    "right": 14,
+    "top": 12,
+    "bottom": 12
+  }
+}

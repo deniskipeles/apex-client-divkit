@@ -5,8 +5,8 @@ import {
   COMMON_PROPS,
   NODE_PROPS,
   URL_SCHEMES,
-  isChartCustomType,
   isNodeType,
+  renderability,
 } from './vocabulary.ts'
 
 /**
@@ -89,7 +89,7 @@ function walk(
     const customType = typeof node.custom_type === 'string' ? node.custom_type : ''
     if (!customType) {
       report.errors.push(`${path}: "custom" needs a custom_type`)
-    } else if (customType !== 'json_list' && !isChartCustomType(customType)) {
+    } else if (renderability(type, customType) !== 'rendered') {
       flag(
         `${path}: custom_type "${customType}" is not implemented by the Android renderer — the device renders nothing`,
       )
@@ -110,6 +110,20 @@ function walk(
   const customProps = node.custom_props as Record<string, unknown> | undefined
   const props = customProps ?? node
   if (type === 'json_list') pushObject(children, props.row_card)
+  if (type === 'state' && Array.isArray(node.states)) {
+    for (const entry of node.states) {
+      if (entry && typeof entry === 'object' && !Array.isArray(entry)) {
+        pushObject(children, (entry as Record<string, unknown>).div)
+      }
+    }
+  }
+  if (type === 'custom' && node.custom_type === 'sdui_nav' && Array.isArray(customProps?.cards)) {
+    for (const page of customProps!.cards) {
+      if (page && typeof page === 'object' && !Array.isArray(page)) {
+        pushObject(children, (page as Record<string, unknown>).div)
+      }
+    }
+  }
   if (type === 'sticky_footer') {
     pushArray(children, props.body)
     pushArray(children, props.footer)
@@ -133,6 +147,7 @@ function pushObject(out: unknown[], value: unknown): void {
 
 const VARIABLE_REFERENCE_PROPS: Record<string, string[]> = {
   json_list: ['data_var'],
+  state: ['state_id_variable'],
   text: [],
   input: ['text_variable'],
   text_field: ['variable'],

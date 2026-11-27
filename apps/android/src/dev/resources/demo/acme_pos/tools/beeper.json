@@ -1,14 +1,5 @@
 {
     "type": "container",
-    "orientation": "vertical",
-    "background_color": "#1E1B4B",
-    "corner_radius": 12,
-    "paddings": {
-        "left": 12,
-        "right": 12,
-        "top": 10,
-        "bottom": 10
-    },
     "border": {
         "corner_radius": 12,
         "stroke": {
@@ -19,32 +10,31 @@
     "items": [
         {
             "type": "text",
-            "text": "🔔 HARDWARE BEEPER AUDIO (device.beeper@1 • tools://beeper)",
             "font_size": 11,
             "font_weight": "bold",
+            "text": "🔔 HARDWARE BEEPER AUDIO (device.beeper@1 • tools://beeper)",
             "text_color": "#C7D2FE"
         },
         {
             "type": "text",
-            "text": "Each button synthesises a real waveform through AudioTrack and reports the frequency it actually played.",
             "font_size": 11,
-            "text_color": "#A5B4FC"
+            "text": "Each button synthesises a real waveform through AudioTrack and reports the frequency it actually played.",
+            "text_color": "#5B21B6"
         },
         {
             "type": "text",
-            "text": "Tone: @{user.beeper_tone} • Frequency: @{user.beeper_frequency} Hz • Status: @{user.beeper_status}",
+            "font_family": "monospace",
             "font_size": 12,
-            "text_color": "#EEF2FF",
-            "font_family": "monospace"
+            "text": "Tone: @{user.beeper_tone} • Frequency: @{user.beeper_frequency} Hz • Status: @{user.beeper_status}",
+            "text_color": "#EEF2FF"
         },
         {
             "type": "container",
-            "orientation": "horizontal",
             "item_spacing": 8,
             "items": [
                 {
                     "type": "button",
-                    "weight": 1.0,
+                    "weight": 1,
                     "id": "beeper_ring",
                     "text": "Ring (1200Hz)",
                     "icon": "volume",
@@ -68,7 +58,7 @@
                 },
                 {
                     "type": "button",
-                    "weight": 1.0,
+                    "weight": 1,
                     "id": "beeper_alert",
                     "text": "Alert (2400Hz)",
                     "icon": "beeper",
@@ -92,7 +82,7 @@
                 },
                 {
                     "type": "button",
-                    "weight": 1.0,
+                    "weight": 1,
                     "id": "beeper_error",
                     "text": "Error (600Hz)",
                     "icon": "notification",
@@ -114,16 +104,16 @@
                         }
                     }
                 }
-            ]
+            ],
+            "orientation": "horizontal"
         },
         {
             "type": "container",
-            "orientation": "horizontal",
             "item_spacing": 8,
             "items": [
                 {
                     "type": "button",
-                    "weight": 1.0,
+                    "weight": 1,
                     "id": "beeper_chime",
                     "text": "Chime (rising)",
                     "icon": "check",
@@ -145,7 +135,7 @@
                 },
                 {
                     "type": "button",
-                    "weight": 1.0,
+                    "weight": 1,
                     "id": "beeper_stop",
                     "text": "Stop",
                     "icon": "clear",
@@ -162,7 +152,15 @@
                         }
                     }
                 }
-            ]
+            ],
+            "orientation": "horizontal"
         }
-    ]
+    ],
+    "orientation": "vertical",
+    "paddings": {
+        "left": 12,
+        "right": 12,
+        "top": 10,
+        "bottom": 10
+    }
 }

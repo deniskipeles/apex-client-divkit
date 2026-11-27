@@ -1,0 +1,190 @@
+{
+  "type": "container",
+  "background": [
+    {
+      "type": "solid",
+      "color": "#F7F8FB"
+    }
+  ],
+  "height": {
+    "type": "match_parent"
+  },
+  "items": [
+    {
+      "type": "container",
+      "height": {
+        "type": "match_parent",
+        "weight": 1
+      },
+      "items": [
+        {
+          "type": "gallery",
+          "height": {
+            "type": "match_parent"
+          },
+          "items": [
+            {
+              "type": "text",
+              "font_size": 32,
+              "font_weight": "bold",
+              "line_height": 40,
+              "text": "History",
+              "text_color": "#111319"
+            },
+            {
+              "type": "container",
+              "items": [
+                {
+                  "type": "text",
+                  "font_size": 16,
+                  "text": "No orders yet — tap scan to receive your first one.",
+                  "text_alignment_horizontal": "center",
+                  "text_color": "#5B6070"
+                }
+              ],
+              "paddings": {
+                "top": 56
+              },
+              "visibility": "@{cust.history_count == 0 ? 'visible' : 'gone'}",
+              "width": {
+                "type": "match_parent"
+              }
+            },
+            {
+              "type": "json_list",
+              "data_var": "cust.history",
+              "empty_text": "No records",
+              "item_spacing": 12,
+              "row_card": {
+                "type": "container",
+                "actions": [
+                  {
+                    "log_id": "open_hist_detail",
+                    "url": "local-db://op/cust.open_history_detail?id=%24item.id"
+                  }
+                ],
+                "alignment_vertical": "center",
+                "background": [
+                  {
+                    "type": "solid",
+                    "color": "#FFFFFF"
+                  }
+                ],
+                "border": {
+                  "corner_radius": 16
+                },
+                "items": [
+                  {
+                    "type": "container",
+                    "items": [
+                      {
+                        "type": "text",
+                        "font_size": 16,
+                        "font_weight": "regular",
+                        "line_height": 22,
+                        "text": "@{item.short_id}",
+                        "text_color": "#111319"
+                      },
+                      {
+                        "type": "text",
+                        "font_size": 13,
+                        "font_weight": "medium",
+                        "line_height": 18,
+                        "text": "@{item.meta_line}",
+                        "text_color": "#5B6070"
+                      }
+                    ],
+                    "orientation": "vertical",
+                    "width": {
+                      "type": "match_parent",
+                      "weight": 1
+                    }
+                  },
+                  {
+                    "type": "text",
+                    "font_feature_settings": "tnum",
+                    "font_size": 22,
+                    "font_weight": "bold",
+                    "line_height": 28,
+                    "text": "@{item.total}",
+                    "text_color": "#111319"
+                  }
+                ],
+                "orientation": "horizontal",
+                "paddings": {
+                  "left": 16,
+                  "right": 16,
+                  "top": 14,
+                  "bottom": 14
+                },
+                "width": {
+                  "type": "match_parent"
+                }
+              }
+            }
+          ],
+          "orientation": "vertical",
+          "paddings": {
+            "left": 20,
+            "right": 20,
+            "top": 20,
+            "bottom": 88
+          },
+          "width": {
+            "type": "match_parent"
+          }
+        },
+        {
+          "type": "fab",
+          "custom_props": {
+            "label": "Scan order",
+            "icon": "qr_code_scanner",
+            "actions": [
+              {
+                "log_id": "hist_push_scan",
+                "url": "nav://push?id=customer_scan"
+              }
+            ]
+          }
+        }
+      ],
+      "width": {
+        "type": "match_parent"
+      }
+    },
+    {
+      "type": "bottom_tabs",
+      "custom_props": {
+        "active_value": "cust.tab",
+        "items": [
+          {
+            "value": "shop",
+            "label": "Shop",
+            "icon": "storefront",
+            "actions": [
+              {
+                "log_id": "tab_shop",
+                "url": "nav://push?id=customer_shop"
+              }
+            ]
+          },
+          {
+            "value": "history",
+            "label": "History",
+            "icon": "receipt_long",
+            "actions": [
+              {
+                "log_id": "tab_history",
+                "url": "nav://push?id=customer_history"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "orientation": "vertical",
+  "width": {
+    "type": "match_parent"
+  }
+}

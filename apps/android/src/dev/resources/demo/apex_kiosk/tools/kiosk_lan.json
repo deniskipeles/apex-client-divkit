@@ -1,253 +1,238 @@
 {
  "type": "container",
- "orientation": "vertical",
  "item_spacing": 16,
  "items": [
   {
    "type": "container",
-   "orientation": "vertical",
    "item_spacing": 10,
    "items": [
     {
      "type": "container",
-     "orientation": "horizontal",
      "item_spacing": 8,
      "items": [
       {
        "type": "container",
-       "orientation": "vertical",
        "item_spacing": 4,
        "items": [
         {
          "type": "text",
-         "text": "LAN share",
          "font_size": 24,
-         "text_color": "#F8FAFC",
-         "font_weight": "bold"
+         "font_weight": "bold",
+         "text": "LAN share",
+         "text_color": "#F8FAFC"
         },
         {
          "type": "text",
-         "text": "Serve the order payload to other devices on this network",
          "font_size": 12,
+         "text": "Serve the order payload to other devices on this network",
          "text_color": "#94A3B8"
         }
        ],
-       "weight": 1
+       "orientation": "vertical"
       }
-     ]
+     ],
+     "orientation": "horizontal"
     },
     {
      "type": "text",
-     "text": "@{if(user.net_status == '' , 'IDLE', user.net_status)}",
      "font_size": 11,
      "font_weight": "bold",
-     "text_color": "#F8FAFC",
-     "background_color": "#1B2740",
-     "corner_radius": 20,
+     "margins": {
+      "top": 6
+     },
      "paddings": {
       "left": 10,
       "right": 10,
       "top": 5,
       "bottom": 5
      },
-     "margins": {
-      "top": 6
-     }
+     "text": "@{if(user.net_status == '' , 'IDLE', user.net_status)}",
+     "text_color": "#F8FAFC"
     },
     {
      "type": "container",
-     "orientation": "horizontal",
      "item_spacing": 8,
      "items": [
       {
        "type": "text",
+       "font_size": 11,
        "text": "Port",
-       "font_size": 11,
        "text_color": "#64748B"
       },
       {
        "type": "text",
-       "text": "@{if(toInteger(user.net_hub_port) == 0, 'stopped', toInteger(user.net_hub_port))}",
+       "font_family": "monospace",
        "font_size": 13,
-       "text_color": "#F8FAFC",
        "font_weight": "bold",
-       "font_family": "monospace"
+       "text": "@{if(toInteger(user.net_hub_port) == 0, 'stopped', toInteger(user.net_hub_port))}",
+       "text_color": "#F8FAFC"
       },
       {
        "type": "text",
-       "text": "·",
        "font_size": 11,
+       "text": "·",
        "text_color": "#64748B"
       },
       {
        "type": "text",
-       "text": "@{user.net_share_count} shared",
        "font_size": 12,
+       "text": "@{user.net_share_count} shared",
        "text_color": "#94A3B8"
       }
-     ]
+     ],
+     "orientation": "horizontal"
     }
-   ]
+   ],
+   "orientation": "vertical"
   },
   {
    "type": "container",
-   "orientation": "horizontal",
+   "id": "kiosk_lan_error",
    "item_spacing": 8,
-   "background_color": "#3F1D24",
-   "corner_radius": 10,
-   "paddings": {
-    "left": 12,
-    "right": 12,
-    "top": 10,
-    "bottom": 10
-   },
    "items": [
     {
      "type": "text",
+     "font_size": 12,
+     "max_lines": 3,
      "text": "@{user.engine_error}",
-     "font_size": 12,
-     "text_color": "#FCA5A5",
-     "max_lines": 3
+     "text_color": "#FCA5A5"
     }
    ],
-   "visibility": "@{if(user.engine_error != '', 'visible', 'gone')}",
-   "id": "kiosk_lan_error"
-  },
-  {
-   "type": "container",
    "orientation": "horizontal",
-   "item_spacing": 8,
-   "background_color": "#1B2740",
-   "corner_radius": 10,
    "paddings": {
     "left": 12,
     "right": 12,
     "top": 10,
     "bottom": 10
    },
-   "items": [
-    {
-     "type": "text",
-     "text": "@{user.kiosk_notice}",
-     "font_size": 12,
-     "text_color": "#F8FAFC",
-     "max_lines": 3
-    }
-   ],
-   "visibility": "@{if(user.kiosk_notice != '', 'visible', 'gone')}",
-   "id": "kiosk_lan_notice"
+   "visibility": "@{if(user.engine_error != '', 'visible', 'gone')}"
   },
   {
    "type": "container",
-   "orientation": "vertical",
+   "id": "kiosk_lan_notice",
    "item_spacing": 8,
    "items": [
     {
-     "type": "container",
-     "orientation": "horizontal",
-     "item_spacing": 8,
-     "items": [
-      {
-       "type": "text",
-       "text": "Hub URL",
-       "font_size": 12,
-       "text_color": "#94A3B8",
-       "weight": 1
-      },
-      {
-       "type": "text",
-       "text": "@{if(user.net_lan_url == '', 'Not running', user.net_lan_url)}",
-       "font_size": 13,
-       "text_color": "#F8FAFC",
-       "font_weight": "bold",
-       "font_family": "monospace"
-      }
-     ]
-    },
-    {
-     "type": "container",
-     "orientation": "horizontal",
-     "item_spacing": 8,
-     "items": [
-      {
-       "type": "text",
-       "text": "Share id",
-       "font_size": 12,
-       "text_color": "#94A3B8",
-       "weight": 1
-      },
-      {
-       "type": "text",
-       "text": "@{if(user.net_share_id == '', '—', user.net_share_id)}",
-       "font_size": 12,
-       "text_color": "#94A3B8",
-       "font_weight": "bold",
-       "font_family": "monospace"
-      }
-     ]
-    },
-    {
-     "type": "container",
-     "orientation": "horizontal",
-     "item_spacing": 8,
-     "items": [
-      {
-       "type": "text",
-       "text": "Last share",
-       "font_size": 12,
-       "text_color": "#94A3B8",
-       "weight": 1
-      },
-      {
-       "type": "text",
-       "text": "@{if(user.net_share_path == '', '—', user.net_share_path)}",
-       "font_size": 12,
-       "text_color": "#94A3B8",
-       "font_weight": "bold"
-      }
-     ]
-    },
-    {
-     "type": "container",
-     "orientation": "horizontal",
-     "item_spacing": 8,
-     "items": [
-      {
-       "type": "text",
-       "text": "Size",
-       "font_size": 12,
-       "text_color": "#94A3B8",
-       "weight": 1
-      },
-      {
-       "type": "text",
-       "text": "@{if(toInteger(user.net_share_bytes) == 0, '—', toInteger(user.net_share_bytes) + ' bytes')}",
-       "font_size": 12,
-       "text_color": "#94A3B8",
-       "font_weight": "bold"
-      }
-     ]
+     "type": "text",
+     "font_size": 12,
+     "max_lines": 3,
+     "text": "@{user.kiosk_notice}",
+     "text_color": "#F8FAFC"
     }
    ],
-   "background_color": "#131C2E",
+   "orientation": "horizontal",
    "paddings": {
-    "left": 16,
-    "right": 16,
-    "top": 16,
-    "bottom": 16
+    "left": 12,
+    "right": 12,
+    "top": 10,
+    "bottom": 10
    },
-   "corner_radius": 14,
+   "visibility": "@{if(user.kiosk_notice != '', 'visible', 'gone')}"
+  },
+  {
+   "type": "container",
    "border": {
     "corner_radius": 14,
     "stroke": {
      "color": "#24304A",
      "width": 1
     }
+   },
+   "item_spacing": 8,
+   "items": [
+    {
+     "type": "container",
+     "item_spacing": 8,
+     "items": [
+      {
+       "type": "text",
+       "font_size": 12,
+       "text": "Hub URL",
+       "text_color": "#94A3B8"
+      },
+      {
+       "type": "text",
+       "font_family": "monospace",
+       "font_size": 13,
+       "font_weight": "bold",
+       "text": "@{if(user.net_lan_url == '', 'Not running', user.net_lan_url)}",
+       "text_color": "#F8FAFC"
+      }
+     ],
+     "orientation": "horizontal"
+    },
+    {
+     "type": "container",
+     "item_spacing": 8,
+     "items": [
+      {
+       "type": "text",
+       "font_size": 12,
+       "text": "Share id",
+       "text_color": "#94A3B8"
+      },
+      {
+       "type": "text",
+       "font_family": "monospace",
+       "font_size": 12,
+       "font_weight": "bold",
+       "text": "@{if(user.net_share_id == '', '—', user.net_share_id)}",
+       "text_color": "#94A3B8"
+      }
+     ],
+     "orientation": "horizontal"
+    },
+    {
+     "type": "container",
+     "item_spacing": 8,
+     "items": [
+      {
+       "type": "text",
+       "font_size": 12,
+       "text": "Last share",
+       "text_color": "#94A3B8"
+      },
+      {
+       "type": "text",
+       "font_size": 12,
+       "font_weight": "bold",
+       "text": "@{if(user.net_share_path == '', '—', user.net_share_path)}",
+       "text_color": "#94A3B8"
+      }
+     ],
+     "orientation": "horizontal"
+    },
+    {
+     "type": "container",
+     "item_spacing": 8,
+     "items": [
+      {
+       "type": "text",
+       "font_size": 12,
+       "text": "Size",
+       "text_color": "#94A3B8"
+      },
+      {
+       "type": "text",
+       "font_size": 12,
+       "font_weight": "bold",
+       "text": "@{if(toInteger(user.net_share_bytes) == 0, '—', toInteger(user.net_share_bytes) + ' bytes')}",
+       "text_color": "#94A3B8"
+      }
+     ],
+     "orientation": "horizontal"
+    }
+   ],
+   "orientation": "vertical",
+   "paddings": {
+    "left": 16,
+    "right": 16,
+    "top": 16,
+    "bottom": 16
    }
   },
   {
    "type": "container",
-   "orientation": "horizontal",
    "item_spacing": 8,
    "items": [
     {
@@ -358,37 +343,35 @@
      "id": "kiosk_lan_stop",
      "background_color": "#E2E8F0"
     }
-   ]
+   ],
+   "orientation": "horizontal"
   },
   {
    "type": "container",
-   "orientation": "vertical",
    "item_spacing": 8,
    "items": [
     {
      "type": "container",
-     "orientation": "horizontal",
      "item_spacing": 8,
      "items": [
       {
        "type": "text",
-       "text": "Share",
        "font_size": 11,
-       "text_color": "#94A3B8",
-       "font_weight": "bold"
+       "font_weight": "bold",
+       "text": "Share",
+       "text_color": "#94A3B8"
       },
       {
        "type": "text",
-       "text": "@{user.net_share_count} @{if(toInteger(user.net_share_count) == 1, 'item', 'items')}",
        "font_size": 11,
-       "text_color": "#64748B",
-       "weight": 1
+       "text": "@{user.net_share_count} @{if(toInteger(user.net_share_count) == 1, 'item', 'items')}",
+       "text_color": "#64748B"
       }
-     ]
+     ],
+     "orientation": "horizontal"
     },
     {
      "type": "container",
-     "orientation": "horizontal",
      "item_spacing": 8,
      "items": [
       {
@@ -481,11 +464,11 @@
        "id": "kiosk_lan_unshare",
        "background_color": "#E2E8F0"
       }
-     ]
+     ],
+     "orientation": "horizontal"
     },
     {
      "type": "container",
-     "orientation": "horizontal",
      "item_spacing": 8,
      "items": [
       {
@@ -537,60 +520,61 @@
        "id": "kiosk_lan_fetch",
        "background_color": "#E2E8F0"
       }
-     ]
+     ],
+     "orientation": "horizontal"
     }
-   ]
+   ],
+   "orientation": "vertical"
   },
   {
    "type": "container",
-   "orientation": "vertical",
    "item_spacing": 8,
    "items": [
     {
      "type": "container",
-     "orientation": "horizontal",
      "item_spacing": 8,
      "items": [
       {
        "type": "text",
-       "text": "Hub response",
        "font_size": 11,
-       "text_color": "#94A3B8",
-       "font_weight": "bold"
+       "font_weight": "bold",
+       "text": "Hub response",
+       "text_color": "#94A3B8"
       }
-     ]
+     ],
+     "orientation": "horizontal"
     },
     {
      "type": "container",
-     "orientation": "vertical",
-     "item_spacing": 12,
-     "items": [
-      {
-       "type": "text",
-       "text": "@{if(user.net_response == '', 'No response yet — start the hub, then fetch /list.', user.net_response)}",
-       "font_size": 11,
-       "text_color": "#94A3B8",
-       "font_family": "monospace",
-       "max_lines": 6
-      }
-     ],
-     "background_color": "#131C2E",
-     "paddings": {
-      "left": 12,
-      "right": 12,
-      "top": 12,
-      "bottom": 12
-     },
-     "corner_radius": 12,
      "border": {
       "corner_radius": 12,
       "stroke": {
        "color": "#24304A",
        "width": 1
       }
+     },
+     "item_spacing": 12,
+     "items": [
+      {
+       "type": "text",
+       "font_family": "monospace",
+       "font_size": 11,
+       "max_lines": 6,
+       "text": "@{if(user.net_response == '', 'No response yet — start the hub, then fetch /list.', user.net_response)}",
+       "text_color": "#94A3B8"
+      }
+     ],
+     "orientation": "vertical",
+     "paddings": {
+      "left": 12,
+      "right": 12,
+      "top": 12,
+      "bottom": 12
      }
     }
-   ]
+   ],
+   "orientation": "vertical"
   }
- ]
+ ],
+ "orientation": "vertical"
 }

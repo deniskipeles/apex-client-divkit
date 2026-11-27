@@ -1,0 +1,151 @@
+{
+  "id": "owner_scan_sheet",
+  "type": "bottom_sheet",
+  "custom_props": {
+    "visible": true,
+    "title": "Scan code",
+    "body": [
+      {
+        "id": "sheet_viewfinder",
+        "type": "camera_viewfinder",
+        "custom_props": {
+          "hint": "Center the barcode",
+          "unavailable_copy": "Camera unavailable on this device — enter the code manually",
+          "mode_var": "",
+          "on_scan_op": "inventory.scan_resolve",
+          "on_scan_args": {
+            "raw": "$scan.raw"
+          }
+        }
+      },
+      {
+        "type": "container",
+        "items": [
+          {
+            "type": "container",
+            "items": [
+              {
+                "type": "text",
+                "font_size": 13,
+                "font_weight": "medium",
+                "line_height": 18,
+                "text": "Manual entry",
+                "text_color": "#111319"
+              },
+              {
+                "type": "container",
+                "alignment_vertical": "center",
+                "background": [
+                  {
+                    "type": "solid",
+                    "color": "#FFFFFF"
+                  }
+                ],
+                "border": {
+                  "corner_radius": 12,
+                  "stroke": {
+                    "color": "#E6E8EF",
+                    "width": 1
+                  }
+                },
+                "height": {
+                  "type": "fixed",
+                  "value": 52
+                },
+                "items": [
+                  {
+                    "type": "input",
+                    "font_size": 16,
+                    "hint_color": "#5B6070",
+                    "hint_text": "Enter barcode or SKU",
+                    "id": "sheet_manual_code",
+                    "keyboard_type": "single_line_text",
+                    "max_visible_lines": 1,
+                    "text_color": "#111319",
+                    "text_variable": "product.scan_pending_code",
+                    "width": {
+                      "type": "match_parent",
+                      "weight": 1
+                    }
+                  }
+                ],
+                "margins": {
+                  "top": 6
+                },
+                "orientation": "horizontal",
+                "paddings": {
+                  "left": 14,
+                  "right": 14,
+                  "top": 8,
+                  "bottom": 8
+                },
+                "width": {
+                  "type": "match_parent"
+                }
+              }
+            ],
+            "margins": {
+              "bottom": 24
+            },
+            "orientation": "vertical",
+            "width": {
+              "type": "match_parent"
+            }
+          }
+        ],
+        "margins": {
+          "top": 20
+        },
+        "width": {
+          "type": "match_parent"
+        }
+      },
+      {
+        "type": "container",
+        "actions": [
+          {
+            "log_id": "use_scanned_code",
+            "url": "local-db://op/inventory.accept_scanned_code"
+          }
+        ],
+        "alpha": "@{product.scan_pending_code != '' ? 1.0 : 0.4}",
+        "background": [
+          {
+            "type": "solid",
+            "color": "#5A3BE0"
+          }
+        ],
+        "border": {
+          "corner_radius": 12
+        },
+        "content_alignment_horizontal": "center",
+        "content_alignment_vertical": "center",
+        "height": {
+          "type": "fixed",
+          "value": 56
+        },
+        "items": [
+          {
+            "type": "text",
+            "font_size": 16,
+            "font_weight": "bold",
+            "text": "Use this code",
+            "text_color": "#FFFFFF"
+          }
+        ],
+        "width": {
+          "type": "match_parent"
+        }
+      }
+    ],
+    "height_fraction": 0.9,
+    "dismiss": {
+      "actions": [
+        {
+          "log_id": "sheet_dismiss",
+          "url": "sheet://dismiss"
+        }
+      ]
+    }
+  }
+}

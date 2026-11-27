@@ -1,14 +1,5 @@
 {
     "type": "container",
-    "orientation": "vertical",
-    "background_color": "#111827",
-    "corner_radius": 12,
-    "paddings": {
-        "left": 12,
-        "right": 12,
-        "top": 10,
-        "bottom": 10
-    },
     "border": {
         "corner_radius": 12,
         "stroke": {
@@ -19,33 +10,33 @@
     "items": [
         {
             "type": "text",
-            "text": "🧮 TEXT & IMAGE EMBEDDINGS (tools://embedding)",
             "font_size": 11,
             "font_weight": "bold",
+            "text": "🧮 TEXT & IMAGE EMBEDDINGS (tools://embedding)",
             "text_color": "#7DD3FC"
         },
         {
             "type": "text",
-            "text": "Source: @{user.vector_source} • Dim: @{user.vector_dim} • Similarity: @{user.vector_similarity}",
+            "font_family": "monospace",
             "font_size": 12,
-            "text_color": "#E0F2FE",
-            "font_family": "monospace"
+            "text": "Source: @{user.vector_source} • Dim: @{user.vector_dim} • Similarity: @{user.vector_similarity}",
+            "text_color": "#E0F2FE"
         },
         {
             "type": "text",
+            "font_family": "monospace",
+            "font_size": 10,
+            "max_lines": 2,
             "text": "Vector: @{user.vector_b64}",
-            "font_size": 10,
-            "text_color": "#BAE6FD",
-            "font_family": "monospace",
-            "max_lines": 2
+            "text_color": "#BAE6FD"
         },
         {
             "type": "text",
-            "text": "OCR: @{user.ocr_text}",
-            "font_size": 10,
-            "text_color": "#A7F3D0",
             "font_family": "monospace",
-            "max_lines": 2
+            "font_size": 10,
+            "max_lines": 2,
+            "text": "OCR: @{user.ocr_text}",
+            "text_color": "#A7F3D0"
         },
         {
             "type": "button",
@@ -179,5 +170,12 @@
                 }
             }
         }
-    ]
+    ],
+    "orientation": "vertical",
+    "paddings": {
+        "left": 12,
+        "right": 12,
+        "top": 10,
+        "bottom": 10
+    }
 }

@@ -1,14 +1,5 @@
 {
     "type": "container",
-    "orientation": "vertical",
-    "background_color": "#1F2937",
-    "corner_radius": 12,
-    "paddings": {
-        "left": 12,
-        "right": 12,
-        "top": 10,
-        "bottom": 10
-    },
     "border": {
         "corner_radius": 12,
         "stroke": {
@@ -19,32 +10,31 @@
     "items": [
         {
             "type": "text",
-            "text": "📳 HAPTIC TACTILE ENGINE (device.haptics@1 • tools://haptics)",
             "font_size": 11,
             "font_weight": "bold",
+            "text": "📳 HAPTIC TACTILE ENGINE (device.haptics@1 • tools://haptics)",
             "text_color": "#FCD34D"
         },
         {
             "type": "text",
-            "text": "Each button drives the device vibrator with the pattern named on it and reports the pattern and duration that were actually applied.",
             "font_size": 11,
+            "text": "Each button drives the device vibrator with the pattern named on it and reports the pattern and duration that were actually applied.",
             "text_color": "#FDE68A"
         },
         {
             "type": "text",
-            "text": "State: @{user.haptic_state} • Pattern: @{user.haptic_pattern} • Duration: @{user.haptic_duration} ms",
+            "font_family": "monospace",
             "font_size": 12,
-            "text_color": "#FEF3C7",
-            "font_family": "monospace"
+            "text": "State: @{user.haptic_state} • Pattern: @{user.haptic_pattern} • Duration: @{user.haptic_duration} ms",
+            "text_color": "#FEF3C7"
         },
         {
             "type": "container",
-            "orientation": "horizontal",
             "item_spacing": 8,
             "items": [
                 {
                     "type": "button",
-                    "weight": 1.0,
+                    "weight": 1,
                     "id": "haptic_click",
                     "text": "Click",
                     "icon": "haptics",
@@ -65,7 +55,7 @@
                 },
                 {
                     "type": "button",
-                    "weight": 1.0,
+                    "weight": 1,
                     "id": "haptic_heavy",
                     "text": "Heavy",
                     "icon": "haptics",
@@ -86,7 +76,7 @@
                 },
                 {
                     "type": "button",
-                    "weight": 1.0,
+                    "weight": 1,
                     "id": "haptic_success",
                     "text": "Success",
                     "icon": "check",
@@ -105,16 +95,16 @@
                         }
                     }
                 }
-            ]
+            ],
+            "orientation": "horizontal"
         },
         {
             "type": "container",
-            "orientation": "horizontal",
             "item_spacing": 8,
             "items": [
                 {
                     "type": "button",
-                    "weight": 1.0,
+                    "weight": 1,
                     "id": "haptic_warning",
                     "text": "Warning",
                     "icon": "notification",
@@ -135,7 +125,7 @@
                 },
                 {
                     "type": "button",
-                    "weight": 1.0,
+                    "weight": 1,
                     "id": "haptic_error",
                     "text": "Error Buzz",
                     "icon": "clear",
@@ -156,7 +146,7 @@
                 },
                 {
                     "type": "button",
-                    "weight": 1.0,
+                    "weight": 1,
                     "id": "haptic_tick",
                     "text": "Tick",
                     "icon": "haptics",
@@ -175,7 +165,8 @@
                         }
                     }
                 }
-            ]
+            ],
+            "orientation": "horizontal"
         },
         {
             "type": "button",
@@ -196,5 +187,12 @@
                 }
             }
         }
-    ]
+    ],
+    "orientation": "vertical",
+    "paddings": {
+        "left": 12,
+        "right": 12,
+        "top": 10,
+        "bottom": 10
+    }
 }

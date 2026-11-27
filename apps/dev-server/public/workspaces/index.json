@@ -7,8 +7,8 @@
    "subtitle": "Work & payments for motorcycle-taxi riders",
    "accent": "#F59E0B",
    "terminal": "BODA-001",
-   "cardCount": 4,
-   "collectionCount": 3,
+   "cardCount": 0,
+   "collectionCount": 0,
    "android": false
   },
   {
@@ -23,14 +23,25 @@
    "android": true
   },
   {
-   "slug": "apex-kiosk",
-   "manifestId": "apex_kiosk",
-   "title": "APEX KIOSK",
-   "subtitle": "Orders, receipts, QR & LAN",
-   "accent": "#7C3AED",
-   "terminal": "KSK-001",
-   "cardCount": 4,
+   "slug": "owner-pos",
+   "manifestId": "owner_pos",
+   "title": "APEX Owner",
+   "subtitle": "Owner POS, inventory and customer handoff",
+   "accent": "#6D4AFF",
+   "terminal": "POS-001",
+   "cardCount": 11,
    "collectionCount": 4,
+   "android": false
+  },
+  {
+   "slug": "acme-pos",
+   "manifestId": "acme_pos",
+   "title": "Apex POS Terminal",
+   "subtitle": "DivKit SDUI showcase",
+   "accent": "#0284C7",
+   "terminal": "POS-TERM-01",
+   "cardCount": 25,
+   "collectionCount": 3,
    "android": true
   }
  ]

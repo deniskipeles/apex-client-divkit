@@ -69,6 +69,22 @@ custom-block prop resolver, so a card that renders on the device keeps rendering
 `/api/schemas/my-card`, the picker, and the static preset all pick it up
 automatically.
 
+### Add or edit a workspace (TypeScript-only)
+
+Workspaces are authored under `workspaces/**` as TypeScript. The tree contains no `.json`
+sources and no `.json` imports; `build-workspaces.mjs` fails if either appears.
+
+- `workspaces/<slug>/index.ts` exports a `WorkspaceDefinition` (`meta`, `hub`, `cards`,
+  `catalog`, `collections`, optional `targets.android`).
+- `hub` is a full `DivCard`; every `cards[].card` is a **raw div body** (not a
+  `{card:{...}}` document). Android embeds it under a Back button and supplies the hub's
+  `user.*` declarations.
+- Multi-page navigation uses `nav({ initial, cards })` (`sdui_nav`) with
+  `nav://push|pop` targets; single-active switching uses `state(...)` (native `DivState`).
+- `targets: { android: true }` emits `apps/android/src/dev/resources/demo/<manifestId>/`.
+  `acme_pos` and `apex_tools_test` are generated this way.
+- Run `pnpm workspaces:build`; `pnpm workspaces:check` fails on drift.
+
 ### Add a custom div component (client-side)
 
 DivKit's web runtime renders `{ type: 'custom', custom_type: '<key>' }` divs
@@ -104,7 +120,13 @@ client/                 SPA (React + Tailwind 4, hash-routed)
 server/                 Nitro
   routes/api/schemas/   catalog + per-card JSON
   utils/schemas/        generators (boda, waiter, custom demo) + registry
-scripts/                build-schemas.mjs, ensure-client.mjs
+workspaces/
+  core/                 shared types, registry, generator, kit/ and divkit/ builders
+  <slug>/index.ts       one WorkspaceDefinition per workspace
+  <slug>/src/           cards, collections and variables for that workspace
+scripts/                generators and drift checks
+tests/                  tool contract fixtures + unit tests
+legacy/                 old standalone generators/assets, not used by the build
 public/                 built SPA (generated — commit-friendly artifact)
 ```
 
@@ -150,7 +172,10 @@ app.
 | --- | --- | --- |
 | `packages/contract/icons/native-icons.json` | `apps/android/.../NativeIconCatalog.kt` | `pnpm icons:build` |
 | `packages/divkit-subset/schema.json` | `packages/pos-ui/src/android-runtime/vocabulary.ts` | `pnpm divkit:schema` |
-| `apps/android/src/dev/resources/demo/**` + `client/public/workspaces/**` | `workspace/**` | `pnpm workspaces:build` |
+| `apps/android/src/dev/resources/demo/**` + `client/public/workspaces/**` | `workspaces/**` | `pnpm workspaces:build` |
+
+`acme_pos` and `apex_tools_test` under `demo/**` are generated output; edit
+their `workspaces/<slug>/` definitions instead.
 
 Each has a `--check` variant (`icons:check`, `divkit:schema:check`, `workspaces:check`) and
 every workspace build runs the vocabulary validator, so a card that the device would render

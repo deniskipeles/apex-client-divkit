@@ -1,0 +1,107 @@
+{
+  "id": 2,
+  "name": "inventory",
+  "schema": {
+    "fields": {
+      "item_name": {
+        "type": "string",
+        "required": false,
+        "uid": "inventory_item_name",
+        "min_length": 1,
+        "max_length": 60
+      },
+      "sku": {
+        "type": "string",
+        "required": false,
+        "uid": "inventory_sku",
+        "unique": true,
+        "min_length": 2
+      },
+      "price": {
+        "type": "number",
+        "required": false,
+        "uid": "inventory_price",
+        "min": 0
+      },
+      "stock": {
+        "type": "number",
+        "required": false,
+        "uid": "inventory_stock"
+      },
+      "category": {
+        "type": "string",
+        "required": false,
+        "uid": "inventory_category"
+      },
+      "barcode": {
+        "type": "string",
+        "required": false,
+        "sql_indexed": true,
+        "uid": "inventory_barcode"
+      },
+      "description": {
+        "type": "string",
+        "required": false,
+        "uid": "inventory_description"
+      },
+      "photo_url": {
+        "type": "string",
+        "required": false,
+        "uid": "inventory_photo_url"
+      }
+    },
+    "policies": {
+      "read": "public",
+      "create": "public",
+      "update": "public",
+      "delete": "public"
+    },
+    "lookup": {
+      "field": "barcode",
+      "secondary_field": "sku"
+    },
+    "references": [
+      {
+        "collection": "kiosk_order_lines",
+        "field": "sku",
+        "match": "sku",
+        "restrict_delete": true,
+        "message": "This product is on past orders and can't be deleted. Edit it instead to set stock to 0."
+      }
+    ]
+  },
+  "seed": [
+    {
+      "item_name": "Wagyu Smash Burger",
+      "sku": "ACM-101",
+      "price": 16.5,
+      "price_display": "16.50",
+      "stock": 42,
+      "category": "Entrees"
+    },
+    {
+      "item_name": "Truffle Parmesan Fries",
+      "sku": "ACM-102",
+      "price": 8,
+      "price_display": "8.00",
+      "stock": 65,
+      "category": "Sides"
+    },
+    {
+      "item_name": "Artisan Cold Brew",
+      "sku": "ACM-204",
+      "price": 5.5,
+      "price_display": "5.50",
+      "stock": 88,
+      "category": "Beverages"
+    },
+    {
+      "item_name": "Wood-Fired Margherita",
+      "sku": "ACM-109",
+      "price": 18,
+      "price_display": "18.00",
+      "stock": 29,
+      "category": "Pizza"
+    }
+  ]
+}

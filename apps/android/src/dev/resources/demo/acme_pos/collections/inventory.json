@@ -82,7 +82,7 @@
     {
       "item_name": "Truffle Parmesan Fries",
       "sku": "ACM-102",
-      "price": 8.0,
+      "price": 8,
       "price_display": "8.00",
       "stock": 65,
       "category": "Sides"
@@ -98,7 +98,7 @@
     {
       "item_name": "Wood-Fired Margherita",
       "sku": "ACM-109",
-      "price": 18.0,
+      "price": 18,
       "price_display": "18.00",
       "stock": 29,
       "category": "Pizza"

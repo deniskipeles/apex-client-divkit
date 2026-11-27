@@ -1,0 +1,67 @@
+{
+  "name": "orders",
+  "schema": {
+    "fields": {
+      "status": {
+        "type": "string",
+        "options": [
+          "draft",
+          "submitted",
+          "paid",
+          "void"
+        ]
+      },
+      "total": {
+        "type": "number",
+        "min": 0
+      },
+      "item_count": {
+        "type": "number",
+        "min": 0
+      },
+      "shop_name": {
+        "type": "string"
+      },
+      "shop_terminal": {
+        "type": "string"
+      },
+      "checksum": {
+        "type": "string"
+      },
+      "payload_json": {
+        "type": "string"
+      }
+    },
+    "aggregates": [
+      {
+        "target": "order_lines",
+        "foreign_field": "order_id",
+        "outputs": {
+          "item_count": "count()",
+          "total": "round2(sum(unit_price * quantity))"
+        },
+        "editable_status": [
+          "draft"
+        ]
+      }
+    ],
+    "canonical": {
+      "child": "order_lines",
+      "child_foreign_field": "order_id",
+      "child_fields": [
+        "sku",
+        "item_name",
+        "unit_price",
+        "quantity"
+      ],
+      "child_computed": {
+        "line_total_display": "round2(unit_price * quantity)",
+        "unit_price_display": "unit_price",
+        "name_and_qty": "item_name"
+      },
+      "child_json_key": "lines_json",
+      "child_count_key": "item_count"
+    }
+  },
+  "seed": []
+}

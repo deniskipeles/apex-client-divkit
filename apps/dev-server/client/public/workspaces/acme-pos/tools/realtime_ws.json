@@ -1,0 +1,98 @@
+{
+  "type": "container",
+  "border": {
+    "corner_radius": 12,
+    "stroke": {
+      "color": "#2DD4BF",
+      "width": 1
+    }
+  },
+  "items": [
+    {
+      "type": "text",
+      "font_size": 11,
+      "font_weight": "bold",
+      "text": "📡 REALTIME WEBSOCKET / SSE CHANNEL (tools://realtime-ws)",
+      "text_color": "#5EEAD4"
+    },
+    {
+      "type": "text",
+      "font_family": "monospace",
+      "font_size": 12,
+      "text": "State: @{user.realtime_connection_state} • Channel: @{user.realtime_channel}",
+      "text_color": "#CCFBF1"
+    },
+    {
+      "type": "container",
+      "item_spacing": 8,
+      "items": [
+        {
+          "type": "container",
+          "items": [
+            {
+              "type": "button",
+              "id": "tool_realtime-ws_connect",
+              "text": "Connect Stream",
+              "subtitle": "tools://realtime-ws/connect • wss:// kitchen_stream",
+              "icon": "sync",
+              "background_color": "#0F766E",
+              "text_color": "#FFFFFF",
+              "corner_radius": 10,
+              "action": {
+                "log_id": "exec_tool_realtime-ws_connect",
+                "url": "tools://realtime-ws/connect",
+                "payload": {
+                  "operation": "connect",
+                  "options": {
+                    "channel": "kitchen_stream"
+                  },
+                  "output": {
+                    "connection_state": "user.realtime_connection_state",
+                    "channel": "user.realtime_channel"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "container",
+          "items": [
+            {
+              "type": "button",
+              "id": "tool_realtime-ws_disconnect",
+              "text": "Disconnect",
+              "subtitle": "tools://realtime-ws/disconnect",
+              "icon": "delete",
+              "background_color": "#115E59",
+              "text_color": "#FFFFFF",
+              "corner_radius": 10,
+              "action": {
+                "log_id": "exec_tool_realtime-ws_disconnect",
+                "url": "tools://realtime-ws/disconnect",
+                "payload": {
+                  "operation": "disconnect",
+                  "options": {
+                    "channel": "kitchen_stream"
+                  },
+                  "output": {
+                    "connection_state": "user.realtime_connection_state",
+                    "channel": "user.realtime_channel"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "orientation": "horizontal"
+    }
+  ],
+  "orientation": "vertical",
+  "paddings": {
+    "left": 12,
+    "right": 12,
+    "top": 10,
+    "bottom": 10
+  }
+}

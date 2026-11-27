@@ -1,27 +1,22 @@
 {
   "type": "container",
-  "orientation": "vertical",
-  "background_color": "#071221",
-  "corner_radius": 14,
-  "paddings": {"left": 14, "right": 14, "top": 14, "bottom": 14},
   "item_spacing": 10,
   "items": [
     {
       "type": "text",
-      "text": "🔐 GENERIC CODEC  —  tools://codec",
       "font_size": 15,
       "font_weight": "bold",
+      "text": "🔐 GENERIC CODEC  —  tools://codec",
       "text_color": "#38BDF8"
     },
     {
       "type": "text",
-      "text": "Base64, Base45, JSON validate/extract/stringify/chunk/assemble. Chunk envelopes are caller-sized and capped by max_chunks.",
       "font_size": 11,
+      "text": "Base64, Base45, JSON validate/extract/stringify/chunk/assemble. Chunk envelopes are caller-sized and capped by max_chunks.",
       "text_color": "#94A3B8"
     },
     {
       "type": "container",
-      "orientation": "horizontal",
       "item_spacing": 8,
       "items": [
         {
@@ -34,7 +29,9 @@
             {
               "log_id": "codec_validate",
               "url": "tools://codec/json/validate",
-              "payload": {"json": "{\"order_id\":\"42\",\"lines\":[]}"}
+              "payload": {
+                "json": "{\"order_id\":\"42\",\"lines\":[]}"
+              }
             }
           ]
         },
@@ -48,11 +45,24 @@
             {
               "log_id": "codec_chunk",
               "url": "tools://codec/json/chunk",
-              "payload": {"json": "{\"order_id\":\"42\",\"note\":\"hello\"}", "encoding": "base45", "max_bytes": 500, "max_chunks": 32}
+              "payload": {
+                "json": "{\"order_id\":\"42\",\"note\":\"hello\"}",
+                "encoding": "base45",
+                "max_bytes": 500,
+                "max_chunks": 32
+              }
             }
           ]
         }
-      ]
+      ],
+      "orientation": "horizontal"
     }
-  ]
+  ],
+  "orientation": "vertical",
+  "paddings": {
+    "left": 14,
+    "right": 14,
+    "top": 14,
+    "bottom": 14
+  }
 }

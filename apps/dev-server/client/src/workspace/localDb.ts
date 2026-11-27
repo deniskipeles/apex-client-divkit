@@ -1,3 +1,4 @@
+import { dispatchOwnerPosOperation } from './ownerPosOps.ts'
 import {
   display,
   isValidVariableName,
@@ -42,6 +43,14 @@ export async function dispatchLocalDb(
   }
   const operation = url.slice('local-db://op/'.length).trim()
   try {
+    const custom = await dispatchOwnerPosOperation(operation, payload, db, variables as Record<string, unknown>)
+    if (custom) {
+      return {
+        status: 'ok',
+        updates: { ...(custom.updates as Record<string, DivValue>), 'user.engine_error': '' },
+        data: custom.data as Record<string, unknown> | undefined,
+      }
+    }
     const result = await runOperation(operation, payload, db)
     const updates = emitResult(result, payload, variables)
     updates['user.engine_error'] = ''

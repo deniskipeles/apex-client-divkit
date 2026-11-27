@@ -1,10 +1,8 @@
 {
     "type": "custom",
-    "custom_type": "sdui_chart",
-    "id": "onfly_hourly_area_${tenantId}",
     "custom_props": {
         "chart_type": "area",
-        "title": "HOURLY POS THROUGHPUT (${terminalCode})",
+        "title": "HOURLY POS THROUGHPUT (POS-TERM-01)",
         "subtitle": "Orders per two-hour window today",
         "value_prefix": "$",
         "accent_color": "#0284C7",
@@ -14,7 +12,7 @@
         "points": [
             {
                 "label": "09:00",
-                "value": 145.0,
+                "value": 145,
                 "color": "#38BDF8",
                 "subtitle": "Window 09:00"
             },
@@ -26,13 +24,13 @@
             },
             {
                 "label": "13:00",
-                "value": 540.0,
+                "value": 540,
                 "color": "#818CF8",
                 "subtitle": "Window 13:00"
             },
             {
                 "label": "15:00",
-                "value": 390.0,
+                "value": 390,
                 "color": "#F59E0B",
                 "subtitle": "Window 15:00"
             },
@@ -49,5 +47,7 @@
                 "subtitle": "Window 19:00"
             }
         ]
-    }
+    },
+    "custom_type": "sdui_chart",
+    "id": "onfly_hourly_area_acme_pos"
 }

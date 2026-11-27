@@ -1,0 +1,190 @@
+{
+  "type": "container",
+  "border": {
+    "corner_radius": 12,
+    "stroke": {
+      "color": "#22D3EE",
+      "width": 1
+    }
+  },
+  "items": [
+    {
+      "type": "text",
+      "font_size": 11,
+      "font_weight": "bold",
+      "text": "🖥 SCREEN / KEEP-AWAKE • SCREENSHOT • RECORDING (tools://screen)",
+      "text_color": "#67E8F9"
+    },
+    {
+      "type": "text",
+      "font_family": "monospace",
+      "font_size": 12,
+      "text": "Status: @{user.screen_status} • Awake: @{user.screen_keep_awake} • Recording: @{user.screen_recording} • @{user.screen_error}",
+      "text_color": "#E0F2FE"
+    },
+    {
+      "type": "container",
+      "item_spacing": 8,
+      "items": [
+        {
+          "type": "container",
+          "items": [
+            {
+              "type": "button",
+              "id": "tool_screen_keep_awake",
+              "text": "Hold Screen Awake",
+              "subtitle": "tools://screen/keep-awake • 5 min",
+              "icon": "bell",
+              "background_color": "#0284C7",
+              "text_color": "#FFFFFF",
+              "corner_radius": 10,
+              "action": {
+                "log_id": "exec_tool_screen_keep_awake",
+                "url": "tools://screen/keep-awake",
+                "payload": {
+                  "options": {
+                    "action": "enable",
+                    "level": "screen",
+                    "timeout_ms": "300000"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "container",
+          "items": [
+            {
+              "type": "button",
+              "id": "tool_screen_release_awake",
+              "text": "Release Wake-Lock",
+              "subtitle": "tools://screen/keep-awake • disable",
+              "icon": "volume_off",
+              "background_color": "#075985",
+              "text_color": "#FFFFFF",
+              "corner_radius": 10,
+              "action": {
+                "log_id": "exec_tool_screen_release_awake",
+                "url": "tools://screen/keep-awake",
+                "payload": {
+                  "options": {
+                    "action": "disable"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "orientation": "horizontal"
+    },
+    {
+      "type": "container",
+      "item_spacing": 8,
+      "items": [
+        {
+          "type": "container",
+          "items": [
+            {
+              "type": "button",
+              "id": "tool_screen_screenshot",
+              "text": "Capture Screenshot",
+              "subtitle": "tools://screen/screenshot • PNG",
+              "icon": "camera",
+              "background_color": "#0E7490",
+              "text_color": "#FFFFFF",
+              "corner_radius": 10,
+              "action": {
+                "log_id": "exec_tool_screen_screenshot",
+                "url": "tools://screen/screenshot",
+                "payload": {
+                  "options": {
+                    "format": "png",
+                    "quality": "95"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "container",
+          "items": [
+            {
+              "type": "button",
+              "id": "tool_screen_record_start",
+              "text": "Start Recording",
+              "subtitle": "tools://screen/recording • start",
+              "icon": "scan",
+              "background_color": "#BE123C",
+              "text_color": "#FFFFFF",
+              "corner_radius": 10,
+              "action": {
+                "log_id": "exec_tool_screen_record_start",
+                "url": "tools://screen/recording",
+                "payload": {
+                  "options": {
+                    "action": "start"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "orientation": "horizontal"
+    },
+    {
+      "type": "container",
+      "item_spacing": 8,
+      "items": [
+        {
+          "type": "container",
+          "items": [
+            {
+              "type": "button",
+              "id": "tool_screen_record_stop",
+              "text": "Stop Recording",
+              "subtitle": "tools://screen/recording • stop",
+              "icon": "close",
+              "background_color": "#7F1D1D",
+              "text_color": "#FFFFFF",
+              "corner_radius": 10,
+              "action": {
+                "log_id": "exec_tool_screen_record_stop",
+                "url": "tools://screen/recording",
+                "payload": {
+                  "options": {
+                    "action": "stop"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "container",
+          "items": [
+            {
+              "type": "text",
+              "font_family": "monospace",
+              "font_size": 10,
+              "max_lines": 2,
+              "text": "Last file: @{user.screen_media_uri}",
+              "text_color": "#A5F3FC"
+            }
+          ]
+        }
+      ],
+      "orientation": "horizontal"
+    }
+  ],
+  "orientation": "vertical",
+  "paddings": {
+    "left": 12,
+    "right": 12,
+    "top": 10,
+    "bottom": 10
+  }
+}

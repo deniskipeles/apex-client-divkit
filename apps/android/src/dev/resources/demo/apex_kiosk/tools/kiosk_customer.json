@@ -1,190 +1,179 @@
 {
  "type": "container",
- "orientation": "vertical",
  "item_spacing": 16,
  "items": [
   {
    "type": "container",
-   "orientation": "vertical",
    "item_spacing": 10,
    "items": [
     {
      "type": "container",
-     "orientation": "horizontal",
      "item_spacing": 8,
      "items": [
       {
        "type": "container",
-       "orientation": "vertical",
        "item_spacing": 4,
        "items": [
         {
          "type": "text",
-         "text": "New order",
          "font_size": 24,
-         "text_color": "#F8FAFC",
          "font_weight": "bold",
+         "text": "New order",
+         "text_color": "#F8FAFC",
          "visibility": "@{if(user.kiosk_order_id == '', 'visible', 'gone')}"
         },
         {
          "type": "text",
-         "text": "Order @{user.kiosk_order_label}",
          "font_size": 24,
-         "text_color": "#F8FAFC",
          "font_weight": "bold",
+         "text": "Order @{user.kiosk_order_label}",
+         "text_color": "#F8FAFC",
          "visibility": "@{if(user.kiosk_order_id == '', 'gone', 'visible')}"
         },
         {
          "type": "text",
-         "text": "Apex Kiosk · customer ordering",
          "font_size": 12,
+         "text": "Apex Kiosk · customer ordering",
          "text_color": "#94A3B8"
         }
        ],
-       "weight": 1
+       "orientation": "vertical"
       }
-     ]
+     ],
+     "orientation": "horizontal"
     },
     {
      "type": "container",
-     "orientation": "horizontal",
      "item_spacing": 8,
      "items": [
       {
        "type": "text",
+       "font_size": 11,
        "text": "Order",
-       "font_size": 11,
        "text_color": "#94A3B8"
       },
       {
        "type": "text",
-       "text": "@{user.kiosk_order_label}",
+       "font_family": "monospace",
        "font_size": 13,
-       "text_color": "#F8FAFC",
        "font_weight": "bold",
-       "font_family": "monospace"
+       "text": "@{user.kiosk_order_label}",
+       "text_color": "#F8FAFC"
       },
       {
        "type": "text",
-       "text": "·",
        "font_size": 11,
+       "text": "·",
        "text_color": "#94A3B8"
       },
       {
        "type": "text",
+       "font_size": 12,
        "text": "@{toInteger(user.kiosk_item_count)} in cart",
-       "font_size": 12,
        "text_color": "#94A3B8"
       },
       {
        "type": "text",
+       "font_size": 11,
        "text": "·",
-       "font_size": 11,
        "text_color": "#94A3B8"
       },
       {
        "type": "text",
-       "text": "$@{user.kiosk_total}",
+       "font_family": "monospace",
        "font_size": 12,
-       "text_color": "#C4B5FD",
        "font_weight": "bold",
-       "font_family": "monospace"
+       "text": "$@{user.kiosk_total}",
+       "text_color": "#C4B5FD"
       },
       {
        "type": "text",
-       "text": "@{if(user.kiosk_status == 'draft', 'Draft', if(user.kiosk_status == 'submitted', 'Submitted', user.kiosk_status))}",
        "font_size": 11,
        "font_weight": "bold",
-       "text_color": "#F8FAFC",
-       "background_color": "#1B2740",
-       "corner_radius": 20,
        "paddings": {
         "left": 10,
         "right": 10,
         "top": 5,
         "bottom": 5
-       }
+       },
+       "text": "@{if(user.kiosk_status == 'draft', 'Draft', if(user.kiosk_status == 'submitted', 'Submitted', user.kiosk_status))}",
+       "text_color": "#F8FAFC"
       }
      ],
+     "orientation": "horizontal",
      "visibility": "@{if(user.kiosk_order_id == '', 'gone', 'visible')}"
     }
-   ]
+   ],
+   "orientation": "vertical"
   },
   {
    "type": "container",
-   "orientation": "horizontal",
+   "id": "kiosk_customer_error",
    "item_spacing": 8,
-   "background_color": "#3F1D24",
-   "corner_radius": 10,
-   "paddings": {
-    "left": 12,
-    "right": 12,
-    "top": 10,
-    "bottom": 10
-   },
    "items": [
     {
      "type": "text",
+     "font_size": 12,
+     "max_lines": 3,
      "text": "@{user.engine_error}",
-     "font_size": 12,
-     "text_color": "#FCA5A5",
-     "max_lines": 3
+     "text_color": "#FCA5A5"
     }
    ],
-   "visibility": "@{if(user.engine_error != '', 'visible', 'gone')}",
-   "id": "kiosk_customer_error"
-  },
-  {
-   "type": "container",
    "orientation": "horizontal",
-   "item_spacing": 8,
-   "background_color": "#052E22",
-   "corner_radius": 10,
    "paddings": {
     "left": 12,
     "right": 12,
     "top": 10,
     "bottom": 10
    },
+   "visibility": "@{if(user.engine_error != '', 'visible', 'gone')}"
+  },
+  {
+   "type": "container",
+   "id": "kiosk_customer_submitted",
+   "item_spacing": 8,
    "items": [
     {
      "type": "text",
+     "font_size": 12,
+     "max_lines": 3,
      "text": "Submitted — this order is locked. Start a new order or review it in Owner receipt.",
-     "font_size": 12,
-     "text_color": "#34D399",
-     "max_lines": 3
+     "text_color": "#34D399"
     }
    ],
-   "visibility": "@{if(user.kiosk_status == 'submitted', 'visible', 'gone')}",
-   "id": "kiosk_customer_submitted"
-  },
-  {
-   "type": "container",
    "orientation": "horizontal",
-   "item_spacing": 8,
-   "background_color": "#1B2740",
-   "corner_radius": 10,
    "paddings": {
     "left": 12,
     "right": 12,
     "top": 10,
     "bottom": 10
    },
-   "items": [
-    {
-     "type": "text",
-     "text": "@{user.kiosk_notice}",
-     "font_size": 12,
-     "text_color": "#F8FAFC",
-     "max_lines": 3
-    }
-   ],
-   "visibility": "@{if(user.kiosk_notice != '', 'visible', 'gone')}",
-   "id": "kiosk_customer_notice"
+   "visibility": "@{if(user.kiosk_status == 'submitted', 'visible', 'gone')}"
   },
   {
    "type": "container",
+   "id": "kiosk_customer_notice",
+   "item_spacing": 8,
+   "items": [
+    {
+     "type": "text",
+     "font_size": 12,
+     "max_lines": 3,
+     "text": "@{user.kiosk_notice}",
+     "text_color": "#F8FAFC"
+    }
+   ],
    "orientation": "horizontal",
+   "paddings": {
+    "left": 12,
+    "right": 12,
+    "top": 10,
+    "bottom": 10
+   },
+   "visibility": "@{if(user.kiosk_notice != '', 'visible', 'gone')}"
+  },
+  {
+   "type": "container",
    "item_spacing": 8,
    "items": [
     {
@@ -314,44 +303,43 @@
      "background_color": "#E2E8F0",
      "visibility": "@{if(user.kiosk_undo_sku == '', 'gone', 'visible')}"
     }
-   ]
+   ],
+   "orientation": "horizontal"
   },
   {
    "type": "text",
-   "text": "Starting a new order keeps the current one saved as a draft.",
    "font_size": 11,
+   "text": "Starting a new order keeps the current one saved as a draft.",
    "text_color": "#94A3B8"
   },
   {
    "type": "container",
-   "orientation": "vertical",
    "item_spacing": 8,
    "items": [
     {
      "type": "container",
-     "orientation": "horizontal",
      "item_spacing": 8,
      "items": [
       {
        "type": "text",
-       "text": "Catalog",
        "font_size": 11,
-       "text_color": "#94A3B8",
-       "font_weight": "bold"
+       "font_weight": "bold",
+       "text": "Catalog",
+       "text_color": "#94A3B8"
       },
       {
        "type": "text",
-       "text": "@{user.catalog_count} available",
        "font_size": 11,
-       "text_color": "#94A3B8",
-       "weight": 1
+       "text": "@{user.catalog_count} available",
+       "text_color": "#94A3B8"
       }
-     ]
+     ],
+     "orientation": "horizontal"
     },
     {
      "type": "text",
-     "text": "Start a new order to add items.",
      "font_size": 12,
+     "text": "Start a new order to add items.",
      "text_color": "#94A3B8",
      "visibility": "@{if(user.kiosk_order_id == '', 'visible', 'gone')}"
     },
@@ -361,22 +349,26 @@
      "empty_text": "No products available yet.",
      "row_card": {
       "type": "container",
-      "orientation": "vertical",
+      "border": {
+       "corner_radius": 12,
+       "stroke": {
+        "color": "#24304A",
+        "width": 1
+       }
+      },
       "item_spacing": 0,
       "items": [
        {
         "type": "container",
-        "orientation": "horizontal",
         "item_spacing": 8,
         "items": [
          {
           "type": "text",
-          "text": "@{item.item_name}",
           "font_size": 15,
-          "text_color": "#F8FAFC",
           "font_weight": "bold",
           "max_lines": 2,
-          "weight": 1
+          "text": "@{item.item_name}",
+          "text_color": "#F8FAFC"
          },
          {
           "type": "button",
@@ -439,98 +431,90 @@
            "value": 38
           }
          }
-        ]
+        ],
+        "orientation": "horizontal"
        },
        {
         "type": "container",
-        "orientation": "horizontal",
         "item_spacing": 6,
         "items": [
          {
           "type": "text",
+          "font_family": "monospace",
+          "font_size": 11,
+          "max_lines": 1,
           "text": "@{item.sku}",
-          "font_size": 11,
-          "text_color": "#94A3B8",
-          "font_family": "monospace",
-          "max_lines": 1
+          "text_color": "#94A3B8"
          },
          {
           "type": "text",
+          "font_size": 11,
+          "max_lines": 1,
           "text": "·",
-          "font_size": 11,
-          "text_color": "#94A3B8",
-          "max_lines": 1
+          "text_color": "#94A3B8"
          },
          {
           "type": "text",
-          "text": "$@{if(item.price_display == '', item.price, item.price_display)}",
+          "font_family": "monospace",
           "font_size": 12,
-          "text_color": "#34D399",
           "font_weight": "bold",
-          "font_family": "monospace",
-          "max_lines": 1
+          "max_lines": 1,
+          "text": "$@{if(item.price_display == '', item.price, item.price_display)}",
+          "text_color": "#34D399"
          },
          {
           "type": "text",
+          "font_size": 11,
+          "max_lines": 1,
           "text": "·",
-          "font_size": 11,
-          "text_color": "#94A3B8",
-          "max_lines": 1
+          "text_color": "#94A3B8"
          },
          {
           "type": "text",
-          "text": "@{item.stock} in stock",
           "font_size": 11,
-          "text_color": "#94A3B8",
-          "max_lines": 1
+          "max_lines": 1,
+          "text": "@{item.stock} in stock",
+          "text_color": "#94A3B8"
          }
-        ]
+        ],
+        "orientation": "horizontal"
        }
       ],
-      "background_color": "#131C2E",
+      "orientation": "vertical",
       "paddings": {
        "left": 14,
        "right": 14,
        "top": 14,
        "bottom": 14
-      },
-      "corner_radius": 12,
-      "border": {
-       "corner_radius": 12,
-       "stroke": {
-        "color": "#24304A",
-        "width": 1
-       }
       }
      }
     }
-   ]
+   ],
+   "orientation": "vertical"
   },
   {
    "type": "container",
-   "orientation": "vertical",
    "item_spacing": 8,
    "items": [
     {
      "type": "container",
-     "orientation": "horizontal",
      "item_spacing": 8,
      "items": [
       {
        "type": "text",
-       "text": "In this order",
        "font_size": 11,
-       "text_color": "#94A3B8",
-       "font_weight": "bold"
+       "font_weight": "bold",
+       "text": "In this order",
+       "text_color": "#94A3B8"
       },
       {
        "type": "text",
-       "text": "@{user.kiosk_line_count} @{if(toInteger(user.kiosk_line_count) == 1, 'line', 'lines')}",
        "font_size": 11,
-       "text_color": "#94A3B8",
-       "weight": 1
+       "text": "@{user.kiosk_line_count} @{if(toInteger(user.kiosk_line_count) == 1, 'line', 'lines')}",
+       "text_color": "#94A3B8"
       }
-     ]
+     ],
+     "orientation": "horizontal"
     },
     {
      "type": "json_list",
@@ -538,55 +522,58 @@
      "empty_text": "No items yet — tap Add on a product above.",
      "row_card": {
       "type": "container",
-      "orientation": "vertical",
+      "border": {
+       "corner_radius": 12,
+       "stroke": {
+        "color": "#24304A",
+        "width": 1
+       }
+      },
       "item_spacing": 10,
       "items": [
        {
         "type": "container",
-        "orientation": "horizontal",
         "item_spacing": 8,
         "items": [
          {
           "type": "container",
-          "orientation": "vertical",
           "item_spacing": 3,
           "items": [
            {
             "type": "text",
-            "text": "@{item.item_name}",
             "font_size": 15,
-            "text_color": "#F8FAFC",
             "font_weight": "bold",
-            "max_lines": 2
+            "max_lines": 2,
+            "text": "@{item.item_name}",
+            "text_color": "#F8FAFC"
            },
            {
             "type": "text",
-            "text": "@{item.sku} · $@{item.unit_price_display} each",
+            "font_family": "monospace",
             "font_size": 11,
-            "text_color": "#94A3B8",
-            "font_family": "monospace"
+            "text": "@{item.sku} · $@{item.unit_price_display} each",
+            "text_color": "#94A3B8"
            }
           ],
-          "weight": 1
+          "orientation": "vertical"
          },
          {
           "type": "text",
-          "text": "$@{item.line_total}",
+          "font_family": "monospace",
           "font_size": 16,
-          "text_color": "#F8FAFC",
           "font_weight": "bold",
-          "font_family": "monospace"
+          "text": "$@{item.line_total}",
+          "text_color": "#F8FAFC"
          }
-        ]
+        ],
+        "orientation": "horizontal"
        },
        {
         "type": "container",
-        "orientation": "horizontal",
         "item_spacing": 8,
         "items": [
          {
           "type": "container",
-          "orientation": "horizontal",
           "item_spacing": 6,
           "items": [
            {
@@ -631,11 +618,11 @@
            },
            {
             "type": "text",
-            "text": "@{item.quantity}",
+            "font_family": "monospace",
             "font_size": 15,
-            "text_color": "#F8FAFC",
             "font_weight": "bold",
-            "font_family": "monospace"
+            "text": "@{item.quantity}",
+            "text_color": "#F8FAFC"
            },
            {
             "type": "button",
@@ -678,7 +665,7 @@
             "visibility": "@{if(user.kiosk_status == 'draft', 'visible', 'gone')}"
            }
           ],
-          "weight": 1,
+          "orientation": "horizontal",
           "visibility": "@{if(user.kiosk_order_id != '' && user.kiosk_status == 'draft', 'visible', 'gone')}"
          },
          {
@@ -725,134 +712,123 @@
           "background_color": "#3F1D24",
           "visibility": "@{if(user.kiosk_status == 'draft', 'visible', 'gone')}"
          }
-        ]
+        ],
+        "orientation": "horizontal"
        }
       ],
-      "background_color": "#131C2E",
+      "orientation": "vertical",
       "paddings": {
        "left": 14,
        "right": 14,
        "top": 14,
        "bottom": 14
-      },
-      "corner_radius": 12,
-      "border": {
-       "corner_radius": 12,
-       "stroke": {
-        "color": "#24304A",
-        "width": 1
-       }
       }
      }
     }
-   ]
+   ],
+   "orientation": "vertical"
   },
   {
    "type": "container",
-   "orientation": "vertical",
-   "item_spacing": 10,
-   "items": [
-    {
-     "type": "container",
-     "orientation": "horizontal",
-     "item_spacing": 8,
-     "items": [
-      {
-       "type": "text",
-       "text": "Items",
-       "font_size": 12,
-       "text_color": "#94A3B8",
-       "weight": 1
-      },
-      {
-       "type": "text",
-       "text": "@{user.kiosk_item_count}",
-       "font_size": 13,
-       "text_color": "#F8FAFC",
-       "font_weight": "bold",
-       "font_family": "monospace"
-      }
-     ]
-    },
-    {
-     "type": "container",
-     "orientation": "horizontal",
-     "item_spacing": 8,
-     "items": [
-      {
-       "type": "text",
-       "text": "Subtotal",
-       "font_size": 12,
-       "text_color": "#94A3B8",
-       "weight": 1
-      },
-      {
-       "type": "text",
-       "text": "$@{user.kiosk_subtotal}",
-       "font_size": 13,
-       "text_color": "#F8FAFC",
-       "font_weight": "bold",
-       "font_family": "monospace"
-      }
-     ]
-    },
-    {
-     "type": "separator"
-    },
-    {
-     "type": "container",
-     "orientation": "horizontal",
-     "item_spacing": 8,
-     "items": [
-      {
-       "type": "text",
-       "text": "Total",
-       "font_size": 15,
-       "text_color": "#F8FAFC",
-       "font_weight": "bold",
-       "weight": 1
-      },
-      {
-       "type": "text",
-       "text": "$@{user.kiosk_total}",
-       "font_size": 28,
-       "text_color": "#F8FAFC",
-       "font_weight": "bold",
-       "font_family": "monospace"
-      }
-     ]
-    }
-   ],
-   "background_color": "#131C2E",
-   "paddings": {
-    "left": 16,
-    "right": 16,
-    "top": 16,
-    "bottom": 16
-   },
-   "corner_radius": 14,
    "border": {
     "corner_radius": 14,
     "stroke": {
      "color": "#24304A",
      "width": 1
     }
+   },
+   "item_spacing": 10,
+   "items": [
+    {
+     "type": "container",
+     "item_spacing": 8,
+     "items": [
+      {
+       "type": "text",
+       "font_size": 12,
+       "text": "Items",
+       "text_color": "#94A3B8"
+      },
+      {
+       "type": "text",
+       "font_family": "monospace",
+       "font_size": 13,
+       "font_weight": "bold",
+       "text": "@{user.kiosk_item_count}",
+       "text_color": "#F8FAFC"
+      }
+     ],
+     "orientation": "horizontal"
+    },
+    {
+     "type": "container",
+     "item_spacing": 8,
+     "items": [
+      {
+       "type": "text",
+       "font_size": 12,
+       "text": "Subtotal",
+       "text_color": "#94A3B8"
+      },
+      {
+       "type": "text",
+       "font_family": "monospace",
+       "font_size": 13,
+       "font_weight": "bold",
+       "text": "$@{user.kiosk_subtotal}",
+       "text_color": "#F8FAFC"
+      }
+     ],
+     "orientation": "horizontal"
+    },
+    {
+     "type": "separator"
+    },
+    {
+     "type": "container",
+     "item_spacing": 8,
+     "items": [
+      {
+       "type": "text",
+       "font_size": 15,
+       "font_weight": "bold",
+       "text": "Total",
+       "text_color": "#F8FAFC"
+      },
+      {
+       "type": "text",
+       "font_family": "monospace",
+       "font_size": 28,
+       "font_weight": "bold",
+       "text": "$@{user.kiosk_total}",
+       "text_color": "#F8FAFC"
+      }
+     ],
+     "orientation": "horizontal"
+    }
+   ],
+   "orientation": "vertical",
+   "paddings": {
+    "left": 16,
+    "right": 16,
+    "top": 16,
+    "bottom": 16
    }
   },
   {
    "type": "text",
-   "text": "Add at least one item before submitting.",
    "font_size": 11,
-   "text_color": "#FBBF24",
    "id": "kiosk_customer_empty_hint",
+   "text": "Add at least one item before submitting.",
+   "text_color": "#FBBF24",
    "visibility": "@{if(toInteger(user.kiosk_item_count) == 0, 'visible', 'gone')}"
   },
   {
    "type": "text",
-   "text": "Submitting locks the order. Add nothing after this.",
    "font_size": 11,
-   "text_color": "#FBBF24",
    "id": "kiosk_submit_warn",
+   "text": "Submitting locks the order. Add nothing after this.",
+   "text_color": "#FBBF24",
    "visibility": "@{if(user.kiosk_confirm == 'submit', 'visible', 'gone')}"
   },
   {
@@ -878,9 +854,7 @@
   },
   {
    "type": "container",
-   "orientation": "horizontal",
    "item_spacing": 10,
-   "visibility": "@{if(user.kiosk_confirm == 'submit' && user.kiosk_order_id != '' && user.kiosk_status == 'draft', 'visible', 'gone')}",
    "items": [
     {
      "type": "button",
@@ -947,7 +921,10 @@
       }
      ]
     }
-   ]
+   ],
+   "orientation": "horizontal",
+   "visibility": "@{if(user.kiosk_confirm == 'submit' && user.kiosk_order_id != '' && user.kiosk_status == 'draft', 'visible', 'gone')}"
   }
- ]
+ ],
+ "orientation": "vertical"
 }

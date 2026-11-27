@@ -20,19 +20,10 @@
  "catalog": "tool_catalog.json",
  "collections": {
   "dir": "collections",
-  "files": [
-   "trips.json",
-   "expenses.json",
-   "handovers.json"
-  ]
+  "files": []
  },
  "cards": {
   "dir": "tools",
-  "order": [
-   "trip",
-   "earnings",
-   "expenses",
-   "handover"
-  ]
+  "order": []
  }
 }

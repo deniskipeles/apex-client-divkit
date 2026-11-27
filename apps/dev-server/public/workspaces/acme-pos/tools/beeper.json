@@ -1,0 +1,166 @@
+{
+  "type": "container",
+  "border": {
+    "corner_radius": 12,
+    "stroke": {
+      "color": "#818CF8",
+      "width": 1
+    }
+  },
+  "items": [
+    {
+      "type": "text",
+      "font_size": 11,
+      "font_weight": "bold",
+      "text": "🔔 HARDWARE BEEPER AUDIO (device.beeper@1 • tools://beeper)",
+      "text_color": "#C7D2FE"
+    },
+    {
+      "type": "text",
+      "font_size": 11,
+      "text": "Each button synthesises a real waveform through AudioTrack and reports the frequency it actually played.",
+      "text_color": "#A5B4FC"
+    },
+    {
+      "type": "text",
+      "font_family": "monospace",
+      "font_size": 12,
+      "text": "Tone: @{user.beeper_tone} • Frequency: @{user.beeper_frequency} Hz • Status: @{user.beeper_status}",
+      "text_color": "#EEF2FF"
+    },
+    {
+      "type": "container",
+      "item_spacing": 8,
+      "items": [
+        {
+          "type": "button",
+          "weight": 1,
+          "id": "beeper_ring",
+          "text": "Ring (1200Hz)",
+          "icon": "volume",
+          "background_color": "#4338CA",
+          "text_color": "#FFFFFF",
+          "corner_radius": 8,
+          "action": {
+            "log_id": "beeper_ring",
+            "url": "tools://beeper/tone",
+            "payload": {
+              "frequency_hz": 1200,
+              "duration_ms": 250,
+              "volume": 0.85,
+              "waveform": "sine",
+              "output": {
+                "status": "user.beeper_status",
+                "frequency_hz": "user.beeper_frequency"
+              }
+            }
+          }
+        },
+        {
+          "type": "button",
+          "weight": 1,
+          "id": "beeper_alert",
+          "text": "Alert (2400Hz)",
+          "icon": "beeper",
+          "background_color": "#D97706",
+          "text_color": "#FFFFFF",
+          "corner_radius": 8,
+          "action": {
+            "log_id": "beeper_alert",
+            "url": "tools://beeper/alert",
+            "payload": {
+              "frequency_hz": 2400,
+              "duration_ms": 160,
+              "volume": 0.9,
+              "waveform": "square",
+              "output": {
+                "status": "user.beeper_status",
+                "frequency_hz": "user.beeper_frequency"
+              }
+            }
+          }
+        },
+        {
+          "type": "button",
+          "weight": 1,
+          "id": "beeper_error",
+          "text": "Error (600Hz)",
+          "icon": "notification",
+          "background_color": "#DC2626",
+          "text_color": "#FFFFFF",
+          "corner_radius": 8,
+          "action": {
+            "log_id": "beeper_error",
+            "url": "tools://beeper/tone",
+            "payload": {
+              "frequency_hz": 600,
+              "duration_ms": 320,
+              "volume": 0.95,
+              "waveform": "sawtooth",
+              "output": {
+                "status": "user.beeper_status",
+                "frequency_hz": "user.beeper_frequency"
+              }
+            }
+          }
+        }
+      ],
+      "orientation": "horizontal"
+    },
+    {
+      "type": "container",
+      "item_spacing": 8,
+      "items": [
+        {
+          "type": "button",
+          "weight": 1,
+          "id": "beeper_chime",
+          "text": "Chime (rising)",
+          "icon": "check",
+          "background_color": "#0F766E",
+          "text_color": "#FFFFFF",
+          "corner_radius": 8,
+          "action": {
+            "log_id": "beeper_chime",
+            "url": "tools://beeper/chime",
+            "payload": {
+              "volume": 0.8,
+              "waveform": "triangle",
+              "output": {
+                "status": "user.beeper_status",
+                "profile": "user.beeper_tone"
+              }
+            }
+          }
+        },
+        {
+          "type": "button",
+          "weight": 1,
+          "id": "beeper_stop",
+          "text": "Stop",
+          "icon": "clear",
+          "background_color": "#334155",
+          "text_color": "#FFFFFF",
+          "corner_radius": 8,
+          "action": {
+            "log_id": "beeper_stop",
+            "url": "tools://beeper/stop",
+            "payload": {
+              "output": {
+                "status": "user.beeper_status"
+              }
+            }
+          }
+        }
+      ],
+      "orientation": "horizontal"
+    }
+  ],
+  "orientation": "vertical",
+  "paddings": {
+    "left": 12,
+    "right": 12,
+    "top": 10,
+    "bottom": 10
+  }
+}

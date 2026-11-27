@@ -1,102 +1,107 @@
 {
     "type": "container",
-    "orientation": "vertical",
-    "background_color": "#0D0D0D",
-    "corner_radius": 14,
-    "item_spacing": 12,
-    "paddings": {
-        "left": 14,
-        "right": 14,
-        "top": 12,
-        "bottom": 12
-    },
     "border": {
         "corner_radius": 14,
         "stroke": {
-            "color": "#EF4444",
+            "color": "#B91C1C",
             "width": 2
         }
     },
+    "item_spacing": 12,
     "items": [
         {
             "type": "container",
-            "background_color": "#1A0A0A",
-            "corner_radius": 10,
-            "paddings": {"left": 12, "right": 12, "top": 10, "bottom": 10},
             "border": {
                 "corner_radius": 10,
-                "stroke": {"color": "#EF4444", "width": 1}
+                "stroke": {
+                    "color": "#B91C1C",
+                    "width": 1
+                }
             },
             "item_spacing": 6,
             "items": [
                 {
                     "type": "text",
-                    "text": "🛡️ SUPERVISOR CREDENTIAL GATE",
                     "font_size": 14,
                     "font_weight": "bold",
-                    "text_color": "#EF4444"
+                    "text": "🛡️ SUPERVISOR CREDENTIAL GATE",
+                    "text_color": "#B91C1C"
                 },
                 {
                     "type": "text",
-                    "text": "tools://biometrics • auth.biometrics@1",
+                    "font_family": "monospace",
                     "font_size": 10,
-                    "text_color": "#F87171",
-                    "font_family": "monospace"
+                    "text": "tools://biometrics • auth.biometrics@1",
+                    "text_color": "#F87171"
                 },
                 {
                     "type": "text",
-                    "text": "Void, refund, and discount operations require supervisor fingerprint or PIN. This terminal is locked until authorized.",
                     "font_size": 11,
-                    "text_color": "#FCA5A5",
-                    "margins": {"top": 4}
+                    "margins": {
+                        "top": 4
+                    },
+                    "text": "Void, refund, and discount operations require supervisor fingerprint or PIN. This terminal is locked until authorized.",
+                    "text_color": "#FCA5A5"
                 }
-            ]
+            ],
+            "paddings": {
+                "left": 12,
+                "right": 12,
+                "top": 10,
+                "bottom": 10
+            }
         },
         {
             "type": "container",
-            "background_color": "#1A0A0A",
-            "corner_radius": 10,
-            "paddings": {"left": 12, "right": 12, "top": 12, "bottom": 12},
             "border": {
                 "corner_radius": 10,
-                "stroke": {"color": "#7F1D1D", "width": 1}
+                "stroke": {
+                    "color": "#7F1D1D",
+                    "width": 1
+                }
             },
             "item_spacing": 6,
             "items": [
                 {
                     "type": "text",
-                    "text": "CURRENT AUTH STATE",
+                    "font_family": "monospace",
                     "font_size": 10,
                     "font_weight": "bold",
-                    "text_color": "#9CA3AF",
-                    "font_family": "monospace"
+                    "text": "CURRENT AUTH STATE",
+                    "text_color": "#4B5563"
                 },
                 {
                     "type": "text",
-                    "text": "@{user.supervisor_authenticated}",
+                    "alignment_horizontal": "center",
+                    "font_family": "monospace",
                     "font_size": 22,
                     "font_weight": "bold",
-                    "text_color": "#34D399",
-                    "font_family": "monospace",
-                    "alignment_horizontal": "center"
+                    "text": "@{user.supervisor_authenticated}",
+                    "text_color": "#34D399"
                 },
                 {
                     "type": "text",
-                    "text": "Role: @{user.supervisor_role}  •  Method: @{user.supervisor_auth_method}",
-                    "font_size": 11,
-                    "text_color": "#6EE7B7",
+                    "alignment_horizontal": "center",
                     "font_family": "monospace",
-                    "alignment_horizontal": "center"
+                    "font_size": 11,
+                    "text": "Role: @{user.supervisor_role}  •  Method: @{user.supervisor_auth_method}",
+                    "text_color": "#6EE7B7"
                 }
-            ]
+            ],
+            "paddings": {
+                "left": 12,
+                "right": 12,
+                "top": 12,
+                "bottom": 12
+            }
         },
         {
             "type": "text",
-            "text": "SUPERVISOR ACTIONS",
+            "font_family": "monospace",
             "font_size": 10,
             "font_weight": "bold",
-            "text_color": "#9CA3AF",
-            "font_family": "monospace"
+            "text": "SUPERVISOR ACTIONS",
+            "text_color": "#4B5563"
         },
         {
             "type": "button",
@@ -173,5 +178,12 @@
                 }
             }
         }
-    ]
+    ],
+    "orientation": "vertical",
+    "paddings": {
+        "left": 14,
+        "right": 14,
+        "top": 12,
+        "bottom": 12
+    }
 }

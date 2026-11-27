@@ -1,14 +1,5 @@
 {
   "type": "container",
-  "orientation": "vertical",
-  "background_color": "#1C1917",
-  "corner_radius": 12,
-  "paddings": {
-    "left": 12,
-    "right": 12,
-    "top": 10,
-    "bottom": 10
-  },
   "border": {
     "corner_radius": 12,
     "stroke": {
@@ -19,26 +10,24 @@
   "items": [
     {
       "type": "text",
-      "text": "💾 OFFLINE PAGE & SCHEMA CACHE (tools://offline-cache)",
       "font_size": 11,
       "font_weight": "bold",
+      "text": "💾 OFFLINE PAGE & SCHEMA CACHE (tools://offline-cache)",
       "text_color": "#D6D3D1"
     },
     {
       "type": "text",
-      "text": "Status: @{user.offline_cache_status} • Cached Pages: @{user.offline_cached_pages}",
+      "font_family": "monospace",
       "font_size": 12,
-      "text_color": "#FAFAF9",
-      "font_family": "monospace"
+      "text": "Status: @{user.offline_cache_status} • Cached Pages: @{user.offline_cached_pages}",
+      "text_color": "#FAFAF9"
     },
     {
       "type": "container",
-      "orientation": "horizontal",
       "item_spacing": 8,
       "items": [
         {
           "type": "container",
-          "weight": 1.0,
           "items": [
             {
               "type": "button",
@@ -70,7 +59,6 @@
         },
         {
           "type": "container",
-          "weight": 1.0,
           "items": [
             {
               "type": "button",
@@ -98,7 +86,15 @@
             }
           ]
         }
-      ]
+      ],
+      "orientation": "horizontal"
     }
-  ]
+  ],
+  "orientation": "vertical",
+  "paddings": {
+    "left": 12,
+    "right": 12,
+    "top": 10,
+    "bottom": 10
+  }
 }

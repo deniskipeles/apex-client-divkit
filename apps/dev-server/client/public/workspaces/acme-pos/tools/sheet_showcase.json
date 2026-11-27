@@ -1,0 +1,65 @@
+{
+  "card": {
+    "log_id": "sheet_showcase",
+    "variables": [
+      {
+        "name": "user.sheet_showcase_note",
+        "type": "string",
+        "value": ""
+      }
+    ],
+    "states": [
+      {
+        "state_id": 0,
+        "div": {
+          "type": "container",
+          "item_spacing": 12,
+          "items": [
+            {
+              "type": "text",
+              "font_size": 22,
+              "font_weight": "bold",
+              "text": "Sheet showcase",
+              "text_color": "#F8FAFC"
+            },
+            {
+              "type": "text",
+              "font_size": 13,
+              "text": "This card is presented as a modal bottom sheet through the sheet:// navigation scheme. It is the same DivKit document the workspace host renders, so sheets can carry any card.",
+              "text_color": "#94A3B8"
+            },
+            {
+              "type": "text",
+              "font_family": "monospace",
+              "font_size": 12,
+              "text": "Present it again with sheet://present?card_id=sheet_showcase, or close it with sheet://dismiss.",
+              "text_color": "#94A3B8"
+            },
+            {
+              "type": "text",
+              "actions": [
+                {
+                  "type": "div-action",
+                  "url": "sheet://dismiss",
+                  "log_id": "sheet_showcase_close"
+                }
+              ],
+              "font_size": 15,
+              "font_weight": "bold",
+              "id": "sheet_showcase_close",
+              "paddings": {
+                "left": 16,
+                "right": 16,
+                "top": 14,
+                "bottom": 14
+              },
+              "text": "Close sheet",
+              "text_color": "#FFFFFF"
+            }
+          ],
+          "orientation": "vertical"
+        }
+      }
+    ]
+  }
+}

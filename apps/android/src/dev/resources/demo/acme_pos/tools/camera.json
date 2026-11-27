@@ -1,14 +1,5 @@
 {
     "type": "container",
-    "orientation": "vertical",
-    "background_color": "#0C2B3A",
-    "corner_radius": 12,
-    "paddings": {
-        "left": 12,
-        "right": 12,
-        "top": 10,
-        "bottom": 10
-    },
     "border": {
         "corner_radius": 12,
         "stroke": {
@@ -19,47 +10,42 @@
     "items": [
         {
             "type": "text",
-            "text": "📸 CAMERA — LIVE PREVIEW & CAPTURE (tools://camera)",
             "font_size": 11,
-            "text_color": "#67E8F9",
-            "font_weight": "bold"
+            "font_weight": "bold",
+            "text": "📸 CAMERA — LIVE PREVIEW & CAPTURE (tools://camera)",
+            "text_color": "#67E8F9"
         },
         {
             "type": "text",
-            "text": "Last capture: @{if(user.camera_capture_uri == '', 'none yet — tap Capture', user.camera_capture_uri)}",
+            "font_family": "monospace",
             "font_size": 12,
-            "text_color": "#CFFAFE",
-            "font_family": "monospace"
+            "text": "Last capture: @{if(user.camera_capture_uri == '', 'none yet — tap Capture', user.camera_capture_uri)}",
+            "text_color": "#CFFAFE"
         },
         {
             "type": "image",
-            "image_url": "@{user.camera_capture_uri}",
-            "preview_height": 200,
-            "corner_radius": 10,
-            "content_description": "Last capture"
+            "image_url": "@{user.camera_capture_uri}"
         },
         {
             "type": "text",
-            "text": "Torch: @{user.camera_torch_state}",
+            "font_family": "monospace",
             "font_size": 12,
-            "text_color": "#CFFAFE",
-            "font_family": "monospace"
+            "text": "Torch: @{user.camera_torch_state}",
+            "text_color": "#CFFAFE"
         },
         {
             "type": "text",
-            "text": "Capture opens the viewfinder; press the shutter to take the photo",
             "font_size": 11,
-            "text_color": "#A5F3FC",
-            "font_weight": "bold"
+            "font_weight": "bold",
+            "text": "Capture opens the viewfinder; press the shutter to take the photo",
+            "text_color": "#A5F3FC"
         },
         {
             "type": "container",
-            "orientation": "horizontal",
             "item_spacing": 8,
             "items": [
                 {
                     "type": "container",
-                    "weight": 1.0,
                     "items": [
                         {
                             "type": "button",
@@ -90,7 +76,6 @@
                 },
                 {
                     "type": "container",
-                    "weight": 1.0,
                     "items": [
                         {
                             "type": "button",
@@ -119,16 +104,15 @@
                         }
                     ]
                 }
-            ]
+            ],
+            "orientation": "horizontal"
         },
         {
             "type": "container",
-            "orientation": "horizontal",
             "item_spacing": 8,
             "items": [
                 {
                     "type": "container",
-                    "weight": 1.0,
                     "items": [
                         {
                             "type": "button",
@@ -157,7 +141,6 @@
                 },
                 {
                     "type": "container",
-                    "weight": 1.0,
                     "items": [
                         {
                             "type": "button",
@@ -184,7 +167,15 @@
                         }
                     ]
                 }
-            ]
+            ],
+            "orientation": "horizontal"
         }
-    ]
+    ],
+    "orientation": "vertical",
+    "paddings": {
+        "left": 12,
+        "right": 12,
+        "top": 10,
+        "bottom": 10
+    }
 }

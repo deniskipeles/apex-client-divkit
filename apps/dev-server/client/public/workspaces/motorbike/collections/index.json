@@ -1,8 +1,4 @@
 {
  "version": 1,
- "collections": [
-  "trips.json",
-  "expenses.json",
-  "handovers.json"
- ]
+ "collections": []
 }

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Generates every `apex.workspace/1` package from the TypeScript definitions in `workspace/`.
+ * Generates every `apex.workspace/1` package from the TypeScript definitions in `workspaces/`.
  *
  * Outputs, in one pass:
  *   - `client/public/workspaces/<slug>/`               playground snapshots (served statically)
@@ -16,8 +16,8 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync
 import { dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { buildWorkspace, indexEntry, workspacePayload, workspaceReports } from '../workspace/build.ts'
-import { ANDROID_OWNED, WORKSPACES } from '../workspace/registry.ts'
+import { buildWorkspace, indexEntry, workspacePayload, workspaceReports } from '../workspaces/core/build.ts'
+import { ANDROID_OWNED, WORKSPACES } from '../workspaces/core/registry.ts'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const appRoot = resolve(here, '..')
@@ -31,6 +31,38 @@ const noAndroid = args.includes('--no-android')
 const force = args.includes('--force')
 const onlyIndex = args.indexOf('--only')
 const only = onlyIndex >= 0 ? args[onlyIndex + 1] : null
+
+/**
+ * The authoring tree is TypeScript-only. A hand-written `.json` card (or a `.json` import)
+ * silently bypasses the builder and the Android shape checks, so fail before writing anything.
+ */
+function assertTypescriptOnly() {
+  const root = join(here, '../workspaces')
+  const offenders = []
+  const visit = (dir) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const path = join(dir, entry.name)
+      if (entry.isDirectory()) {
+        visit(path)
+      } else if (entry.name.endsWith('.json')) {
+        offenders.push(`${relative(repoRoot, path)} is a JSON source`)
+      } else if (entry.name.endsWith('.ts')) {
+        const text = readFileSync(path, 'utf8')
+        const importsJson = /(?:from\s*|import\s*\(?\s*)['"][^'"]+\.json['"]/.test(text)
+        const jsonAttribute = /with\s*\{\s*type:\s*['"]json['"]\s*\}/.test(text)
+        if (importsJson || jsonAttribute) offenders.push(`${relative(repoRoot, path)} imports JSON`)
+      }
+    }
+  }
+  visit(root)
+  if (offenders.length > 0) {
+    console.error('build-workspaces: workspace authoring must be TypeScript-only:')
+    for (const offender of offenders) console.error(`  ${offender}`)
+    process.exit(1)
+  }
+}
+
+assertTypescriptOnly()
 
 /** Reuses the indentation a file already has so regenerating never reformats it. */
 function indentOf(path) {

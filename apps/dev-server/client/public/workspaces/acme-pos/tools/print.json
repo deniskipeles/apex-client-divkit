@@ -1,0 +1,100 @@
+{
+  "type": "container",
+  "border": {
+    "corner_radius": 12,
+    "stroke": {
+      "color": "#E879F9",
+      "width": 1
+    }
+  },
+  "items": [
+    {
+      "type": "text",
+      "font_size": 11,
+      "font_weight": "bold",
+      "text": "🖨️ BLUETOOTH THERMAL PRINTER BRIDGE (tools://print)",
+      "text_color": "#F0ABFC"
+    },
+    {
+      "type": "text",
+      "font_family": "monospace",
+      "font_size": 12,
+      "text": "Status: @{user.print_status} • Devices: @{user.print_device_count} • Bytes: @{user.print_bytes}",
+      "text_color": "#FAE8FF"
+    },
+    {
+      "type": "container",
+      "item_spacing": 8,
+      "items": [
+        {
+          "type": "container",
+          "items": [
+            {
+              "type": "button",
+              "id": "tool_print_scan",
+              "text": "Scan Printers",
+              "subtitle": "tools://print/scan • RFCOMM SPP",
+              "icon": "printer",
+              "background_color": "#A21CAF",
+              "text_color": "#FFFFFF",
+              "corner_radius": 10,
+              "action": {
+                "log_id": "exec_tool_print_scan",
+                "url": "tools://print/scan",
+                "payload": {
+                  "operation": "scan",
+                  "options": {
+                    "op": "scan"
+                  },
+                  "output": {
+                    "status": "user.print_status",
+                    "count": "user.print_device_count"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "container",
+          "items": [
+            {
+              "type": "button",
+              "id": "tool_print_print",
+              "text": "Print ESC/POS Receipt",
+              "subtitle": "tools://print/print • 58mm thermal",
+              "icon": "receipt",
+              "background_color": "#86198F",
+              "text_color": "#FFFFFF",
+              "corner_radius": 10,
+              "action": {
+                "log_id": "exec_tool_print_print",
+                "url": "tools://print/print",
+                "payload": {
+                  "operation": "print",
+                  "options": {
+                    "text": "APEX POS • Apex POS Terminal\nOrder #1042  TOTAL $24.50",
+                    "align": "left",
+                    "feed_lines": "3"
+                  },
+                  "output": {
+                    "status": "user.print_status",
+                    "bytes": "user.print_bytes"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "orientation": "horizontal"
+    }
+  ],
+  "orientation": "vertical",
+  "paddings": {
+    "left": 12,
+    "right": 12,
+    "top": 10,
+    "bottom": 10
+  }
+}

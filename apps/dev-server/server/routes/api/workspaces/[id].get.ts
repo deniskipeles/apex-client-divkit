@@ -1,6 +1,6 @@
 import { createError, defineEventHandler, getRouterParam, setHeader } from 'h3'
-import { buildWorkspace, workspacePayload } from '../../../../workspace/build.ts'
-import { WORKSPACES } from '../../../../workspace/registry.ts'
+import { buildWorkspace, workspacePayload } from '../../../../workspaces/core/build.ts'
+import { WORKSPACES } from '../../../../workspaces/core/registry.ts'
 
 /** Serves a whole `apex.workspace/1` package: manifest, hub, every card, catalog. */
 export default defineEventHandler((event) => {

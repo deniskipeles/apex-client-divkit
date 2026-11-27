@@ -1,0 +1,181 @@
+{
+  "type": "container",
+  "border": {
+    "corner_radius": 12,
+    "stroke": {
+      "color": "#38BDF8",
+      "width": 1
+    }
+  },
+  "items": [
+    {
+      "type": "text",
+      "font_size": 11,
+      "font_weight": "bold",
+      "text": "🧮 TEXT & IMAGE EMBEDDINGS (tools://embedding)",
+      "text_color": "#7DD3FC"
+    },
+    {
+      "type": "text",
+      "font_family": "monospace",
+      "font_size": 12,
+      "text": "Source: @{user.vector_source} • Dim: @{user.vector_dim} • Similarity: @{user.vector_similarity}",
+      "text_color": "#E0F2FE"
+    },
+    {
+      "type": "text",
+      "font_family": "monospace",
+      "font_size": 10,
+      "max_lines": 2,
+      "text": "Vector: @{user.vector_b64}",
+      "text_color": "#BAE6FD"
+    },
+    {
+      "type": "text",
+      "font_family": "monospace",
+      "font_size": 10,
+      "max_lines": 2,
+      "text": "OCR: @{user.ocr_text}",
+      "text_color": "#A7F3D0"
+    },
+    {
+      "type": "button",
+      "id": "tool_embedding_text",
+      "text": "Embed Item Name",
+      "subtitle": "tools://embedding/text • USE-Lite / lexical fallback",
+      "icon": "search",
+      "background_color": "#0284C7",
+      "text_color": "#FFFFFF",
+      "corner_radius": 10,
+      "action": {
+        "log_id": "exec_tool_embedding_text",
+        "url": "tools://embedding/text",
+        "payload": {
+          "operation": "text",
+          "options": {
+            "normalize": "true",
+            "text": "Wagyu Smash Burger • ACM-101 • $16.50"
+          },
+          "output": {
+            "vector_b64": "user.vector_b64",
+            "dim": "user.vector_dim",
+            "source_type": "user.vector_source"
+          }
+        }
+      }
+    },
+    {
+      "type": "button",
+      "id": "tool_embedding_image",
+      "text": "Embed Image",
+      "subtitle": "tools://embedding/image • MobileNetV4 1000-d",
+      "icon": "camera",
+      "background_color": "#0E7490",
+      "text_color": "#FFFFFF",
+      "corner_radius": 10,
+      "action": {
+        "log_id": "exec_tool_embedding_image",
+        "url": "tools://embedding/image",
+        "payload": {
+          "operation": "image",
+          "options": {
+            "normalize": "true",
+            "uri": "${demoImageUri}"
+          },
+          "output": {
+            "vector_b64": "user.vector_b64",
+            "dim": "user.vector_dim",
+            "source_type": "user.vector_source"
+          }
+        }
+      }
+    },
+    {
+      "type": "button",
+      "id": "tool_embedding_image_text",
+      "text": "Embed Image + OCR",
+      "subtitle": "tools://embedding/image_text • ML Kit + USE-Lite / lexical fallback",
+      "icon": "ocr",
+      "background_color": "#0369A1",
+      "text_color": "#FFFFFF",
+      "corner_radius": 10,
+      "action": {
+        "log_id": "exec_tool_embedding_image_text",
+        "url": "tools://embedding/image_text",
+        "payload": {
+          "operation": "image_text",
+          "options": {
+            "normalize": "true",
+            "include_ocr_text": "true",
+            "uri": "${demoImageUri}"
+          },
+          "output": {
+            "vector_b64": "user.vector_b64",
+            "dim": "user.vector_dim",
+            "source_type": "user.vector_source",
+            "ocr_text": "user.ocr_text"
+          }
+        }
+      }
+    },
+    {
+      "type": "button",
+      "id": "tool_embedding_text_similarity",
+      "text": "Compare Two Texts",
+      "subtitle": "tools://embedding/text_similarity • cosine",
+      "icon": "query_stats",
+      "background_color": "#6D28D9",
+      "text_color": "#FFFFFF",
+      "corner_radius": 10,
+      "action": {
+        "log_id": "exec_tool_embedding_text_similarity",
+        "url": "tools://embedding/text_similarity",
+        "payload": {
+          "operation": "text_similarity",
+          "options": {
+            "a": "Wagyu Smash Burger",
+            "b": "Smash burger with wagyu beef"
+          },
+          "output": {
+            "score": "user.vector_similarity",
+            "dim": "user.vector_dim",
+            "source_type": "user.vector_source"
+          }
+        }
+      }
+    },
+    {
+      "type": "button",
+      "id": "tool_embedding_similarity",
+      "text": "Compare Current Vector",
+      "subtitle": "tools://embedding/similarity • a = b",
+      "icon": "query_stats",
+      "background_color": "#4C1D95",
+      "text_color": "#FFFFFF",
+      "corner_radius": 10,
+      "action": {
+        "log_id": "exec_tool_embedding_similarity",
+        "url": "tools://embedding/similarity",
+        "payload": {
+          "operation": "similarity",
+          "options": {
+            "a": "@{user.vector_b64}",
+            "b": "@{user.vector_b64}"
+          },
+          "output": {
+            "score": "user.vector_similarity",
+            "dim": "user.vector_dim",
+            "source_type": "user.vector_source"
+          }
+        }
+      }
+    }
+  ],
+  "orientation": "vertical",
+  "paddings": {
+    "left": 12,
+    "right": 12,
+    "top": 10,
+    "bottom": 10
+  }
+}

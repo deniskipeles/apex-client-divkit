@@ -1,14 +1,5 @@
 {
     "type": "container",
-    "orientation": "vertical",
-    "background_color": "#1A1200",
-    "corner_radius": 14,
-    "paddings": {
-        "left": 14,
-        "right": 14,
-        "top": 12,
-        "bottom": 12
-    },
     "border": {
         "corner_radius": 14,
         "stroke": {
@@ -19,110 +10,98 @@
     "items": [
         {
             "type": "text",
-            "text": "🔳 CODE GENERATOR — ZXing QR & 1D Barcodes (tools://code-generate)",
             "font_size": 12,
             "font_weight": "bold",
-            "text_color": "#FCD34D",
             "margins": {
                 "bottom": 4
-            }
+            },
+            "text": "🔳 CODE GENERATOR — ZXing QR & 1D Barcodes (tools://code-generate)",
+            "text_color": "#FCD34D"
         },
         {
             "type": "text",
-            "text": "Generates scannable PNGs saved to the tenant media sandbox. Generated codes can be scanned immediately with the Scanner card.",
             "font_size": 11,
-            "text_color": "#FEF3C7",
             "margins": {
                 "bottom": 10
-            }
+            },
+            "text": "Generates scannable PNGs saved to the tenant media sandbox. Generated codes can be scanned immediately with the Scanner card.",
+            "text_color": "#FEF3C7"
         },
         {
             "type": "container",
+            "items": [
+                {
+                    "type": "text",
+                    "font_family": "monospace",
+                    "font_size": 11,
+                    "text": "Format: @{user.code_format}",
+                    "text_color": "#FDE68A"
+                },
+                {
+                    "type": "text",
+                    "font_family": "monospace",
+                    "font_size": 11,
+                    "text": "Kind:   @{user.code_kind}",
+                    "text_color": "#FDE68A"
+                },
+                {
+                    "type": "text",
+                    "font_family": "monospace",
+                    "font_size": 11,
+                    "text": "Content: @{user.code_content}",
+                    "text_color": "#FDE68A"
+                },
+                {
+                    "type": "text",
+                    "font_family": "monospace",
+                    "font_size": 11,
+                    "text": "Code id: @{user.code_id}",
+                    "text_color": "#FDE68A"
+                },
+                {
+                    "type": "text",
+                    "font_family": "monospace",
+                    "font_size": 10,
+                    "text": "Image: @{if(user.code_image_uri == '', 'not generated yet — tap Generate', user.code_image_uri)}",
+                    "text_color": "#FDE68A"
+                }
+            ],
+            "margins": {
+                "bottom": 10
+            },
             "orientation": "vertical",
-            "background_color": "#0D0900",
-            "corner_radius": 8,
             "paddings": {
                 "left": 10,
                 "right": 10,
                 "top": 8,
                 "bottom": 8
-            },
-            "margins": {
-                "bottom": 10
-            },
-            "items": [
-                {
-                    "type": "text",
-                    "text": "Format: @{user.code_format}",
-                    "font_size": 11,
-                    "text_color": "#FDE68A",
-                    "font_family": "monospace"
-                },
-                {
-                    "type": "text",
-                    "text": "Kind:   @{user.code_kind}",
-                    "font_size": 11,
-                    "text_color": "#FDE68A",
-                    "font_family": "monospace"
-                },
-                {
-                    "type": "text",
-                    "text": "Content: @{user.code_content}",
-                    "font_size": 11,
-                    "text_color": "#FDE68A",
-                    "font_family": "monospace"
-                },
-                {
-                    "type": "text",
-                    "text": "Code id: @{user.code_id}",
-                    "font_size": 11,
-                    "text_color": "#FDE68A",
-                    "font_family": "monospace"
-                },
-                {
-                    "type": "text",
-                    "text": "Image: @{if(user.code_image_uri == '', 'not generated yet — tap Generate', user.code_image_uri)}",
-                    "font_size": 10,
-                    "text_color": "#FDE68A",
-                    "font_family": "monospace"
-                }
-            ]
+            }
         },
         {
             "type": "container",
+            "items": [
+                {
+                    "type": "image",
+                    "image_url": "@{user.code_image_uri}"
+                }
+            ],
+            "margins": {
+                "bottom": 10
+            },
             "orientation": "vertical",
-            "background_color": "#FAFAFA",
-            "corner_radius": 10,
             "paddings": {
                 "left": 6,
                 "right": 6,
                 "top": 6,
                 "bottom": 6
-            },
-            "margins": {
-                "bottom": 10
-            },
-            "items": [
-                {
-                    "type": "image",
-                    "image_url": "@{user.code_image_uri}",
-                    "preview_height": 240,
-                    "corner_radius": 10,
-                    "content_description": "Generated code image"
-                }
-            ]
+            }
         },
         {
             "type": "container",
-            "orientation": "horizontal",
             "item_spacing": 8,
-            "margins": {
-                "bottom": 8
-            },
             "items": [
                 {
                     "type": "container",
-                    "weight": 1.0,
                     "items": [
                         {
                             "type": "button",
@@ -139,7 +118,7 @@
                                 "payload": {
                                     "operation": "generate",
                                     "options": {
-                                        "content": "apexpos://order/pickup?terminal=${terminalCode}",
+                                        "content": "apexpos://order/pickup?terminal=POS-TERM-01",
                                         "format": "qr",
                                         "width": "512",
                                         "ec_level": "M",
@@ -159,7 +138,6 @@
                 },
                 {
                     "type": "container",
-                    "weight": 1.0,
                     "items": [
                         {
                             "type": "button",
@@ -193,19 +171,18 @@
                         }
                     ]
                 }
-            ]
+            ],
+            "margins": {
+                "bottom": 8
+            },
+            "orientation": "horizontal"
         },
         {
             "type": "container",
-            "orientation": "horizontal",
             "item_spacing": 8,
-            "margins": {
-                "bottom": 12
-            },
             "items": [
                 {
                     "type": "container",
-                    "weight": 1.0,
                     "items": [
                         {
                             "type": "button",
@@ -241,7 +218,6 @@
                 },
                 {
                     "type": "container",
-                    "weight": 1.0,
                     "items": [
                         {
                             "type": "button",
@@ -258,7 +234,7 @@
                                 "payload": {
                                     "operation": "barcode",
                                     "options": {
-                                        "content": "REC-20261122-${terminalCode}",
+                                        "content": "REC-20261122-POS-TERM-01",
                                         "format": "CODE_128",
                                         "width": "600",
                                         "height": "180"
@@ -275,34 +251,43 @@
                         }
                     ]
                 }
-            ]
+            ],
+            "margins": {
+                "bottom": 12
+            },
+            "orientation": "horizontal"
         },
         {
             "type": "container",
+            "items": [
+                {
+                    "type": "text",
+                    "font_size": 11,
+                    "font_weight": "bold",
+                    "text": "▶  SCAN YOUR GENERATED CODE",
+                    "text_color": "#22D3EE"
+                },
+                {
+                    "type": "text",
+                    "font_size": 11,
+                    "text": "Switch to Scanner card and point the camera at the code above",
+                    "text_color": "#67E8F9"
+                }
+            ],
             "orientation": "vertical",
-            "background_color": "#002020",
-            "corner_radius": 8,
             "paddings": {
                 "left": 10,
                 "right": 10,
                 "top": 8,
                 "bottom": 8
-            },
-            "items": [
-                {
-                    "type": "text",
-                    "text": "▶  SCAN YOUR GENERATED CODE",
-                    "font_size": 11,
-                    "font_weight": "bold",
-                    "text_color": "#22D3EE"
-                },
-                {
-                    "type": "text",
-                    "text": "Switch to Scanner card and point the camera at the code above",
-                    "font_size": 11,
-                    "text_color": "#67E8F9"
-                }
-            ]
+            }
         }
-    ]
+    ],
+    "orientation": "vertical",
+    "paddings": {
+        "left": 14,
+        "right": 14,
+        "top": 12,
+        "bottom": 12
+    }
 }

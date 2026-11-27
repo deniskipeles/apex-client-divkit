@@ -1,4 +1,4 @@
-import { useMemo, type CSSProperties, type ReactNode } from 'react'
+import { useMemo, useState, type CSSProperties, type ReactNode } from 'react'
 import {
   adaptBorderColorForTheme,
   adaptButtonBgForTheme,
@@ -13,6 +13,7 @@ import {
   type ChartSpec,
   type DivValue,
   type DivVars,
+  type NavNode,
   type RenderAction,
   type RenderNode,
 } from '@apex/pos-ui/android-runtime'
@@ -66,7 +67,7 @@ export function AndroidCard({ card, variables, getVariables, isDark = true, onAc
 
   return (
     <div className="h-full w-full overflow-y-auto px-3 py-3">
-      <NodeView node={model} variables={variables} isDark={isDark} fire={fire} onSetVariable={onSetVariable} />
+      <NodeView node={model} variables={variables} isDark={isDark} fire={fire} host={host} onSetVariable={onSetVariable} />
     </div>
   )
 }
@@ -77,6 +78,7 @@ interface NodeProps {
   isDark: boolean
   surfaceHex?: string
   fire: (actions: RenderAction[]) => void
+  host: ActionHost
   onSetVariable: (name: string, value: DivValue) => void
 }
 
@@ -95,7 +97,7 @@ function boxStyle(box: BoxStyle, isDark: boolean): CSSProperties {
   return style
 }
 
-function NodeView({ node, variables, isDark, surfaceHex, fire, onSetVariable }: NodeProps): ReactNode {
+function NodeView({ node, variables, isDark, surfaceHex, fire, host, onSetVariable }: NodeProps): ReactNode {
   if (node.kind === 'nothing') return null
   const nodeSurface = node.box.background ?? surfaceHex
   const style = boxStyle(node.box, isDark)
@@ -121,6 +123,7 @@ function NodeView({ node, variables, isDark, surfaceHex, fire, onSetVariable }: 
               isDark={isDark}
               surfaceHex={nodeSurface}
               fire={fire}
+              host={host}
               onSetVariable={onSetVariable}
             />
           ))}
@@ -237,11 +240,38 @@ function NodeView({ node, variables, isDark, surfaceHex, fire, onSetVariable }: 
                 isDark={isDark}
                 surfaceHex={nodeSurface}
                 fire={fire}
+                host={host}
                 onSetVariable={onSetVariable}
               />
             ))
           )}
         </div>
+      )
+    case 'state':
+      return (
+        <div style={style}>
+          <NodeView
+            node={node.child}
+            variables={variables}
+            isDark={isDark}
+            surfaceHex={nodeSurface}
+            fire={fire}
+            host={host}
+            onSetVariable={onSetVariable}
+          />
+        </div>
+      )
+    case 'nav':
+      return (
+        <NavView
+          node={node}
+          variables={variables}
+          isDark={isDark}
+          surfaceHex={nodeSurface}
+          style={style}
+          host={host}
+          onSetVariable={onSetVariable}
+        />
       )
     case 'chart':
       return <ChartView spec={node.spec} isDark={isDark} style={style} surfaceHex={nodeSurface} />
@@ -254,12 +284,84 @@ function NodeView({ node, variables, isDark, surfaceHex, fire, onSetVariable }: 
           surfaceHex={nodeSurface}
           variables={variables}
           fire={fire}
+          host={host}
           onSetVariable={onSetVariable}
         />
       )
     default:
       return null
   }
+}
+
+/**
+ * `sdui_nav` owns a push/pop stack. A `nav://` action whose target is one of the
+ * pages is handled locally; anything else (a host card id, `sheet://…`) goes to
+ * the surrounding host, exactly like the Compose branch.
+ */
+function NavView({
+  node,
+  variables,
+  isDark,
+  surfaceHex,
+  style,
+  host,
+  onSetVariable,
+}: {
+  node: NavNode
+  variables: DivVars
+  isDark: boolean
+  surfaceHex?: string
+  style: CSSProperties
+  host: ActionHost
+  onSetVariable: (name: string, value: DivValue) => void
+}) {
+  const initial = node.initial || node.pages[0]?.id || ''
+  const [stack, setStack] = useState<string[]>(initial ? [initial] : [])
+  const pages = new Map(node.pages.map((page) => [page.id, page.node]))
+  const activeId = stack[stack.length - 1] ?? initial
+  const active = pages.get(activeId)
+
+  const navHost: ActionHost = {
+    getVariables: () => host.getVariables(),
+    setVariable: (name, value) => host.setVariable(name, value),
+    dispatchUrl: async (url, payload) => {
+      const target = /^nav:\/\/(push|replace|reset)\?id=([^&#]+)/.exec(url)
+      if (target) {
+        const id = decodeURIComponent(target[2])
+        if (!pages.has(id)) return host.dispatchUrl(url, payload)
+        const op = target[1]
+        setStack((current) => {
+          const next = current.length > 0 ? [...current] : initial ? [initial] : []
+          if (op === 'push') next.push(id)
+          else if (op === 'replace') next[next.length - 1] = id
+          else next.splice(0, next.length, id)
+          return next
+        })
+        return
+      }
+      if (url === 'nav://pop') {
+        setStack((current) => (current.length > 1 ? current.slice(0, -1) : current))
+        return
+      }
+      return host.dispatchUrl(url, payload)
+    },
+  }
+
+  const fire = (actions: RenderAction[]) => void runActions(actions, navHost)
+  if (!active) return null
+  return (
+    <div style={style}>
+      <NodeView
+        node={active}
+        variables={variables}
+        isDark={isDark}
+        surfaceHex={surfaceHex}
+        fire={fire}
+        host={navHost}
+        onSetVariable={onSetVariable}
+      />
+    </div>
+  )
 }
 
 function BlockView({
@@ -269,6 +371,7 @@ function BlockView({
   surfaceHex,
   variables,
   fire,
+  host,
   onSetVariable,
 }: {
   block: BlockProps
@@ -277,6 +380,7 @@ function BlockView({
   surfaceHex?: string
   variables: DivVars
   fire: (actions: RenderAction[]) => void
+  host: ActionHost
   onSetVariable: (name: string, value: DivValue) => void
 }) {
   const caption: CSSProperties = { color: adaptTextColorForTheme('#94A3B8', isDark, surfaceHex), fontSize: 11 }
@@ -289,6 +393,7 @@ function BlockView({
         isDark={isDark}
         surfaceHex={surfaceHex}
         fire={fire}
+        host={host}
         onSetVariable={onSetVariable}
       />
     ))

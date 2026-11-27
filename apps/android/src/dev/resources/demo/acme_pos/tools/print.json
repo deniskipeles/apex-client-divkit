@@ -1,14 +1,5 @@
 {
     "type": "container",
-    "orientation": "vertical",
-    "background_color": "#2A1A2E",
-    "corner_radius": 12,
-    "paddings": {
-        "left": 12,
-        "right": 12,
-        "top": 10,
-        "bottom": 10
-    },
     "border": {
         "corner_radius": 12,
         "stroke": {
@@ -19,26 +10,24 @@
     "items": [
         {
             "type": "text",
-            "text": "🖨️ BLUETOOTH THERMAL PRINTER BRIDGE (tools://print)",
             "font_size": 11,
             "font_weight": "bold",
+            "text": "🖨️ BLUETOOTH THERMAL PRINTER BRIDGE (tools://print)",
             "text_color": "#F0ABFC"
         },
         {
             "type": "text",
-            "text": "Status: @{user.print_status} • Devices: @{user.print_device_count} • Bytes: @{user.print_bytes}",
+            "font_family": "monospace",
             "font_size": 12,
-            "text_color": "#FAE8FF",
-            "font_family": "monospace"
+            "text": "Status: @{user.print_status} • Devices: @{user.print_device_count} • Bytes: @{user.print_bytes}",
+            "text_color": "#FAE8FF"
         },
         {
             "type": "container",
-            "orientation": "horizontal",
             "item_spacing": 8,
             "items": [
                 {
                     "type": "container",
-                    "weight": 1.0,
                     "items": [
                         {
                             "type": "button",
@@ -68,7 +57,6 @@
                 },
                 {
                     "type": "container",
-                    "weight": 1.0,
                     "items": [
                         {
                             "type": "button",
@@ -85,7 +73,7 @@
                                 "payload": {
                                     "operation": "print",
                                     "options": {
-                                        "text": "APEX POS • ${displayName}\nOrder #1042  TOTAL $24.50",
+                                        "text": "APEX POS • Apex POS Terminal\nOrder #1042  TOTAL $24.50",
                                         "align": "left",
                                         "feed_lines": "3"
                                     },
@@ -98,7 +86,15 @@
                         }
                     ]
                 }
-            ]
+            ],
+            "orientation": "horizontal"
         }
-    ]
+    ],
+    "orientation": "vertical",
+    "paddings": {
+        "left": 12,
+        "right": 12,
+        "top": 10,
+        "bottom": 10
+    }
 }

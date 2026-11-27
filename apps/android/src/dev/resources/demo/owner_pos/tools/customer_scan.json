@@ -1,0 +1,499 @@
+{
+  "type": "container",
+  "background": [
+    {
+      "type": "solid",
+      "color": "#F7F8FB"
+    }
+  ],
+  "height": {
+    "type": "match_parent"
+  },
+  "items": [
+    {
+      "type": "container",
+      "items": [
+        {
+          "id": "cust_viewfinder",
+          "type": "camera_viewfinder",
+          "custom_props": {
+            "hint": "@{cust.scan_hint}",
+            "unavailable_copy": "Camera unavailable on this device — enter the order chunk manually",
+            "mode_var": "",
+            "on_scan_op": "cust.scan_append",
+            "on_scan_args": {
+              "chunk_string": "$scan.raw"
+            }
+          }
+        },
+        {
+          "type": "container",
+          "content_alignment_horizontal": "center",
+          "items": [
+            {
+              "type": "progress_ring",
+              "custom_props": {
+                "value": "cust.scan_current / (cust.scan_total || 1)",
+                "label": "cust.scan_current",
+                "caption": "cust.scan_total",
+                "state_var": "cust.scan_state"
+              }
+            },
+            {
+              "type": "text",
+              "font_size": 16,
+              "font_weight": "bold",
+              "margins": {
+                "top": 8
+              },
+              "text": "@{cust.scan_ring_label}",
+              "text_alignment_horizontal": "center",
+              "text_color": "#111319"
+            }
+          ],
+          "margins": {
+            "top": 20
+          }
+        },
+        {
+          "type": "container",
+          "items": [
+            {
+              "type": "scan_chips",
+              "custom_props": {
+                "chunks_var": "cust.scan_chunks",
+                "expected": "cust.scan_chunks.length",
+                "collected_var": "cust.scan_collected",
+                "corrupt_var": "cust.scan_corrupt"
+              }
+            }
+          ],
+          "margins": {
+            "top": 16
+          }
+        }
+      ],
+      "orientation": "vertical",
+      "visibility": "@{cust.scan_state == 'idle' || cust.scan_state == 'scanning' ? 'visible' : 'gone'}",
+      "width": {
+        "type": "match_parent"
+      }
+    },
+    {
+      "type": "container",
+      "content_alignment_horizontal": "center",
+      "items": [
+        {
+          "type": "text",
+          "font_size": 22,
+          "font_weight": "bold",
+          "line_height": 28,
+          "text": "Verifying checksum…",
+          "text_color": "#111319"
+        },
+        {
+          "type": "container",
+          "items": [
+            {
+              "type": "progress_ring",
+              "custom_props": {
+                "value": "cust.scan_current / (cust.scan_total || 1)",
+                "label": "cust.scan_current",
+                "caption": "cust.scan_total"
+              }
+            }
+          ],
+          "margins": {
+            "top": 16
+          },
+          "width": {
+            "type": "match_parent"
+          }
+        }
+      ],
+      "orientation": "vertical",
+      "paddings": {
+        "top": 96
+      },
+      "visibility": "@{cust.scan_state == 'assembling' ? 'visible' : 'gone'}",
+      "width": {
+        "type": "match_parent"
+      }
+    },
+    {
+      "type": "container",
+      "height": {
+        "type": "match_parent",
+        "weight": 1
+      },
+      "items": [
+        {
+          "type": "text",
+          "font_size": 32,
+          "font_weight": "bold",
+          "line_height": 40,
+          "text": "✓ Order received",
+          "text_color": "#057A55"
+        },
+        {
+          "type": "text",
+          "font_size": 22,
+          "font_weight": "bold",
+          "line_height": 28,
+          "text": "@{cust.received_order.short_id}",
+          "text_color": "#111319"
+        },
+        {
+          "type": "text",
+          "font_size": 13,
+          "font_weight": "medium",
+          "line_height": 18,
+          "text": "@{cust.received_order.summary}",
+          "text_color": "#5B6070"
+        },
+        {
+          "type": "container",
+          "background": [
+            {
+              "type": "solid",
+              "color": "#E6F6F0"
+            }
+          ],
+          "border": {
+            "corner_radius": 999
+          },
+          "items": [
+            {
+              "type": "text",
+              "font_size": 13,
+              "font_weight": "medium",
+              "line_height": 18,
+              "text": "✓ Checksum verified",
+              "text_color": "#057A55"
+            }
+          ],
+          "margins": {
+            "top": 12,
+            "bottom": 20
+          },
+          "paddings": {
+            "left": 12,
+            "right": 12,
+            "top": 6,
+            "bottom": 6
+          }
+        },
+        {
+          "type": "json_list",
+          "data_var": "cust.received_order.lines",
+          "empty_text": "No records",
+          "item_spacing": 4,
+          "row_card": {
+            "type": "container",
+            "items": [
+              {
+                "type": "text",
+                "font_size": 16,
+                "text": "@{item.name_and_qty}",
+                "text_color": "#111319",
+                "width": {
+                  "type": "match_parent",
+                  "weight": 1
+                }
+              },
+              {
+                "type": "text",
+                "font_feature_settings": "tnum",
+                "font_size": 22,
+                "font_weight": "bold",
+                "line_height": 28,
+                "text": "@{item.line_total_display}",
+                "text_color": "#111319"
+              }
+            ],
+            "orientation": "horizontal",
+            "paddings": {
+              "top": 8,
+              "bottom": 8
+            },
+            "width": {
+              "type": "match_parent"
+            }
+          }
+        },
+        {
+          "type": "container",
+          "height": {
+            "type": "match_parent",
+            "weight": 1
+          },
+          "items": [],
+          "width": {
+            "type": "match_parent",
+            "weight": 1
+          }
+        },
+        {
+          "type": "container",
+          "actions": [
+            {
+              "log_id": "save_cust_order",
+              "url": "local-db://op/cust.save_order"
+            },
+            {
+              "log_id": "save_to_history",
+              "url": "nav://push?id=customer_history"
+            }
+          ],
+          "background": [
+            {
+              "type": "solid",
+              "color": "#5A3BE0"
+            }
+          ],
+          "border": {
+            "corner_radius": 12
+          },
+          "content_alignment_horizontal": "center",
+          "content_alignment_vertical": "center",
+          "height": {
+            "type": "fixed",
+            "value": 56
+          },
+          "items": [
+            {
+              "type": "text",
+              "font_size": 16,
+              "font_weight": "bold",
+              "text": "Save to history",
+              "text_color": "#FFFFFF"
+            }
+          ],
+          "width": {
+            "type": "match_parent"
+          }
+        }
+      ],
+      "orientation": "vertical",
+      "visibility": "@{cust.scan_state == 'verified' ? 'visible' : 'gone'}",
+      "width": {
+        "type": "match_parent"
+      }
+    },
+    {
+      "type": "container",
+      "items": [
+        {
+          "type": "text",
+          "font_size": 32,
+          "font_weight": "bold",
+          "line_height": 40,
+          "text": "✗ Checksum mismatch",
+          "text_color": "#C81E1E"
+        },
+        {
+          "type": "text",
+          "font_size": 16,
+          "font_weight": "regular",
+          "line_height": 22,
+          "text": "The order did not arrive intact. Ask the owner to regenerate the QR and rescan.",
+          "text_color": "#5B6070"
+        },
+        {
+          "type": "container",
+          "items": [
+            {
+              "type": "container",
+              "actions": [
+                {
+                  "log_id": "cancel_scan",
+                  "url": "nav://pop"
+                }
+              ],
+              "content_alignment_vertical": "center",
+              "height": {
+                "type": "fixed",
+                "value": 48
+              },
+              "items": [
+                {
+                  "type": "text",
+                  "font_size": 16,
+                  "font_weight": "regular",
+                  "line_height": 22,
+                  "text": "Cancel",
+                  "text_color": "#5B6070"
+                }
+              ],
+              "paddings": {
+                "right": 20
+              }
+            },
+            {
+              "type": "container",
+              "actions": [
+                {
+                  "log_id": "rescan_order",
+                  "url": "local-db://op/cust.scan_reset"
+                }
+              ],
+              "background": [
+                {
+                  "type": "solid",
+                  "color": "#5A3BE0"
+                }
+              ],
+              "border": {
+                "corner_radius": 12
+              },
+              "content_alignment_horizontal": "center",
+              "content_alignment_vertical": "center",
+              "height": {
+                "type": "fixed",
+                "value": 56
+              },
+              "items": [
+                {
+                  "type": "text",
+                  "font_size": 16,
+                  "font_weight": "bold",
+                  "text": "Rescan",
+                  "text_color": "#FFFFFF"
+                }
+              ],
+              "width": {
+                "type": "match_parent",
+                "weight": 1
+              }
+            }
+          ],
+          "margins": {
+            "top": 24
+          },
+          "orientation": "horizontal",
+          "width": {
+            "type": "match_parent"
+          }
+        }
+      ],
+      "orientation": "vertical",
+      "paddings": {
+        "top": 64
+      },
+      "visibility": "@{cust.scan_state == 'error' ? 'visible' : 'gone'}",
+      "width": {
+        "type": "match_parent"
+      }
+    },
+    {
+      "type": "container",
+      "items": [
+        {
+          "type": "text",
+          "font_size": 16,
+          "font_weight": "bold",
+          "text": "Advanced",
+          "text_color": "#111319"
+        },
+        {
+          "type": "container",
+          "items": [
+            {
+              "type": "container",
+              "actions": [
+                {
+                  "log_id": "demo_inject",
+                  "url": "local-db://op/cust.demo_inject_chunk"
+                }
+              ],
+              "height": {
+                "type": "fixed",
+                "value": 48
+              },
+              "items": [
+                {
+                  "type": "text",
+                  "font_size": 13,
+                  "font_weight": "medium",
+                  "line_height": 18,
+                  "text": "Inject chunk",
+                  "text_color": "#5A3BE0"
+                }
+              ],
+              "paddings": {
+                "right": 12
+              }
+            },
+            {
+              "type": "container",
+              "actions": [
+                {
+                  "log_id": "demo_corrupt",
+                  "url": "local-db://op/cust.demo_inject_corrupt"
+                }
+              ],
+              "height": {
+                "type": "fixed",
+                "value": 48
+              },
+              "items": [
+                {
+                  "type": "text",
+                  "font_size": 13,
+                  "font_weight": "medium",
+                  "line_height": 18,
+                  "text": "Inject corrupt chunk",
+                  "text_color": "#C81E1E"
+                }
+              ],
+              "paddings": {
+                "right": 12
+              }
+            },
+            {
+              "type": "container",
+              "actions": [
+                {
+                  "log_id": "demo_reset",
+                  "url": "local-db://op/cust.scan_reset"
+                }
+              ],
+              "height": {
+                "type": "fixed",
+                "value": 48
+              },
+              "items": [
+                {
+                  "type": "text",
+                  "font_size": 13,
+                  "font_weight": "medium",
+                  "line_height": 18,
+                  "text": "Reset",
+                  "text_color": "#5B6070"
+                }
+              ]
+            }
+          ],
+          "orientation": "horizontal",
+          "width": {
+            "type": "match_parent"
+          }
+        }
+      ],
+      "orientation": "vertical",
+      "width": {
+        "type": "match_parent"
+      }
+    }
+  ],
+  "orientation": "vertical",
+  "paddings": {
+    "left": 20,
+    "right": 20,
+    "top": 16,
+    "bottom": 24
+  },
+  "width": {
+    "type": "match_parent"
+  }
+}

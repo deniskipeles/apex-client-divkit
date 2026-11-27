@@ -1,126 +1,126 @@
 {
     "type": "container",
-    "orientation": "vertical",
-    "background_color": "#0C1F14",
-    "corner_radius": 12,
-    "item_spacing": 10,
-    "paddings": {
-        "left": 12,
-        "right": 12,
-        "top": 10,
-        "bottom": 10
-    },
     "border": {
         "corner_radius": 12,
         "stroke": {
-            "color": "#10B981",
+            "color": "#047857",
             "width": 2
         }
     },
+    "item_spacing": 10,
     "items": [
         {
             "type": "container",
-            "background_color": "#0C1F14",
-            "corner_radius": 10,
-            "paddings": {"left": 12, "right": 12, "top": 10, "bottom": 10},
             "border": {
                 "corner_radius": 10,
-                "stroke": {"color": "#10B981", "width": 1}
+                "stroke": {
+                    "color": "#047857",
+                    "width": 1
+                }
             },
             "items": [
                 {
                     "type": "text",
-                    "text": "📷 SCANNER — ML Kit + ZXing Live Camera (tools://scan)",
                     "font_size": 13,
                     "font_weight": "bold",
-                    "text_color": "#10B981"
+                    "text": "📷 SCANNER — ML Kit + ZXing Live Camera (tools://scan)",
+                    "text_color": "#047857"
                 },
                 {
                     "type": "text",
-                    "text": "Point the camera at a barcode or QR code, or decode an image file. Results appear below.",
                     "font_size": 11,
-                    "text_color": "#6EE7B7",
-                    "margins": {"top": 4}
+                    "margins": {
+                        "top": 4
+                    },
+                    "text": "Point the camera at a barcode or QR code, or decode an image file. Results appear below.",
+                    "text_color": "#6EE7B7"
                 }
-            ]
+            ],
+            "paddings": {
+                "left": 12,
+                "right": 12,
+                "top": 10,
+                "bottom": 10
+            }
         },
         {
             "type": "container",
-            "background_color": "#0A1A0F",
-            "corner_radius": 10,
-            "paddings": {"left": 12, "right": 12, "top": 10, "bottom": 10},
             "border": {
                 "corner_radius": 10,
-                "stroke": {"color": "#064E3B", "width": 1}
+                "stroke": {
+                    "color": "#064E3B",
+                    "width": 1
+                }
             },
             "item_spacing": 4,
             "items": [
                 {
                     "type": "text",
-                    "text": "CODE  @{user.scanned_code}",
+                    "font_family": "monospace",
                     "font_size": 14,
                     "font_weight": "bold",
-                    "text_color": "#34D399",
-                    "font_family": "monospace"
+                    "text": "CODE  @{user.scanned_code}",
+                    "text_color": "#34D399"
                 },
                 {
                     "type": "text",
-                    "text": "FORMAT  @{user.scanned_format}  •  TYPE  @{user.scanned_type}",
+                    "font_family": "monospace",
                     "font_size": 12,
-                    "text_color": "#6EE7B7",
-                    "font_family": "monospace"
+                    "text": "FORMAT  @{user.scanned_format}  •  TYPE  @{user.scanned_type}",
+                    "text_color": "#6EE7B7"
                 },
                 {
                     "type": "text",
+                    "font_family": "monospace",
+                    "font_size": 11,
                     "text": "STATUS  @{user.scan_status}",
-                    "font_size": 11,
-                    "text_color": "#A7F3D0",
-                    "font_family": "monospace"
+                    "text_color": "#A7F3D0"
                 },
                 {
                     "type": "text",
+                    "font_family": "monospace",
+                    "font_size": 11,
                     "text": "OCR  @{user.ocr_text}",
-                    "font_size": 11,
-                    "text_color": "#A7F3D0",
-                    "font_family": "monospace"
+                    "text_color": "#A7F3D0"
                 },
                 {
                     "type": "text",
-                    "text": "CONF  @{user.ocr_confidence}  •  BLOCKS  @{user.ocr_block_count}",
+                    "font_family": "monospace",
                     "font_size": 11,
-                    "text_color": "#6EE7B7",
-                    "font_family": "monospace"
+                    "text": "CONF  @{user.ocr_confidence}  •  BLOCKS  @{user.ocr_block_count}",
+                    "text_color": "#6EE7B7"
                 }
-            ]
+            ],
+            "paddings": {
+                "left": 12,
+                "right": 12,
+                "top": 10,
+                "bottom": 10
+            }
         },
         {
             "type": "image",
-            "image_url": "@{user.scan_image_uri}",
-            "preview_height": 180,
-            "corner_radius": 10,
-            "content_description": "Last scanned image"
+            "image_url": "@{user.scan_image_uri}"
         },
         {
             "type": "text",
-            "text": "LIVE — opens viewfinder and decodes what you point at",
             "font_size": 11,
             "font_weight": "bold",
+            "text": "LIVE — opens viewfinder and decodes what you point at",
             "text_color": "#A7F3D0"
         },
         {
             "type": "container",
-            "orientation": "horizontal",
             "item_spacing": 8,
             "items": [
                 {
                     "type": "container",
-                    "weight": 1.0,
                     "items": [
                         {
                             "type": "button",
                             "id": "tool_scan_live_barcode",
                             "text": "Barcode",
-                        "font_size": 12,
+                            "font_size": 12,
                             "subtitle": "Camera",
                             "icon": "scanner",
                             "background_color": "#047857",
@@ -148,13 +148,12 @@
                 },
                 {
                     "type": "container",
-                    "weight": 1.0,
                     "items": [
                         {
                             "type": "button",
                             "id": "tool_scan_live_qr",
                             "text": "QR code",
-                        "font_size": 12,
+                            "font_size": 12,
                             "subtitle": "Camera",
                             "icon": "qr_code",
                             "background_color": "#0D9488",
@@ -182,13 +181,12 @@
                 },
                 {
                     "type": "container",
-                    "weight": 1.0,
                     "items": [
                         {
                             "type": "button",
                             "id": "tool_scan_live_both",
                             "text": "Both",
-                        "font_size": 12,
+                            "font_size": 12,
                             "subtitle": "Auto",
                             "icon": "scanner",
                             "background_color": "#065F46",
@@ -214,23 +212,22 @@
                         }
                     ]
                 }
-            ]
+            ],
+            "orientation": "horizontal"
         },
         {
             "type": "text",
-            "text": "OCR — ML Kit text recognition",
             "font_size": 11,
             "font_weight": "bold",
+            "text": "OCR — ML Kit text recognition",
             "text_color": "#A7F3D0"
         },
         {
             "type": "container",
-            "orientation": "horizontal",
             "item_spacing": 8,
             "items": [
                 {
                     "type": "container",
-                    "weight": 1.0,
                     "items": [
                         {
                             "type": "button",
@@ -262,7 +259,6 @@
                 },
                 {
                     "type": "container",
-                    "weight": 1.0,
                     "items": [
                         {
                             "type": "button",
@@ -292,40 +288,39 @@
                         }
                     ]
                 }
-            ]
+            ],
+            "orientation": "horizontal"
         },
         {
             "type": "container",
-            "background_color": "#071B10",
-            "corner_radius": 10,
-            "paddings": {"left": 12, "right": 12, "top": 10, "bottom": 10},
-            "item_spacing": 8,
             "border": {
                 "corner_radius": 10,
-                "stroke": {"color": "#064E3B", "width": 1}
+                "stroke": {
+                    "color": "#064E3B",
+                    "width": 1
+                }
             },
+            "item_spacing": 8,
             "items": [
                 {
                     "type": "text",
-                    "text": "DECODE FROM FILE (no camera needed)",
                     "font_size": 11,
                     "font_weight": "bold",
+                    "text": "DECODE FROM FILE (no camera needed)",
                     "text_color": "#6EE7B7"
                 },
                 {
                     "type": "container",
-                    "orientation": "horizontal",
                     "item_spacing": 8,
                     "items": [
                         {
                             "type": "container",
-                            "weight": 1.0,
                             "items": [
                                 {
                                     "type": "button",
                                     "id": "tool_scan_scan",
                                     "text": "Sample barcode",
-                        "font_size": 12,
+                                    "font_size": 12,
                                     "subtitle": "EAN-13 file",
                                     "icon": "barcode",
                                     "background_color": "#064E3B",
@@ -353,13 +348,12 @@
                         },
                         {
                             "type": "container",
-                            "weight": 1.0,
                             "items": [
                                 {
                                     "type": "button",
                                     "id": "tool_scan_scan_qr",
                                     "text": "Sample QR",
-                        "font_size": 12,
+                                    "font_size": 12,
                                     "subtitle": "QR file",
                                     "icon": "qr_code",
                                     "background_color": "#065F46",
@@ -385,9 +379,23 @@
                                 }
                             ]
                         }
-                    ]
+                    ],
+                    "orientation": "horizontal"
                 }
-            ]
+            ],
+            "paddings": {
+                "left": 12,
+                "right": 12,
+                "top": 10,
+                "bottom": 10
+            }
         }
-    ]
+    ],
+    "orientation": "vertical",
+    "paddings": {
+        "left": 12,
+        "right": 12,
+        "top": 10,
+        "bottom": 10
+    }
 }

@@ -1,0 +1,732 @@
+{
+  "card": {
+    "log_id": "pos_terminal_acme_pos",
+    "variables": [
+      {
+        "name": "user.workspace_title",
+        "type": "string",
+        "value": "Apex POS Terminal (POS-TERM-01)"
+      },
+      {
+        "name": "user.custom_item_name",
+        "type": "string",
+        "value": "Express Combo #9"
+      },
+      {
+        "name": "user.custom_item_price",
+        "type": "string",
+        "value": "12.50"
+      },
+      {
+        "name": "user.last_hardware_event",
+        "type": "string",
+        "value": "Ready (scanner/printer/nfc/cash_drawer/haptics/beeper)"
+      },
+      {
+        "name": "user.sync_status",
+        "type": "string",
+        "value": "ready"
+      },
+      {
+        "name": "user.engine_error",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.order_count",
+        "type": "integer",
+        "value": 3
+      },
+      {
+        "name": "user.catalog_count",
+        "type": "integer",
+        "value": 4
+      },
+      {
+        "name": "user.last_order_id",
+        "type": "integer",
+        "value": 3
+      },
+      {
+        "name": "user.scanned_code",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.scanned_format",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.scanned_type",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.scan_status",
+        "type": "string",
+        "value": "IDLE"
+      },
+      {
+        "name": "user.ocr_text",
+        "type": "string",
+        "value": "not_run"
+      },
+      {
+        "name": "user.ocr_confidence",
+        "type": "string",
+        "value": "0"
+      },
+      {
+        "name": "user.ocr_block_count",
+        "type": "integer",
+        "value": 0
+      },
+      {
+        "name": "user.scan_image_uri",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.code_image_uri",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.code_format",
+        "type": "string",
+        "value": "QR_CODE"
+      },
+      {
+        "name": "user.code_kind",
+        "type": "string",
+        "value": "2D"
+      },
+      {
+        "name": "user.code_content",
+        "type": "string",
+        "value": "apexpos://order/pickup?terminal=POS-TERM-01"
+      },
+      {
+        "name": "user.code_id",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.code_status",
+        "type": "string",
+        "value": "IDLE"
+      },
+      {
+        "name": "user.code_matrix_rows",
+        "type": "integer",
+        "value": 0
+      },
+      {
+        "name": "user.ai_prediction_label",
+        "type": "string",
+        "value": "not_run"
+      },
+      {
+        "name": "user.ai_confidence_score",
+        "type": "string",
+        "value": "0"
+      },
+      {
+        "name": "user.ai_source_image_uri",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.u2net_mask_uri",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.bg_remove_status",
+        "type": "string",
+        "value": "Not run yet"
+      },
+      {
+        "name": "user.signal_session_id",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.signal_fingerprint",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.signal_status",
+        "type": "string",
+        "value": "NO_SESSION"
+      },
+      {
+        "name": "user.signal_peer_id",
+        "type": "string",
+        "value": "acme_peer_01"
+      },
+      {
+        "name": "user.signal_verification",
+        "type": "string",
+        "value": "UNVERIFIED"
+      },
+      {
+        "name": "user.signal_ciphertext",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.signal_plaintext",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.tool_last_latency",
+        "type": "integer",
+        "value": 3
+      },
+      {
+        "name": "user.haptic_state",
+        "type": "string",
+        "value": "ready"
+      },
+      {
+        "name": "user.haptic_pattern",
+        "type": "string",
+        "value": "click"
+      },
+      {
+        "name": "user.haptic_duration",
+        "type": "string",
+        "value": "0"
+      },
+      {
+        "name": "user.beeper_status",
+        "type": "string",
+        "value": "idle"
+      },
+      {
+        "name": "user.beeper_tone",
+        "type": "string",
+        "value": "success"
+      },
+      {
+        "name": "user.beeper_frequency",
+        "type": "string",
+        "value": "0"
+      },
+      {
+        "name": "user.clipboard_content",
+        "type": "string",
+        "value": "POS-TERM-01 • Order #1042"
+      },
+      {
+        "name": "user.clipboard_length",
+        "type": "string",
+        "value": "0"
+      },
+      {
+        "name": "user.last_push_alert",
+        "type": "string",
+        "value": "Awaiting push"
+      },
+      {
+        "name": "user.supervisor_authenticated",
+        "type": "string",
+        "value": "false"
+      },
+      {
+        "name": "user.supervisor_role",
+        "type": "string",
+        "value": "cashier"
+      },
+      {
+        "name": "user.camera_capture_uri",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.camera_torch_state",
+        "type": "string",
+        "value": "off"
+      },
+      {
+        "name": "user.processed_image_uri",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.image_processing_status",
+        "type": "string",
+        "value": "idle"
+      },
+      {
+        "name": "user.processed_source_uri",
+        "type": "string",
+        "value": "${demoImageUri}"
+      },
+      {
+        "name": "user.processed_width",
+        "type": "integer",
+        "value": 0
+      },
+      {
+        "name": "user.processed_height",
+        "type": "integer",
+        "value": 0
+      },
+      {
+        "name": "user.files_status",
+        "type": "string",
+        "value": "idle"
+      },
+      {
+        "name": "user.files_listing",
+        "type": "string",
+        "value": "No listing yet"
+      },
+      {
+        "name": "user.files_content",
+        "type": "string",
+        "value": "No content yet"
+      },
+      {
+        "name": "user.files_path",
+        "type": "string",
+        "value": "."
+      },
+      {
+        "name": "user.files_last_uri",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.files_last_path",
+        "type": "string",
+        "value": "."
+      },
+      {
+        "name": "user.vector_source",
+        "type": "string",
+        "value": "not_run"
+      },
+      {
+        "name": "user.vector_dim",
+        "type": "string",
+        "value": "0"
+      },
+      {
+        "name": "user.vector_similarity",
+        "type": "string",
+        "value": "—"
+      },
+      {
+        "name": "user.vector_b64",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.offline_cache_status",
+        "type": "string",
+        "value": "idle"
+      },
+      {
+        "name": "user.offline_cached_pages",
+        "type": "string",
+        "value": "0"
+      },
+      {
+        "name": "user.realtime_connection_state",
+        "type": "string",
+        "value": "disconnected"
+      },
+      {
+        "name": "user.realtime_channel",
+        "type": "string",
+        "value": "kitchen_stream"
+      },
+      {
+        "name": "user.net_status",
+        "type": "string",
+        "value": "idle"
+      },
+      {
+        "name": "user.net_http_status",
+        "type": "string",
+        "value": "0"
+      },
+      {
+        "name": "user.net_bytes",
+        "type": "string",
+        "value": "0"
+      },
+      {
+        "name": "user.net_hub_port",
+        "type": "string",
+        "value": "0"
+      },
+      {
+        "name": "user.net_share_count",
+        "type": "string",
+        "value": "0"
+      },
+      {
+        "name": "user.print_status",
+        "type": "string",
+        "value": "idle"
+      },
+      {
+        "name": "user.print_device_count",
+        "type": "string",
+        "value": "0"
+      },
+      {
+        "name": "user.print_bytes",
+        "type": "string",
+        "value": "0"
+      },
+      {
+        "name": "user.screen_status",
+        "type": "string",
+        "value": "READY"
+      },
+      {
+        "name": "user.screen_keep_awake",
+        "type": "string",
+        "value": "false"
+      },
+      {
+        "name": "user.screen_recording",
+        "type": "string",
+        "value": "false"
+      },
+      {
+        "name": "user.screen_recording_id",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.screen_media_uri",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.screen_media_path",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.screen_width",
+        "type": "string",
+        "value": "0"
+      },
+      {
+        "name": "user.screen_height",
+        "type": "string",
+        "value": "0"
+      },
+      {
+        "name": "user.screen_bytes",
+        "type": "string",
+        "value": "0"
+      },
+      {
+        "name": "user.screen_duration_ms",
+        "type": "string",
+        "value": "0"
+      },
+      {
+        "name": "user.screen_image_id",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.screen_error",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.icon_name",
+        "type": "string",
+        "value": "cart"
+      },
+      {
+        "name": "user.icon_material",
+        "type": "string",
+        "value": "ShoppingCart"
+      },
+      {
+        "name": "user.icon_category",
+        "type": "string",
+        "value": "Commerce"
+      },
+      {
+        "name": "user.nav_stack_depth",
+        "type": "integer",
+        "value": 0
+      },
+      {
+        "name": "user.supervisor_auth_method",
+        "type": "string",
+        "value": ""
+      }
+    ],
+    "states": [
+      {
+        "state_id": 0,
+        "div": {
+          "type": "container",
+          "item_spacing": 12,
+          "items": [
+            {
+              "type": "container",
+              "border": {
+                "corner_radius": 14,
+                "stroke": {
+                  "color": "#0284C7",
+                  "width": 1
+                }
+              },
+              "items": [
+                {
+                  "type": "container",
+                  "items": [
+                    {
+                      "type": "text",
+                      "font_size": 16,
+                      "font_weight": "bold",
+                      "text": "@{user.workspace_title}",
+                      "text_color": "#F8FAFC"
+                    },
+                    {
+                      "type": "text",
+                      "font_size": 11,
+                      "font_weight": "bold",
+                      "text": "Mode: HYBRID",
+                      "text_color": "#0284C7"
+                    }
+                  ],
+                  "orientation": "horizontal"
+                },
+                {
+                  "type": "text",
+                  "font_family": "monospace",
+                  "font_size": 12,
+                  "text": "Sync: @{user.sync_status} · @{if(user.engine_error == '', 'All systems ready', user.engine_error)}",
+                  "text_color": "#94A3B8"
+                },
+                {
+                  "type": "grid",
+                  "column_count": 3,
+                  "items": [
+                    {
+                      "type": "container",
+                      "items": [
+                        {
+                          "type": "text",
+                          "font_size": 10,
+                          "font_weight": "bold",
+                          "text": "ORDERS",
+                          "text_color": "#64748B"
+                        },
+                        {
+                          "type": "text",
+                          "font_size": 18,
+                          "font_weight": "bold",
+                          "text": "@{user.order_count}",
+                          "text_color": "#38BDF8"
+                        }
+                      ],
+                      "paddings": {
+                        "left": 10,
+                        "right": 10,
+                        "top": 8,
+                        "bottom": 8
+                      }
+                    },
+                    {
+                      "type": "container",
+                      "items": [
+                        {
+                          "type": "text",
+                          "font_size": 10,
+                          "font_weight": "bold",
+                          "text": "SKUs IN DB",
+                          "text_color": "#64748B"
+                        },
+                        {
+                          "type": "text",
+                          "font_size": 18,
+                          "font_weight": "bold",
+                          "text": "@{user.catalog_count}",
+                          "text_color": "#34D399"
+                        }
+                      ],
+                      "paddings": {
+                        "left": 10,
+                        "right": 10,
+                        "top": 8,
+                        "bottom": 8
+                      }
+                    },
+                    {
+                      "type": "container",
+                      "items": [
+                        {
+                          "type": "text",
+                          "font_size": 10,
+                          "font_weight": "bold",
+                          "text": "LAST ROW #",
+                          "text_color": "#64748B"
+                        },
+                        {
+                          "type": "text",
+                          "font_size": 18,
+                          "font_weight": "bold",
+                          "text": "#@{user.last_order_id}",
+                          "text_color": "#FBBF24"
+                        }
+                      ],
+                      "paddings": {
+                        "left": 10,
+                        "right": 10,
+                        "top": 8,
+                        "bottom": 8
+                      }
+                    }
+                  ]
+                }
+              ],
+              "orientation": "vertical",
+              "paddings": {
+                "left": 14,
+                "right": 14,
+                "top": 12,
+                "bottom": 12
+              }
+            },
+            {
+              "type": "button",
+              "id": "nav_local_db_shortcut",
+              "text": "→ Open SQLite Database",
+              "icon": "stock",
+              "background_color": "#0284C7",
+              "text_color": "#F8FAFC",
+              "corner_radius": 12,
+              "action": {
+                "log_id": "nav_push_local_db",
+                "url": "nav://push?id=tool_local_db"
+              }
+            },
+            {
+              "type": "button",
+              "id": "nav_sheet_showcase_shortcut",
+              "text": "Open sheet:// showcase",
+              "icon": "dashboard",
+              "background_color": "#8B5CF6",
+              "text_color": "#F8FAFC",
+              "corner_radius": 12,
+              "action": {
+                "log_id": "nav_sheet_showcase",
+                "url": "sheet://present?card_id=sheet_showcase"
+              }
+            },
+            {
+              "type": "container",
+              "items": [
+                {
+                  "type": "text",
+                  "font_size": 12,
+                  "font_weight": "bold",
+                  "text": "⚡ ACTIVE TERMINAL CAPABILITIES",
+                  "text_color": "#F8FAFC"
+                },
+                {
+                  "type": "text",
+                  "font_size": 11,
+                  "text": "Quick-launch common tool cards",
+                  "text_color": "#64748B"
+                }
+              ],
+              "orientation": "vertical",
+              "paddings": {
+                "left": 12,
+                "right": 12,
+                "top": 10,
+                "bottom": 10
+              }
+            },
+            {
+              "type": "grid",
+              "column_count": 2,
+              "items": [
+                {
+                  "type": "button",
+                  "id": "nav_quick_scanner",
+                  "text": "Scanner",
+                  "icon": "scanner",
+                  "background_color": "#10B981",
+                  "text_color": "#F8FAFC",
+                  "corner_radius": 10,
+                  "action": {
+                    "log_id": "nav_push_scanner",
+                    "url": "nav://push?id=tool_scanner"
+                  }
+                },
+                {
+                  "type": "button",
+                  "id": "nav_quick_camera",
+                  "text": "Camera",
+                  "icon": "camera",
+                  "background_color": "#6366F1",
+                  "text_color": "#F8FAFC",
+                  "corner_radius": 10,
+                  "action": {
+                    "log_id": "nav_push_camera",
+                    "url": "nav://push?id=tool_camera"
+                  }
+                },
+                {
+                  "type": "button",
+                  "id": "nav_quick_local_db",
+                  "text": "Local DB",
+                  "icon": "stock",
+                  "background_color": "#0284C7",
+                  "text_color": "#F8FAFC",
+                  "corner_radius": 10,
+                  "action": {
+                    "log_id": "nav_push_local_db_grid",
+                    "url": "nav://push?id=tool_local_db"
+                  }
+                },
+                {
+                  "type": "button",
+                  "id": "nav_quick_biometrics",
+                  "text": "Biometrics",
+                  "icon": "shield",
+                  "background_color": "#EF4444",
+                  "text_color": "#F8FAFC",
+                  "corner_radius": 10,
+                  "action": {
+                    "log_id": "nav_push_biometrics",
+                    "url": "nav://push?id=tool_biometrics"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "font_size": 11,
+              "text": "🔽 All native tool cards below — tap to open",
+              "text_alignment_horizontal": "center",
+              "text_color": "#64748B"
+            }
+          ],
+          "orientation": "vertical"
+        }
+      }
+    ]
+  }
+}

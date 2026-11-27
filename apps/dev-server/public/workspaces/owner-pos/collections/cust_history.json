@@ -1,0 +1,38 @@
+{
+  "name": "cust_history",
+  "schema": {
+    "fields": {
+      "shop_terminal": {
+        "type": "string",
+        "required": true
+      },
+      "shop_name": {
+        "type": "string",
+        "required": true
+      },
+      "order_id": {
+        "type": "string",
+        "required": true
+      },
+      "payload_json": {
+        "type": "string",
+        "required": true
+      },
+      "checksum": {
+        "type": "string",
+        "required": true
+      },
+      "item_count": {
+        "type": "number",
+        "min": 0
+      },
+      "total": {
+        "type": "string"
+      },
+      "received_at": {
+        "type": "string"
+      }
+    }
+  },
+  "seed": []
+}

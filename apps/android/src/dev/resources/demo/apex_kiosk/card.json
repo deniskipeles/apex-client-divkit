@@ -233,110 +233,30 @@
     "state_id": 0,
     "div": {
      "type": "container",
-     "orientation": "vertical",
      "item_spacing": 14,
      "items": [
       {
        "type": "container",
-       "orientation": "vertical",
        "item_spacing": 4,
        "items": [
         {
          "type": "text",
-         "text": "APEX KIOSK",
          "font_size": 26,
-         "text_color": "#F8FAFC",
-         "font_weight": "bold"
+         "font_weight": "bold",
+         "text": "APEX KIOSK",
+         "text_color": "#F8FAFC"
         },
         {
          "type": "text",
-         "text": "Customer orders, owner receipts, QR transfer and LAN share",
          "font_size": 13,
+         "text": "Customer orders, owner receipts, QR transfer and LAN share",
          "text_color": "#94A3B8"
         }
-       ]
+       ],
+       "orientation": "vertical"
       },
       {
        "type": "container",
-       "orientation": "horizontal",
-       "item_spacing": 10,
-       "items": [
-        {
-         "type": "container",
-         "orientation": "vertical",
-         "item_spacing": 2,
-         "items": [
-          {
-           "type": "text",
-           "text": "ORDER",
-           "font_size": 10,
-           "text_color": "#94A3B8",
-           "font_weight": "bold"
-          },
-          {
-           "type": "text",
-           "text": "@{user.kiosk_order_label}",
-           "font_size": 18,
-           "text_color": "#F8FAFC",
-           "font_weight": "bold",
-           "font_family": "monospace"
-          }
-         ],
-         "weight": 1
-        },
-        {
-         "type": "container",
-         "orientation": "vertical",
-         "item_spacing": 2,
-         "items": [
-          {
-           "type": "text",
-           "text": "ITEMS",
-           "font_size": 10,
-           "text_color": "#94A3B8",
-           "font_weight": "bold"
-          },
-          {
-           "type": "text",
-           "text": "@{toInteger(user.kiosk_item_count)}",
-           "font_size": 18,
-           "text_color": "#F8FAFC",
-           "font_weight": "bold"
-          }
-         ],
-         "weight": 1
-        },
-        {
-         "type": "container",
-         "orientation": "vertical",
-         "item_spacing": 2,
-         "items": [
-          {
-           "type": "text",
-           "text": "TOTAL",
-           "font_size": 10,
-           "text_color": "#94A3B8",
-           "font_weight": "bold"
-          },
-          {
-           "type": "text",
-           "text": "$@{user.kiosk_total}",
-           "font_size": 18,
-           "text_color": "#F8FAFC",
-           "font_weight": "bold"
-          }
-         ],
-         "weight": 1
-        }
-       ],
-       "background_color": "#0F172A",
-       "corner_radius": 14,
-       "paddings": {
-        "left": 14,
-        "right": 14,
-        "top": 12,
-        "bottom": 12
-       },
        "border": {
         "stroke": {
          "color": "#334155",
@@ -344,31 +264,104 @@
         },
         "corner_radius": 14
        },
+       "item_spacing": 10,
+       "items": [
+        {
+         "type": "container",
+         "item_spacing": 2,
+         "items": [
+          {
+           "type": "text",
+           "font_size": 10,
+           "font_weight": "bold",
+           "text": "ORDER",
+           "text_color": "#94A3B8"
+          },
+          {
+           "type": "text",
+           "font_family": "monospace",
+           "font_size": 18,
+           "font_weight": "bold",
+           "text": "@{user.kiosk_order_label}",
+           "text_color": "#F8FAFC"
+          }
+         ],
+         "orientation": "vertical"
+        },
+        {
+         "type": "container",
+         "item_spacing": 2,
+         "items": [
+          {
+           "type": "text",
+           "font_size": 10,
+           "font_weight": "bold",
+           "text": "ITEMS",
+           "text_color": "#94A3B8"
+          },
+          {
+           "type": "text",
+           "font_size": 18,
+           "font_weight": "bold",
+           "text": "@{toInteger(user.kiosk_item_count)}",
+           "text_color": "#F8FAFC"
+          }
+         ],
+         "orientation": "vertical"
+        },
+        {
+         "type": "container",
+         "item_spacing": 2,
+         "items": [
+          {
+           "type": "text",
+           "font_size": 10,
+           "font_weight": "bold",
+           "text": "TOTAL",
+           "text_color": "#94A3B8"
+          },
+          {
+           "type": "text",
+           "font_size": 18,
+           "font_weight": "bold",
+           "text": "$@{user.kiosk_total}",
+           "text_color": "#F8FAFC"
+          }
+         ],
+         "orientation": "vertical"
+        }
+       ],
+       "orientation": "horizontal",
+       "paddings": {
+        "left": 14,
+        "right": 14,
+        "top": 12,
+        "bottom": 12
+       },
        "visibility": "@{if(user.kiosk_order_id == '', 'gone', 'visible')}"
       },
       {
        "type": "text",
-       "text": "@{if(user.kiosk_status == 'submitted', 'Submitted — locked for editing', 'Draft — not submitted yet')}",
        "font_size": 12,
+       "text": "@{if(user.kiosk_status == 'submitted', 'Submitted — locked for editing', 'Draft — not submitted yet')}",
        "text_color": "#475569",
        "visibility": "@{if(user.kiosk_order_id == '', 'gone', 'visible')}"
       },
       {
        "type": "text",
-       "text": "No orders yet — pick Customer order to begin.",
        "font_size": 12,
+       "text": "No orders yet — pick Customer order to begin.",
        "text_color": "#475569",
        "visibility": "@{if(user.kiosk_order_id == '', 'visible', 'gone')}"
       }
      ],
-     "background_color": "#1E293B",
+     "orientation": "vertical",
      "paddings": {
       "left": 16,
       "right": 16,
       "top": 18,
       "bottom": 20
-     },
-     "tool_catalog_after": 2
+     }
     }
    }
   ]

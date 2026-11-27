@@ -113,6 +113,22 @@ so adding a workspace is a folder plus `demo/workspaces.json`, never a Kotlin ch
 - Custom icons travel as base64 PNG/JPEG in `icons/icons.json` (dev zip import supported) and
   land in `engine/icons/CustomIconRegistry`.
 
+### Dev-server authoring (TypeScript-only)
+
+`apps/dev-server/workspaces/**` is the single source for `acme_pos`, `apex_tools_test`,
+`motorbike` and `owner_pos`. It contains no `.json` sources or imports; the
+`build-workspaces.mjs` guard fails the build if either appears. Shared infrastructure lives in
+`workspaces/core/` (`types.ts`, `registry.ts`, `build.ts`, `kit/`, `divkit/`). Each workspace is
+`workspaces/<slug>/index.ts` plus a `src/` tree for its cards, collections and variables.
+Author cards with the `@divkitframework/jsonbuilder` constructors re-exported by
+`workspaces/core/kit` (`DivContainer`, `DivText`, `DivInput`, `divCard`, `fixed`, `matchParent`,
+...). Never paste generated JSON into a `.ts` file: the builder classes are the source, the
+generated bundle is the output. `hub` is a full `DivCard`;
+each `cards[].card` is a raw div body, which `DemoCardRepository.toolCardDocument` wraps
+under a Back button. Multi-page navigation uses `sdui_nav` (`nav://push|pop`) and simple
+switching uses native `state`; both render in `DivKitMultiplatform` and the browser parity
+runtime. Run `pnpm workspaces:build`; `pnpm workspaces:check` fails on drift.
+
 ## Tool capability architecture (`tools://*`)
 
 New terminal capabilities must be wired through **all** of these:

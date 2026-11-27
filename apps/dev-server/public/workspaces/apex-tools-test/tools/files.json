@@ -1,475 +1,431 @@
 {
- "card": {
-  "log_id": "apex_tool_files",
-  "variables": [
-   {
-    "name": "user.tools_status",
-    "type": "string",
-    "value": ""
-   },
-   {
-    "name": "user.tools_result",
-    "type": "string",
-    "value": ""
-   },
-   {
-    "name": "user.tools_error",
-    "type": "string",
-    "value": ""
-   },
-   {
-    "name": "user.files_last_uri",
-    "type": "string",
-    "value": ""
-   },
-   {
-    "name": "user.files_last_path",
-    "type": "string",
-    "value": ""
-   },
-   {
-    "name": "user.files_status",
-    "type": "string",
-    "value": ""
-   }
-  ],
-  "states": [
-   {
-    "state_id": 0,
-    "div": {
-     "type": "container",
-     "orientation": "vertical",
-     "items": [
+ "type": "container",
+ "item_spacing": 8,
+ "items": [
+  {
+   "type": "container",
+   "item_spacing": 8,
+   "items": [
+    {
+     "type": "button",
+     "text": "Back",
+     "font_size": 12,
+     "font_weight": "bold",
+     "text_color": "#F8FAFC",
+     "background_color": "#16233A",
+     "corner_radius": 12,
+     "height": {
+      "type": "fixed",
+      "value": 40
+     },
+     "width": {
+      "type": "fixed",
+      "value": 80
+     },
+     "actions": [
       {
-       "type": "container",
-       "orientation": "horizontal",
-       "items": [
-        {
-         "type": "button",
-         "text": "Back",
-         "font_size": 12,
-         "font_weight": "bold",
-         "text_color": "#F8FAFC",
-         "background_color": "#16233A",
-         "corner_radius": 12,
-         "height": {
-          "type": "fixed",
-          "value": 40
-         },
-         "width": {
-          "type": "fixed",
-          "value": 80
-         },
-         "actions": [
-          {
-           "url": "nav://pop"
-          }
-         ],
-         "border": {
-          "corner_radius": 12,
-          "stroke": {
-           "color": "#1E293B",
-           "width": 1
-          }
-         },
-         "id": "btn_back"
-        },
-        {
-         "type": "container",
-         "orientation": "vertical",
-         "items": [
-          {
-           "type": "text",
-           "text": "files",
-           "font_size": 18,
-           "font_weight": "bold",
-           "text_color": "#F8FAFC"
-          },
-          {
-           "type": "text",
-           "text": "Read and write files inside the workspace sandbox: write, read, append, copy, move, list, info, delete, mkdir, exists, uri.",
-           "font_size": 12,
-           "font_weight": "regular",
-           "text_color": "#94A3B8"
-          }
-         ],
-         "weight": 1
-        }
-       ],
-       "item_spacing": 8,
-       "paddings": {
-        "left": 16,
-        "top": 32,
-        "right": 16,
-        "bottom": 8
-       }
-      },
-      {
-       "type": "container",
-       "orientation": "vertical",
-       "items": [
-        {
-         "type": "container",
-         "orientation": "vertical",
-         "item_spacing": 4,
-         "paddings": {
-          "left": 12,
-          "top": 8,
-          "right": 12,
-          "bottom": 8
-         },
-         "background_color": "#16233A",
-         "border": {
-          "corner_radius": 12,
-          "stroke": {
-           "color": "#1E293B",
-           "width": 1
-          }
-         },
-         "items": [
-          {
-           "type": "text",
-           "text": "Status",
-           "font_size": 11,
-           "font_weight": "bold",
-           "text_color": "#94A3B8"
-          },
-          {
-           "type": "text",
-           "text": "@{user.tools_status}",
-           "font_size": 18,
-           "font_weight": "bold",
-           "text_color": "#34D399"
-          }
-         ],
-         "id": "metric_status"
-        },
-        {
-         "type": "inline_banner",
-         "custom_props": {
-          "text": "@{user.tools_error == '' ? 'No errors' : user.tools_error}",
-          "tone": "warn"
-         }
-        },
-        {
-         "type": "container",
-         "orientation": "vertical",
-         "items": [
-          {
-           "type": "button",
-           "text": "Write then read · 1/2",
-           "font_size": 12,
-           "font_weight": "bold",
-           "text_color": "#FFFFFF",
-           "background_color": "#7C3AED",
-           "corner_radius": 12,
-           "height": {
-            "type": "fixed",
-            "value": 40
-           },
-           "width": {
-            "type": "match_parent"
-           },
-           "actions": [
-            {
-             "url": "tools://storage.files/write",
-             "payload": {
-              "options": {
-               "path": "notes/hello.txt",
-               "content": "apex conformance"
-              },
-              "output": {
-               "status": "user.tools_status"
-              }
-             }
-            }
-           ],
-           "subtitle": "tools://storage.files/write",
-           "id": "tool_files_write_read_round_trip",
-           "content_description": "files write"
-          },
-          {
-           "type": "button",
-           "text": "Append · 1/3",
-           "font_size": 12,
-           "font_weight": "bold",
-           "text_color": "#F8FAFC",
-           "background_color": "#16233A",
-           "corner_radius": 12,
-           "height": {
-            "type": "fixed",
-            "value": 40
-           },
-           "width": {
-            "type": "match_parent"
-           },
-           "actions": [
-            {
-             "url": "tools://storage.files/write",
-             "payload": {
-              "options": {
-               "path": "notes/append.txt",
-               "content": "one"
-              },
-              "output": {
-               "status": "user.tools_status"
-              }
-             }
-            }
-           ],
-           "border": {
-            "corner_radius": 12,
-            "stroke": {
-             "color": "#1E293B",
-             "width": 1
-            }
-           },
-           "subtitle": "tools://storage.files/write",
-           "id": "tool_files_append_extends",
-           "content_description": "files write"
-          },
-          {
-           "type": "button",
-           "text": "Copy then move · 1/4",
-           "font_size": 12,
-           "font_weight": "bold",
-           "text_color": "#FFFFFF",
-           "background_color": "#7C3AED",
-           "corner_radius": 12,
-           "height": {
-            "type": "fixed",
-            "value": 40
-           },
-           "width": {
-            "type": "match_parent"
-           },
-           "actions": [
-            {
-             "url": "tools://storage.files/write",
-             "payload": {
-              "options": {
-               "path": "notes/src.txt",
-               "content": "payload"
-              },
-              "output": {
-               "status": "user.tools_status"
-              }
-             }
-            }
-           ],
-           "subtitle": "tools://storage.files/write",
-           "id": "tool_files_copy_then_move",
-           "content_description": "files write"
-          },
-          {
-           "type": "button",
-           "text": "List then info · 1/3",
-           "font_size": 12,
-           "font_weight": "bold",
-           "text_color": "#F8FAFC",
-           "background_color": "#16233A",
-           "corner_radius": 12,
-           "height": {
-            "type": "fixed",
-            "value": 40
-           },
-           "width": {
-            "type": "match_parent"
-           },
-           "actions": [
-            {
-             "url": "tools://storage.files/mkdir",
-             "payload": {
-              "options": {
-               "path": "notes"
-              },
-              "output": {
-               "status": "user.tools_status"
-              }
-             }
-            }
-           ],
-           "border": {
-            "corner_radius": 12,
-            "stroke": {
-             "color": "#1E293B",
-             "width": 1
-            }
-           },
-           "subtitle": "tools://storage.files/mkdir",
-           "id": "tool_files_list_and_info",
-           "content_description": "files mkdir"
-          },
-          {
-           "type": "button",
-           "text": "Delete · 1/3",
-           "font_size": 12,
-           "font_weight": "bold",
-           "text_color": "#FFFFFF",
-           "background_color": "#7C3AED",
-           "corner_radius": 12,
-           "height": {
-            "type": "fixed",
-            "value": 40
-           },
-           "width": {
-            "type": "match_parent"
-           },
-           "actions": [
-            {
-             "url": "tools://storage.files/write",
-             "payload": {
-              "options": {
-               "path": "notes/gone.txt",
-               "content": "x"
-              },
-              "output": {
-               "status": "user.tools_status"
-              }
-             }
-            }
-           ],
-           "subtitle": "tools://storage.files/write",
-           "id": "tool_files_delete_removes",
-           "content_description": "files write"
-          },
-          {
-           "type": "button",
-           "text": "File URI · 1/2",
-           "font_size": 12,
-           "font_weight": "bold",
-           "text_color": "#F8FAFC",
-           "background_color": "#16233A",
-           "corner_radius": 12,
-           "height": {
-            "type": "fixed",
-            "value": 40
-           },
-           "width": {
-            "type": "match_parent"
-           },
-           "actions": [
-            {
-             "url": "tools://storage.files/write",
-             "payload": {
-              "options": {
-               "path": "notes/uri.txt",
-               "content": "u"
-              },
-              "output": {
-               "status": "user.tools_status"
-              }
-             }
-            }
-           ],
-           "border": {
-            "corner_radius": 12,
-            "stroke": {
-             "color": "#1E293B",
-             "width": 1
-            }
-           },
-           "subtitle": "tools://storage.files/write",
-           "id": "tool_files_uri_resolves",
-           "content_description": "files write"
-          },
-          {
-           "type": "button",
-           "text": "Read missing file",
-           "font_size": 12,
-           "font_weight": "bold",
-           "text_color": "#FFFFFF",
-           "background_color": "#7C3AED",
-           "corner_radius": 12,
-           "height": {
-            "type": "fixed",
-            "value": 40
-           },
-           "width": {
-            "type": "match_parent"
-           },
-           "actions": [
-            {
-             "url": "tools://storage.files/read",
-             "payload": {
-              "options": {
-               "path": "notes/does-not-exist.txt"
-              },
-              "output": {
-               "status": "user.tools_status"
-              }
-             }
-            }
-           ],
-           "subtitle": "tools://storage.files/read",
-           "id": "tool_files_read_missing_fails",
-           "content_description": "files read"
-          }
-         ],
-         "item_spacing": 8,
-         "background_color": "#111C2E",
-         "paddings": {
-          "left": 12,
-          "top": 12,
-          "right": 12,
-          "bottom": 12
-         },
-         "border": {
-          "corner_radius": 16,
-          "stroke": {
-           "color": "#1E293B",
-           "width": 1
-          }
-         }
-        },
-        {
-         "type": "button",
-         "text": "Back to tools",
-         "font_size": 12,
-         "font_weight": "bold",
-         "text_color": "#F8FAFC",
-         "background_color": "transparent",
-         "corner_radius": 12,
-         "height": {
-          "type": "fixed",
-          "value": 40
-         },
-         "width": {
-          "type": "match_parent"
-         },
-         "actions": [
-          {
-           "url": "nav://pop"
-          }
-         ],
-         "border": {
-          "corner_radius": 12,
-          "stroke": {
-           "color": "#1E293B",
-           "width": 1
-          }
-         },
-         "id": "btn_back_footer"
-        }
-       ],
-       "item_spacing": 12,
-       "paddings": {
-        "left": 16,
-        "top": 0,
-        "right": 16,
-        "bottom": 0
-       }
+       "url": "nav://pop"
       }
      ],
-     "item_spacing": 8,
-     "paddings": {
-      "left": 0,
-      "top": 0,
-      "right": 0,
-      "bottom": 16
-     }
+     "border": {
+      "corner_radius": 12,
+      "stroke": {
+       "color": "#1E293B",
+       "width": 1
+      }
+     },
+     "id": "btn_back"
+    },
+    {
+     "type": "container",
+     "items": [
+      {
+       "type": "text",
+       "font_size": 18,
+       "font_weight": "bold",
+       "text": "files",
+       "text_color": "#F8FAFC"
+      },
+      {
+       "type": "text",
+       "font_size": 12,
+       "font_weight": "regular",
+       "text": "Read and write files inside the workspace sandbox: write, read, append, copy, move, list, info, delete, mkdir, exists, uri.",
+       "text_color": "#94A3B8"
+      }
+     ],
+     "orientation": "vertical"
     }
+   ],
+   "orientation": "horizontal",
+   "paddings": {
+    "left": 16,
+    "top": 32,
+    "right": 16,
+    "bottom": 8
    }
-  ]
+  },
+  {
+   "type": "container",
+   "item_spacing": 12,
+   "items": [
+    {
+     "type": "container",
+     "orientation": "vertical",
+     "item_spacing": 4,
+     "paddings": {
+      "left": 12,
+      "top": 8,
+      "right": 12,
+      "bottom": 8
+     },
+     "background_color": "#16233A",
+     "border": {
+      "corner_radius": 12,
+      "stroke": {
+       "color": "#1E293B",
+       "width": 1
+      }
+     },
+     "items": [
+      {
+       "type": "text",
+       "text": "Status",
+       "font_size": 11,
+       "font_weight": "bold",
+       "text_color": "#94A3B8"
+      },
+      {
+       "type": "text",
+       "text": "@{user.tools_status}",
+       "font_size": 18,
+       "font_weight": "bold",
+       "text_color": "#34D399"
+      }
+     ],
+     "id": "metric_status"
+    },
+    {
+     "type": "inline_banner",
+     "custom_props": {
+      "text": "@{user.tools_error == '' ? 'No errors' : user.tools_error}",
+      "tone": "warn"
+     }
+    },
+    {
+     "type": "container",
+     "border": {
+      "corner_radius": 16,
+      "stroke": {
+       "color": "#1E293B",
+       "width": 1
+      }
+     },
+     "item_spacing": 8,
+     "items": [
+      {
+       "type": "button",
+       "text": "Write then read · 1/2",
+       "font_size": 12,
+       "font_weight": "bold",
+       "text_color": "#FFFFFF",
+       "background_color": "#7C3AED",
+       "corner_radius": 12,
+       "height": {
+        "type": "fixed",
+        "value": 40
+       },
+       "width": {
+        "type": "match_parent"
+       },
+       "actions": [
+        {
+         "url": "tools://storage.files/write",
+         "payload": {
+          "options": {
+           "path": "notes/hello.txt",
+           "content": "apex conformance"
+          },
+          "output": {
+           "status": "user.tools_status"
+          }
+         }
+        }
+       ],
+       "subtitle": "tools://storage.files/write",
+       "id": "tool_files_write_read_round_trip",
+       "content_description": "files write"
+      },
+      {
+       "type": "button",
+       "text": "Append · 1/3",
+       "font_size": 12,
+       "font_weight": "bold",
+       "text_color": "#F8FAFC",
+       "background_color": "#16233A",
+       "corner_radius": 12,
+       "height": {
+        "type": "fixed",
+        "value": 40
+       },
+       "width": {
+        "type": "match_parent"
+       },
+       "actions": [
+        {
+         "url": "tools://storage.files/write",
+         "payload": {
+          "options": {
+           "path": "notes/append.txt",
+           "content": "one"
+          },
+          "output": {
+           "status": "user.tools_status"
+          }
+         }
+        }
+       ],
+       "border": {
+        "corner_radius": 12,
+        "stroke": {
+         "color": "#1E293B",
+         "width": 1
+        }
+       },
+       "subtitle": "tools://storage.files/write",
+       "id": "tool_files_append_extends",
+       "content_description": "files write"
+      },
+      {
+       "type": "button",
+       "text": "Copy then move · 1/4",
+       "font_size": 12,
+       "font_weight": "bold",
+       "text_color": "#FFFFFF",
+       "background_color": "#7C3AED",
+       "corner_radius": 12,
+       "height": {
+        "type": "fixed",
+        "value": 40
+       },
+       "width": {
+        "type": "match_parent"
+       },
+       "actions": [
+        {
+         "url": "tools://storage.files/write",
+         "payload": {
+          "options": {
+           "path": "notes/src.txt",
+           "content": "payload"
+          },
+          "output": {
+           "status": "user.tools_status"
+          }
+         }
+        }
+       ],
+       "subtitle": "tools://storage.files/write",
+       "id": "tool_files_copy_then_move",
+       "content_description": "files write"
+      },
+      {
+       "type": "button",
+       "text": "List then info · 1/3",
+       "font_size": 12,
+       "font_weight": "bold",
+       "text_color": "#F8FAFC",
+       "background_color": "#16233A",
+       "corner_radius": 12,
+       "height": {
+        "type": "fixed",
+        "value": 40
+       },
+       "width": {
+        "type": "match_parent"
+       },
+       "actions": [
+        {
+         "url": "tools://storage.files/mkdir",
+         "payload": {
+          "options": {
+           "path": "notes"
+          },
+          "output": {
+           "status": "user.tools_status"
+          }
+         }
+        }
+       ],
+       "border": {
+        "corner_radius": 12,
+        "stroke": {
+         "color": "#1E293B",
+         "width": 1
+        }
+       },
+       "subtitle": "tools://storage.files/mkdir",
+       "id": "tool_files_list_and_info",
+       "content_description": "files mkdir"
+      },
+      {
+       "type": "button",
+       "text": "Delete · 1/3",
+       "font_size": 12,
+       "font_weight": "bold",
+       "text_color": "#FFFFFF",
+       "background_color": "#7C3AED",
+       "corner_radius": 12,
+       "height": {
+        "type": "fixed",
+        "value": 40
+       },
+       "width": {
+        "type": "match_parent"
+       },
+       "actions": [
+        {
+         "url": "tools://storage.files/write",
+         "payload": {
+          "options": {
+           "path": "notes/gone.txt",
+           "content": "x"
+          },
+          "output": {
+           "status": "user.tools_status"
+          }
+         }
+        }
+       ],
+       "subtitle": "tools://storage.files/write",
+       "id": "tool_files_delete_removes",
+       "content_description": "files write"
+      },
+      {
+       "type": "button",
+       "text": "File URI · 1/2",
+       "font_size": 12,
+       "font_weight": "bold",
+       "text_color": "#F8FAFC",
+       "background_color": "#16233A",
+       "corner_radius": 12,
+       "height": {
+        "type": "fixed",
+        "value": 40
+       },
+       "width": {
+        "type": "match_parent"
+       },
+       "actions": [
+        {
+         "url": "tools://storage.files/write",
+         "payload": {
+          "options": {
+           "path": "notes/uri.txt",
+           "content": "u"
+          },
+          "output": {
+           "status": "user.tools_status"
+          }
+         }
+        }
+       ],
+       "border": {
+        "corner_radius": 12,
+        "stroke": {
+         "color": "#1E293B",
+         "width": 1
+        }
+       },
+       "subtitle": "tools://storage.files/write",
+       "id": "tool_files_uri_resolves",
+       "content_description": "files write"
+      },
+      {
+       "type": "button",
+       "text": "Read missing file",
+       "font_size": 12,
+       "font_weight": "bold",
+       "text_color": "#FFFFFF",
+       "background_color": "#7C3AED",
+       "corner_radius": 12,
+       "height": {
+        "type": "fixed",
+        "value": 40
+       },
+       "width": {
+        "type": "match_parent"
+       },
+       "actions": [
+        {
+         "url": "tools://storage.files/read",
+         "payload": {
+          "options": {
+           "path": "notes/does-not-exist.txt"
+          },
+          "output": {
+           "status": "user.tools_status"
+          }
+         }
+        }
+       ],
+       "subtitle": "tools://storage.files/read",
+       "id": "tool_files_read_missing_fails",
+       "content_description": "files read"
+      }
+     ],
+     "orientation": "vertical",
+     "paddings": {
+      "left": 12,
+      "top": 12,
+      "right": 12,
+      "bottom": 12
+     }
+    },
+    {
+     "type": "button",
+     "text": "Back to tools",
+     "font_size": 12,
+     "font_weight": "bold",
+     "text_color": "#F8FAFC",
+     "background_color": "transparent",
+     "corner_radius": 12,
+     "height": {
+      "type": "fixed",
+      "value": 40
+     },
+     "width": {
+      "type": "match_parent"
+     },
+     "actions": [
+      {
+       "url": "nav://pop"
+      }
+     ],
+     "border": {
+      "corner_radius": 12,
+      "stroke": {
+       "color": "#1E293B",
+       "width": 1
+      }
+     },
+     "id": "btn_back_footer"
+    }
+   ],
+   "orientation": "vertical",
+   "paddings": {
+    "left": 16,
+    "top": 0,
+    "right": 16,
+    "bottom": 0
+   }
+  }
+ ],
+ "orientation": "vertical",
+ "paddings": {
+  "left": 0,
+  "top": 0,
+  "right": 0,
+  "bottom": 16
  }
 }

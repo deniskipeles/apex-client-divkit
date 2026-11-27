@@ -1,11 +1,11 @@
 {
  "card": {
-  "log_id": "pos_terminal_${tenantId}",
+  "log_id": "pos_terminal_acme_pos",
   "variables": [
    {
     "name": "user.workspace_title",
     "type": "string",
-    "value": "${displayName} (${terminalCode})"
+    "value": "Apex POS Terminal (POS-TERM-01)"
    },
    {
     "name": "user.custom_item_name",
@@ -105,7 +105,7 @@
    {
     "name": "user.code_content",
     "type": "string",
-    "value": "apexpos://order/pickup?terminal=${terminalCode}"
+    "value": "apexpos://order/pickup?terminal=POS-TERM-01"
    },
    {
     "name": "user.code_id",
@@ -220,7 +220,7 @@
    {
     "name": "user.clipboard_content",
     "type": "string",
-    "value": "${terminalCode} • Order #1042"
+    "value": "POS-TERM-01 • Order #1042"
    },
    {
     "name": "user.clipboard_length",
@@ -478,21 +478,10 @@
     "state_id": 0,
     "div": {
      "type": "container",
-     "orientation": "vertical",
      "item_spacing": 12,
-     "tool_catalog_after": 4,
      "items": [
       {
        "type": "container",
-       "orientation": "vertical",
-       "background_color": "#1E293B",
-       "corner_radius": 14,
-       "paddings": {
-        "left": 14,
-        "right": 14,
-        "top": 12,
-        "bottom": 12
-       },
        "border": {
         "corner_radius": 14,
         "stroke": {
@@ -503,121 +492,120 @@
        "items": [
         {
          "type": "container",
-         "orientation": "horizontal",
          "items": [
           {
            "type": "text",
-           "weight": 1.0,
-           "text": "@{user.workspace_title}",
            "font_size": 16,
            "font_weight": "bold",
+           "text": "@{user.workspace_title}",
            "text_color": "#F8FAFC"
           },
           {
            "type": "text",
-           "text": "Mode: HYBRID",
            "font_size": 11,
            "font_weight": "bold",
+           "text": "Mode: HYBRID",
            "text_color": "#0284C7"
           }
-         ]
+         ],
+         "orientation": "horizontal"
         },
         {
          "type": "text",
-         "text": "Sync: @{user.sync_status} · @{if(user.engine_error == '', 'All systems ready', user.engine_error)}",
+         "font_family": "monospace",
          "font_size": 12,
-         "text_color": "#94A3B8",
-         "font_family": "monospace"
+         "text": "Sync: @{user.sync_status} · @{if(user.engine_error == '', 'All systems ready', user.engine_error)}",
+         "text_color": "#94A3B8"
         },
         {
          "type": "grid",
          "column_count": 3,
-         "item_spacing": 8,
          "items": [
           {
            "type": "container",
-           "background_color": "#0F172A",
-           "corner_radius": 10,
-           "paddings": {
-            "left": 10,
-            "right": 10,
-            "top": 8,
-            "bottom": 8
-           },
            "items": [
             {
              "type": "text",
-             "text": "ORDERS",
              "font_size": 10,
              "font_weight": "bold",
+             "text": "ORDERS",
              "text_color": "#64748B"
             },
             {
              "type": "text",
-             "text": "@{user.order_count}",
              "font_size": 18,
              "font_weight": "bold",
+             "text": "@{user.order_count}",
              "text_color": "#38BDF8"
             }
-           ]
-          },
-          {
-           "type": "container",
-           "background_color": "#0F172A",
-           "corner_radius": 10,
+           ],
            "paddings": {
             "left": 10,
             "right": 10,
             "top": 8,
             "bottom": 8
-           },
+           }
+          },
+          {
+           "type": "container",
            "items": [
             {
              "type": "text",
-             "text": "SKUs IN DB",
              "font_size": 10,
              "font_weight": "bold",
+             "text": "SKUs IN DB",
              "text_color": "#64748B"
             },
             {
              "type": "text",
-             "text": "@{user.catalog_count}",
              "font_size": 18,
              "font_weight": "bold",
+             "text": "@{user.catalog_count}",
              "text_color": "#34D399"
             }
-           ]
-          },
-          {
-           "type": "container",
-           "background_color": "#0F172A",
-           "corner_radius": 10,
+           ],
            "paddings": {
             "left": 10,
             "right": 10,
             "top": 8,
             "bottom": 8
-           },
+           }
+          },
+          {
+           "type": "container",
            "items": [
             {
              "type": "text",
-             "text": "LAST ROW #",
              "font_size": 10,
              "font_weight": "bold",
+             "text": "LAST ROW #",
              "text_color": "#64748B"
             },
             {
              "type": "text",
-             "text": "#@{user.last_order_id}",
              "font_size": 18,
              "font_weight": "bold",
+             "text": "#@{user.last_order_id}",
              "text_color": "#FBBF24"
             }
-           ]
+           ],
+           "paddings": {
+            "left": 10,
+            "right": 10,
+            "top": 8,
+            "bottom": 8
+           }
           }
          ]
         }
-       ]
+       ],
+       "orientation": "vertical",
+       "paddings": {
+        "left": 14,
+        "right": 14,
+        "top": 12,
+        "bottom": 12
+       }
       },
       {
        "type": "button",
@@ -647,35 +635,32 @@
       },
       {
        "type": "container",
+       "items": [
+        {
+         "type": "text",
+         "font_size": 12,
+         "font_weight": "bold",
+         "text": "⚡ ACTIVE TERMINAL CAPABILITIES",
+         "text_color": "#F8FAFC"
+        },
+        {
+         "type": "text",
+         "font_size": 11,
+         "text": "Quick-launch common tool cards",
+         "text_color": "#64748B"
+        }
+       ],
        "orientation": "vertical",
-       "background_color": "#0F172A",
-       "corner_radius": 12,
        "paddings": {
         "left": 12,
         "right": 12,
         "top": 10,
         "bottom": 10
-       },
-       "items": [
-        {
-         "type": "text",
-         "text": "⚡ ACTIVE TERMINAL CAPABILITIES",
-         "font_size": 12,
-         "font_weight": "bold",
-         "text_color": "#F8FAFC"
-        },
-        {
-         "type": "text",
-         "text": "Quick-launch common tool cards",
-         "font_size": 11,
-         "text_color": "#64748B"
-        }
-       ]
+       }
       },
       {
        "type": "grid",
        "column_count": 2,
-       "item_spacing": 8,
        "items": [
         {
          "type": "button",
@@ -733,12 +718,14 @@
       },
       {
        "type": "text",
-       "text": "🔽 All native tool cards below — tap to open",
        "font_size": 11,
-       "text_color": "#64748B",
-       "text_alignment_horizontal": "center"
+       "text": "🔽 All native tool cards below — tap to open",
+       "text_alignment_horizontal": "center",
+       "text_color": "#64748B"
       }
-     ]
+     ],
+     "orientation": "vertical",
+     "tool_catalog_after": 4
     }
    }
   ]

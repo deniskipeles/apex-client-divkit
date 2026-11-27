@@ -16,6 +16,7 @@ import { fileURLToPath } from 'node:url'
 import {
   BLOCK_TYPES,
   CHART_TYPES,
+  NAV_TYPES,
   NODE_TYPES,
   UNRENDERED_CUSTOM_TYPES,
 } from '../../../packages/pos-ui/src/android-runtime/vocabulary.ts'
@@ -27,7 +28,7 @@ const GENERATED = 'apps/dev-server/scripts/build-divkit-schema.mjs'
 const check = process.argv.includes('--check')
 
 const componentTypes = [...NODE_TYPES, ...BLOCK_TYPES]
-const customTypes = ['json_list', ...CHART_TYPES, ...UNRENDERED_CUSTOM_TYPES]
+const customTypes = ['json_list', ...CHART_TYPES, ...NAV_TYPES, ...UNRENDERED_CUSTOM_TYPES]
 
 const schema = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',

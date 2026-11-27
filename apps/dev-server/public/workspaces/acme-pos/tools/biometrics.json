@@ -1,0 +1,189 @@
+{
+  "type": "container",
+  "border": {
+    "corner_radius": 14,
+    "stroke": {
+      "color": "#EF4444",
+      "width": 2
+    }
+  },
+  "item_spacing": 12,
+  "items": [
+    {
+      "type": "container",
+      "border": {
+        "corner_radius": 10,
+        "stroke": {
+          "color": "#EF4444",
+          "width": 1
+        }
+      },
+      "item_spacing": 6,
+      "items": [
+        {
+          "type": "text",
+          "font_size": 14,
+          "font_weight": "bold",
+          "text": "🛡️ SUPERVISOR CREDENTIAL GATE",
+          "text_color": "#EF4444"
+        },
+        {
+          "type": "text",
+          "font_family": "monospace",
+          "font_size": 10,
+          "text": "tools://biometrics • auth.biometrics@1",
+          "text_color": "#F87171"
+        },
+        {
+          "type": "text",
+          "font_size": 11,
+          "margins": {
+            "top": 4
+          },
+          "text": "Void, refund, and discount operations require supervisor fingerprint or PIN. This terminal is locked until authorized.",
+          "text_color": "#FCA5A5"
+        }
+      ],
+      "paddings": {
+        "left": 12,
+        "right": 12,
+        "top": 10,
+        "bottom": 10
+      }
+    },
+    {
+      "type": "container",
+      "border": {
+        "corner_radius": 10,
+        "stroke": {
+          "color": "#7F1D1D",
+          "width": 1
+        }
+      },
+      "item_spacing": 6,
+      "items": [
+        {
+          "type": "text",
+          "font_family": "monospace",
+          "font_size": 10,
+          "font_weight": "bold",
+          "text": "CURRENT AUTH STATE",
+          "text_color": "#9CA3AF"
+        },
+        {
+          "type": "text",
+          "alignment_horizontal": "center",
+          "font_family": "monospace",
+          "font_size": 22,
+          "font_weight": "bold",
+          "text": "@{user.supervisor_authenticated}",
+          "text_color": "#34D399"
+        },
+        {
+          "type": "text",
+          "alignment_horizontal": "center",
+          "font_family": "monospace",
+          "font_size": 11,
+          "text": "Role: @{user.supervisor_role}  •  Method: @{user.supervisor_auth_method}",
+          "text_color": "#6EE7B7"
+        }
+      ],
+      "paddings": {
+        "left": 12,
+        "right": 12,
+        "top": 12,
+        "bottom": 12
+      }
+    },
+    {
+      "type": "text",
+      "font_family": "monospace",
+      "font_size": 10,
+      "font_weight": "bold",
+      "text": "SUPERVISOR ACTIONS",
+      "text_color": "#9CA3AF"
+    },
+    {
+      "type": "button",
+      "id": "tool_biometrics_authenticate",
+      "text": "Authenticate Supervisor (Biometric / PIN)",
+      "subtitle": "Triggers real OS device-credential prompt — denies when unverified",
+      "icon": "fingerprint",
+      "background_color": "#991B1B",
+      "text_color": "#FFFFFF",
+      "corner_radius": 10,
+      "action": {
+        "log_id": "exec_tool_biometrics_authenticate",
+        "url": "tools://biometrics/authenticate",
+        "payload": {
+          "operation": "authenticate",
+          "options": {
+            "required_role": "SUPERVISOR"
+          },
+          "output": {
+            "authenticated": "user.supervisor_authenticated",
+            "role": "user.supervisor_role",
+            "method": "user.supervisor_auth_method"
+          }
+        }
+      }
+    },
+    {
+      "type": "button",
+      "id": "tool_biometrics_authorize_void",
+      "text": "Authorize Void / Refund",
+      "subtitle": "Requires supervisor credential for void or refund operations",
+      "icon": "lock",
+      "background_color": "#7C3AED",
+      "text_color": "#FFFFFF",
+      "corner_radius": 10,
+      "action": {
+        "log_id": "exec_tool_biometrics_authorize_void",
+        "url": "tools://biometrics/authenticate",
+        "payload": {
+          "operation": "authenticate",
+          "options": {
+            "required_role": "SUPERVISOR",
+            "reason": "Authorize void/refund"
+          },
+          "output": {
+            "authenticated": "user.supervisor_authenticated",
+            "role": "user.supervisor_role",
+            "method": "user.supervisor_auth_method"
+          }
+        }
+      }
+    },
+    {
+      "type": "button",
+      "id": "tool_biometrics_lock",
+      "text": "Lock Terminal",
+      "subtitle": "Clears supervisor session — requires re-auth for protected operations",
+      "icon": "lock",
+      "background_color": "#374151",
+      "text_color": "#D1D5DB",
+      "corner_radius": 10,
+      "action": {
+        "log_id": "exec_tool_biometrics_lock",
+        "url": "tools://biometrics/lock",
+        "payload": {
+          "operation": "lock",
+          "options": {
+            "op": "lock"
+          },
+          "output": {
+            "authenticated": "user.supervisor_authenticated",
+            "role": "user.supervisor_role"
+          }
+        }
+      }
+    }
+  ],
+  "orientation": "vertical",
+  "paddings": {
+    "left": 14,
+    "right": 14,
+    "top": 12,
+    "bottom": 12
+  }
+}

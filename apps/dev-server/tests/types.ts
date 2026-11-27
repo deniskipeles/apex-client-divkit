@@ -8,6 +8,9 @@
 // `toolConformance_mirrorsTheKotlinRegistry`.
 // ---------------------------------------------------------------------------
 
+import type { DivNode } from '../workspaces/core/kit/div.ts'
+import type { DivVariable } from '../workspaces/core/kit/variables.ts'
+
 /** A matcher is a single-key object, which keeps the JSON fixture unambiguous. */
 export type Matcher =
   | { equals: unknown }
@@ -107,8 +110,10 @@ export interface ToolTestModule {
   results: FieldMeta[]
   statuses: StatusMeta[]
   cases: ToolCase[]
-  /** DivKit card shipped by the `apex_tools_test` workspace. */
-  card: unknown
+  /** Raw card body shipped under `apex_tools_test/tools/<slug>.json`. */
+  card: DivNode
+  /** `user.*` declarations the body reads; the hub declares the union. */
+  variables: DivVariable[]
 }
 
 const HOSTS: HostMode[] = ['fake', 'none', 'denied']

@@ -1,0 +1,104 @@
+{
+  "type": "container",
+  "border": {
+    "corner_radius": 12,
+    "stroke": {
+      "color": "#06B6D4",
+      "width": 1
+    }
+  },
+  "items": [
+    {
+      "type": "text",
+      "font_size": 11,
+      "font_weight": "bold",
+      "text": "🪄 BACKGROUND REMOVAL — U-2-NETP (tools://u-2-Net.tflite · model not bundled)",
+      "text_color": "#67E8F9"
+    },
+    {
+      "type": "text",
+      "font_family": "monospace",
+      "font_size": 12,
+      "text": "Status: @{user.bg_remove_status}",
+      "text_color": "#E0F2FE"
+    },
+    {
+      "type": "image",
+      "image_url": "@{user.u2net_mask_uri}"
+    },
+    {
+      "type": "container",
+      "item_spacing": 8,
+      "items": [
+        {
+          "type": "container",
+          "items": [
+            {
+              "type": "button",
+              "id": "tool_u-2-Net_tflite_segment",
+              "text": "🪄 Remove Background (Camera)",
+              "subtitle": "Returns UNSUPPORTED unless the U-2-Netp weights are bundled",
+              "icon": "crop",
+              "background_color": "#0891B2",
+              "text_color": "#FFFFFF",
+              "corner_radius": 10,
+              "action": {
+                "log_id": "exec_tool_u-2-Net.tflite_segment",
+                "url": "tools://u-2-Net.tflite/segment",
+                "payload": {
+                  "operation": "segment",
+                  "options": {
+                    "threshold": "0.45",
+                    "camera": "true"
+                  },
+                  "output": {
+                    "status": "user.bg_remove_status",
+                    "uri": "user.u2net_mask_uri"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "container",
+          "items": [
+            {
+              "type": "button",
+              "id": "tool_u-2-Net_tflite_segment_file",
+              "text": "🖼 Remove Background (Photo)",
+              "subtitle": "Pick an existing image",
+              "icon": "image",
+              "background_color": "#155E75",
+              "text_color": "#FFFFFF",
+              "corner_radius": 10,
+              "action": {
+                "log_id": "exec_tool_u-2-Net.tflite_segment_file",
+                "url": "tools://u-2-Net.tflite/segment",
+                "payload": {
+                  "operation": "segment",
+                  "options": {
+                    "threshold": "0.45",
+                    "camera": "false"
+                  },
+                  "output": {
+                    "status": "user.bg_remove_status",
+                    "uri": "user.u2net_mask_uri"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "orientation": "horizontal"
+    }
+  ],
+  "orientation": "vertical",
+  "paddings": {
+    "left": 12,
+    "right": 12,
+    "top": 10,
+    "bottom": 10
+  }
+}

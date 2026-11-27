@@ -1,0 +1,151 @@
+{
+  "type": "container",
+  "border": {
+    "corner_radius": 12,
+    "stroke": {
+      "color": "#818CF8",
+      "width": 1
+    }
+  },
+  "items": [
+    {
+      "type": "text",
+      "font_size": 11,
+      "font_weight": "bold",
+      "text": "🎨 NATIVE ICON SCHEME (icons://native/<name> • 285 icons)",
+      "text_color": "#5B21B6"
+    },
+    {
+      "type": "text",
+      "font_family": "monospace",
+      "font_size": 12,
+      "text": "Resolved: @{user.icon_name} • Material: @{user.icon_material} • Category: @{user.icon_category}",
+      "text_color": "#E0E7FF"
+    },
+    {
+      "type": "container",
+      "item_spacing": 10,
+      "items": [
+        {
+          "type": "image",
+          "image_url": "icons://native/cart"
+        },
+        {
+          "type": "image",
+          "image_url": "icons://native/bell"
+        },
+        {
+          "type": "image",
+          "image_url": "icons://native/receipt"
+        },
+        {
+          "type": "image",
+          "image_url": "icons://native/payment"
+        },
+        {
+          "type": "image",
+          "image_url": "icons://native/stock"
+        },
+        {
+          "type": "image",
+          "image_url": "icons://native/printer"
+        },
+        {
+          "type": "image",
+          "image_url": "icons://native/scan"
+        },
+        {
+          "type": "image",
+          "image_url": "icons://native/warehouse"
+        }
+      ],
+      "orientation": "horizontal"
+    },
+    {
+      "type": "container",
+      "item_spacing": 8,
+      "items": [
+        {
+          "type": "container",
+          "items": [
+            {
+              "type": "button",
+              "id": "icon_cart",
+              "text": "Cart",
+              "icon": "icons://native/cart",
+              "background_color": "#4338CA",
+              "text_color": "#F8FAFC",
+              "corner_radius": 8,
+              "action": {
+                "log_id": "icon_pick_cart",
+                "url": "icons://native/cart"
+              }
+            }
+          ]
+        },
+        {
+          "type": "container",
+          "items": [
+            {
+              "type": "button",
+              "id": "icon_bell",
+              "text": "Bell",
+              "icon": "icons://native/bell",
+              "background_color": "#7C3AED",
+              "text_color": "#F8FAFC",
+              "corner_radius": 8,
+              "action": {
+                "log_id": "icon_pick_bell",
+                "url": "icons://native/bell"
+              }
+            }
+          ]
+        },
+        {
+          "type": "container",
+          "items": [
+            {
+              "type": "button",
+              "id": "icon_receipt",
+              "text": "Receipt",
+              "icon": "icons://native/receipt",
+              "background_color": "#2563EB",
+              "text_color": "#F8FAFC",
+              "corner_radius": 8,
+              "action": {
+                "log_id": "icon_pick_receipt",
+                "url": "icons://native/receipt"
+              }
+            }
+          ]
+        },
+        {
+          "type": "container",
+          "items": [
+            {
+              "type": "button",
+              "id": "icon_discount",
+              "text": "Discount",
+              "icon": "icons://native/discount",
+              "background_color": "#DB2777",
+              "text_color": "#F8FAFC",
+              "corner_radius": 8,
+              "action": {
+                "log_id": "icon_pick_discount",
+                "url": "icons://native/discount"
+              }
+            }
+          ]
+        }
+      ],
+      "orientation": "horizontal"
+    }
+  ],
+  "orientation": "vertical",
+  "paddings": {
+    "left": 12,
+    "right": 12,
+    "top": 10,
+    "bottom": 10
+  }
+}

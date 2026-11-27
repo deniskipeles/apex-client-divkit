@@ -22,6 +22,7 @@
             "separator",
             "image",
             "json_list",
+            "state",
             "custom",
             "sticky_footer",
             "segmented",
@@ -104,6 +105,7 @@
             "area_chart",
             "donut_chart",
             "pie_chart",
+            "sdui_nav",
             "sdui_signature",
             "sdui_numpad"
           ],

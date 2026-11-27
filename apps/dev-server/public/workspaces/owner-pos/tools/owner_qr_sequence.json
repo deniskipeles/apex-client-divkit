@@ -1,0 +1,329 @@
+{
+  "type": "container",
+  "background": [
+    {
+      "type": "solid",
+      "color": "#F7F8FB"
+    }
+  ],
+  "height": {
+    "type": "match_parent"
+  },
+  "items": [
+    {
+      "type": "container",
+      "alignment_vertical": "center",
+      "height": {
+        "type": "fixed",
+        "value": 56
+      },
+      "items": [
+        {
+          "type": "container",
+          "actions": [
+            {
+              "log_id": "qr_back",
+              "url": "local-db://op/pos.leave_qr?order_id=%40%7Bowner.cart_id%7D"
+            },
+            {
+              "log_id": "qr_back_nav",
+              "url": "nav://pop"
+            }
+          ],
+          "content_alignment_horizontal": "center",
+          "content_alignment_vertical": "center",
+          "height": {
+            "type": "fixed",
+            "value": 48
+          },
+          "items": [
+            {
+              "type": "text",
+              "font_size": 22,
+              "text": "←",
+              "text_color": "#111319"
+            }
+          ],
+          "width": {
+            "type": "fixed",
+            "value": 48
+          }
+        },
+        {
+          "type": "text",
+          "font_size": 22,
+          "font_weight": "bold",
+          "line_height": 28,
+          "text": "@{owner.qr_order_label}",
+          "text_color": "#111319"
+        }
+      ],
+      "orientation": "horizontal",
+      "width": {
+        "type": "match_parent"
+      }
+    },
+    {
+      "type": "container",
+      "background": [
+        {
+          "type": "solid",
+          "color": "#FFFFFF"
+        }
+      ],
+      "border": {
+        "corner_radius": 16
+      },
+      "content_alignment_horizontal": "center",
+      "items": [
+        {
+          "type": "qr_controls",
+          "custom_props": {
+            "index": "owner.qr_index",
+            "count": "owner.qr_auto",
+            "chunks_var": "owner.qr_chunks",
+            "auto_ms": 3000
+          }
+        },
+        {
+          "type": "text",
+          "font_size": 16,
+          "font_weight": "bold",
+          "margins": {
+            "top": 16,
+            "bottom": 8
+          },
+          "text": "@{owner.qr_progress_label}",
+          "text_alignment_horizontal": "center",
+          "text_color": "#111319"
+        },
+        {
+          "type": "progress_ring",
+          "custom_props": {
+            "value": "owner.qr_index / (owner.qr_total || 1)",
+            "label": "owner.qr_index",
+            "caption": "owner.qr_total"
+          }
+        },
+        {
+          "type": "container",
+          "alignment_vertical": "center",
+          "items": [
+            {
+              "type": "container",
+              "actions": [
+                {
+                  "log_id": "qr_prev",
+                  "url": "local-db://op/pos.qr_step?delta=-1"
+                }
+              ],
+              "content_alignment_vertical": "center",
+              "height": {
+                "type": "fixed",
+                "value": 48
+              },
+              "items": [
+                {
+                  "type": "text",
+                  "font_size": 16,
+                  "font_weight": "regular",
+                  "line_height": 22,
+                  "text": "Prev",
+                  "text_color": "#5B6070"
+                }
+              ],
+              "paddings": {
+                "left": 12,
+                "right": 12
+              }
+            },
+            {
+              "type": "container",
+              "actions": [
+                {
+                  "log_id": "toggle_auto",
+                  "url": "div-action://set_variable?name=owner.qr_auto&value=%40%7B!owner.qr_auto%7D"
+                }
+              ],
+              "background": [
+                {
+                  "type": "solid",
+                  "color": "#F1EDFF"
+                }
+              ],
+              "border": {
+                "corner_radius": 999
+              },
+              "content_alignment_horizontal": "center",
+              "content_alignment_vertical": "center",
+              "height": {
+                "type": "fixed",
+                "value": 48
+              },
+              "items": [
+                {
+                  "type": "text",
+                  "font_size": 13,
+                  "font_weight": "medium",
+                  "text": "@{owner.qr_auto ? 'Auto-advance on' : 'Auto-advance paused'}",
+                  "text_alignment_horizontal": "center",
+                  "text_color": "#6D4AFF"
+                }
+              ],
+              "width": {
+                "type": "match_parent",
+                "weight": 1
+              }
+            },
+            {
+              "type": "container",
+              "actions": [
+                {
+                  "log_id": "qr_next",
+                  "url": "local-db://op/pos.qr_step?delta=1"
+                }
+              ],
+              "content_alignment_vertical": "center",
+              "height": {
+                "type": "fixed",
+                "value": 48
+              },
+              "items": [
+                {
+                  "type": "text",
+                  "font_size": 16,
+                  "font_weight": "regular",
+                  "line_height": 22,
+                  "text": "Next",
+                  "text_color": "#6D4AFF"
+                }
+              ],
+              "paddings": {
+                "left": 12,
+                "right": 12
+              }
+            }
+          ],
+          "margins": {
+            "top": 20
+          },
+          "orientation": "horizontal",
+          "width": {
+            "type": "match_parent"
+          }
+        }
+      ],
+      "margins": {
+        "top": 12
+      },
+      "orientation": "vertical",
+      "paddings": {
+        "left": 24,
+        "right": 24,
+        "top": 24,
+        "bottom": 24
+      },
+      "width": {
+        "type": "match_parent"
+      }
+    },
+    {
+      "type": "text",
+      "font_size": 13,
+      "line_height": 18,
+      "margins": {
+        "top": 16,
+        "bottom": 20
+      },
+      "text": "Customer scans each chunk in order. Auto-advances every 3 seconds.",
+      "text_alignment_horizontal": "center",
+      "text_color": "#5B6070"
+    },
+    {
+      "type": "container",
+      "items": [
+        {
+          "type": "text",
+          "font_size": 16,
+          "font_weight": "bold",
+          "text": "Advanced",
+          "text_color": "#111319"
+        },
+        {
+          "type": "container",
+          "items": [
+            {
+              "type": "container",
+              "actions": [
+                {
+                  "log_id": "regen_qr",
+                  "url": "local-db://op/pos.regenerate_qr?order_id=%40%7Bowner.cart_id%7D"
+                }
+              ],
+              "content_alignment_vertical": "center",
+              "height": {
+                "type": "fixed",
+                "value": 48
+              },
+              "items": [
+                {
+                  "type": "text",
+                  "font_size": 16,
+                  "font_weight": "regular",
+                  "line_height": 22,
+                  "text": "Regenerate QR",
+                  "text_color": "#6D4AFF"
+                }
+              ],
+              "paddings": {
+                "right": 20
+              }
+            },
+            {
+              "type": "container",
+              "actions": [
+                {
+                  "log_id": "copy_qr_payload",
+                  "url": "local-db://op/pos.copy_qr_payload?order_id=%40%7Bowner.cart_id%7D"
+                }
+              ],
+              "content_alignment_vertical": "center",
+              "height": {
+                "type": "fixed",
+                "value": 48
+              },
+              "items": [
+                {
+                  "type": "text",
+                  "font_size": 16,
+                  "font_weight": "regular",
+                  "line_height": 22,
+                  "text": "Copy payload",
+                  "text_color": "#5B6070"
+                }
+              ]
+            }
+          ],
+          "orientation": "horizontal",
+          "width": {
+            "type": "match_parent"
+          }
+        }
+      ],
+      "orientation": "vertical",
+      "width": {
+        "type": "match_parent"
+      }
+    }
+  ],
+  "orientation": "vertical",
+  "paddings": {
+    "left": 20,
+    "right": 20,
+    "top": 16,
+    "bottom": 24
+  },
+  "width": {
+    "type": "match_parent"
+  }
+}

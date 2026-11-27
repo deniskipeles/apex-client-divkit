@@ -1,0 +1,766 @@
+{
+  "id": "product_form_modal",
+  "type": "form_modal",
+  "custom_props": {
+    "visible": true,
+    "title": "@{product.is_edit ? 'Edit product' : 'New product'}",
+    "body": [
+      {
+        "type": "container",
+        "items": [
+          {
+            "type": "container",
+            "items": [
+              {
+                "type": "container",
+                "background": [
+                  {
+                    "type": "solid",
+                    "color": "#E6E8EF"
+                  }
+                ],
+                "border": {
+                  "corner_radius": 12
+                },
+                "content_alignment_horizontal": "center",
+                "content_alignment_vertical": "center",
+                "height": {
+                  "type": "fixed",
+                  "value": 96
+                },
+                "items": [
+                  {
+                    "type": "image",
+                    "border": {
+                      "corner_radius": 12
+                    },
+                    "height": {
+                      "type": "fixed",
+                      "value": 72
+                    },
+                    "image_url": "product.photo_url",
+                    "placeholder_color": "#E6E8EF",
+                    "width": {
+                      "type": "fixed",
+                      "value": 96
+                    }
+                  },
+                  {
+                    "type": "text",
+                    "font_size": 11,
+                    "text": "Add photo",
+                    "text_color": "#5B6070"
+                  }
+                ],
+                "orientation": "vertical",
+                "width": {
+                  "type": "fixed",
+                  "value": 96
+                }
+              }
+            ],
+            "margins": {
+              "bottom": 24
+            }
+          },
+          {
+            "type": "container",
+            "items": [
+              {
+                "type": "text",
+                "font_size": 13,
+                "font_weight": "medium",
+                "line_height": 18,
+                "text": "Name",
+                "text_color": "#111319"
+              },
+              {
+                "type": "container",
+                "alignment_vertical": "center",
+                "background": [
+                  {
+                    "type": "solid",
+                    "color": "#FFFFFF"
+                  }
+                ],
+                "border": {
+                  "corner_radius": 12,
+                  "stroke": {
+                    "color": "@{product.errors.name != '' ? '#E02424' : '#E6E8EF'}",
+                    "width": 1
+                  }
+                },
+                "height": {
+                  "type": "fixed",
+                  "value": 52
+                },
+                "items": [
+                  {
+                    "type": "input",
+                    "font_size": 16,
+                    "hint_color": "#5B6070",
+                    "hint_text": "Latte",
+                    "id": "field_name",
+                    "keyboard_type": "single_line_text",
+                    "max_visible_lines": 1,
+                    "text_color": "#111319",
+                    "text_variable": "product.name",
+                    "width": {
+                      "type": "match_parent",
+                      "weight": 1
+                    }
+                  }
+                ],
+                "margins": {
+                  "top": 6
+                },
+                "orientation": "horizontal",
+                "paddings": {
+                  "left": 14,
+                  "right": 14,
+                  "top": 8,
+                  "bottom": 8
+                },
+                "width": {
+                  "type": "match_parent"
+                }
+              },
+              {
+                "type": "text",
+                "font_size": 13,
+                "margins": {
+                  "top": 4
+                },
+                "text": "@{product.errors.name}",
+                "text_color": "#E02424",
+                "visibility": "@{product.errors.name != '' ? 'visible' : 'gone'}"
+              }
+            ],
+            "margins": {
+              "bottom": 24
+            },
+            "orientation": "vertical",
+            "width": {
+              "type": "match_parent"
+            }
+          },
+          {
+            "type": "container",
+            "items": [
+              {
+                "type": "text",
+                "font_size": 13,
+                "font_weight": "medium",
+                "line_height": 18,
+                "text": "Price",
+                "text_color": "#111319"
+              },
+              {
+                "type": "container",
+                "alignment_vertical": "center",
+                "background": [
+                  {
+                    "type": "solid",
+                    "color": "#FFFFFF"
+                  }
+                ],
+                "border": {
+                  "corner_radius": 12,
+                  "stroke": {
+                    "color": "@{product.errors.price != '' ? '#E02424' : '#E6E8EF'}",
+                    "width": 1
+                  }
+                },
+                "height": {
+                  "type": "fixed",
+                  "value": 52
+                },
+                "items": [
+                  {
+                    "type": "text",
+                    "font_size": 16,
+                    "margins": {
+                      "right": 6
+                    },
+                    "text": "$",
+                    "text_color": "#5B6070"
+                  },
+                  {
+                    "type": "input",
+                    "focus": {
+                      "on_blur": [
+                        {
+                          "log_id": "fmt_price",
+                          "url": "local-db://op/inventory.format_price"
+                        }
+                      ]
+                    },
+                    "font_size": 16,
+                    "hint_color": "#5B6070",
+                    "hint_text": "0.00",
+                    "id": "field_price",
+                    "keyboard_type": "number",
+                    "max_visible_lines": 1,
+                    "text_color": "#111319",
+                    "text_variable": "product.price",
+                    "width": {
+                      "type": "match_parent",
+                      "weight": 1
+                    }
+                  }
+                ],
+                "margins": {
+                  "top": 6
+                },
+                "orientation": "horizontal",
+                "paddings": {
+                  "left": 14,
+                  "right": 14,
+                  "top": 8,
+                  "bottom": 8
+                },
+                "width": {
+                  "type": "match_parent"
+                }
+              },
+              {
+                "type": "text",
+                "font_size": 13,
+                "margins": {
+                  "top": 4
+                },
+                "text": "@{product.errors.price}",
+                "text_color": "#E02424",
+                "visibility": "@{product.errors.price != '' ? 'visible' : 'gone'}"
+              }
+            ],
+            "margins": {
+              "bottom": 24
+            },
+            "orientation": "vertical",
+            "width": {
+              "type": "match_parent"
+            }
+          },
+          {
+            "type": "container",
+            "items": [
+              {
+                "type": "text",
+                "font_size": 13,
+                "font_weight": "medium",
+                "line_height": 18,
+                "text": "Code",
+                "text_color": "#111319"
+              },
+              {
+                "type": "container",
+                "alignment_vertical": "center",
+                "background": [
+                  {
+                    "type": "solid",
+                    "color": "#FFFFFF"
+                  }
+                ],
+                "border": {
+                  "corner_radius": 12,
+                  "stroke": {
+                    "color": "@{product.errors.code != '' ? '#E02424' : '#E6E8EF'}",
+                    "width": 1
+                  }
+                },
+                "height": {
+                  "type": "fixed",
+                  "value": 52
+                },
+                "items": [
+                  {
+                    "type": "input",
+                    "focus": {
+                      "on_blur": [
+                        {
+                          "log_id": "check_dup_code",
+                          "url": "local-db://op/inventory.check_code?code=%40%7Bproduct.code%7D&exclude_sku=%40%7Bproduct.sku%7D"
+                        }
+                      ]
+                    },
+                    "font_size": 16,
+                    "hint_color": "#5B6070",
+                    "hint_text": "Barcode or QR value",
+                    "id": "field_code",
+                    "keyboard_type": "single_line_text",
+                    "max_visible_lines": 1,
+                    "text_color": "#111319",
+                    "text_variable": "product.code",
+                    "width": {
+                      "type": "match_parent",
+                      "weight": 1
+                    }
+                  },
+                  {
+                    "type": "container",
+                    "background": [
+                      {
+                        "type": "solid",
+                        "color": "#1F0E9F6E"
+                      }
+                    ],
+                    "border": {
+                      "corner_radius": 999
+                    },
+                    "items": [
+                      {
+                        "type": "text",
+                        "font_size": 13,
+                        "font_weight": "medium",
+                        "text": "✓ scanned",
+                        "text_color": "#0E9F6E"
+                      }
+                    ],
+                    "margins": {
+                      "right": 8
+                    },
+                    "paddings": {
+                      "left": 10,
+                      "right": 10,
+                      "top": 4,
+                      "bottom": 4
+                    },
+                    "visibility": "@{product.code_scanned ? 'visible' : 'gone'}"
+                  },
+                  {
+                    "type": "container",
+                    "actions": [
+                      {
+                        "log_id": "open_code_scan_sheet",
+                        "url": "sheet://present?card_id=owner_scan_sheet"
+                      }
+                    ],
+                    "background": [
+                      {
+                        "type": "solid",
+                        "color": "#F1EDFF"
+                      }
+                    ],
+                    "border": {
+                      "corner_radius": 10
+                    },
+                    "content_alignment_horizontal": "center",
+                    "content_alignment_vertical": "center",
+                    "height": {
+                      "type": "fixed",
+                      "value": 48
+                    },
+                    "items": [
+                      {
+                        "type": "text",
+                        "font_size": 13,
+                        "font_weight": "bold",
+                        "text": "Scan",
+                        "text_alignment_horizontal": "center",
+                        "text_color": "#6D4AFF"
+                      }
+                    ],
+                    "width": {
+                      "type": "fixed",
+                      "value": 52
+                    }
+                  }
+                ],
+                "margins": {
+                  "top": 6
+                },
+                "orientation": "horizontal",
+                "paddings": {
+                  "left": 14,
+                  "right": 4,
+                  "top": 8,
+                  "bottom": 8
+                },
+                "width": {
+                  "type": "match_parent"
+                }
+              },
+              {
+                "type": "text",
+                "font_size": 13,
+                "font_weight": "medium",
+                "line_height": 18,
+                "text": "Scan the barcode or type it in",
+                "text_color": "#5B6070"
+              },
+              {
+                "type": "text",
+                "font_size": 13,
+                "margins": {
+                  "top": 4
+                },
+                "text": "@{product.errors.code}",
+                "text_color": "#E02424",
+                "visibility": "@{product.errors.code != '' ? 'visible' : 'gone'}"
+              }
+            ],
+            "margins": {
+              "bottom": 24
+            },
+            "orientation": "vertical",
+            "width": {
+              "type": "match_parent"
+            }
+          },
+          {
+            "type": "container",
+            "background": [
+              {
+                "type": "solid",
+                "color": "#1FF59E0B"
+              }
+            ],
+            "border": {
+              "corner_radius": 12
+            },
+            "id": "dup_code_banner",
+            "items": [
+              {
+                "type": "text",
+                "font_size": 13,
+                "line_height": 18,
+                "text": "@{product.code_dup_warning}",
+                "text_color": "#111319"
+              },
+              {
+                "type": "container",
+                "items": [
+                  {
+                    "type": "container",
+                    "actions": [
+                      {
+                        "log_id": "view_dup_code",
+                        "url": "local-db://op/inventory.open_form?mode=edit&sku=%40%7Bproduct.code_dup_sku%7D"
+                      },
+                      {
+                        "log_id": "open_dup_product",
+                        "url": "nav://push?id=product_modal"
+                      }
+                    ],
+                    "content_alignment_vertical": "center",
+                    "height": {
+                      "type": "fixed",
+                      "value": 48
+                    },
+                    "items": [
+                      {
+                        "type": "text",
+                        "font_size": 13,
+                        "font_weight": "bold",
+                        "text": "View",
+                        "text_color": "#F59E0B"
+                      }
+                    ],
+                    "paddings": {
+                      "right": 16
+                    }
+                  },
+                  {
+                    "type": "container",
+                    "actions": [
+                      {
+                        "log_id": "dismiss_dup_code",
+                        "url": "div-action://set_variable?name=product.code_dup_warning&value="
+                      }
+                    ],
+                    "content_alignment_vertical": "center",
+                    "height": {
+                      "type": "fixed",
+                      "value": 48
+                    },
+                    "items": [
+                      {
+                        "type": "text",
+                        "font_size": 13,
+                        "font_weight": "medium",
+                        "text": "Use anyway",
+                        "text_color": "#5B6070"
+                      }
+                    ]
+                  }
+                ],
+                "margins": {
+                  "top": 8
+                },
+                "orientation": "horizontal"
+              }
+            ],
+            "orientation": "vertical",
+            "paddings": {
+              "left": 14,
+              "right": 14,
+              "top": 12,
+              "bottom": 12
+            },
+            "visibility": "@{product.code_dup_warning != '' ? 'visible' : 'gone'}",
+            "width": {
+              "type": "match_parent"
+            }
+          },
+          {
+            "type": "container",
+            "items": [
+              {
+                "type": "text",
+                "font_size": 13,
+                "font_weight": "medium",
+                "line_height": 18,
+                "text": "SKU",
+                "text_color": "#111319"
+              },
+              {
+                "type": "container",
+                "alignment_vertical": "center",
+                "background": [
+                  {
+                    "type": "solid",
+                    "color": "#FFFFFF"
+                  }
+                ],
+                "border": {
+                  "corner_radius": 12,
+                  "stroke": {
+                    "color": "@{product.errors.sku != '' ? '#E02424' : '#E6E8EF'}",
+                    "width": 1
+                  }
+                },
+                "height": {
+                  "type": "fixed",
+                  "value": 52
+                },
+                "items": [
+                  {
+                    "type": "input",
+                    "focus": {
+                      "on_blur": [
+                        {
+                          "log_id": "upper_sku",
+                          "url": "local-db://op/inventory.normalize_sku"
+                        }
+                      ]
+                    },
+                    "font_size": 16,
+                    "hint_color": "#5B6070",
+                    "hint_text": "LAT-01",
+                    "id": "field_sku",
+                    "keyboard_type": "single_line_text",
+                    "max_visible_lines": 1,
+                    "text_color": "#111319",
+                    "text_variable": "product.sku",
+                    "width": {
+                      "type": "match_parent",
+                      "weight": 1
+                    }
+                  },
+                  {
+                    "type": "container",
+                    "actions": [
+                      {
+                        "log_id": "suggest_sku",
+                        "url": "local-db://op/inventory.suggest_sku?name=%40%7Bproduct.name%7D"
+                      }
+                    ],
+                    "content_alignment_horizontal": "center",
+                    "content_alignment_vertical": "center",
+                    "height": {
+                      "type": "fixed",
+                      "value": 48
+                    },
+                    "items": [
+                      {
+                        "type": "text",
+                        "font_size": 14,
+                        "font_weight": "medium",
+                        "text": "✨",
+                        "text_color": "#6D4AFF"
+                      }
+                    ],
+                    "paddings": {
+                      "left": 10,
+                      "right": 10
+                    }
+                  }
+                ],
+                "margins": {
+                  "top": 6
+                },
+                "orientation": "horizontal",
+                "paddings": {
+                  "left": 14,
+                  "right": 14,
+                  "top": 8,
+                  "bottom": 8
+                },
+                "width": {
+                  "type": "match_parent"
+                }
+              },
+              {
+                "type": "text",
+                "font_size": 13,
+                "margins": {
+                  "top": 4
+                },
+                "text": "@{product.errors.sku}",
+                "text_color": "#E02424",
+                "visibility": "@{product.errors.sku != '' ? 'visible' : 'gone'}"
+              }
+            ],
+            "margins": {
+              "bottom": 24
+            },
+            "orientation": "vertical",
+            "width": {
+              "type": "match_parent"
+            }
+          },
+          {
+            "type": "container",
+            "items": [
+              {
+                "type": "text",
+                "font_size": 13,
+                "font_weight": "medium",
+                "line_height": 18,
+                "text": "Description",
+                "text_color": "#111319"
+              },
+              {
+                "type": "container",
+                "alignment_vertical": "center",
+                "background": [
+                  {
+                    "type": "solid",
+                    "color": "#FFFFFF"
+                  }
+                ],
+                "border": {
+                  "corner_radius": 12,
+                  "stroke": {
+                    "color": "#E6E8EF",
+                    "width": 1
+                  }
+                },
+                "height": {
+                  "type": "fixed",
+                  "value": 52
+                },
+                "items": [
+                  {
+                    "type": "input",
+                    "font_size": 16,
+                    "hint_color": "#5B6070",
+                    "hint_text": "Optional notes",
+                    "id": "field_desc",
+                    "keyboard_type": "multi_line_text",
+                    "max_visible_lines": 4,
+                    "text_color": "#111319",
+                    "text_variable": "product.description",
+                    "width": {
+                      "type": "match_parent",
+                      "weight": 1
+                    }
+                  }
+                ],
+                "margins": {
+                  "top": 6
+                },
+                "orientation": "horizontal",
+                "paddings": {
+                  "left": 14,
+                  "right": 14,
+                  "top": 8,
+                  "bottom": 8
+                },
+                "width": {
+                  "type": "match_parent"
+                }
+              },
+              {
+                "type": "text",
+                "font_size": 13,
+                "font_weight": "medium",
+                "line_height": 18,
+                "text": "Up to 240 characters",
+                "text_color": "#5B6070"
+              }
+            ],
+            "margins": {
+              "bottom": 24
+            },
+            "orientation": "vertical",
+            "width": {
+              "type": "match_parent"
+            }
+          },
+          {
+            "type": "container",
+            "actions": [
+              {
+                "log_id": "confirm_delete_prod",
+                "url": "sheet://present?card_id=confirm_delete_product"
+              }
+            ],
+            "content_alignment_horizontal": "center",
+            "content_alignment_vertical": "center",
+            "height": {
+              "type": "fixed",
+              "value": 48
+            },
+            "items": [
+              {
+                "type": "text",
+                "font_size": 16,
+                "text": "Delete product",
+                "text_color": "#5B6070"
+              }
+            ],
+            "margins": {
+              "top": 8
+            },
+            "visibility": "@{product.is_edit ? 'visible' : 'gone'}",
+            "width": {
+              "type": "match_parent"
+            }
+          }
+        ],
+        "orientation": "vertical",
+        "paddings": {
+          "left": 20,
+          "right": 20,
+          "top": 20,
+          "bottom": 32
+        },
+        "width": {
+          "type": "match_parent"
+        }
+      }
+    ],
+    "primary_label": "Save",
+    "primary": {
+      "actions": [
+        {
+          "log_id": "save_product_form",
+          "url": "local-db://op/inventory.upsert"
+        }
+      ]
+    },
+    "secondary_label": "Cancel",
+    "secondary": {
+      "actions": [
+        {
+          "log_id": "cancel_product_form",
+          "url": "local-db://op/inventory.cancel_form"
+        }
+      ]
+    },
+    "dirty_var": "product.dirty",
+    "valid_var": "product.valid"
+  }
+}

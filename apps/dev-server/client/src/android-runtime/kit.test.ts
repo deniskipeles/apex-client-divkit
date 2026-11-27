@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { validateCardDocument } from '@apex/pos-ui/android-runtime'
-import { button, chart, jsonList } from '../../../workspace/kit/index.ts'
+import { button, chart, jsonList } from '../../../workspaces/core/kit/index.ts'
 
 // The kit is what generates the workspaces, so a prop the renderer does not read
 // is not a style problem: the card silently loses its data binding.

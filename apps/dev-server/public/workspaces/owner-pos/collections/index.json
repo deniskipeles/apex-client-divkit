@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "collections": [
+    "inventory.json",
+    "orders.json",
+    "order_lines.json",
+    "cust_history.json"
+  ]
+}

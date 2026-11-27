@@ -1,464 +1,400 @@
 {
-  "card": {
-    "log_id": "apex_tool_code_generate",
-    "variables": [
-      {
-        "name": "user.tools_status",
-        "type": "string",
-        "value": ""
-      },
-      {
-        "name": "user.tools_result",
-        "type": "string",
-        "value": ""
-      },
-      {
-        "name": "user.tools_error",
-        "type": "string",
-        "value": ""
-      },
-      {
-        "name": "user.code_status",
-        "type": "string",
-        "value": ""
-      },
-      {
-        "name": "user.code_image_uri",
-        "type": "string",
-        "value": ""
-      },
-      {
-        "name": "user.code_content",
-        "type": "string",
-        "value": ""
-      },
-      {
-        "name": "user.code_format",
-        "type": "string",
-        "value": ""
-      },
-      {
-        "name": "user.code_kind",
-        "type": "string",
-        "value": ""
-      },
-      {
-        "name": "user.code_id",
-        "type": "string",
-        "value": ""
-      },
-      {
-        "name": "user.code_matrix_rows",
-        "type": "string",
-        "value": ""
-      }
-    ],
-    "states": [
-      {
-        "state_id": 0,
-        "div": {
-          "type": "container",
-          "orientation": "vertical",
-          "items": [
+  "type": "container",
+  "item_spacing": 8,
+  "items": [
+    {
+      "type": "container",
+      "item_spacing": 8,
+      "items": [
+        {
+          "type": "button",
+          "text": "Back",
+          "font_size": 12,
+          "font_weight": "bold",
+          "text_color": "#F8FAFC",
+          "background_color": "#16233A",
+          "corner_radius": 12,
+          "height": {
+            "type": "fixed",
+            "value": 40
+          },
+          "width": {
+            "type": "fixed",
+            "value": 80
+          },
+          "actions": [
             {
-              "type": "container",
-              "orientation": "horizontal",
-              "items": [
-                {
-                  "type": "button",
-                  "text": "Back",
-                  "font_size": 12,
-                  "font_weight": "bold",
-                  "text_color": "#F8FAFC",
-                  "background_color": "#16233A",
-                  "corner_radius": 12,
-                  "height": {
-                    "type": "fixed",
-                    "value": 40
-                  },
-                  "width": {
-                    "type": "fixed",
-                    "value": 80
-                  },
-                  "actions": [
-                    {
-                      "url": "nav://pop"
-                    }
-                  ],
-                  "border": {
-                    "corner_radius": 12,
-                    "stroke": {
-                      "color": "#1E293B",
-                      "width": 1
-                    }
-                  },
-                  "id": "btn_back"
-                },
-                {
-                  "type": "container",
-                  "orientation": "vertical",
-                  "items": [
-                    {
-                      "type": "text",
-                      "text": "code-generate",
-                      "font_size": 18,
-                      "font_weight": "bold",
-                      "text_color": "#F8FAFC"
-                    },
-                    {
-                      "type": "text",
-                      "text": "Render a QR, EAN-13 or Code 128 symbol to a PNG and publish a decodable payload. 1D formats carry a quiet zone so the image scans back.",
-                      "font_size": 12,
-                      "font_weight": "regular",
-                      "text_color": "#94A3B8"
-                    }
-                  ],
-                  "weight": 1
-                }
-              ],
-              "item_spacing": 8,
-              "paddings": {
-                "left": 16,
-                "top": 32,
-                "right": 16,
-                "bottom": 8
-              }
-            },
-            {
-              "type": "container",
-              "orientation": "vertical",
-              "items": [
-                {
-                  "type": "container",
-                  "orientation": "vertical",
-                  "item_spacing": 4,
-                  "paddings": {
-                    "left": 12,
-                    "top": 8,
-                    "right": 12,
-                    "bottom": 8
-                  },
-                  "background_color": "#16233A",
-                  "border": {
-                    "corner_radius": 12,
-                    "stroke": {
-                      "color": "#1E293B",
-                      "width": 1
-                    }
-                  },
-                  "items": [
-                    {
-                      "type": "text",
-                      "text": "Status",
-                      "font_size": 11,
-                      "font_weight": "bold",
-                      "text_color": "#94A3B8"
-                    },
-                    {
-                      "type": "text",
-                      "text": "@{user.tools_status}",
-                      "font_size": 18,
-                      "font_weight": "bold",
-                      "text_color": "#34D399"
-                    }
-                  ],
-                  "id": "metric_status"
-                },
-                {
-                  "type": "inline_banner",
-                  "custom_props": {
-                    "text": "@{user.tools_error == '' ? 'No errors' : user.tools_error}",
-                    "tone": "warn"
-                  }
-                },
-                {
-                  "type": "container",
-                  "orientation": "vertical",
-                  "items": [
-                    {
-                      "type": "button",
-                      "text": "QR",
-                      "font_size": 12,
-                      "font_weight": "bold",
-                      "text_color": "#FFFFFF",
-                      "background_color": "#7C3AED",
-                      "corner_radius": 12,
-                      "height": {
-                        "type": "fixed",
-                        "value": 40
-                      },
-                      "width": {
-                        "type": "match_parent"
-                      },
-                      "actions": [
-                        {
-                          "url": "tools://code-generate/generate",
-                          "payload": {
-                            "options": {
-                              "content": "apexpos://order/1042",
-                              "format": "qr"
-                            },
-                            "output": {
-                              "status": "user.tools_status"
-                            }
-                          }
-                        }
-                      ],
-                      "subtitle": "tools://code-generate/generate",
-                      "id": "tool_code-generate_qr_renders",
-                      "content_description": "code-generate generate"
-                    },
-                    {
-                      "type": "button",
-                      "text": "EAN-13",
-                      "font_size": 12,
-                      "font_weight": "bold",
-                      "text_color": "#F8FAFC",
-                      "background_color": "#16233A",
-                      "corner_radius": 12,
-                      "height": {
-                        "type": "fixed",
-                        "value": 40
-                      },
-                      "width": {
-                        "type": "match_parent"
-                      },
-                      "actions": [
-                        {
-                          "url": "tools://code-generate/barcode",
-                          "payload": {
-                            "options": {
-                              "content": "9780201633610",
-                              "format": "EAN_13",
-                              "width": "400",
-                              "height": "160"
-                            },
-                            "output": {
-                              "status": "user.tools_status"
-                            }
-                          }
-                        }
-                      ],
-                      "border": {
-                        "corner_radius": 12,
-                        "stroke": {
-                          "color": "#1E293B",
-                          "width": 1
-                        }
-                      },
-                      "subtitle": "tools://code-generate/barcode",
-                      "id": "tool_code-generate_ean13_renders",
-                      "content_description": "code-generate barcode"
-                    },
-                    {
-                      "type": "button",
-                      "text": "Code 128",
-                      "font_size": 12,
-                      "font_weight": "bold",
-                      "text_color": "#FFFFFF",
-                      "background_color": "#7C3AED",
-                      "corner_radius": 12,
-                      "height": {
-                        "type": "fixed",
-                        "value": 40
-                      },
-                      "width": {
-                        "type": "match_parent"
-                      },
-                      "actions": [
-                        {
-                          "url": "tools://code-generate/barcode",
-                          "payload": {
-                            "options": {
-                              "content": "APEX-1042",
-                              "format": "CODE_128"
-                            },
-                            "output": {
-                              "status": "user.tools_status"
-                            }
-                          }
-                        }
-                      ],
-                      "subtitle": "tools://code-generate/barcode",
-                      "id": "tool_code-generate_code128_renders",
-                      "content_description": "code-generate barcode"
-                    },
-                    {
-                      "type": "button",
-                      "text": "QR alias",
-                      "font_size": 12,
-                      "font_weight": "bold",
-                      "text_color": "#F8FAFC",
-                      "background_color": "#16233A",
-                      "corner_radius": 12,
-                      "height": {
-                        "type": "fixed",
-                        "value": 40
-                      },
-                      "width": {
-                        "type": "match_parent"
-                      },
-                      "actions": [
-                        {
-                          "url": "tools://code-generate/qr",
-                          "payload": {
-                            "options": {
-                              "content": "APEX-QR-77"
-                            },
-                            "output": {
-                              "status": "user.tools_status"
-                            }
-                          }
-                        }
-                      ],
-                      "border": {
-                        "corner_radius": 12,
-                        "stroke": {
-                          "color": "#1E293B",
-                          "width": 1
-                        }
-                      },
-                      "subtitle": "tools://code-generate/qr",
-                      "id": "tool_code-generate_qr_alias_renders",
-                      "content_description": "code-generate qr"
-                    },
-                    {
-                      "type": "button",
-                      "text": "Render",
-                      "font_size": 12,
-                      "font_weight": "bold",
-                      "text_color": "#FFFFFF",
-                      "background_color": "#7C3AED",
-                      "corner_radius": 12,
-                      "height": {
-                        "type": "fixed",
-                        "value": 40
-                      },
-                      "width": {
-                        "type": "match_parent"
-                      },
-                      "actions": [
-                        {
-                          "url": "tools://code-generate/render",
-                          "payload": {
-                            "options": {
-                              "content": "APEX-77",
-                              "format": "qr"
-                            },
-                            "output": {
-                              "status": "user.tools_status"
-                            }
-                          }
-                        }
-                      ],
-                      "subtitle": "tools://code-generate/render",
-                      "id": "tool_code-generate_render_alias",
-                      "content_description": "code-generate render"
-                    },
-                    {
-                      "type": "button",
-                      "text": "No content",
-                      "font_size": 12,
-                      "font_weight": "bold",
-                      "text_color": "#F8FAFC",
-                      "background_color": "#16233A",
-                      "corner_radius": 12,
-                      "height": {
-                        "type": "fixed",
-                        "value": 40
-                      },
-                      "width": {
-                        "type": "match_parent"
-                      },
-                      "actions": [
-                        {
-                          "url": "tools://code-generate/generate",
-                          "payload": {
-                            "options": {
-                              "format": "qr"
-                            },
-                            "output": {
-                              "status": "user.tools_status"
-                            }
-                          }
-                        }
-                      ],
-                      "border": {
-                        "corner_radius": 12,
-                        "stroke": {
-                          "color": "#1E293B",
-                          "width": 1
-                        }
-                      },
-                      "subtitle": "tools://code-generate/generate",
-                      "id": "tool_code-generate_missing_content_fails",
-                      "content_description": "code-generate generate"
-                    }
-                  ],
-                  "item_spacing": 8,
-                  "background_color": "#111C2E",
-                  "paddings": {
-                    "left": 12,
-                    "top": 12,
-                    "right": 12,
-                    "bottom": 12
-                  },
-                  "border": {
-                    "corner_radius": 16,
-                    "stroke": {
-                      "color": "#1E293B",
-                      "width": 1
-                    }
-                  }
-                },
-                {
-                  "type": "button",
-                  "text": "Back to tools",
-                  "font_size": 12,
-                  "font_weight": "bold",
-                  "text_color": "#F8FAFC",
-                  "background_color": "transparent",
-                  "corner_radius": 12,
-                  "height": {
-                    "type": "fixed",
-                    "value": 40
-                  },
-                  "width": {
-                    "type": "match_parent"
-                  },
-                  "actions": [
-                    {
-                      "url": "nav://pop"
-                    }
-                  ],
-                  "border": {
-                    "corner_radius": 12,
-                    "stroke": {
-                      "color": "#1E293B",
-                      "width": 1
-                    }
-                  },
-                  "id": "btn_back_footer"
-                }
-              ],
-              "item_spacing": 12,
-              "paddings": {
-                "left": 16,
-                "top": 0,
-                "right": 16,
-                "bottom": 0
-              }
+              "url": "nav://pop"
             }
           ],
-          "item_spacing": 8,
-          "paddings": {
-            "left": 0,
-            "top": 0,
-            "right": 0,
-            "bottom": 16
-          }
+          "border": {
+            "corner_radius": 12,
+            "stroke": {
+              "color": "#1E293B",
+              "width": 1
+            }
+          },
+          "id": "btn_back"
+        },
+        {
+          "type": "container",
+          "items": [
+            {
+              "type": "text",
+              "font_size": 18,
+              "font_weight": "bold",
+              "text": "code-generate",
+              "text_color": "#F8FAFC"
+            },
+            {
+              "type": "text",
+              "font_size": 12,
+              "font_weight": "regular",
+              "text": "Render a QR, EAN-13 or Code 128 symbol to a PNG and publish a decodable payload. 1D formats carry a quiet zone so the image scans back.",
+              "text_color": "#94A3B8"
+            }
+          ],
+          "orientation": "vertical"
         }
+      ],
+      "orientation": "horizontal",
+      "paddings": {
+        "left": 16,
+        "top": 32,
+        "right": 16,
+        "bottom": 8
       }
-    ]
+    },
+    {
+      "type": "container",
+      "item_spacing": 12,
+      "items": [
+        {
+          "type": "container",
+          "orientation": "vertical",
+          "item_spacing": 4,
+          "paddings": {
+            "left": 12,
+            "top": 8,
+            "right": 12,
+            "bottom": 8
+          },
+          "background_color": "#16233A",
+          "border": {
+            "corner_radius": 12,
+            "stroke": {
+              "color": "#1E293B",
+              "width": 1
+            }
+          },
+          "items": [
+            {
+              "type": "text",
+              "text": "Status",
+              "font_size": 11,
+              "font_weight": "bold",
+              "text_color": "#94A3B8"
+            },
+            {
+              "type": "text",
+              "text": "@{user.tools_status}",
+              "font_size": 18,
+              "font_weight": "bold",
+              "text_color": "#34D399"
+            }
+          ],
+          "id": "metric_status"
+        },
+        {
+          "type": "inline_banner",
+          "custom_props": {
+            "text": "@{user.tools_error == '' ? 'No errors' : user.tools_error}",
+            "tone": "warn"
+          }
+        },
+        {
+          "type": "container",
+          "border": {
+            "corner_radius": 16,
+            "stroke": {
+              "color": "#1E293B",
+              "width": 1
+            }
+          },
+          "item_spacing": 8,
+          "items": [
+            {
+              "type": "button",
+              "text": "QR",
+              "font_size": 12,
+              "font_weight": "bold",
+              "text_color": "#FFFFFF",
+              "background_color": "#7C3AED",
+              "corner_radius": 12,
+              "height": {
+                "type": "fixed",
+                "value": 40
+              },
+              "width": {
+                "type": "match_parent"
+              },
+              "actions": [
+                {
+                  "url": "tools://code-generate/generate",
+                  "payload": {
+                    "options": {
+                      "content": "apexpos://order/1042",
+                      "format": "qr"
+                    },
+                    "output": {
+                      "status": "user.tools_status"
+                    }
+                  }
+                }
+              ],
+              "subtitle": "tools://code-generate/generate",
+              "id": "tool_code-generate_qr_renders",
+              "content_description": "code-generate generate"
+            },
+            {
+              "type": "button",
+              "text": "EAN-13",
+              "font_size": 12,
+              "font_weight": "bold",
+              "text_color": "#F8FAFC",
+              "background_color": "#16233A",
+              "corner_radius": 12,
+              "height": {
+                "type": "fixed",
+                "value": 40
+              },
+              "width": {
+                "type": "match_parent"
+              },
+              "actions": [
+                {
+                  "url": "tools://code-generate/barcode",
+                  "payload": {
+                    "options": {
+                      "content": "9780201633610",
+                      "format": "EAN_13",
+                      "width": "400",
+                      "height": "160"
+                    },
+                    "output": {
+                      "status": "user.tools_status"
+                    }
+                  }
+                }
+              ],
+              "border": {
+                "corner_radius": 12,
+                "stroke": {
+                  "color": "#1E293B",
+                  "width": 1
+                }
+              },
+              "subtitle": "tools://code-generate/barcode",
+              "id": "tool_code-generate_ean13_renders",
+              "content_description": "code-generate barcode"
+            },
+            {
+              "type": "button",
+              "text": "Code 128",
+              "font_size": 12,
+              "font_weight": "bold",
+              "text_color": "#FFFFFF",
+              "background_color": "#7C3AED",
+              "corner_radius": 12,
+              "height": {
+                "type": "fixed",
+                "value": 40
+              },
+              "width": {
+                "type": "match_parent"
+              },
+              "actions": [
+                {
+                  "url": "tools://code-generate/barcode",
+                  "payload": {
+                    "options": {
+                      "content": "APEX-1042",
+                      "format": "CODE_128"
+                    },
+                    "output": {
+                      "status": "user.tools_status"
+                    }
+                  }
+                }
+              ],
+              "subtitle": "tools://code-generate/barcode",
+              "id": "tool_code-generate_code128_renders",
+              "content_description": "code-generate barcode"
+            },
+            {
+              "type": "button",
+              "text": "QR alias",
+              "font_size": 12,
+              "font_weight": "bold",
+              "text_color": "#F8FAFC",
+              "background_color": "#16233A",
+              "corner_radius": 12,
+              "height": {
+                "type": "fixed",
+                "value": 40
+              },
+              "width": {
+                "type": "match_parent"
+              },
+              "actions": [
+                {
+                  "url": "tools://code-generate/qr",
+                  "payload": {
+                    "options": {
+                      "content": "APEX-QR-77"
+                    },
+                    "output": {
+                      "status": "user.tools_status"
+                    }
+                  }
+                }
+              ],
+              "border": {
+                "corner_radius": 12,
+                "stroke": {
+                  "color": "#1E293B",
+                  "width": 1
+                }
+              },
+              "subtitle": "tools://code-generate/qr",
+              "id": "tool_code-generate_qr_alias_renders",
+              "content_description": "code-generate qr"
+            },
+            {
+              "type": "button",
+              "text": "Render",
+              "font_size": 12,
+              "font_weight": "bold",
+              "text_color": "#FFFFFF",
+              "background_color": "#7C3AED",
+              "corner_radius": 12,
+              "height": {
+                "type": "fixed",
+                "value": 40
+              },
+              "width": {
+                "type": "match_parent"
+              },
+              "actions": [
+                {
+                  "url": "tools://code-generate/render",
+                  "payload": {
+                    "options": {
+                      "content": "APEX-77",
+                      "format": "qr"
+                    },
+                    "output": {
+                      "status": "user.tools_status"
+                    }
+                  }
+                }
+              ],
+              "subtitle": "tools://code-generate/render",
+              "id": "tool_code-generate_render_alias",
+              "content_description": "code-generate render"
+            },
+            {
+              "type": "button",
+              "text": "No content",
+              "font_size": 12,
+              "font_weight": "bold",
+              "text_color": "#F8FAFC",
+              "background_color": "#16233A",
+              "corner_radius": 12,
+              "height": {
+                "type": "fixed",
+                "value": 40
+              },
+              "width": {
+                "type": "match_parent"
+              },
+              "actions": [
+                {
+                  "url": "tools://code-generate/generate",
+                  "payload": {
+                    "options": {
+                      "format": "qr"
+                    },
+                    "output": {
+                      "status": "user.tools_status"
+                    }
+                  }
+                }
+              ],
+              "border": {
+                "corner_radius": 12,
+                "stroke": {
+                  "color": "#1E293B",
+                  "width": 1
+                }
+              },
+              "subtitle": "tools://code-generate/generate",
+              "id": "tool_code-generate_missing_content_fails",
+              "content_description": "code-generate generate"
+            }
+          ],
+          "orientation": "vertical",
+          "paddings": {
+            "left": 12,
+            "top": 12,
+            "right": 12,
+            "bottom": 12
+          }
+        },
+        {
+          "type": "button",
+          "text": "Back to tools",
+          "font_size": 12,
+          "font_weight": "bold",
+          "text_color": "#0B1120",
+          "background_color": "transparent",
+          "corner_radius": 12,
+          "height": {
+            "type": "fixed",
+            "value": 40
+          },
+          "width": {
+            "type": "match_parent"
+          },
+          "actions": [
+            {
+              "url": "nav://pop"
+            }
+          ],
+          "border": {
+            "corner_radius": 12,
+            "stroke": {
+              "color": "#1E293B",
+              "width": 1
+            }
+          },
+          "id": "btn_back_footer"
+        }
+      ],
+      "orientation": "vertical",
+      "paddings": {
+        "left": 16,
+        "top": 0,
+        "right": 16,
+        "bottom": 0
+      }
+    }
+  ],
+  "orientation": "vertical",
+  "paddings": {
+    "left": 0,
+    "top": 0,
+    "right": 0,
+    "bottom": 16
   }
 }

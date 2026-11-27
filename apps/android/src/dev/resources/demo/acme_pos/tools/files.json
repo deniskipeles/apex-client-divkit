@@ -1,14 +1,5 @@
 {
     "type": "container",
-    "orientation": "vertical",
-    "background_color": "#0B1220",
-    "corner_radius": 12,
-    "paddings": {
-        "left": 12,
-        "right": 12,
-        "top": 10,
-        "bottom": 10
-    },
     "border": {
         "corner_radius": 12,
         "stroke": {
@@ -19,46 +10,44 @@
     "items": [
         {
             "type": "text",
-            "text": "🗂️ WORKSPACE FILES (tools://files) — storage.files@1",
             "font_size": 11,
-            "text_color": "#7DD3FC",
-            "font_weight": "bold"
+            "font_weight": "bold",
+            "text": "🗂️ WORKSPACE FILES (tools://files) — storage.files@1",
+            "text_color": "#7DD3FC"
         },
         {
             "type": "text",
-            "text": "Bytes in, bytes out, scoped to this tenant's sandbox. Paths are relative to the workspace root and cannot escape it.",
             "font_size": 11,
+            "text": "Bytes in, bytes out, scoped to this tenant's sandbox. Paths are relative to the workspace root and cannot escape it.",
             "text_color": "#94A3B8"
         },
         {
             "type": "text",
+            "font_family": "monospace",
+            "font_size": 11,
             "text": "Status: @{user.files_status}",
-            "font_size": 11,
-            "text_color": "#E0F2FE",
-            "font_family": "monospace"
+            "text_color": "#E0F2FE"
         },
         {
             "type": "text",
+            "font_family": "monospace",
+            "font_size": 11,
             "text": "Path: @{user.files_path}",
-            "font_size": 11,
-            "text_color": "#E0F2FE",
-            "font_family": "monospace"
+            "text_color": "#E0F2FE"
         },
         {
             "type": "text",
-            "text": "Workspace root",
             "font_size": 11,
-            "text_color": "#BAE6FD",
-            "font_weight": "bold"
+            "font_weight": "bold",
+            "text": "Workspace root",
+            "text_color": "#BAE6FD"
         },
         {
             "type": "container",
-            "orientation": "horizontal",
             "item_spacing": 8,
             "items": [
                 {
                     "type": "container",
-                    "weight": 1.0,
                     "items": [
                         {
                             "type": "button",
@@ -89,7 +78,6 @@
                 },
                 {
                     "type": "container",
-                    "weight": 1.0,
                     "items": [
                         {
                             "type": "button",
@@ -118,23 +106,22 @@
                         }
                     ]
                 }
-            ]
+            ],
+            "orientation": "horizontal"
         },
         {
             "type": "text",
-            "text": "Write & read",
             "font_size": 11,
-            "text_color": "#BAE6FD",
-            "font_weight": "bold"
+            "font_weight": "bold",
+            "text": "Write & read",
+            "text_color": "#BAE6FD"
         },
         {
             "type": "container",
-            "orientation": "horizontal",
             "item_spacing": 8,
             "items": [
                 {
                     "type": "container",
-                    "weight": 1.0,
                     "items": [
                         {
                             "type": "button",
@@ -166,7 +153,6 @@
                 },
                 {
                     "type": "container",
-                    "weight": 1.0,
                     "items": [
                         {
                             "type": "button",
@@ -196,23 +182,22 @@
                         }
                     ]
                 }
-            ]
+            ],
+            "orientation": "horizontal"
         },
         {
             "type": "text",
-            "text": "Copy, move, delete",
             "font_size": 11,
-            "text_color": "#BAE6FD",
-            "font_weight": "bold"
+            "font_weight": "bold",
+            "text": "Copy, move, delete",
+            "text_color": "#BAE6FD"
         },
         {
             "type": "container",
-            "orientation": "horizontal",
             "item_spacing": 8,
             "items": [
                 {
                     "type": "container",
-                    "weight": 1.0,
                     "items": [
                         {
                             "type": "button",
@@ -244,7 +229,6 @@
                 },
                 {
                     "type": "container",
-                    "weight": 1.0,
                     "items": [
                         {
                             "type": "button",
@@ -274,16 +258,15 @@
                         }
                     ]
                 }
-            ]
+            ],
+            "orientation": "horizontal"
         },
         {
             "type": "container",
-            "orientation": "horizontal",
             "item_spacing": 8,
             "items": [
                 {
                     "type": "container",
-                    "weight": 1.0,
                     "items": [
                         {
                             "type": "button",
@@ -314,7 +297,6 @@
                 },
                 {
                     "type": "container",
-                    "weight": 1.0,
                     "items": [
                         {
                             "type": "button",
@@ -343,35 +325,43 @@
                         }
                     ]
                 }
-            ]
+            ],
+            "orientation": "horizontal"
         },
         {
             "type": "text",
+            "font_size": 11,
+            "font_weight": "bold",
             "text": "Listing",
-            "font_size": 11,
-            "text_color": "#BAE6FD",
-            "font_weight": "bold"
+            "text_color": "#BAE6FD"
         },
         {
             "type": "text",
+            "font_family": "monospace",
+            "font_size": 11,
             "text": "@{user.files_listing}",
-            "font_size": 11,
-            "text_color": "#E0F2FE",
-            "font_family": "monospace"
+            "text_color": "#E0F2FE"
         },
         {
             "type": "text",
+            "font_size": 11,
+            "font_weight": "bold",
             "text": "Content",
-            "font_size": 11,
-            "text_color": "#BAE6FD",
-            "font_weight": "bold"
+            "text_color": "#BAE6FD"
         },
         {
             "type": "text",
-            "text": "@{user.files_content}",
+            "font_family": "monospace",
             "font_size": 11,
-            "text_color": "#E0F2FE",
-            "font_family": "monospace"
+            "text": "@{user.files_content}",
+            "text_color": "#E0F2FE"
         }
-    ]
+    ],
+    "orientation": "vertical",
+    "paddings": {
+        "left": 12,
+        "right": 12,
+        "top": 10,
+        "bottom": 10
+    }
 }

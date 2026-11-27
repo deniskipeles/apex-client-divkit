@@ -1,0 +1,98 @@
+{
+  "type": "container",
+  "border": {
+    "corner_radius": 12,
+    "stroke": {
+      "color": "#047857",
+      "width": 1
+    }
+  },
+  "items": [
+    {
+      "type": "text",
+      "font_size": 11,
+      "font_weight": "bold",
+      "text": "📋 CLIPBOARD & REALTIME NOTIFICATIONS (tools://clipboard & tools://push)",
+      "text_color": "#6EE7B7"
+    },
+    {
+      "type": "text",
+      "font_family": "monospace",
+      "font_size": 12,
+      "text": "Clipboard: @{user.clipboard_content} • Alert: @{user.last_push_alert}",
+      "text_color": "#D1FAE5"
+    },
+    {
+      "type": "container",
+      "item_spacing": 8,
+      "items": [
+        {
+          "type": "container",
+          "items": [
+            {
+              "type": "button",
+              "id": "tool_clipboard_copy",
+              "text": "Copy Receipt",
+              "subtitle": "tools://clipboard/copy",
+              "icon": "copy",
+              "background_color": "#047857",
+              "text_color": "#FFFFFF",
+              "corner_radius": 10,
+              "action": {
+                "log_id": "exec_tool_clipboard_copy",
+                "url": "tools://clipboard/copy",
+                "payload": {
+                  "operation": "copy",
+                  "options": {
+                    "text": "RECEIPT #8891 - Total $24.50 @ Apex POS Terminal"
+                  },
+                  "output": {
+                    "text": "user.clipboard_content",
+                    "length": "user.clipboard_length"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "container",
+          "items": [
+            {
+              "type": "button",
+              "id": "tool_push_send_alert",
+              "text": "Kitchen Push Alert",
+              "subtitle": "tools://push/send_alert",
+              "icon": "bell",
+              "background_color": "#0D9488",
+              "text_color": "#FFFFFF",
+              "corner_radius": 10,
+              "action": {
+                "log_id": "exec_tool_push_send_alert",
+                "url": "tools://push/send_alert",
+                "payload": {
+                  "operation": "send_alert",
+                  "options": {
+                    "channel": "kitchen_dispatch",
+                    "message": "Order #1042 Ready for Pickup"
+                  },
+                  "output": {
+                    "message": "user.last_push_alert"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "orientation": "horizontal"
+    }
+  ],
+  "orientation": "vertical",
+  "paddings": {
+    "left": 12,
+    "right": 12,
+    "top": 10,
+    "bottom": 10
+  }
+}
