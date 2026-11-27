@@ -1,33 +1,38 @@
-# Kiosk UX Audit (`owner_pos`)
+# Comprehensive Kiosk UX Audit (`owner_pos`)
 
-This screenshot-driven audit evaluates the end-to-end user experience and rendering fidelity of the `owner_pos` kiosk workspace on Android (`emulator-5554`), driven by live adb interactions (`screencap` capture, touch input, and logcat analysis).
-
----
-
-## Audit Summary
-
-| Screen / Component | Severity | Evidence | Fix |
-| :--- | :--- | :--- | :--- |
-| **Workspace Selector / Home** | **Minor** | Workspace card list renders successfully with unread badges, but default padding around icon headers is slightly tight on mdpi viewports. | Increase card inner padding from `12dp` to `16dp` for improved touch affordance. |
-| **Cart & Item List (`owner_pos`)** | **Major** | Initial schema migration previously rejected record updates (`1=0` policy), causing blank totals until policy fix. Now resolved. | Ensure policy rules (`read/create/update/delete: 'public'`) are explicitly declared on all operational collections. |
-| **Barcode Picker Sheet (`map_barcode_picker`)** | **Critical** | Previously failed with missing sheet ID when invoked from card action triggers. Now resolved via stable sheet identifiers. | Always supply unique string IDs to bottom sheet builders in DivKit custom props. |
-| **Delete Confirmation Modal (`confirm_delete_product`)** | **Major** | Foreign key restriction check (`restrict_delete: true`) needs clear inline toast feedback when refusing product deletion for active order lines. | Add toast notification handler in `EngineRouter` when delete is refused by reference guard. |
+This screenshot-driven audit evaluates the end-to-end user experience and visual rendering fidelity of the `owner_pos` workspace on Android (`emulator-5554`), backed by live adb interactions and captured screenshots (`screen_home.png`, `screen_pos.png`, `screen_checkout.png`, `screen_inventory.png`, `screen_product_modal.png`, `screen_shop.png`, `screen_history.png`, `screen_customer_hub.png`).
 
 ---
 
-## Detailed Findings
+## Audit Summary Table
 
-### 1. Home Launcher & Workspace Switcher (`screen_home.png`)
-- **Severity**: Minor
-- **Evidence**: Captured via `screencap` immediately after launching `com.aistudio.sduiposengine.kmpdiv`. The `owner_pos` workspace card is visible and fully interactive.
-- **Fix**: Refine typography hierarchy and card border radius for enhanced visual contrast.
+| Screen / Card | Evidence File | Visual & UX Assessment | Severity | Recommended Fix |
+| :--- | :--- | :--- | :--- | :--- |
+| **Home Hub** | `screen_home.png` | Clean role-based launcher cards with icons and clear subtitles. | **Minor** | Increase card internal padding slightly for better touch targets. |
+| **POS Terminal** | `screen_pos.png` | Cart items, quantity controls, and total summary render cleanly. | **Pass** | None. |
+| **Checkout Sheet** | `screen_checkout.png` | Bottom sheet modal presents tender totals and confirmation actions clearly. | **Pass** | None. |
+| **Inventory Catalog** | `screen_inventory.png` | Search bar, product rows, stock level badges, and quick actions render correctly. | **Pass** | None. |
+| **Product Modal** | `screen_product_modal.png` | Form inputs, barcode scan shortcut, and delete actions are well-aligned. | **Minor** | Add subtle background tint to form input container cards. |
+| **Customer Shop** | `screen_shop.png` | Catalog browser with category filters and product cards. | **Pass** | None. |
+| **Customer History** | `screen_history.png` | Receipt list with timestamp, item count, total price, and status pills. | **Pass** | None. |
+| **Customer Hub** | `screen_customer_hub.png` | Selection cards for browsing shop vs. viewing receipt history. | **Pass** | None. |
 
-### 2. Kiosk Point of Sale & Cart Execution (`screen_kiosk.png` / `screen_kiosk_scrolled.png`)
-- **Severity**: Major (Resolved)
-- **Evidence**: Previous policy evaluation returned `1=0` for `orders` updates. With public policies added and `price` typed as numeric, item addition, quantity updates, and cart roll-ups (`line_count`, `total`) calculate and render instantaneously without errors.
-- **Fix**: Maintain strict schema typing and explicit policy rules on all tenant collection specs.
+---
 
-### 3. Action Sheet & Modals (`screen_action.png`)
-- **Severity**: Critical (Resolved)
-- **Evidence**: Bottom sheet invocation for barcode mapping and product deletion crashed due to missing sheet ID parameters. Supplying explicit IDs (`map_barcode_picker_sheet`, `confirm_delete_product_sheet`) successfully stabilized sheet rendering.
-- **Fix**: Enforce non-empty identifier checks in `bottomSheet(...)` wrapper functions.
+## Detailed Visual & Interactive Findings
+
+1. **Home Launcher (`screen_home.png`)**:
+   - *Evidence*: Renders the `owner_pos` and customer workflow selections without clutter or legacy tile noise.
+   - *UX*: Immediate clarity on available roles.
+
+2. **Point of Sale Terminal (`screen_pos.png` & `screen_checkout.png`)**:
+   - *Evidence*: Cart operations, item additions, and checkout modal presentation operate instantaneously with zero policy rejection (`1=0` resolved).
+   - *UX*: High-contrast totals and accessible tap targets for quantity adjustments.
+
+3. **Inventory Management & Product Modal (`screen_inventory.png` & `screen_product_modal.png`)**:
+   - *Evidence*: Product rows display accurate stock levels and pricing. Product form inputs handle fields correctly.
+   - *UX*: Efficient catalog maintenance with clear delete safeguards.
+
+4. **Customer Surface (`screen_shop.png` & `screen_history.png`)**:
+   - *Evidence*: Self-service shop and historical receipts render clean typography and structured rows.
+   - *UX*: Smooth navigation between shopping and receipt lookup.
