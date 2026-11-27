@@ -183,7 +183,14 @@ fun DivView(
                 "dict", "object" -> DivVariableValue.DictVal(
                     valueEl?.jsonObject?.mapValues { divValueFromJson(it.value) } ?: emptyMap()
                 )
-                else -> DivVariableValue.Str(valueEl?.jsonPrimitive?.contentOrNull ?: "")
+                else -> {
+                    when (valueEl) {
+                        is JsonPrimitive -> DivVariableValue.Str(valueEl.contentOrNull ?: "")
+                        is JsonObject -> DivVariableValue.DictVal(valueEl.mapValues { divValueFromJson(it.value) })
+                        is JsonArray -> DivVariableValue.ArrayVal(valueEl.map { divValueFromJson(it) })
+                        else -> DivVariableValue.Str(valueEl?.toString() ?: "")
+                    }
+                }
             }
             batch[name] = dv
         }
