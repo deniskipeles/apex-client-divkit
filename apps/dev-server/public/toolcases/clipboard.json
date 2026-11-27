@@ -1,0 +1,131 @@
+{
+  "_generated": "apps/dev-server/scripts/build-tool-cases.mjs",
+  "_doNotEdit": "Edit apps/dev-server/tests/tools/definitions.ts and rerun `pnpm tool-cases:build`.",
+  "toolId": "clipboard",
+  "slug": "clipboard",
+  "doc": "docs/tools/clipboard.md",
+  "versionedCapability": "device.clipboard@1",
+  "usage": "Copy text to the system clipboard, paste it back, or clear it.",
+  "operations": [
+    "copy",
+    "paste",
+    "clear"
+  ],
+  "outputMapping": {
+    "text": "user.clipboard_content"
+  },
+  "options": [
+    {
+      "name": "text",
+      "type": "string",
+      "description": "Content to copy"
+    }
+  ],
+  "results": [
+    {
+      "name": "status",
+      "type": "string",
+      "description": "SUCCESS when text is present, EMPTY after a clear"
+    },
+    {
+      "name": "text",
+      "type": "string",
+      "description": "Clipboard contents"
+    },
+    {
+      "name": "state",
+      "type": "string",
+      "description": "ok"
+    },
+    {
+      "name": "op",
+      "type": "string",
+      "description": "Operation that ran"
+    }
+  ],
+  "statuses": [
+    {
+      "status": "SUCCESS",
+      "meaning": "Clipboard holds the requested text"
+    },
+    {
+      "status": "EMPTY",
+      "meaning": "Clipboard is empty after a clear"
+    }
+  ],
+  "cardActions": [
+    {
+      "url": "tools://clipboard/copy",
+      "options": {
+        "text": "apex clipboard"
+      }
+    },
+    {
+      "url": "tools://clipboard/copy",
+      "options": {
+        "text": "to be cleared"
+      }
+    }
+  ],
+  "notCovered": [],
+  "cases": [
+    {
+      "name": "copy_then_paste",
+      "description": "Copy then paste",
+      "steps": [
+        {
+          "url": "tools://clipboard/copy",
+          "payload": {
+            "options": {
+              "text": "apex clipboard"
+            }
+          }
+        },
+        {
+          "url": "tools://clipboard/paste",
+          "payload": {
+            "options": {}
+          }
+        }
+      ],
+      "expect": {
+        "success": true,
+        "status": "SUCCESS",
+        "data": {
+          "text": {
+            "equals": "apex clipboard"
+          }
+        }
+      }
+    },
+    {
+      "name": "clear_empties",
+      "description": "Clear",
+      "steps": [
+        {
+          "url": "tools://clipboard/copy",
+          "payload": {
+            "options": {
+              "text": "to be cleared"
+            }
+          }
+        },
+        {
+          "url": "tools://clipboard/clear",
+          "payload": {
+            "options": {}
+          }
+        }
+      ],
+      "expect": {
+        "success": true,
+        "status": "EMPTY",
+        "data": {
+          "text": {
+            "equals": ""
+          }
+        }
+      }
+    }
+  ]
+}

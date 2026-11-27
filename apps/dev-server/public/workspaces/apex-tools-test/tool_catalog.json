@@ -1,62 +1,153 @@
 {
  "title": "Harness",
- "subtitle": "Every capability, one card each.",
+ "subtitle": "One card per tool module, generated from the conformance contract.",
  "entries": [
   {
    "file": "local_db",
    "label": "Local DB",
    "icon": "database",
    "accent_color": "#0EA5E9",
-   "subtitle": "SQLite insert/query/count/delete"
+   "subtitle": "SQLite insert, query, count, delete"
   },
   {
-   "file": "scanner",
+   "file": "scan",
    "label": "Scanner",
-   "icon": "scan",
+   "icon": "qr_code_scanner",
    "accent_color": "#0EA5E9",
-   "subtitle": "Scan and OCR"
-  },
-  {
-   "file": "code_generate",
-   "label": "Code generator",
-   "icon": "qr_code",
-   "accent_color": "#0EA5E9",
-   "subtitle": "QR, EAN-13, Code 128"
+   "subtitle": "Decode a 1D barcode or 2D QR symbol from a still image, an injected code or the live camera"
   },
   {
    "file": "haptics",
-   "label": "Haptics and beeper",
-   "icon": "haptics",
+   "label": "Haptics",
+   "icon": "vibration",
    "accent_color": "#0EA5E9",
-   "subtitle": "Patterns and tones"
+   "subtitle": "Drive the vibration actuator with semantic impacts, one-shot timings or a W3C waveform"
+  },
+  {
+   "file": "beeper",
+   "label": "Beeper",
+   "icon": "volume_up",
+   "accent_color": "#0EA5E9",
+   "subtitle": "Synthesize a sine, square or triangle tone, or a short melodic sequence, through the audio actuator"
+  },
+  {
+   "file": "camera",
+   "label": "Camera",
+   "icon": "photo_camera",
+   "accent_color": "#0EA5E9",
+   "subtitle": "Capture a still frame or toggle the torch through the CameraX host"
+  },
+  {
+   "file": "files",
+   "label": "Files",
+   "icon": "folder",
+   "accent_color": "#0EA5E9",
+   "subtitle": "Read and write files inside the workspace sandbox: write, read, append, copy, move, list, info, delete, mkdir, exists, uri"
+  },
+  {
+   "file": "image-manipulation",
+   "label": "Image editing",
+   "icon": "image",
+   "accent_color": "#0EA5E9",
+   "subtitle": "Crop, resize, adjust colour, threshold, smooth or remove the background of an image and return the processed URI"
+  },
+  {
+   "file": "embedding",
+   "label": "Embedding",
+   "icon": "hub",
+   "accent_color": "#0EA5E9",
+   "subtitle": "Embed text (512-d hashed fallback when the MediaPipe text JNI is absent) or an image descriptor, and score two texts for similarity"
   },
   {
    "file": "clipboard",
    "label": "Clipboard",
-   "icon": "clipboard",
+   "icon": "content_copy",
    "accent_color": "#0EA5E9",
-   "subtitle": "Copy, paste, clear"
+   "subtitle": "Copy text to the system clipboard, paste it back, or clear it"
+  },
+  {
+   "file": "biometrics",
+   "label": "Biometrics",
+   "icon": "fingerprint",
+   "accent_color": "#0EA5E9",
+   "subtitle": "Ask the OS for device-credential confirmation"
+  },
+  {
+   "file": "libsignal",
+   "label": "Libsignal",
+   "icon": "lock",
+   "accent_color": "#0EA5E9",
+   "subtitle": "Establish a Double-Ratchet session, encrypt, decrypt and verify a 60-digit safety number"
+  },
+  {
+   "file": "mobilenetv4",
+   "label": "Image classifier",
+   "icon": "category",
+   "accent_color": "#0EA5E9",
+   "subtitle": "Run the bundled MobileNetV4 ImageNet-1k classifier over a real image"
+  },
+  {
+   "file": "u2net",
+   "label": "Background removal",
+   "icon": "auto_fix_high",
+   "accent_color": "#0EA5E9",
+   "subtitle": "Salient-object segmentation"
+  },
+  {
+   "file": "push",
+   "label": "Push alerts",
+   "icon": "notifications",
+   "accent_color": "#0EA5E9",
+   "subtitle": "Post a local notification into a channel with a priority"
+  },
+  {
+   "file": "offline-cache",
+   "label": "Offline cache",
+   "icon": "cloud_off",
+   "accent_color": "#0EA5E9",
+   "subtitle": "Persist a page snapshot, report cache statistics, or clear the cache"
+  },
+  {
+   "file": "realtime-ws",
+   "label": "Realtime channel",
+   "icon": "bolt",
+   "accent_color": "#0EA5E9",
+   "subtitle": "Open a websocket channel, subscribe, send a frame and disconnect"
   },
   {
    "file": "net",
    "label": "Network",
-   "icon": "globe",
+   "icon": "public",
    "accent_color": "#0EA5E9",
-   "subtitle": "HTTP and LAN hub"
+   "subtitle": "HTTP GET, POST, download and upload plus the in-process LAN hub: serve, stop, status, share, list, unshare"
   },
   {
    "file": "print",
    "label": "Printer",
-   "icon": "printer",
+   "icon": "print",
    "accent_color": "#0EA5E9",
-   "subtitle": "ESC/POS over Bluetooth"
+   "subtitle": "Scan for ESC/POS printers, pair, connect and print a receipt"
   },
   {
-   "file": "files",
-   "label": "Files and screen",
-   "icon": "folder",
+   "file": "codec",
+   "label": "Codec",
+   "icon": "data_object",
    "accent_color": "#0EA5E9",
-   "subtitle": "Sandbox files, capture"
+   "subtitle": "Base64 and Base45 round trips plus the JSON transfer codec: validate, extract, stringify, chunk and assemble with a checksum"
+  },
+  {
+   "file": "code-generate",
+   "label": "Code generator",
+   "icon": "qr_code",
+   "accent_color": "#0EA5E9",
+   "subtitle": "Render a QR, EAN-13 or Code 128 symbol to a PNG and publish a decodable payload"
+  },
+  {
+   "file": "screen",
+   "label": "Screen",
+   "icon": "screenshot_monitor",
+   "accent_color": "#0EA5E9",
+   "subtitle": "Keep the screen awake, capture a screenshot or start and stop a recording through the host sinks"
   },
   {
    "file": "data_views",

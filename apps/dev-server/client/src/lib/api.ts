@@ -7,6 +7,8 @@
 // Works on Node, workers and even a dumb static file server (relative paths).
 // ---------------------------------------------------------------------------
 
+import type { ServerToolInvocation, ServerToolResult } from '../workspace/toolRuntime'
+
 export interface SchemaMeta {
   id: string
   name: string
@@ -140,4 +142,53 @@ export function fetchWorkspaces(): Promise<WorkspaceIndex> {
 
 export function fetchWorkspace(slug: string): Promise<WorkspacePayload> {
   return getJson<WorkspacePayload>([`/api/workspaces/${slug}`, `./workspaces/${slug}/index.json`])
+}
+
+// ---------------------------------------------------------------------------
+// Server tools — the same-origin execution API used by the workspace's
+// "Server" mode. A static build has no route, so both helpers degrade to an
+// `unavailable` result and the canvas falls back to its local implementation.
+// ---------------------------------------------------------------------------
+
+export interface ServerToolCatalogEntry {
+  id: string
+  aliases: string[]
+  operations: string[]
+  supported: boolean
+}
+
+export interface ServerToolCatalog {
+  count: number
+  supported: number
+  tools: ServerToolCatalogEntry[]
+}
+
+export async function fetchServerTools(): Promise<ServerToolCatalog> {
+  const res = await fetch('/api/tools', { cache: 'no-store' })
+  if (!res.ok) throw new Error(`HTTP ${res.status} for /api/tools`)
+  return (await res.json()) as ServerToolCatalog
+}
+
+export async function invokeServerTool(invocation: ServerToolInvocation): Promise<ServerToolResult> {
+  try {
+    const res = await fetch('/api/tools/invoke', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(invocation),
+      cache: 'no-store',
+    })
+    if (res.status === 404 || res.status === 405 || res.status === 501) {
+      return { status: 'unavailable', reason: 'server-unavailable', message: `HTTP ${res.status}` }
+    }
+    if (!res.ok) {
+      return { status: 'failed', reason: 'server-error', message: `HTTP ${res.status}` }
+    }
+    return (await res.json()) as ServerToolResult
+  } catch (error) {
+    return {
+      status: 'unavailable',
+      reason: 'server-unavailable',
+      message: error instanceof Error ? error.message : String(error),
+    }
+  }
 }

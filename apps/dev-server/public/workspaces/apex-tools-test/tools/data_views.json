@@ -23,66 +23,6 @@
     "value": ""
    },
    {
-    "name": "user.haptic_state",
-    "type": "string",
-    "value": "idle"
-   },
-   {
-    "name": "user.beep_state",
-    "type": "string",
-    "value": "idle"
-   },
-   {
-    "name": "user.clipboard_content",
-    "type": "string",
-    "value": ""
-   },
-   {
-    "name": "user.code_image_uri",
-    "type": "string",
-    "value": ""
-   },
-   {
-    "name": "user.code_format",
-    "type": "string",
-    "value": ""
-   },
-   {
-    "name": "user.file_preview",
-    "type": "string",
-    "value": ""
-   },
-   {
-    "name": "user.files_json",
-    "type": "string",
-    "value": "[]"
-   },
-   {
-    "name": "user.net_status",
-    "type": "string",
-    "value": "stopped"
-   },
-   {
-    "name": "user.net_url",
-    "type": "string",
-    "value": ""
-   },
-   {
-    "name": "user.net_shares_json",
-    "type": "string",
-    "value": "[]"
-   },
-   {
-    "name": "user.print_state",
-    "type": "string",
-    "value": "idle"
-   },
-   {
-    "name": "user.screen_state",
-    "type": "string",
-    "value": "idle"
-   },
-   {
     "name": "user.samples_json",
     "type": "string",
     "value": "[]"
@@ -91,6 +31,16 @@
     "name": "user.samples_count",
     "type": "integer",
     "value": 0
+   },
+   {
+    "name": "user.db_result",
+    "type": "string",
+    "value": ""
+   },
+   {
+    "name": "user.chart_json",
+    "type": "string",
+    "value": "[]"
    }
   ],
   "states": [
@@ -147,7 +97,7 @@
           },
           {
            "type": "text",
-           "text": "Chart and list blocks over the samples collection",
+           "text": "Chart and list blocks fed by the live collection",
            "font_size": 12,
            "font_weight": "regular",
            "text_color": "#94A3B8"
@@ -169,82 +119,110 @@
        "orientation": "vertical",
        "items": [
         {
+         "type": "container",
+         "orientation": "vertical",
+         "items": [
+          {
+           "type": "text",
+           "text": "Sample count",
+           "font_size": 11,
+           "font_weight": "bold",
+           "text_color": "#94A3B8"
+          },
+          {
+           "type": "text",
+           "text": "@{user.samples_count}",
+           "font_size": 26,
+           "font_weight": "bold",
+           "text_color": "#34D399"
+          },
+          {
+           "type": "inline_banner",
+           "custom_props": {
+            "text": "@{user.tools_error == '' ? 'No errors' : user.tools_error}",
+            "tone": "warn"
+           }
+          }
+         ],
+         "item_spacing": 8,
+         "background_color": "#111C2E",
+         "paddings": {
+          "left": 12,
+          "top": 12,
+          "right": 12,
+          "bottom": 12
+         },
+         "border": {
+          "corner_radius": 16,
+          "stroke": {
+           "color": "#1E293B",
+           "width": 1
+          }
+         }
+        },
+        {
          "type": "custom",
          "custom_type": "sdui_chart",
          "custom_props": {
-          "chart_type": "donut",
-          "title": "SAMPLES BY ID",
-          "subtitle": "Live from user.samples_json",
-          "label_field": "name",
-          "value_field": "id",
+          "chart_type": "bar",
+          "title": "POS Analytics Chart",
+          "subtitle": "",
+          "label_field": "label",
+          "value_field": "value",
           "value_prefix": "",
           "value_suffix": "",
-          "accent_color": "#38BDF8",
-          "height": 220,
+          "accent_hex": "#38BDF8",
+          "height": 160,
           "show_grid": true,
           "show_legend": true,
           "interactive": true,
-          "data_var": "user.samples_json"
+          "data_var": "user.chart_json"
          },
          "id": "samples_chart"
+        },
+        {
+         "type": "json_list",
+         "data_var": "user.samples_json",
+         "empty_text": "No records",
+         "row_card": {
+          "type": "container",
+          "orientation": "horizontal",
+          "item_spacing": 8,
+          "paddings": {
+           "left": 12,
+           "top": 8,
+           "right": 12,
+           "bottom": 8
+          },
+          "items": [
+           {
+            "type": "text",
+            "text": "@{item.name}",
+            "font_size": 14,
+            "font_weight": "bold",
+            "text_color": "#F8FAFC"
+           },
+           {
+            "type": "text",
+            "text": "@{item.note}",
+            "font_size": 12,
+            "text_color": "#94A3B8"
+           }
+          ]
+         },
+         "id": "samples_list"
         },
         {
          "type": "container",
          "orientation": "vertical",
          "items": [
           {
-           "type": "text",
-           "text": "SAMPLES",
-           "font_size": 11,
-           "font_weight": "bold",
-           "text_color": "#94A3B8"
-          },
-          {
-           "type": "json_list",
-           "data_var": "user.samples_json",
-           "empty_text": "Query the samples collection first",
-           "row_card": {
-            "type": "container",
-            "orientation": "horizontal",
-            "items": [
-             {
-              "type": "text",
-              "text": "@{item.name}",
-              "font_size": 12,
-              "font_weight": "regular",
-              "text_color": "#F8FAFC",
-              "width": {
-               "type": "match_parent"
-              }
-             },
-             {
-              "type": "text",
-              "text": "#@{item.id}",
-              "font_size": 11,
-              "font_weight": "regular",
-              "text_color": "#34D399"
-             }
-            ],
-            "background_color": "#16233A",
-            "paddings": {
-             "left": 8,
-             "top": 8,
-             "right": 8,
-             "bottom": 8
-            },
-            "border": {
-             "corner_radius": 12
-            }
-           },
-           "id": "samples_list"
-          },
-          {
            "type": "button",
            "text": "Refresh samples",
-           "font_size": 14,
+           "font_size": 12,
            "font_weight": "bold",
-           "text_color": "#F8FAFC",
-           "background_color": "#16233A",
+           "text_color": "#FFFFFF",
+           "background_color": "#7C3AED",
            "corner_radius": 12,
            "height": {
             "type": "fixed",
@@ -266,14 +244,7 @@
              }
             }
            ],
-           "border": {
-            "corner_radius": 12,
-            "stroke": {
-             "color": "#1E293B",
-             "width": 1
-            }
-           },
-           "id": "refresh_samples"
+           "id": "data_refresh"
           }
          ],
          "item_spacing": 8,

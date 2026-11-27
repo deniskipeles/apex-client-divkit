@@ -12,7 +12,8 @@ import {
 } from '@apex/pos-ui/android-runtime'
 import type { PlaygroundEvent, VarSnapshot } from '../divkit/DivKitScreen'
 import { AndroidCard } from '../android/AndroidCard'
-import { dispatchWorkspaceUrl, type ToolRuntimeReport } from './toolRuntime'
+import { dispatchWorkspaceUrl, type ToolExecutionMode, type ToolRuntimeReport } from './toolRuntime'
+import { invokeServerTool } from '../lib/api'
 import type { WorkspacePayload } from '../lib/api'
 
 // ---------------------------------------------------------------------------
@@ -27,6 +28,8 @@ import type { WorkspacePayload } from '../lib/api'
 export interface WorkspaceCanvasProps {
   workspace: WorkspacePayload
   restartKey: number
+  /** `local` runs only in-page implementations; `server` calls `/api/tools/invoke`. */
+  mode?: ToolExecutionMode
   /** Imperative jump used by the inspector (the kiosk hub itself has no nav buttons). */
   openRequest?: { cardId: string; nonce: number } | null
   onEvent: (event: PlaygroundEvent) => void
@@ -46,6 +49,7 @@ function snapshotVariables(vars: DivVars): VarSnapshot[] {
 export function WorkspaceCanvas({
   workspace,
   restartKey,
+  mode = 'local',
   openRequest,
   onEvent,
   onVariables,
@@ -60,6 +64,7 @@ export function WorkspaceCanvas({
   const [liveIds, setLiveIds] = useState<string[]>([])
   const [currentId, setCurrentId] = useState('')
   const [sheetId, setSheetId] = useState<string | null>(null)
+  const [resetNonce, setResetNonce] = useState(0)
 
   const setVariable = useCallback((name: string, value: DivValue) => {
     if (!isValidVariableName(name)) return
@@ -114,7 +119,7 @@ export function WorkspaceCanvas({
     setCurrentId('hub')
     setSheetId(null)
     onRoute('hub', 1)
-  }, [workspace, restartKey, onRoute])
+  }, [workspace, restartKey, resetNonce, onRoute])
 
   // Publish the live variable table to the inspector.
   useEffect(() => {
@@ -186,10 +191,20 @@ export function WorkspaceCanvas({
         return
       }
 
+      // `workspace://clear_all` reseeds the workspace: a fresh in-memory database,
+      // fresh variables and a navigator reset to the hub, like a device restart.
+      if (url.startsWith('workspace://clear_all')) {
+        setResetNonce((nonce) => nonce + 1)
+        onEvent({ t: Date.now(), kind: 'action', text: 'workspace clear_all → reseeded' })
+        return
+      }
+
       const report = await dispatchWorkspaceUrl(url, payload, getVariables(), {
         collections: workspace.collections,
         workspace: workspace.meta,
         db: database.current,
+        mode,
+        invokeServer: invokeServerTool,
       })
       for (const [name, value] of Object.entries(report.updates)) setVariable(name, value)
       onToolReport?.(report)
@@ -199,7 +214,7 @@ export function WorkspaceCanvas({
         text: `${url} → ${report.status}${report.message ? ` (${report.message})` : ''}`,
       })
     },
-    [getVariables, onEvent, onRoute, onToolReport, open, setVariable],
+    [getVariables, mode, onEvent, onRoute, onToolReport, open, setVariable],
   )
 
   useEffect(() => {

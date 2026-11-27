@@ -44,6 +44,7 @@ export function WorkspaceView() {
   const [vars, setVars] = useState<VarSnapshot[]>([])
   const [events, setEvents] = useState<PlaygroundEvent[]>([])
   const [restartKey, setRestartKey] = useState(0)
+  const [mode, setMode] = useState<'local' | 'server'>('local')
   const [tab, setTab] = useState<Tab>('about')
   const [zoom, setZoom] = useState(1)
   const [route, setRoute] = useState<{ cardId: string; depth: number }>({ cardId: 'hub', depth: 1 })
@@ -171,6 +172,32 @@ export function WorkspaceView() {
             >
               ⏻ Restart
             </IconButton>
+            <span
+              role="group"
+              aria-label="Tool execution mode"
+              className="flex items-center gap-0.5 rounded-lg border border-panel-line bg-white/[0.03] p-0.5"
+            >
+              {(['local', 'server'] as const).map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  aria-pressed={mode === option}
+                  title={
+                    option === 'local'
+                      ? 'Run tools in this browser (codec, local-db, and the rest of the local runtime)'
+                      : 'Run tools through /api/tools/invoke on the dev-server'
+                  }
+                  onClick={() => setMode(option)}
+                  className={`rounded-md px-2 py-1 text-[10px] font-semibold uppercase tracking-wide transition ${
+                    mode === option
+                      ? 'bg-emerald-500/15 text-emerald-300'
+                      : 'text-ink-faint hover:text-ink'
+                  }`}
+                >
+                  {option}
+                </button>
+              ))}
+            </span>
           </span>
           </div>
         </div>
@@ -178,6 +205,7 @@ export function WorkspaceView() {
         <div className="flex flex-wrap items-center gap-1.5 rounded-2xl border border-panel-line bg-panel px-3 py-2">
           <span className="font-mono text-[10px] uppercase tracking-wide text-ink-faint">stack</span>
           <Chip tone="emerald">{`${route.depth} · ${route.cardId}`}</Chip>
+          <Chip tone={mode === 'server' ? 'sky' : 'emerald'}>{`tools · ${mode}`}</Chip>
           <span className="font-mono text-[10px] text-ink-faint">
             {meta ? `${meta.manifestId} · ${cardCount} cards · ${meta.android ? 'android' : 'preview only'}` : ''}
           </span>
@@ -195,6 +223,7 @@ export function WorkspaceView() {
             <WorkspaceCanvas
               workspace={workspace}
               restartKey={restartKey}
+              mode={mode}
               openRequest={openRequest}
               onEvent={onEvent}
               onVariables={onVariables}

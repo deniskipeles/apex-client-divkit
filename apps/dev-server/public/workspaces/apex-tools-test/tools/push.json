@@ -1,0 +1,326 @@
+{
+  "card": {
+    "log_id": "apex_tool_push",
+    "variables": [
+      {
+        "name": "user.tools_status",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.tools_result",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.tools_error",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.push_notification_id",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "name": "user.push_status",
+        "type": "string",
+        "value": ""
+      }
+    ],
+    "states": [
+      {
+        "state_id": 0,
+        "div": {
+          "type": "container",
+          "orientation": "vertical",
+          "items": [
+            {
+              "type": "container",
+              "orientation": "horizontal",
+              "items": [
+                {
+                  "type": "button",
+                  "text": "Back",
+                  "font_size": 12,
+                  "font_weight": "bold",
+                  "text_color": "#F8FAFC",
+                  "background_color": "#16233A",
+                  "corner_radius": 12,
+                  "height": {
+                    "type": "fixed",
+                    "value": 40
+                  },
+                  "width": {
+                    "type": "fixed",
+                    "value": 80
+                  },
+                  "actions": [
+                    {
+                      "url": "nav://pop"
+                    }
+                  ],
+                  "border": {
+                    "corner_radius": 12,
+                    "stroke": {
+                      "color": "#1E293B",
+                      "width": 1
+                    }
+                  },
+                  "id": "btn_back"
+                },
+                {
+                  "type": "container",
+                  "orientation": "vertical",
+                  "items": [
+                    {
+                      "type": "text",
+                      "text": "push",
+                      "font_size": 18,
+                      "font_weight": "bold",
+                      "text_color": "#F8FAFC"
+                    },
+                    {
+                      "type": "text",
+                      "text": "Post a local notification into a channel with a priority.",
+                      "font_size": 12,
+                      "font_weight": "regular",
+                      "text_color": "#94A3B8"
+                    }
+                  ],
+                  "weight": 1
+                }
+              ],
+              "item_spacing": 8,
+              "paddings": {
+                "left": 16,
+                "top": 32,
+                "right": 16,
+                "bottom": 8
+              }
+            },
+            {
+              "type": "container",
+              "orientation": "vertical",
+              "items": [
+                {
+                  "type": "container",
+                  "orientation": "vertical",
+                  "item_spacing": 4,
+                  "paddings": {
+                    "left": 12,
+                    "top": 8,
+                    "right": 12,
+                    "bottom": 8
+                  },
+                  "background_color": "#16233A",
+                  "border": {
+                    "corner_radius": 12,
+                    "stroke": {
+                      "color": "#1E293B",
+                      "width": 1
+                    }
+                  },
+                  "items": [
+                    {
+                      "type": "text",
+                      "text": "Status",
+                      "font_size": 11,
+                      "font_weight": "bold",
+                      "text_color": "#94A3B8"
+                    },
+                    {
+                      "type": "text",
+                      "text": "@{user.tools_status}",
+                      "font_size": 18,
+                      "font_weight": "bold",
+                      "text_color": "#34D399"
+                    }
+                  ],
+                  "id": "metric_status"
+                },
+                {
+                  "type": "inline_banner",
+                  "custom_props": {
+                    "text": "@{user.tools_error == '' ? 'No errors' : user.tools_error}",
+                    "tone": "warn"
+                  }
+                },
+                {
+                  "type": "container",
+                  "orientation": "vertical",
+                  "items": [
+                    {
+                      "type": "button",
+                      "text": "Send alert",
+                      "font_size": 12,
+                      "font_weight": "bold",
+                      "text_color": "#FFFFFF",
+                      "background_color": "#7C3AED",
+                      "corner_radius": 12,
+                      "height": {
+                        "type": "fixed",
+                        "value": 40
+                      },
+                      "width": {
+                        "type": "match_parent"
+                      },
+                      "actions": [
+                        {
+                          "url": "tools://network.push/send_alert",
+                          "payload": {
+                            "options": {
+                              "title": "Order ready",
+                              "message": "Order #1042 is ready"
+                            },
+                            "output": {
+                              "status": "user.tools_status"
+                            }
+                          }
+                        }
+                      ],
+                      "subtitle": "tools://network.push/send_alert",
+                      "id": "tool_push_send_alert_posts",
+                      "content_description": "push send_alert"
+                    },
+                    {
+                      "type": "button",
+                      "text": "Notify",
+                      "font_size": 12,
+                      "font_weight": "bold",
+                      "text_color": "#F8FAFC",
+                      "background_color": "#16233A",
+                      "corner_radius": 12,
+                      "height": {
+                        "type": "fixed",
+                        "value": 40
+                      },
+                      "width": {
+                        "type": "match_parent"
+                      },
+                      "actions": [
+                        {
+                          "url": "tools://network.push/notify",
+                          "payload": {
+                            "options": {
+                              "title": "Shift",
+                              "message": "Handover due"
+                            },
+                            "output": {
+                              "status": "user.tools_status"
+                            }
+                          }
+                        }
+                      ],
+                      "border": {
+                        "corner_radius": 12,
+                        "stroke": {
+                          "color": "#1E293B",
+                          "width": 1
+                        }
+                      },
+                      "subtitle": "tools://network.push/notify",
+                      "id": "tool_push_notify_posts",
+                      "content_description": "push notify"
+                    },
+                    {
+                      "type": "button",
+                      "text": "Send",
+                      "font_size": 12,
+                      "font_weight": "bold",
+                      "text_color": "#FFFFFF",
+                      "background_color": "#7C3AED",
+                      "corner_radius": 12,
+                      "height": {
+                        "type": "fixed",
+                        "value": 40
+                      },
+                      "width": {
+                        "type": "match_parent"
+                      },
+                      "actions": [
+                        {
+                          "url": "tools://network.push/send",
+                          "payload": {
+                            "options": {
+                              "title": "Stock",
+                              "message": "Coffee low"
+                            },
+                            "output": {
+                              "status": "user.tools_status"
+                            }
+                          }
+                        }
+                      ],
+                      "subtitle": "tools://network.push/send",
+                      "id": "tool_push_send_posts",
+                      "content_description": "push send"
+                    }
+                  ],
+                  "item_spacing": 8,
+                  "background_color": "#111C2E",
+                  "paddings": {
+                    "left": 12,
+                    "top": 12,
+                    "right": 12,
+                    "bottom": 12
+                  },
+                  "border": {
+                    "corner_radius": 16,
+                    "stroke": {
+                      "color": "#1E293B",
+                      "width": 1
+                    }
+                  }
+                },
+                {
+                  "type": "button",
+                  "text": "Back to tools",
+                  "font_size": 12,
+                  "font_weight": "bold",
+                  "text_color": "#F8FAFC",
+                  "background_color": "transparent",
+                  "corner_radius": 12,
+                  "height": {
+                    "type": "fixed",
+                    "value": 40
+                  },
+                  "width": {
+                    "type": "match_parent"
+                  },
+                  "actions": [
+                    {
+                      "url": "nav://pop"
+                    }
+                  ],
+                  "border": {
+                    "corner_radius": 12,
+                    "stroke": {
+                      "color": "#1E293B",
+                      "width": 1
+                    }
+                  },
+                  "id": "btn_back_footer"
+                }
+              ],
+              "item_spacing": 12,
+              "paddings": {
+                "left": 16,
+                "top": 0,
+                "right": 16,
+                "bottom": 0
+              }
+            }
+          ],
+          "item_spacing": 8,
+          "paddings": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 16
+          }
+        }
+      }
+    ]
+  }
+}

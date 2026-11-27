@@ -657,8 +657,12 @@ Behaviour that bites:
 - `chart` reads `accent_hex` (not `accent_color`), and `data_var`/`text_variable`/`chunks_var`
   are variable *names*; the old kit builders silently dropped `data`/`rowCard`/`subtitle`, so
   the generated `apex_tools_test` chart had no `data_var` and its `json_list` had no rows.
-- `data.codec@1` runs in the browser (`client/src/workspace/toolRuntime.ts`); native-only
-  tools report `unavailable` and are logged — never a fabricated success.
+- `data.codec@1` is a port of `engine/tools/impl/CodecTool.kt` in
+  `packages/pos-ui/src/android-runtime/codec.ts`; local mode runs it in the browser and
+  server mode runs the same module, so `json/extract` (`paths` → `values`/`count`/`missing`),
+  `json/stringify` (`keys`/`values`), and `json/assemble` (`COMPLETE`/`PARTIAL`/`FAILED`,
+  out-of-order indexes, `checksum_ok`) behave like the device. Tools with no implementation
+  report `unavailable` and are logged — never a fabricated success.
 - `local-db://op/*` runs against `WorkspaceMemoryDb` (`packages/pos-ui/src/android-runtime/
   memoryDb.ts`, wired in `client/src/workspace/localDb.ts`), a port of `ApexKitDatabaseEngine`
   + `SchemaOps`: record ids are text, `created`/`updated` are epoch-millisecond strings, the
@@ -667,5 +671,36 @@ Behaviour that bites:
   merge-by-key child lists with the stock ceiling, `editable_status`, canonical
   `lines_json`/`line_count`, reference delete guards, `C1|…` chunk envelopes) are read from
   the collection bundle. `localDb.test.ts` drives the kiosk cards' exact payloads.
-- Still pending: the remaining native `tools://` inventory (camera, print, LAN, ML) and
-  `db.import_schema` for the preview.
+- The preview data plane mirrors `ApexKitDatabaseEngine` for the operations the cards use
+  (`db.import_schema`, `db.list_collections`, CRUD, child lists, `doc.*`, `lookup.resolve`);
+  see `client/src/workspace/localDb.ts` and `localDb.test.ts`.
+
+### Dev-server tool execution (`local` vs `server`)
+
+The workspace toolbar's `LOCAL | SERVER` switch selects where `tools://` actions run;
+local is the default. `dispatchWorkspaceUrl` (`client/src/workspace/toolRuntime.ts`) posts
+`{ tool, operation, payload, context }` to `POST /api/tools/invoke` in server mode and
+falls back to the local implementation when the answer is `status: 'unavailable'`
+(unknown tool or no route, e.g. a static build). `GET /api/tools` advertises the server
+inventory; `supported: false` marks the hardware-only families. Server mode needs the Node
+preset (or Cloudflare `nodejs_compat`); the static preset has no API route.
+
+The server registry is `server/utils/tools/`:
+
+- `ServerTool.ts` — the extending class (`id`, `aliases`, `operations`, `supported`,
+  `invoke`) plus `ok`/`failed`/`refuse`/`unavailable` helpers.
+- `impl/*.ts` — real implementations for codec (same pure module as the browser), scan
+  (injected code), files, offline-cache, clipboard, push (ledger), embedding (hashed
+  512-d), net (fetch + a real loopback HTTP hub), print (ESC/POS encoder), screen
+  (keep-awake). Hardware/ML/libsignal/realtime/code-generation/image-manipulation refuse
+  with `UNSUPPORTED` and a reason; they never fabricate a result.
+- `custom.ts` — `EchoTool`, the worked example. Add a workspace-specific tool here and
+  append it to `REGISTRY` in `registry.ts`; no client change is needed.
+- `registry.ts` flattens `payload.options` (mirroring `EngineRouter`) and applies
+  `applyOutputMapping` from `@apex/pos-ui/android-runtime`.
+
+Tests: `tests/tools/serverTools.test.ts` (server registry, per-family behaviour, and a
+drift guard that every `NativeToolsSuite` `toolId` is registered) and
+`client/src/workspace/toolRuntime.test.ts` (mode selection, fallback, output mapping,
+and the `CodecTool` JSON contract).
+`pnpm test:dev-server` now runs `vitest run --root .`, so both suites are included.
