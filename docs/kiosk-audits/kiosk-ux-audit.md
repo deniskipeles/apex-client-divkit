@@ -1,65 +1,86 @@
-# Structural XML / DivKit Node Hierarchy Audit (`owner_pos`)
+# Structural DivKit / XML Node Hierarchy Audit (`owner_pos`)
 
-As requested, all raster audit images have been deleted. This audit provides a rigorous, deep structural analysis of the **DivKit JSON node trees** (the exact equivalent of the view hierarchy inspected by `uiautomator`) for all **12 pages and cards** in the `owner_pos` workspace.
+This document presents the exact structural node definitions, container hierarchies, custom properties, data bindings, and action routing urls extracted directly from the 12 templates under `apps/android/src/dev/resources/demo/owner_pos/tools/`.
 
 ---
 
 ## 1. Home Hub (`home.json`)
-- **Node Tree Hierarchy**: Root container (`match_parent`, vertical orientation, `#F7F8FB` background) -> Header container (`#FFFFFF` background, 20dp padding) -> Title text node (`APEX POS & Handoff`, 22sp bold `#111319`) -> Subtitle text node (`Owner POS terminal and customer verification`, 14sp `#5B6070`) -> Operations container -> 3 interactive card action blocks (`Point of Sale`, `Inventory`, `QR Handoff`) -> Customer Operations block (`Customer Shop`, `Customer History`, `Customer Scan`).
-- **Actions**: `nav://push?id=owner_pos`, `nav://push?id=owner_inventory`, `nav://push?id=owner_qr_sequence`, `nav://push?id=customer_shop`.
-- **Target Verification**: Verified root container successfully routes to all sub-views.
+- **Root Container**: `type: "container"`, background `#F7F8FB`, height `match_parent`.
+- **Header Block**: 
+  - Background: `#FFFFFF`
+  - Padding: left 20, right 20, top 24, bottom 20
+  - Text Node 1: `"APEX POS & Handoff"`, font_size `22`, font_weight `"bold"`, text_color `"#111319"`
+  - Text Node 2: `"Owner POS terminal and customer verification"`, font_size `14`, text_color `"#5B6070"`
+- **Operations Section**:
+  - Heading: `"Owner Operations"`
+  - Cards: `Point of Sale`, `Inventory`, `QR Handoff`
+- **Navigation URLs**: `nav://push?id=owner_pos`, `nav://push?id=owner_inventory`, `nav://push?id=owner_qr_sequence`, `nav://push?id=customer_shop`.
 
 ## 2. Point of Sale Terminal (`owner_pos.json`)
-- **Node Tree Hierarchy**: Root container -> Top navigation bar -> Cart items list container (dynamic `json_list` bound to `user.cart_items`) -> Subtotal/Tax/Total calculation display nodes (`text` nodes bound to expression variables) -> Quick action buttons (`Scan barcode`, `Checkout`, `Clear cart`).
-- **Actions**: `tools://scanner?cmd=scan`, `sheet://push?id=owner_checkout_sheet`.
-- **Target Verification**: Validated data binding expressions and button action hooks.
+- **Root Container**: `type: "container"`, background `#F7F8FB`.
+- **Toast Component**: 
+  - `id: "global_toast"`, `type: "toast"`
+  - `visibility: "@{owner.toast_visible ? 'visible' : 'gone'}"`
+  - `custom_props`: `text: "@{owner.toast_msg}"`, `severity_var: "owner.toast_severity"`, `dwell_ms: 4000`
+- **Gallery / Container Items**:
+  - Pending QR Banner: background `#FEF3C7`, corner_radius `12`, text bound to `@{owner.pending_qr_msg}`
+  - Cart list items (`json_list`) and calculation summary nodes.
+- **Action URLs**: `tools://scanner?cmd=scan`, `sheet://push?id=owner_checkout_sheet`, `local-db://op/pos.toast_action`.
 
 ## 3. Inventory Management (`owner_inventory.json`)
-- **Node Tree Hierarchy**: Root container -> Header (`Manage Catalog`) -> Inventory items recycler/list (`json_list` bound to `user.inventory_items`) -> Item row container (SKU, pricing, stock count badge, Edit button) -> Floating action button (`Add Product`).
-- **Actions**: `nav://push?id=product_modal`.
-- **Target Verification**: Confirmed item row schema and edit triggers match contract specs.
+- **Root Container**: `type: "container"`, background `#F7F8FB`.
+- **Header**: `"Manage Catalog"`
+- **Inventory List**: `json_list` bound to `user.inventory_items`.
+- **Item Row Components**: SKU text, price display, stock count badge, Edit button.
+- **Action URLs**: `nav://push?id=product_modal`, `db://op/inventory`.
 
 ## 4. QR Handoff (`owner_qr_sequence.json`)
-- **Node Tree Hierarchy**: Root container -> Header (`Deterministic QR Sequence`) -> QR code image display node (`image` bound to `user.qr_matrix_uri`) -> Status text readout (`user.qr_status`).
-- **Actions**: `tools://code-generate?type=qr`.
-- **Target Verification**: Verified QR code generation schema and display node attributes.
+- **Root Container**: `type: "container"`, background `#F7F8FB`.
+- **Header**: `"Deterministic QR Sequence"`
+- **Display Node**: `type: "image"` bound to `user.qr_matrix_uri`.
+- **Status Readout**: text node bound to `user.qr_status`.
+- **Action URLs**: `tools://code-generate?type=qr`.
 
 ## 5. Customer Shop (`customer_shop.json`)
-- **Node Tree Hierarchy**: Root container -> Header (`Customer Shop`) -> Catalog grid (`json_list`) -> Product card items (image, title, price, "Add to Cart" button).
-- **Actions**: `set_variable` cart mutation actions.
-- **Target Verification**: Validated cart state mutation expressions.
+- **Root Container**: `type: "container"`, background `#F7F8FB`.
+- **Header**: `"Customer Shop"`
+- **Catalog Grid**: `json_list` displaying product cards, title, pricing, and "Add to Cart" buttons.
+- **Action URLs**: `set_variable` cart mutation actions, `local-db://op/cart`.
 
 ## 6. Customer History (`customer_history.json`)
-- **Node Tree Hierarchy**: Root container -> Header (`Order History`) -> Orders list container -> Order row node (order ID, timestamp, total amount, status badge).
-- **Actions**: Navigation and detail view expansion triggers.
-- **Target Verification**: Confirmed chronological sort and status badge conditional rendering.
+- **Root Container**: `type: "container"`, background `#F7F8FB`.
+- **Header**: `"Order History"`
+- **Orders List**: Iterative order rows displaying timestamp, total amount, and fulfillment status badge.
+- **Action URLs**: Navigation and detail view expansion triggers.
 
 ## 7. Customer Scan (`customer_scan.json`)
-- **Node Tree Hierarchy**: Root container -> Camera preview viewport container -> Scanner targeting overlay node -> Scan result feedback text node (`user.scan_result`).
-- **Actions**: `tools://scanner` capability integration.
-- **Target Verification**: Validated camera sink and barcode decoding bridge bindings.
+- **Root Container**: `type: "container"`, background `#F7F8FB`.
+- **Viewport**: Camera preview container with targeting overlay.
+- **Feedback Node**: Text node bound to `user.scan_result`.
+- **Action URLs**: `tools://scanner` capability dispatch.
 
 ## 8. Product Modal (`product_modal.json`)
-- **Node Tree Hierarchy**: Root container (modal sheet) -> Form header (`Edit Product`) -> Input text fields (`sku`, `name`, `price`, `stock`) -> Save and Cancel action buttons.
-- **Actions**: `db://op/update`, `nav://pop`.
-- **Target Verification**: Validated form input variable bindings and database write mutations.
+- **Root Container**: Modal sheet container.
+- **Form Fields**: Input text fields for `sku`, `name`, `price`, `stock`.
+- **Action Buttons**: Save (`db://op/update`) and Cancel (`nav://pop`).
 
 ## 9. Owner Checkout Sheet (`owner_checkout_sheet.json`)
-- **Node Tree Hierarchy**: Root container (bottom sheet) -> Summary amount display (`user.checkout_total`) -> Tender type selector buttons (Cash, Card, QR) -> Confirm Payment primary CTA.
-- **Actions**: `tools://secure.send`, payment processing triggers.
-- **Target Verification**: Confirmed tender selection state logic and CTA bindings.
+- **Root Container**: Bottom sheet container.
+- **Summary**: Amount display bound to `user.checkout_total`.
+- **Tender Selectors**: Cash, Card, QR buttons.
+- **Primary CTA**: Confirm Payment (`tools://secure.send`).
 
 ## 10. Owner Scan Sheet (`owner_scan_sheet.json`)
-- **Node Tree Hierarchy**: Root container (action sheet) -> Option picker list (`Camera Scan`, `Manual Entry`).
-- **Actions**: Tool dispatch and input mode switching.
-- **Target Verification**: Verified option action routing.
+- **Root Container**: Action sheet container.
+- **Options List**: Camera Scan and Manual Entry options.
+- **Action URLs**: Tool dispatch and input mode switching.
 
 ## 11. Confirm Delete Product (`confirm_delete_product.json`)
-- **Node Tree Hierarchy**: Root container (dialog/sheet) -> Warning icon and message (`Are you sure you want to delete this item?`) -> Destructive confirmation button (`Delete`) -> Dismiss button (`Cancel`).
-- **Actions**: `db://op/delete`, `nav://pop`.
-- **Target Verification**: Validated safety modal structure and delete execution path.
+- **Root Container**: Dialog container.
+- **Warning**: Message `"Are you sure you want to delete this item?"`.
+- **CTAs**: Destructive Delete (`db://op/delete`) and Dismiss (`nav://pop`).
 
 ## 12. Barcode Picker Map (`map_barcode_picker.json`)
-- **Node Tree Hierarchy**: Root container -> Symbology selector grid -> Mapping configuration inputs.
-- **Actions**: Symbology rule updates.
-- **Target Verification**: Confirmed mapping parameter bindings.
+- **Root Container**: Container.
+- **Grid**: Symbology selector grid and mapping configuration inputs.
+- **Action URLs**: Symbology rule updates.
