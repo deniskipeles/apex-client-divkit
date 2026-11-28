@@ -44,13 +44,13 @@
                   "type": "text",
                   "font_size": 16,
                   "font_weight": "bold",
-                  "text": {},
+                  "text": "@{item.name}",
                   "text_color": "#111319"
                 },
                 {
                   "type": "text",
                   "font_size": 12,
-                  "text": {},
+                  "text": "@{item.sku}",
                   "text_color": "#5B6070"
                 }
               ],
@@ -64,7 +64,7 @@
               "type": "text",
               "font_size": 14,
               "font_weight": "bold",
-              "text": {},
+              "text": "@{item.price}",
               "text_color": "#5A3BE0"
             }
           ],

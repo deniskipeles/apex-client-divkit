@@ -5,12 +5,12 @@ import {
   DivImage,
   DivSolidBackground,
   DivText,
-  expression as rawExpression,
   fixed,
   matchParent,
   weighted,
 } from '@divkitframework/jsonbuilder'
 import {
+  type DivAction,
   bodyText,
   bottomSheet,
   chip,
@@ -22,27 +22,35 @@ import {
   fab,
   formModal,
   inlineBanner,
+  deleteAction,
   jsonList,
   labelText,
   opAction,
   photoPicker,
   progressBar,
   progressRing,
+  queryAction,
   qrSequenceViewer,
   scanProgressChips,
   segmented,
   statusChip,
   stepper,
   setVarAction,
+  setVars,
   stickyFooter,
   textField,
   titleText,
   toastBlock,
+  upsertAction,
 } from './blocks.ts'
 import { TOKENS } from './tokens.ts'
 import { customerVariables, ownerVariables, productFormVariables } from './variables.ts'
 
-const expression = (body: string) => rawExpression(body.trim().startsWith('@{') ? body : `@{${body}}`)
+/**
+ * DivKit expressions travel as plain `@{...}` strings: every renderer (Android, iOS, preview)
+ * evaluates that form, while an expression *object* is only understood by some of them.
+ */
+const expression = (body: string) => (body.trim().startsWith('@{') ? body : `@{${body}}`)
 
 export function buildOwnerPosCard() {
   return divCard(
@@ -262,7 +270,13 @@ export function buildOwnerPosCard() {
               }),
               bottomTabs('owner.tab', [
                 { id: 'pos', label: 'POS', icon: 'pos', card: 'owner_pos' },
-                { id: 'inventory', label: 'Inventory', icon: 'inventory', card: 'owner_inventory' },
+                {
+                  id: 'inventory',
+                  label: 'Inventory',
+                  icon: 'inventory',
+                  card: 'owner_inventory',
+                  actions: [loadInventory()],
+                },
               ]),
             ],
           }),
@@ -517,7 +531,7 @@ export function buildOwnerInventoryCard() {
     {},
     {
       log_id: 'owner_inventory',
-      variables: ownerVariables(),
+      variables: [...ownerVariables(), ...productFormVariables()],
       states: [
         {
           state_id: 0,
@@ -532,7 +546,7 @@ export function buildOwnerInventoryCard() {
                 messageVar: 'owner.toast_msg',
                 severityVar: 'owner.toast_severity',
                 actionLabelVar: 'owner.toast_action',
-                onAction: [opAction('inv_toast_act', 'inventory.toast_action')],
+                onAction: setVars('inv_toast_dismiss', { 'owner.toast_visible': false }),
               }),
               new DivContainer({
                 orientation: 'vertical',
@@ -556,11 +570,11 @@ export function buildOwnerInventoryCard() {
                             kind: 'text',
                             valueVar: 'owner.inv_query',
                             hint: 'Search name, SKU, or code',
-                            onBlurOp: [
-                              opAction('search_inv', 'inventory.list', {
-                                filter: '@{owner.inv_query}',
-                              }),
-                            ],
+                            onBlurOp: [loadInventory('search_inv')],
+                            trailingAction: {
+                              label: 'Search',
+                              onTap: [loadInventory('search_inv')],
+                            },
                           }),
                         ],
                       }),
@@ -586,10 +600,7 @@ export function buildOwnerInventoryCard() {
                             background: [new DivSolidBackground({ color: TOKENS.color.accentTint })],
                             content_alignment_horizontal: 'center',
                             content_alignment_vertical: 'center',
-                            actions: [
-                              opAction('empty_add_prod', 'inventory.open_form', { mode: 'new' }),
-                              { log_id: 'open_product_modal', url: 'nav://push?id=product_modal' },
-                            ],
+                            actions: openProductForm('empty_add_prod'),
                             items: [
                               new DivText({
                                 text: 'Add product',
@@ -606,17 +617,12 @@ export function buildOwnerInventoryCard() {
                         new DivContainer({
                           orientation: 'horizontal',
                           width: matchParent(),
-                          paddings: { left: 16, right: 16, top: 14, bottom: 14 },
+                          height: fixed(76),
+                          paddings: { left: 16, right: 16, top: 10, bottom: 10 },
                           background: [new DivSolidBackground({ color: TOKENS.color.surface })],
                           border: { corner_radius: TOKENS.radius.card },
                           alignment_vertical: 'center',
-                          actions: [
-                            opAction('edit_prod', 'inventory.open_form', {
-                              mode: 'edit',
-                              id: '$item.id',
-                            }),
-                            { log_id: 'open_product_modal', url: 'nav://push?id=product_modal' },
-                          ],
+                          actions: openProductForm('edit_prod', true),
                           items: [
                             new DivImage({
                               image_url: '$item.photo_url',
@@ -636,9 +642,11 @@ export function buildOwnerInventoryCard() {
                                   orientation: 'horizontal',
                                   alignment_vertical: 'center',
                                   items: [
-                                    labelText('$item.code_display'),
+                                    labelText(expression("$item.barcode != '' ? $item.barcode : $item.code")),
                                     new DivContainer({
-                                      visibility: expression("@{$item.has_code ? 'gone' : 'visible'}"),
+                                      visibility: expression(
+                                        "@{$item.barcode == '' && $item.code == '' ? 'visible' : 'gone'}",
+                                      ),
                                       paddings: { left: 8 },
                                       actions: [
                                         {
@@ -656,29 +664,44 @@ export function buildOwnerInventoryCard() {
                               orientation: 'vertical',
                               alignment_horizontal: 'end',
                               items: [
-                                titleText('$item.price_display', TOKENS.color.ink, true),
-                                statusChip("@{$item.stock == 0 ? 'Out' : 'Low'}", 'warning'),
+                                titleText(
+                                  expression(
+                                    "'$' + $item.price + ($item.price * 1 == round($item.price * 1) ? '.00' : $item.price * 10 == round($item.price * 10) ? '0' : '')",
+                                  ),
+                                  TOKENS.color.ink,
+                                  true,
+                                ),
+                                statusChip(
+                                  expression(
+                                    "$item.stock == 0 ? 'Out of stock' : $item.stock + ' in stock'",
+                                  ),
+                                  'warning',
+                                ),
                               ],
                             }),
                           ],
                         }),
                         12,
+                        '',
                       ),
                     ],
                   }),
                   fab({
                     icon: 'add',
                     accessibilityLabel: 'Add product',
-                    onTap: [
-                      opAction('fab_add_prod', 'inventory.open_form', { mode: 'new' }),
-                      { log_id: 'open_product_modal', url: 'nav://push?id=product_modal' },
-                    ],
+                    onTap: openProductForm('fab_add_prod'),
                   }),
                 ],
               }),
               bottomTabs('owner.tab', [
                 { id: 'pos', label: 'POS', icon: 'pos', card: 'owner_pos' },
-                { id: 'inventory', label: 'Inventory', icon: 'inventory', card: 'owner_inventory' },
+                {
+                  id: 'inventory',
+                  label: 'Inventory',
+                  icon: 'inventory',
+                  card: 'owner_inventory',
+                  actions: [loadInventory()],
+                },
               ]),
             ],
           }),
@@ -702,8 +725,26 @@ export function buildProductModalCard() {
             titleExpr: "@{product.is_edit ? 'Edit product' : 'New product'}",
             dirtyVar: 'product.dirty',
             validVar: 'product.valid',
-            onCancel: [opAction('cancel_product_form', 'inventory.cancel_form')],
-            onSave: [opAction('save_product_form', 'inventory.upsert')],
+            onCancel: [{ log_id: 'cancel_product_form', url: 'nav://pop' }],
+            onSave: [
+              upsertAction(
+                'save_product_form',
+                'inventory',
+                {
+                  name: '@{product.name}',
+                  sku: '@{product.sku}',
+                  price: '@{product.price}',
+                  code: '@{product.code}',
+                  barcode: '@{product.code}',
+                  description: '@{product.description}',
+                  photo_url: '@{product.photo_url}',
+                  stock: '@{product.is_edit ? product.stock : 0}',
+                },
+                { id: '@{product.id}', output: { errors_json: 'product.errors_json' } },
+              ),
+              loadInventory('reload_after_save'),
+              { log_id: 'close_product_form', url: 'nav://pop' },
+            ],
             children: [
               new DivContainer({
                 orientation: 'vertical',
@@ -728,7 +769,6 @@ export function buildProductModalCard() {
                     valueVar: 'product.price',
                     hint: '0.00',
                     errorExpr: 'product.errors.price',
-                    onBlurOp: [opAction('fmt_price', 'inventory.format_price')],
                   }),
                   textField({
                     id: 'field_code',
@@ -742,31 +782,16 @@ export function buildProductModalCard() {
                     onScanTap: [
                       { log_id: 'open_code_scan_sheet', url: 'sheet://present?card_id=owner_scan_sheet' },
                     ],
-                    onBlurOp: [
-                      opAction('check_dup_code', 'inventory.check_code', {
-                        code: '@{product.code}',
-                        exclude_sku: '@{product.sku}',
-                      }),
-                    ],
+
                   }),
                   inlineBanner({
-                    id: 'dup_code_banner',
-                    visibleIf: "product.code_dup_warning != ''",
-                    severity: 'warning',
-                    messageExpr: '@{product.code_dup_warning}',
-                    primaryAction: {
-                      label: 'View',
-                      onTap: [
-                        opAction('view_dup_code', 'inventory.open_form', {
-                          mode: 'edit',
-                          sku: '@{product.code_dup_sku}',
-                        }),
-                        { log_id: 'open_dup_product', url: 'nav://push?id=product_modal' },
-                      ],
-                    },
+                    id: 'save_error_banner',
+                    visibleIf: "product.errors_json != ''",
+                    severity: 'danger',
+                    messageExpr: '@{product.errors_json}',
                     secondaryAction: {
-                      label: 'Use anyway',
-                      onTap: [setVarAction('dismiss_dup_code', 'product.code_dup_warning', '')],
+                      label: 'Dismiss',
+                      onTap: [setVarAction('dismiss_save_error', 'product.errors_json', '')],
                     },
                   }),
                   textField({
@@ -776,13 +801,6 @@ export function buildProductModalCard() {
                     valueVar: 'product.sku',
                     hint: 'LAT-01',
                     errorExpr: 'product.errors.sku',
-                    onBlurOp: [opAction('upper_sku', 'inventory.normalize_sku')],
-                    trailingAction: {
-                      label: '✨',
-                      onTap: [
-                        opAction('suggest_sku', 'inventory.suggest_sku', { name: '@{product.name}' }),
-                      ],
-                    },
                   }),
                   textField({
                     id: 'field_desc',
@@ -801,7 +819,7 @@ export function buildProductModalCard() {
                     content_alignment_horizontal: 'center',
                     content_alignment_vertical: 'center',
                     actions: [
-                      { log_id: 'confirm_delete_prod', url: 'sheet://present?card_id=confirm_delete_product' },
+                      { log_id: 'confirm_delete_prod', url: 'nav://push?id=confirm_delete_product' },
                     ],
                     items: [
                       new DivText({
@@ -852,24 +870,16 @@ export function buildScanSheetCard() {
                     kind: 'text',
                     valueVar: 'product.scan_pending_code',
                     hint: 'Enter barcode or SKU',
-                  }),
-                ],
-              }),
-              new DivContainer({
-                width: matchParent(),
-                height: fixed(56),
-                border: { corner_radius: TOKENS.radius.button },
-                background: [new DivSolidBackground({ color: TOKENS.color.accent })],
-                alpha: expression("@{product.scan_pending_code != '' ? 1.0 : 0.4}"),
-                content_alignment_horizontal: 'center',
-                content_alignment_vertical: 'center',
-                actions: [opAction('use_scanned_code', 'inventory.accept_scanned_code')],
-                items: [
-                  new DivText({
-                    text: 'Use this code',
-                    font_size: 16,
-                    font_weight: 'bold',
-                    text_color: TOKENS.color.surface,
+                    trailingAction: {
+                      label: 'Use',
+                      onTap: [
+                        ...setVars('use_scanned_code', {
+                          'product.code': '@{product.scan_pending_code}',
+                          'product.code_scanned': true,
+                        }),
+                        { log_id: 'pop_scan_sheet', url: 'nav://pop' },
+                      ],
+                    },
                   }),
                 ],
               }),
@@ -1297,13 +1307,72 @@ export function buildCustomerScanCard() {
   )
 }
 
-function navRow(title: string, subtitle: string, targetId: string, icon: string) {
+/** Browse is a plain collection query: the card decides table, filter and target vars. */
+const loadInventory = (logId = 'load_inventory'): DivAction =>
+  queryAction(logId, 'inventory', {
+    filter: {
+      $or: [
+        { name: { $contains: '@{owner.inv_query}' } },
+        { sku: { $contains: '@{owner.inv_query}' } },
+        { barcode: { $contains: '@{owner.inv_query}' } },
+        { code: { $contains: '@{owner.inv_query}' } },
+      ],
+    },
+    orderBy: 'name',
+    limit: 100,
+    listVar: 'owner.inv_items',
+    countVar: 'owner.inv_count',
+  })
+
+/** Seeds the product form from a row (or blanks it) with in-card `set_variable` actions. */
+const openProductForm = (logId: string, fromRow = false): DivAction[] => [
+  ...(fromRow
+    ? setVars(logId, {
+        'product.id': '@{item.id}',
+        'product.name': '@{item.name}',
+        'product.sku': '@{item.sku}',
+        'product.price': '@{item.price}',
+        'product.stock': '@{item.stock}',
+        'product.code': "@{item.barcode != '' ? item.barcode : item.code}",
+        'product.photo_url': '@{item.photo_url}',
+        'product.description': '@{item.description}',
+        'product.is_edit': true,
+      })
+    : setVars(logId, {
+        'product.id': '',
+        'product.name': '',
+        'product.sku': '',
+        'product.price': '',
+        'product.stock': 0,
+        'product.code': '',
+        'product.photo_url': '',
+        'product.description': '',
+        'product.is_edit': false,
+      })),
+  ...setVars(`${logId}_reset`, {
+    'product.errors_json': '',
+    'product.dirty': false,
+    'product.valid': true,
+  }),
+  { log_id: 'open_product_modal', url: 'nav://push?id=product_modal' },
+]
+
+function navRow(
+  title: string,
+  subtitle: string,
+  targetId: string,
+  icon: string,
+  extraActions: DivAction[] = [],
+) {
   return new DivContainer({
     orientation: 'horizontal',
     width: matchParent(),
     height: fixed(56),
     content_alignment_vertical: 'center',
-    actions: [{ log_id: `nav_${targetId}`, url: `nav://push?id=${targetId}` }],
+    actions: [
+      { log_id: `nav_${targetId}`, url: `nav://push?id=${targetId}` },
+      ...extraActions,
+    ],
     items: [
       new DivContainer({
         orientation: 'vertical',
@@ -1364,7 +1433,9 @@ export function buildHomeCard() {
                     items: [
                       navRow('Point of Sale', 'Cart, barcode scan & checkout', 'owner_pos', 'pos'),
                       divider(),
-                      navRow('Inventory', 'Manage catalog, stock & pricing', 'owner_inventory', 'box'),
+                      navRow('Inventory', 'Manage catalog, stock & pricing', 'owner_inventory', 'box', [
+                        loadInventory(),
+                      ]),
                       divider(),
                       navRow('QR Handoff', 'Deterministic QR sequence', 'owner_qr_sequence', 'qr'),
                     ],
@@ -1457,6 +1528,8 @@ export function buildConfirmDeleteProductCard() {
       states: [
         {
           state_id: 0,
+          // Pushed as a workspace page (not a host sheet) so its pops unwind the page stack the
+          // product modal lives on: Cancel closes the dialog, Delete closes dialog + modal.
           div: bottomSheet('confirm_delete_product_sheet', 'Delete Product?', [
             new DivText({
               text: 'This product will be permanently removed unless referenced by past orders.',
@@ -1487,14 +1560,18 @@ export function buildConfirmDeleteProductCard() {
                   content_alignment_horizontal: 'center',
                   content_alignment_vertical: 'center',
                   actions: [
-                    opAction('delete_product', 'inventory.delete', { id: expression('product.form_id') }),
+                    deleteAction('delete_product', 'inventory', '@{product.id}'),
+                    loadInventory('reload_after_delete'),
+                    // Pop dismisses the confirm sheet, the second pop closes the edit modal it
+                    // was opened from, so a deleted product's form cannot be re-saved.
                     { log_id: 'pop_after_delete', url: 'nav://pop' },
+                    { log_id: 'pop_after_delete_form', url: 'nav://pop' },
                   ],
                   items: [new DivText({ text: 'Delete', font_size: 16, font_weight: 'bold', text_color: TOKENS.color.surface })],
                 }),
               ],
             }),
-          ]),
+          ], 0.65, 'nav://pop'),
         },
       ],
     },

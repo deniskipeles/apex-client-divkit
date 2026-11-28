@@ -317,8 +317,11 @@ fun PosTerminalTab(
                                 overflow = TextOverflow.Ellipsis
                             )
                             Text(
-                                text = if (spec.isBuiltInDemo) "⚡ Built-in Demo • $activeSchemaTag"
-                                else "🌍 Public Tunnel • $activeSchemaTag",
+                                text = when (spec.origin) {
+                                    "builtin" -> "⚡ Built-in Demo • $activeSchemaTag"
+                                    "update" -> "⬇ Gateway update • $activeSchemaTag"
+                                    else -> "🌍 Imported • $activeSchemaTag"
+                                },
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 color = colorScheme.primary,
@@ -408,6 +411,26 @@ fun PosTerminalTab(
                                         }
                                     )
                                     HorizontalDivider()
+                                    DropdownMenuItem(
+                                        enabled = !uiState.isWorkspaceUpdating,
+                                        text = {
+                                            Text(
+                                                if (uiState.isWorkspaceUpdating) "Updating workspace…"
+                                                else "Update workspace",
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                        },
+                                        leadingIcon = {
+                                            Icon(
+                                                Icons.Default.SystemUpdateAlt,
+                                                contentDescription = null
+                                            )
+                                        },
+                                        onClick = {
+                                            showOverflowMenu = false
+                                            viewModel.updateWorkspaceFromGateway()
+                                        }
+                                    )
                                     DropdownMenuItem(
                                         text = {
                                             Text(

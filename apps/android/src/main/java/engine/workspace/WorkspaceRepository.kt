@@ -41,15 +41,27 @@ object WorkspaceRepository {
         val failures: List<Failure>
     )
 
-    /** Every workspace visible to this build: packaged ones plus, in dev, imported copies. */
+    /**
+     * The app's `filesDir` when a Context has been installed, so `loadAll()` without an explicit
+     * directory still sees applied gateway updates and dev imports.
+     */
+    fun defaultFilesDir(): File? = engine.db.currentAndroidContext?.invoke()?.filesDir
+
+    /** Every workspace visible to this build: packaged ones plus imported/updated copies. */
     fun loadAll(
         source: WorkspaceSource = ClasspathSource(),
-        filesDir: File? = null
+        filesDir: File? = defaultFilesDir()
     ): LoadReport {
         val ids = runCatching { index(source) }.getOrDefault(emptyList())
         val bundles = mutableListOf<WorkspaceBundle>()
         val failures = mutableListOf<Failure>()
         ids.forEach { id ->
+            // An applied gateway update outranks both the packaged copy and a dev import.
+            val updated = WorkspaceUpdate.updatedBundle(id, filesDir)
+            if (updated != null) {
+                bundles.add(updated)
+                return@forEach
+            }
             val imported = if (isDev()) importedBundle(id, filesDir) else null
             if (imported != null) {
                 bundles.add(imported)

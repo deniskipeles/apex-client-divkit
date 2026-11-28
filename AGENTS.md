@@ -108,6 +108,28 @@ so adding a workspace is a folder plus `demo/workspaces.json`, never a Kotlin ch
   (`ui/DevWorkspaceTools.kt` + `engine/workspace/DevWorkspaceImport`). Imports materialise the
   workspace under `filesDir/workspaces/<id>`, shadow the packaged copy (`DemoCardRepository`
   checks `importedBundle` first), and `unload` deletes the folder.
+- A downloaded update lands in `filesDir/workspace_updates/<id>/` (`WorkspaceUpdate`), carries
+  the encrypted `workspace.bin` plus `update.json` (`version`, `appliedAt`, `source`,
+  `sha256`), and outranks both the packaged copy and a dev import in
+  `WorkspaceRepository.loadAll`. The workspace `⋮ → Update workspace` action pulls it from the
+  gateway, re-signs the fetched hub card as a new cached schema version and rebuilds the specs,
+  so the card, the `v…` chip and the rollback ledger move together. `needsDemoCardRefresh`
+  skips re-seeding the packaged demo card while an update is applied — deleting
+  `workspace_updates/<id>` is how you go back to the built-in card.
+- `GATEWAY_URL` (`.env`, gitignored; documented in `.env.example`) is the default authoring/
+  update gateway. `WorkspaceUpdate.endpoint` reads `manifest.urls.updates.baseUrl` →
+  `BuildConfig.GATEWAY_URL` → `urls.tunnel + /workspaces` (the shipped tunnel hosts are demo
+  placeholders, so they are only the last resort); the published slug comes from
+  `manifest.urls.updates.slug` (`owner_pos` → `owner-pos`). `WorkspaceUpdate.apply` tries
+  `<base>/<slug>/workspace.bin` first and falls back to `<base>/<slug>/index.json`, so a static
+  `python3 -m http.server` over `client/public` is a complete gateway in dev.
+  `usesCleartextTraffic` is enabled by `src/dev/AndroidManifest.xml`, so only dev builds may
+  talk plain HTTP.
+- `WorkspaceRepository.loadAll()` defaults `filesDir` to `currentAndroidContext.filesDir`, so
+  `WorkspaceProvisioner.defaultWorkspaces` (and therefore the startup spec list) already sees an
+  applied update or import — a chip that says "Built-in Demo" after an update means that
+  default was lost. `workspace.json`'s `schemaVersion` carries into the chip and the update
+  outcome, so bumping it in TypeScript is the version handshake.
 - Collection `"seed"` rows are inserted by `ApexKitDatabaseEngine.importTenantSchema` when the
   collection is empty; that is why the demo workspaces need no Kotlin seed data.
 - Custom icons travel as base64 PNG/JPEG in `icons/icons.json` (dev zip import supported) and
@@ -128,6 +150,78 @@ each `cards[].card` is a raw div body, which `DemoCardRepository.toolCardDocumen
 under a Back button. Multi-page navigation uses `sdui_nav` (`nav://push|pop`) and simple
 switching uses native `state`; both render in `DivKitMultiplatform` and the browser parity
 runtime. Run `pnpm workspaces:build`; `pnpm workspaces:check` fails on drift.
+
+### UI iteration loop — do not rebuild the APK for workspace work
+
+Card, layout, copy and interaction work is data. Never run `build-apks.sh` / `gradlew
+assemble*` to see a workspace change; rebuild **only** when the terminal engine itself changes
+(a `tools://` handler, sheet/nav plumbing, a generic DivKit node or expression function in
+`DivKitMultiplatform.kt`, `NativeToolsSuite`, `EngineRouter`). The loop for UI work is:
+
+```bash
+cd apps/dev-server && node scripts/build-workspaces.mjs      # TS → public/workspaces + Android demo resources
+python3 -m http.server 12000 --bind 0.0.0.0                  # in client/public: the authoring gateway
+```
+
+then in the running dev APK either
+
+- launcher → `top_bar_dev_tools_button` → **Browse** → tap the workspace (imports the gateway's
+  `index.json` into `filesDir/workspaces/<id>`), or
+- in-tenant `⋮ → Update workspace` (applies `workspace_updates/<id>` and re-caches the schema
+  version),
+
+and re-inspect the screen. The emulator reaches the workstation through `10.0.2.2`
+(`GATEWAY_URL=http://10.0.2.2:12000/workspaces`). Both paths reload the workspace in place, so
+screenshots and `uiautomator` dumps are the only verification artifacts a card change needs.
+
+## General-purpose engine: no opinionated ops in app code
+
+The terminal engine is an unopinionated runtime. It knows records, collections, schemas,
+documents, lookup and the `tools://*` capabilities - it does **not** know products, carts,
+orders, tickets, appointments or any other workspace's nouns. A workspace is data; its
+semantics belong in that workspace's cards and JSON, expressed through the general surface.
+
+**Never add a domain-named operation or helper to app code.** Concretely, do not add
+`inventory.list`, `pos.checkout`, `cust.save_order`, `orders.*`, `products.*` and friends to
+`EngineRegistry`, `EngineRouter`, `Tools`, `engine/db/**`, the desktop Rust `tools`, the iOS
+`Engine`, or `packages/pos-ui`. When a card needs data it composes the general ops:
+
+| Need | General op |
+| --- | --- |
+| filtered / sorted read | `db.query` (`table`/`collection`, `filter`, `order_by`, `limit`, `select`, `json_list_var`, `output._count`) |
+| one row | `db.query_one` / `db.query` with `single` |
+| count | `db.count` |
+| create / update | `db.insert` / `db.update`; blank-id `db.upsert` inserts |
+| delete | `db.delete` |
+| parent/child rows (cart lines, order items, tags) | `db.append_child` / `db.set_child_qty` / `db.remove_child` |
+| roll-ups and commit rules | `db.commit` (declared by the collection schema) |
+| documents | `doc.pack` / `doc.chunk` / `doc.unpack` / `doc.assemble` |
+| reference lookup | `lookup.resolve` |
+| UI state (form fields, filters, toasts) | in-card `set_variable` / array actions - no engine call at all |
+| device work | `tools://*` capabilities |
+
+Rules of thumb:
+
+- A new op is only acceptable when it is **general and reusable by any workspace**: it is
+  parameterised by collection/field names and returns plain records. If its name contains a
+  business noun, it is opinionated - put it in the workspace's card instead.
+- Cross-platform parity is **not** achieved by porting an opinionated op to a second runtime.
+  `apps/dev-server/client/src/workspace/ownerPosOps.ts` exists only as a migration crutch:
+  anything it dispatches that `EngineRegistry` does not is a device-side `Unknown operation`
+  failure. Drive both runtimes from the same generic op.
+- Renderer code (`DivKitMultiplatform.kt`, `DivKitBitmapNode.kt`, `packages/pos-ui/src/
+  android-runtime`) must stay domain-neutral too: implement DivKit *semantics* (a node type, a
+  prop, an action), never a workspace special case. Prop names are the vocabulary in
+  `vocabulary.ts`, not card-specific keys.
+- Checklist before adding engine/app code: (1) can an existing general op plus in-card
+  variables express it? (2) if not, is the new op parameterised by data, not by a business
+  concept? (3) does it need no per-workspace branch?
+- Audit grep - any hit means drift to remove:
+
+  ```bash
+  grep -rnE "'(inventory|pos|cust|orders?|products?|cart|tickets?)\.[a-z_]+'" \
+    apps/android/src/main apps/ios/Sources packages/pos-ui apps/desktop/src-tauri/src
+  ```
 
 ## Tool capability architecture (`tools://*`)
 

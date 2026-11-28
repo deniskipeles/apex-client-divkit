@@ -137,7 +137,12 @@ sealed class FilterNode {
             FilterOp.IN -> (value as? JsonArray)?.any { valuesEqual(actualText, it) } ?: false
             FilterOp.NIN -> (value as? JsonArray)?.none { valuesEqual(actualText, it) } ?: true
             FilterOp.LIKE -> likeMatch(actualText, value)
-            FilterOp.CONTAINS -> actualText?.contains((value as? JsonPrimitive)?.contentOrNull ?: value.toString()) ?: false
+            // SQLite `LIKE` folds ASCII case; the in-memory path must agree or a search box
+            // behaves differently depending on whether JSON1 is available.
+            FilterOp.CONTAINS -> actualText?.contains(
+                (value as? JsonPrimitive)?.contentOrNull ?: value.toString(),
+                ignoreCase = true,
+            ) ?: false
         }
     }
 

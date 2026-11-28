@@ -62,10 +62,55 @@
             "actions": [
               {
                 "log_id": "delete_product",
-                "url": "local-db://op/inventory.delete?id=%40%7Bproduct.form_id%7D"
+                "url": "local-db://op/db.delete",
+                "payload": {
+                  "table": "inventory",
+                  "id": "@{product.id}"
+                }
+              },
+              {
+                "log_id": "reload_after_delete",
+                "url": "local-db://op/db.query",
+                "payload": {
+                  "table": "inventory",
+                  "filter": {
+                    "$or": [
+                      {
+                        "name": {
+                          "$contains": "@{owner.inv_query}"
+                        }
+                      },
+                      {
+                        "sku": {
+                          "$contains": "@{owner.inv_query}"
+                        }
+                      },
+                      {
+                        "barcode": {
+                          "$contains": "@{owner.inv_query}"
+                        }
+                      },
+                      {
+                        "code": {
+                          "$contains": "@{owner.inv_query}"
+                        }
+                      }
+                    ]
+                  },
+                  "order_by": "name",
+                  "limit": 100,
+                  "json_list_var": "owner.inv_items",
+                  "output": {
+                    "_count": "owner.inv_count"
+                  }
+                }
               },
               {
                 "log_id": "pop_after_delete",
+                "url": "nav://pop"
+              },
+              {
+                "log_id": "pop_after_delete_form",
                 "url": "nav://pop"
               }
             ],
@@ -113,7 +158,7 @@
       "actions": [
         {
           "log_id": "sheet_dismiss",
-          "url": "sheet://dismiss"
+          "url": "nav://pop"
         }
       ]
     }

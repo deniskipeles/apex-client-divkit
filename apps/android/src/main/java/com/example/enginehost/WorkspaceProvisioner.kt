@@ -57,6 +57,8 @@ data class TenantWorkspaceSpec(
     /** Collection documents shipped by the workspace package (schemas + seed rows). */
     val collections: List<JsonObject> = emptyList(),
     val isBuiltInDemo: Boolean = false,
+    /** Bundle provenance: `builtin`, `imported`, `update` — drives the source chip. */
+    val origin: String = "builtin",
     val tunnelUrl: String = "https://apexkit-pos.trycloudflare.com",
     val localLanUrl: String = "http://192.168.1.42:8080",
     val pullEndpoint: String = "/webhook/edge_notifications/pull-notifications",
@@ -143,6 +145,7 @@ object WorkspaceProvisioner {
             defaultOrders = emptyList(),
             collections = collections,
             isBuiltInDemo = origin == "builtin",
+            origin = origin,
             tunnelUrl = (urlsJson["tunnel"] as? JsonPrimitive)?.contentOrNull ?: "",
             localLanUrl = (urlsJson["lan"] as? JsonPrimitive)?.contentOrNull ?: "",
             publicClientId = (urlsJson["client_id"] as? JsonPrimitive)?.contentOrNull

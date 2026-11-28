@@ -10,7 +10,15 @@ export interface WorkspaceMeta {
   mode: 'NATIVE' | 'WEB' | 'HYBRID'
   capabilities: string[]
   tools: Record<string, boolean>
-  urls?: { tunnel?: string; lan?: string; client_id?: string }
+  urls?: {
+    tunnel?: string
+    lan?: string
+    client_id?: string
+    /** Gateway that serves this workspace's binaries, and the slug it publishes under. */
+    updates?: { baseUrl?: string; slug?: string }
+  }
+  /** Schema revision carried into the `v…` chip and the update/rollback ledger. */
+  schemaVersion?: string
   unread?: number
 }
 

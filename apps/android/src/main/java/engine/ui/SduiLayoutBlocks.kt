@@ -2,12 +2,14 @@ package engine.ui
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -304,10 +306,12 @@ object SduiLayoutBlocks {
         if (!visible) return
         Dialog(onDismissRequest = { onSecondary?.invoke() }) {
             Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surface) {
-                Column(Modifier.padding(gap(GUTTER / STEP))) {
+                // Long forms (a product, a cart line) exceed the dialog. Bound the sheet and let
+                // the body scroll so the action row stays reachable.
+                Column(Modifier.padding(gap(GUTTER / STEP)).fillMaxHeight(0.90f)) {
                     Title(title)
                     Spacer(Modifier.height(gap(4)))
-                    body()
+                    Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) { body() }
                     Spacer(Modifier.height(gap(4)))
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                         if (secondaryLabel != null) {
@@ -335,10 +339,10 @@ object SduiLayoutBlocks {
                 shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
                 color = MaterialTheme.colorScheme.surface
             ) {
-                Column(Modifier.padding(gap(GUTTER / STEP))) {
+                Column(Modifier.padding(gap(GUTTER / STEP)).fillMaxHeight(0.90f)) {
                     Title(title)
                     Spacer(Modifier.height(gap(4)))
-                    body()
+                    Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) { body() }
                     Spacer(Modifier.height(gap(4)))
                     TextButton(onClick = onDismiss, modifier = Modifier.align(Alignment.End)) { Text("Close") }
                 }
@@ -367,20 +371,30 @@ object SduiLayoutBlocks {
 
     @Composable
     fun Viewfinder(hint: String, modifier: Modifier = Modifier) {
-        Box(
+        // A camera frame, not a blank panel: the dark surround and capture window stay dark in
+        // both themes so the surface reads as a viewfinder even with no preview attached.
+        Column(
             modifier = modifier
                 .fillMaxWidth()
-                .height(200.dp)
+                .height(220.dp)
                 .clip(RoundedCornerShape(16.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant),
-            contentAlignment = Alignment.Center
+                .background(Color(0xFF0F172A))
+                .padding(gap(5)),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.72f)
+                    .height(110.dp)
+                    .border(2.dp, Color(0xFF38BDF8).copy(alpha = 0.85f), RoundedCornerShape(12.dp))
+            )
+            Spacer(Modifier.height(gap(4)))
             Text(
                 text = hint.ifBlank { "Point the camera at the code" },
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(gap(4))
+                color = Color(0xFFE2E8F0),
+                textAlign = TextAlign.Center
             )
         }
     }

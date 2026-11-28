@@ -146,45 +146,6 @@ export async function dispatchOwnerPosOperation(
       const index = Math.max(0, asNumber(variables['owner.qr_index']) + asNumber(args.delta))
       return { updates: { 'owner.qr_index': index } }
     }
-    case 'inventory.list':
-      return { data: await handler(args), updates: inventoryUpdates(db) }
-    case 'inventory.upsert': {
-      const result = (await handler(args)) as { ok: boolean; product?: Record<string, unknown> }
-      return { data: result, updates: { ...inventoryUpdates(db), 'product.dirty': false } }
-    }
-    case 'inventory.check_code': {
-      const result = (await handler(args)) as { ok: boolean; conflict?: { sku: string; name: string } }
-      return {
-        data: result,
-        updates: {
-          'product.code_dup_warning': result.ok
-            ? ''
-            : `${result.conflict?.name ?? 'Product'} (${result.conflict?.sku ?? ''}) already uses this code.`,
-          'product.code_dup_sku': result.conflict?.sku ?? '',
-        },
-      }
-    }
-    case 'inventory.open_form': {
-      const id = asText(args.id)
-      const row = id ? db.query('inventory', { where: { id }, limit: 1 })[0] : undefined
-      return {
-        updates: {
-          'product.id': id,
-          'product.name': asText(row?.name),
-          'product.price': asText(row?.price),
-          'product.photo_url': asText(row?.photo_url),
-          'product.code': asText(row?.barcode) || asText(row?.code),
-          'product.sku': asText(row?.sku),
-          'product.description': asText(row?.description),
-          'product.is_edit': Boolean(row),
-          'product.dirty': false,
-        },
-      }
-    }
-    case 'inventory.suggest_sku': {
-      const result = (await handler(args)) as { sku: string }
-      return { data: result, updates: { 'product.sku_suggestion': result.sku } }
-    }
     case 'cust.scan_append': {
       const result = (await handler(args)) as {
         accepted: boolean

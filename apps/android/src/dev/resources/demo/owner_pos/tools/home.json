@@ -143,6 +143,43 @@
                 {
                   "log_id": "nav_owner_inventory",
                   "url": "nav://push?id=owner_inventory"
+                },
+                {
+                  "log_id": "load_inventory",
+                  "url": "local-db://op/db.query",
+                  "payload": {
+                    "table": "inventory",
+                    "filter": {
+                      "$or": [
+                        {
+                          "name": {
+                            "$contains": "@{owner.inv_query}"
+                          }
+                        },
+                        {
+                          "sku": {
+                            "$contains": "@{owner.inv_query}"
+                          }
+                        },
+                        {
+                          "barcode": {
+                            "$contains": "@{owner.inv_query}"
+                          }
+                        },
+                        {
+                          "code": {
+                            "$contains": "@{owner.inv_query}"
+                          }
+                        }
+                      ]
+                    },
+                    "order_by": "name",
+                    "limit": 100,
+                    "json_list_var": "owner.inv_items",
+                    "output": {
+                      "_count": "owner.inv_count"
+                    }
+                  }
                 }
               ],
               "content_alignment_vertical": "center",

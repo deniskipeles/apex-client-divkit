@@ -168,6 +168,70 @@ object DevWorkspaceImport {
         return Outcome(true, "$loaded icon(s) loaded into $workspaceId")
     }
 
+    /**
+     * Downloads a workspace from the authoring gateway and materialises it under
+     * `filesDir/workspaces/<id>`, so card work never needs a rebuild.
+     *
+     * The payload is either the production bundle document (`apex.workspace.bundle/1`) or the
+     * dev-server `index.json` (`manifest` + `hub` + `cards` + `collections` + `order`), which is
+     * what `apps/dev-server` publishes under `client/public/workspaces/<slug>/`.
+     */
+    fun importFromUrl(workspaceId: String, url: String, filesDir: File): Outcome {
+        if (!WorkspaceRepository.isDev()) return Outcome(false, "imports are disabled in production builds")
+        val text = runCatching { fetchText(url) }
+            .getOrElse { return Outcome(false, "fetch failed: ${it.message ?: "network error"}") }
+        return importBundleText(workspaceId, text, filesDir)
+    }
+
+    fun importBundleText(workspaceId: String, text: String, filesDir: File): Outcome {
+        if (!WorkspaceRepository.isDev()) return Outcome(false, "imports are disabled in production builds")
+        val bundle = runCatching { WorkspaceBundleCodec.decodeAny(text) }
+            .getOrElse { return Outcome(false, "not a workspace bundle: ${it.message}") }
+        val manifest = if (bundle.id == workspaceId || workspaceId.isBlank()) bundle.manifest
+        else JsonObject(bundle.manifest + ("id" to JsonPrimitive(workspaceId)))
+        val target = bundle.copy(manifest = manifest)
+        return runCatching {
+            // Replace, don't merge: a card the gateway dropped must not survive from an older import.
+            WorkspaceRepository.unload(workspaceId, filesDir)
+            WorkspaceRepository.materialize(target, filesDir)
+            WorkspaceRepository.importedBundle(workspaceId, filesDir)
+                ?: throw IllegalStateException("import did not materialise")
+        }.fold(
+            onSuccess = { stored -> Outcome(true, "$workspaceId loaded from gateway (${stored.cards.size} card(s))") },
+            onFailure = { Outcome(false, "import failed: ${it.message}") }
+        )
+    }
+
+    /** `index.json` as published by `apps/dev-server`: returns the ids it advertises. */
+    fun parseCatalogue(text: String): List<GatewayWorkspace> =
+        runCatching {
+            Json.parseToJsonElement(text).jsonObject["workspaces"]?.jsonArray?.mapNotNull { el ->
+                val obj = el as? JsonObject ?: return@mapNotNull null
+                GatewayWorkspace(
+                    slug = obj["slug"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null,
+                    title = obj["title"]?.jsonPrimitive?.contentOrNull ?: "",
+                    subtitle = obj["subtitle"]?.jsonPrimitive?.contentOrNull ?: ""
+                )
+            }.orEmpty()
+        }.getOrElse { emptyList() }
+
+    data class GatewayWorkspace(val slug: String, val title: String, val subtitle: String)
+
+    private fun fetchText(url: String): String {
+        val connection = (java.net.URL(url).openConnection() as java.net.HttpURLConnection).apply {
+            connectTimeout = 8000
+            readTimeout = 15000
+            requestMethod = "GET"
+        }
+        try {
+            val code = connection.responseCode
+            if (code !in 200..299) throw java.io.IOException("HTTP $code")
+            return connection.inputStream.use { it.readBytes().toString(Charsets.UTF_8) }
+        } finally {
+            connection.disconnect()
+        }
+    }
+
     fun unload(workspaceId: String, filesDir: File): Outcome =
         if (WorkspaceRepository.unload(workspaceId, filesDir)) {
             Outcome(true, "$workspaceId unloaded; packaged version restored")

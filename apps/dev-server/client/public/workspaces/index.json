@@ -26,7 +26,7 @@
    "slug": "owner-pos",
    "manifestId": "owner_pos",
    "title": "APEX Owner",
-   "subtitle": "Owner POS, inventory and customer handoff",
+   "subtitle": "Owner POS, inventory and customer handoff · v1.5 live",
    "accent": "#6D4AFF",
    "terminal": "POS-001",
    "cardCount": 12,

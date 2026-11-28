@@ -35,6 +35,76 @@ export const setVarAction = (logId: string, name: string, value: any): DivAction
   url: `div-action://set_variable?name=${encodeURIComponent(name)}&value=${encodeURIComponent(String(value))}`,
 })
 
+/**
+ * General local-db query. Rows land in `listVar` (a `json_list` reads them), the row count in
+ * `countVar`. Nothing here knows what a "product" is - the card supplies table, filter and the
+ * variables it wants back.
+ */
+export const queryAction = (
+  logId: string,
+  table: string,
+  opts: {
+    filter?: unknown
+    orderBy?: string
+    limit?: number
+    listVar?: string
+    countVar?: string
+  } = {},
+): DivAction => {
+  const payload: Record<string, unknown> = { table }
+  if (opts.filter !== undefined) payload.filter = opts.filter
+  if (opts.orderBy) payload.order_by = opts.orderBy
+  if (opts.limit !== undefined) payload.limit = opts.limit
+  if (opts.listVar) payload.json_list_var = opts.listVar
+  if (opts.countVar) payload.output = { _count: opts.countVar }
+  return { log_id: logId, url: 'local-db://op/db.query', payload } as DivAction
+}
+
+/** General local-db delete of one record id. */
+export const deleteAction = (logId: string, table: string, id: string): DivAction =>
+  ({ log_id: logId, url: 'local-db://op/db.delete', payload: { table, id } }) as DivAction
+
+/** General local-db upsert. A blank id inserts; schema validation answers in `output`. */
+export const upsertAction = (
+  logId: string,
+  table: string,
+  data: Record<string, unknown>,
+  opts: { id?: string; output?: Record<string, string> } = {},
+): DivAction =>
+  ({
+    log_id: logId,
+    url: 'local-db://op/db.upsert',
+    payload: {
+      table,
+      data,
+      ...(opts.id ? { id: opts.id } : {}),
+      ...(opts.output ? { output: opts.output } : {}),
+    },
+  }) as DivAction
+
+/**
+ * Native `set_variable` actions - they run inside the card, so no engine op is involved.
+ * String values may hold `@{...}` expressions, including row fields (`@{item.name}`).
+ */
+export const setVars = (
+  logId: string,
+  values: Record<string, string | number | boolean>,
+): DivAction[] =>
+  Object.entries(values).map(
+    ([name, value]) =>
+      ({
+        log_id: `${logId}_${name.replace(/[^a-zA-Z0-9]+/g, '_')}`,
+        type: 'set_variable',
+        variable_name: name,
+        value:
+          typeof value === 'number'
+            ? { type: 'integer', value: String(value) }
+            : typeof value === 'boolean'
+              ? { type: 'boolean', value }
+              : { type: 'string', value },
+      }) as unknown as DivAction,
+  )
+
 export const displayText = (text: string, color: string = TOKENS.color.ink) =>
   new DivText({ text, font_size: 32, line_height: 40, font_weight: 'bold', text_color: color })
 
@@ -56,7 +126,7 @@ export const labelText = (text: string, color: string = TOKENS.color.muted) =>
 
 export function bottomTabs(
   selectedVar: string,
-  tabs: Array<{ id: string; label: string; icon: string; card: string }>,
+  tabs: Array<{ id: string; label: string; icon: string; card: string; actions?: DivAction[] }>,
 ): Div {
   return {
     type: 'bottom_tabs',
@@ -66,7 +136,10 @@ export function bottomTabs(
         value: tab.id,
         label: tab.label,
         icon: tab.icon,
-        actions: [{ log_id: `tab_${tab.id}`, url: `nav://push?id=${tab.card}` }],
+        actions: [
+          { log_id: `tab_${tab.id}`, url: `nav://push?id=${tab.card}` },
+          ...(tab.actions ?? []),
+        ],
       })),
     },
   }
@@ -171,7 +244,13 @@ export function fab(props: { icon: string; accessibilityLabel: string; onTap: Di
     custom_props: { label: props.accessibilityLabel, icon: props.icon, actions: props.onTap },
   }
 }
-export function bottomSheet(id: string, title: string, children: Div[], heightPct = 0.65): Div {
+export function bottomSheet(
+  id: string,
+  title: string,
+  children: Div[],
+  heightPct = 0.65,
+  dismissUrl = 'sheet://dismiss',
+): Div {
   return {
     id,
     type: 'bottom_sheet',
@@ -180,7 +259,7 @@ export function bottomSheet(id: string, title: string, children: Div[], heightPc
       title,
       body: children,
       height_fraction: heightPct,
-      dismiss: { actions: [{ log_id: 'sheet_dismiss', url: 'sheet://dismiss' }] },
+      dismiss: { actions: [{ log_id: 'sheet_dismiss', url: dismissUrl }] },
     },
   }
 }
@@ -314,7 +393,7 @@ export function textField(props: {
     width: matchParent(),
     margins: { bottom: TOKENS.space.group },
     items: [
-      labelText(props.label, TOKENS.color.ink),
+      ...(props.label ? [labelText(props.label, TOKENS.color.ink)] : []),
       new DivContainer({
         orientation: 'horizontal',
         width: matchParent(),
@@ -542,10 +621,15 @@ export function toastBlock(props: {
     },
   }
 }
-export const jsonList = (itemsVar: string, itemTemplate: Div, gap = 12): Div => ({
+export const jsonList = (
+  itemsVar: string,
+  itemTemplate: Div,
+  gap = 12,
+  emptyText = 'No records',
+): Div => ({
   type: 'json_list',
   data_var: itemsVar,
-  empty_text: 'No records',
+  empty_text: emptyText,
   item_spacing: gap,
   row_card: rewriteItem(itemTemplate),
 })
@@ -581,7 +665,9 @@ function rewriteItem(value: unknown): unknown {
   }
   if (Array.isArray(value)) return value.map(rewriteItem)
   if (value && typeof value === 'object') {
-    return Object.fromEntries(Object.entries(value as Record<string, unknown>).map(([k, v]) => [k, rewriteItem(v)]))
+    // Builder objects keep their payload behind getters, so a JSON round trip is what exposes it.
+    const plain = JSON.parse(JSON.stringify(value)) as Record<string, unknown>
+    return Object.fromEntries(Object.entries(plain).map(([k, v]) => [k, rewriteItem(v)]))
   }
   return value
 }

@@ -2,7 +2,7 @@
   "format": "apex.workspace/1",
   "id": "owner_pos",
   "title": "APEX Owner",
-  "subtitle": "Owner POS, inventory and customer handoff",
+  "subtitle": "Owner POS, inventory and customer handoff · v1.5 live",
   "terminal": "POS-001",
   "accent": "#6D4AFF",
   "mode": "HYBRID",
@@ -25,8 +25,12 @@
   "urls": {
     "tunnel": "https://apex-owner.local/",
     "lan": "http://192.168.1.21:8089",
-    "client_id": "pk_live_bdbc75560c43b6605370bf4a"
+    "client_id": "pk_live_bdbc75560c43b6605370bf4a",
+    "updates": {
+      "slug": "owner-pos"
+    }
   },
+  "schemaVersion": "1.5",
   "unread": 0,
   "hub": "card.json",
   "catalog": "tool_catalog.json",
