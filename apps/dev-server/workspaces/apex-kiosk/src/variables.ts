@@ -59,6 +59,8 @@ export const productFormVariables = () => [
   new StringVariable({ name: 'product.code_dup_warning', value: '' }),
   new StringVariable({ name: 'product.code_dup_sku', value: '' }),
   new StringVariable({ name: 'product.sku', value: '' }),
+  new StringVariable({ name: 'product.stock', value: '0' }),
+  new StringVariable({ name: 'product.errors_json', value: '' }),
   new StringVariable({ name: 'product.sku_suggestion', value: '' }),
   new StringVariable({ name: 'product.description', value: '' }),
   new DictVariable({ name: 'product.errors', value: {} }),

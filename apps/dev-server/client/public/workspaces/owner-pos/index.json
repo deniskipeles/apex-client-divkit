@@ -3,7 +3,7 @@
     "slug": "owner-pos",
     "manifestId": "owner_pos",
     "title": "APEX Owner",
-    "subtitle": "Owner POS, inventory and customer handoff",
+    "subtitle": "Owner POS, inventory and customer handoff · v1.5 live",
     "accent": "#6D4AFF",
     "terminal": "POS-001",
     "android": true
@@ -12,7 +12,7 @@
     "format": "apex.workspace/1",
     "id": "owner_pos",
     "title": "APEX Owner",
-    "subtitle": "Owner POS, inventory and customer handoff",
+    "subtitle": "Owner POS, inventory and customer handoff · v1.5 live",
     "terminal": "POS-001",
     "accent": "#6D4AFF",
     "mode": "HYBRID",
@@ -35,8 +35,12 @@
     "urls": {
       "tunnel": "https://apex-owner.local/",
       "lan": "http://192.168.1.21:8089",
-      "client_id": "pk_live_bdbc75560c43b6605370bf4a"
+      "client_id": "pk_live_bdbc75560c43b6605370bf4a",
+      "updates": {
+        "slug": "owner-pos"
+      }
     },
+    "schemaVersion": "1.5",
     "unread": 0,
     "hub": "card.json",
     "catalog": "tool_catalog.json",
@@ -316,6 +320,16 @@
         {
           "type": "string",
           "name": "product.sku",
+          "value": ""
+        },
+        {
+          "type": "string",
+          "name": "product.stock",
+          "value": "0"
+        },
+        {
+          "type": "string",
+          "name": "product.errors_json",
           "value": ""
         },
         {
@@ -614,6 +628,43 @@
                                   {
                                     "log_id": "nav_owner_inventory",
                                     "url": "nav://push?id=owner_inventory"
+                                  },
+                                  {
+                                    "log_id": "load_inventory",
+                                    "url": "local-db://op/db.query",
+                                    "payload": {
+                                      "table": "inventory",
+                                      "filter": {
+                                        "$or": [
+                                          {
+                                            "name": {
+                                              "$contains": "@{owner.inv_query}"
+                                            }
+                                          },
+                                          {
+                                            "sku": {
+                                              "$contains": "@{owner.inv_query}"
+                                            }
+                                          },
+                                          {
+                                            "barcode": {
+                                              "$contains": "@{owner.inv_query}"
+                                            }
+                                          },
+                                          {
+                                            "code": {
+                                              "$contains": "@{owner.inv_query}"
+                                            }
+                                          }
+                                        ]
+                                      },
+                                      "order_by": "name",
+                                      "limit": 100,
+                                      "json_list_var": "owner.inv_items",
+                                      "output": {
+                                        "_count": "owner.inv_count"
+                                      }
+                                    }
                                   }
                                 ],
                                 "content_alignment_vertical": "center",
@@ -1633,7 +1684,7 @@
                                           "type": "text",
                                           "font_size": 16,
                                           "font_weight": "bold",
-                                          "text": {},
+                                          "text": "@{item.qty}",
                                           "text_color": "#111319"
                                         },
                                         {
@@ -1851,6 +1902,43 @@
                                 {
                                   "log_id": "tab_inventory",
                                   "url": "nav://push?id=owner_inventory"
+                                },
+                                {
+                                  "log_id": "load_inventory",
+                                  "url": "local-db://op/db.query",
+                                  "payload": {
+                                    "table": "inventory",
+                                    "filter": {
+                                      "$or": [
+                                        {
+                                          "name": {
+                                            "$contains": "@{owner.inv_query}"
+                                          }
+                                        },
+                                        {
+                                          "sku": {
+                                            "$contains": "@{owner.inv_query}"
+                                          }
+                                        },
+                                        {
+                                          "barcode": {
+                                            "$contains": "@{owner.inv_query}"
+                                          }
+                                        },
+                                        {
+                                          "code": {
+                                            "$contains": "@{owner.inv_query}"
+                                          }
+                                        }
+                                      ]
+                                    },
+                                    "order_by": "name",
+                                    "limit": 100,
+                                    "json_list_var": "owner.inv_items",
+                                    "output": {
+                                      "_count": "owner.inv_count"
+                                    }
+                                  }
                                 }
                               ]
                             }
@@ -1889,8 +1977,13 @@
                           "dwell_ms": 4000,
                           "actions": [
                             {
-                              "log_id": "inv_toast_act",
-                              "url": "local-db://op/inventory.toast_action"
+                              "log_id": "inv_toast_dismiss_owner_toast_visible",
+                              "type": "set_variable",
+                              "variable_name": "owner.toast_visible",
+                              "value": {
+                                "type": "boolean",
+                                "value": false
+                              }
                             }
                           ]
                         }
@@ -1923,14 +2016,6 @@
                                     "type": "container",
                                     "items": [
                                       {
-                                        "type": "text",
-                                        "font_size": 13,
-                                        "font_weight": "medium",
-                                        "line_height": 18,
-                                        "text": "",
-                                        "text_color": "#111319"
-                                      },
-                                      {
                                         "type": "container",
                                         "alignment_vertical": "center",
                                         "background": [
@@ -1957,7 +2042,40 @@
                                               "on_blur": [
                                                 {
                                                   "log_id": "search_inv",
-                                                  "url": "local-db://op/inventory.list?filter=%40%7Bowner.inv_query%7D"
+                                                  "url": "local-db://op/db.query",
+                                                  "payload": {
+                                                    "table": "inventory",
+                                                    "filter": {
+                                                      "$or": [
+                                                        {
+                                                          "name": {
+                                                            "$contains": "@{owner.inv_query}"
+                                                          }
+                                                        },
+                                                        {
+                                                          "sku": {
+                                                            "$contains": "@{owner.inv_query}"
+                                                          }
+                                                        },
+                                                        {
+                                                          "barcode": {
+                                                            "$contains": "@{owner.inv_query}"
+                                                          }
+                                                        },
+                                                        {
+                                                          "code": {
+                                                            "$contains": "@{owner.inv_query}"
+                                                          }
+                                                        }
+                                                      ]
+                                                    },
+                                                    "order_by": "name",
+                                                    "limit": 100,
+                                                    "json_list_var": "owner.inv_items",
+                                                    "output": {
+                                                      "_count": "owner.inv_count"
+                                                    }
+                                                  }
                                                 }
                                               ]
                                             },
@@ -1972,6 +2090,67 @@
                                             "width": {
                                               "type": "match_parent",
                                               "weight": 1
+                                            }
+                                          },
+                                          {
+                                            "type": "container",
+                                            "actions": [
+                                              {
+                                                "log_id": "search_inv",
+                                                "url": "local-db://op/db.query",
+                                                "payload": {
+                                                  "table": "inventory",
+                                                  "filter": {
+                                                    "$or": [
+                                                      {
+                                                        "name": {
+                                                          "$contains": "@{owner.inv_query}"
+                                                        }
+                                                      },
+                                                      {
+                                                        "sku": {
+                                                          "$contains": "@{owner.inv_query}"
+                                                        }
+                                                      },
+                                                      {
+                                                        "barcode": {
+                                                          "$contains": "@{owner.inv_query}"
+                                                        }
+                                                      },
+                                                      {
+                                                        "code": {
+                                                          "$contains": "@{owner.inv_query}"
+                                                        }
+                                                      }
+                                                    ]
+                                                  },
+                                                  "order_by": "name",
+                                                  "limit": 100,
+                                                  "json_list_var": "owner.inv_items",
+                                                  "output": {
+                                                    "_count": "owner.inv_count"
+                                                  }
+                                                }
+                                              }
+                                            ],
+                                            "content_alignment_horizontal": "center",
+                                            "content_alignment_vertical": "center",
+                                            "height": {
+                                              "type": "fixed",
+                                              "value": 48
+                                            },
+                                            "items": [
+                                              {
+                                                "type": "text",
+                                                "font_size": 14,
+                                                "font_weight": "medium",
+                                                "text": "Search",
+                                                "text_color": "#5A3BE0"
+                                              }
+                                            ],
+                                            "paddings": {
+                                              "left": 10,
+                                              "right": 10
                                             }
                                           }
                                         ],
@@ -2034,8 +2213,112 @@
                                     "type": "container",
                                     "actions": [
                                       {
-                                        "log_id": "empty_add_prod",
-                                        "url": "local-db://op/inventory.open_form?mode=new"
+                                        "log_id": "empty_add_prod_product_id",
+                                        "type": "set_variable",
+                                        "variable_name": "product.id",
+                                        "value": {
+                                          "type": "string",
+                                          "value": ""
+                                        }
+                                      },
+                                      {
+                                        "log_id": "empty_add_prod_product_name",
+                                        "type": "set_variable",
+                                        "variable_name": "product.name",
+                                        "value": {
+                                          "type": "string",
+                                          "value": ""
+                                        }
+                                      },
+                                      {
+                                        "log_id": "empty_add_prod_product_sku",
+                                        "type": "set_variable",
+                                        "variable_name": "product.sku",
+                                        "value": {
+                                          "type": "string",
+                                          "value": ""
+                                        }
+                                      },
+                                      {
+                                        "log_id": "empty_add_prod_product_price",
+                                        "type": "set_variable",
+                                        "variable_name": "product.price",
+                                        "value": {
+                                          "type": "string",
+                                          "value": ""
+                                        }
+                                      },
+                                      {
+                                        "log_id": "empty_add_prod_product_stock",
+                                        "type": "set_variable",
+                                        "variable_name": "product.stock",
+                                        "value": {
+                                          "type": "integer",
+                                          "value": "0"
+                                        }
+                                      },
+                                      {
+                                        "log_id": "empty_add_prod_product_code",
+                                        "type": "set_variable",
+                                        "variable_name": "product.code",
+                                        "value": {
+                                          "type": "string",
+                                          "value": ""
+                                        }
+                                      },
+                                      {
+                                        "log_id": "empty_add_prod_product_photo_url",
+                                        "type": "set_variable",
+                                        "variable_name": "product.photo_url",
+                                        "value": {
+                                          "type": "string",
+                                          "value": ""
+                                        }
+                                      },
+                                      {
+                                        "log_id": "empty_add_prod_product_description",
+                                        "type": "set_variable",
+                                        "variable_name": "product.description",
+                                        "value": {
+                                          "type": "string",
+                                          "value": ""
+                                        }
+                                      },
+                                      {
+                                        "log_id": "empty_add_prod_product_is_edit",
+                                        "type": "set_variable",
+                                        "variable_name": "product.is_edit",
+                                        "value": {
+                                          "type": "boolean",
+                                          "value": false
+                                        }
+                                      },
+                                      {
+                                        "log_id": "empty_add_prod_reset_product_errors_json",
+                                        "type": "set_variable",
+                                        "variable_name": "product.errors_json",
+                                        "value": {
+                                          "type": "string",
+                                          "value": ""
+                                        }
+                                      },
+                                      {
+                                        "log_id": "empty_add_prod_reset_product_dirty",
+                                        "type": "set_variable",
+                                        "variable_name": "product.dirty",
+                                        "value": {
+                                          "type": "boolean",
+                                          "value": false
+                                        }
+                                      },
+                                      {
+                                        "log_id": "empty_add_prod_reset_product_valid",
+                                        "type": "set_variable",
+                                        "variable_name": "product.valid",
+                                        "value": {
+                                          "type": "boolean",
+                                          "value": true
+                                        }
                                       },
                                       {
                                         "log_id": "open_product_modal",
@@ -2087,14 +2370,118 @@
                               {
                                 "type": "json_list",
                                 "data_var": "owner.inv_items",
-                                "empty_text": "No records",
+                                "empty_text": "",
                                 "item_spacing": 12,
                                 "row_card": {
                                   "type": "container",
                                   "actions": [
                                     {
-                                      "log_id": "edit_prod",
-                                      "url": "local-db://op/inventory.open_form?mode=edit&id=%24item.id"
+                                      "log_id": "edit_prod_product_id",
+                                      "type": "set_variable",
+                                      "variable_name": "product.id",
+                                      "value": {
+                                        "type": "string",
+                                        "value": "@{item.id}"
+                                      }
+                                    },
+                                    {
+                                      "log_id": "edit_prod_product_name",
+                                      "type": "set_variable",
+                                      "variable_name": "product.name",
+                                      "value": {
+                                        "type": "string",
+                                        "value": "@{item.name}"
+                                      }
+                                    },
+                                    {
+                                      "log_id": "edit_prod_product_sku",
+                                      "type": "set_variable",
+                                      "variable_name": "product.sku",
+                                      "value": {
+                                        "type": "string",
+                                        "value": "@{item.sku}"
+                                      }
+                                    },
+                                    {
+                                      "log_id": "edit_prod_product_price",
+                                      "type": "set_variable",
+                                      "variable_name": "product.price",
+                                      "value": {
+                                        "type": "string",
+                                        "value": "@{item.price}"
+                                      }
+                                    },
+                                    {
+                                      "log_id": "edit_prod_product_stock",
+                                      "type": "set_variable",
+                                      "variable_name": "product.stock",
+                                      "value": {
+                                        "type": "string",
+                                        "value": "@{item.stock}"
+                                      }
+                                    },
+                                    {
+                                      "log_id": "edit_prod_product_code",
+                                      "type": "set_variable",
+                                      "variable_name": "product.code",
+                                      "value": {
+                                        "type": "string",
+                                        "value": "@{item.barcode != '' ? item.barcode : item.code}"
+                                      }
+                                    },
+                                    {
+                                      "log_id": "edit_prod_product_photo_url",
+                                      "type": "set_variable",
+                                      "variable_name": "product.photo_url",
+                                      "value": {
+                                        "type": "string",
+                                        "value": "@{item.photo_url}"
+                                      }
+                                    },
+                                    {
+                                      "log_id": "edit_prod_product_description",
+                                      "type": "set_variable",
+                                      "variable_name": "product.description",
+                                      "value": {
+                                        "type": "string",
+                                        "value": "@{item.description}"
+                                      }
+                                    },
+                                    {
+                                      "log_id": "edit_prod_product_is_edit",
+                                      "type": "set_variable",
+                                      "variable_name": "product.is_edit",
+                                      "value": {
+                                        "type": "boolean",
+                                        "value": true
+                                      }
+                                    },
+                                    {
+                                      "log_id": "edit_prod_reset_product_errors_json",
+                                      "type": "set_variable",
+                                      "variable_name": "product.errors_json",
+                                      "value": {
+                                        "type": "string",
+                                        "value": ""
+                                      }
+                                    },
+                                    {
+                                      "log_id": "edit_prod_reset_product_dirty",
+                                      "type": "set_variable",
+                                      "variable_name": "product.dirty",
+                                      "value": {
+                                        "type": "boolean",
+                                        "value": false
+                                      }
+                                    },
+                                    {
+                                      "log_id": "edit_prod_reset_product_valid",
+                                      "type": "set_variable",
+                                      "variable_name": "product.valid",
+                                      "value": {
+                                        "type": "boolean",
+                                        "value": true
+                                      }
                                     },
                                     {
                                       "log_id": "open_product_modal",
@@ -2110,6 +2497,10 @@
                                   ],
                                   "border": {
                                     "corner_radius": 16
+                                  },
+                                  "height": {
+                                    "type": "fixed",
+                                    "value": 76
                                   },
                                   "items": [
                                     {
@@ -2159,7 +2550,7 @@
                                               "font_size": 13,
                                               "font_weight": "medium",
                                               "line_height": 18,
-                                              "text": "@{item.code_display}",
+                                              "text": "@{item.barcode != '' ? item.barcode : item.code}",
                                               "text_color": "#5B6070"
                                             },
                                             {
@@ -2183,7 +2574,7 @@
                                               "paddings": {
                                                 "left": 8
                                               },
-                                              "visibility": {}
+                                              "visibility": "@{item.barcode == '' && item.code == '' ? 'visible' : 'gone'}"
                                             }
                                           ],
                                           "orientation": "horizontal"
@@ -2205,7 +2596,7 @@
                                           "font_size": 22,
                                           "font_weight": "bold",
                                           "line_height": 28,
-                                          "text": "@{item.price_display}",
+                                          "text": "@{'$' + item.price + (item.price * 1 == round(item.price * 1) ? '.00' : item.price * 10 == round(item.price * 10) ? '0' : '')}",
                                           "text_color": "#111319"
                                         },
                                         {
@@ -2224,7 +2615,7 @@
                                               "type": "text",
                                               "font_size": 11,
                                               "font_weight": "bold",
-                                              "text": "@{item.stock == 0 ? 'Out' : 'Low'}",
+                                              "text": "@{item.stock == 0 ? 'Out of stock' : item.stock + ' in stock'}",
                                               "text_color": "#92400E"
                                             }
                                           ],
@@ -2243,8 +2634,8 @@
                                   "paddings": {
                                     "left": 16,
                                     "right": 16,
-                                    "top": 14,
-                                    "bottom": 14
+                                    "top": 10,
+                                    "bottom": 10
                                   },
                                   "width": {
                                     "type": "match_parent"
@@ -2270,8 +2661,112 @@
                               "icon": "add",
                               "actions": [
                                 {
-                                  "log_id": "fab_add_prod",
-                                  "url": "local-db://op/inventory.open_form?mode=new"
+                                  "log_id": "fab_add_prod_product_id",
+                                  "type": "set_variable",
+                                  "variable_name": "product.id",
+                                  "value": {
+                                    "type": "string",
+                                    "value": ""
+                                  }
+                                },
+                                {
+                                  "log_id": "fab_add_prod_product_name",
+                                  "type": "set_variable",
+                                  "variable_name": "product.name",
+                                  "value": {
+                                    "type": "string",
+                                    "value": ""
+                                  }
+                                },
+                                {
+                                  "log_id": "fab_add_prod_product_sku",
+                                  "type": "set_variable",
+                                  "variable_name": "product.sku",
+                                  "value": {
+                                    "type": "string",
+                                    "value": ""
+                                  }
+                                },
+                                {
+                                  "log_id": "fab_add_prod_product_price",
+                                  "type": "set_variable",
+                                  "variable_name": "product.price",
+                                  "value": {
+                                    "type": "string",
+                                    "value": ""
+                                  }
+                                },
+                                {
+                                  "log_id": "fab_add_prod_product_stock",
+                                  "type": "set_variable",
+                                  "variable_name": "product.stock",
+                                  "value": {
+                                    "type": "integer",
+                                    "value": "0"
+                                  }
+                                },
+                                {
+                                  "log_id": "fab_add_prod_product_code",
+                                  "type": "set_variable",
+                                  "variable_name": "product.code",
+                                  "value": {
+                                    "type": "string",
+                                    "value": ""
+                                  }
+                                },
+                                {
+                                  "log_id": "fab_add_prod_product_photo_url",
+                                  "type": "set_variable",
+                                  "variable_name": "product.photo_url",
+                                  "value": {
+                                    "type": "string",
+                                    "value": ""
+                                  }
+                                },
+                                {
+                                  "log_id": "fab_add_prod_product_description",
+                                  "type": "set_variable",
+                                  "variable_name": "product.description",
+                                  "value": {
+                                    "type": "string",
+                                    "value": ""
+                                  }
+                                },
+                                {
+                                  "log_id": "fab_add_prod_product_is_edit",
+                                  "type": "set_variable",
+                                  "variable_name": "product.is_edit",
+                                  "value": {
+                                    "type": "boolean",
+                                    "value": false
+                                  }
+                                },
+                                {
+                                  "log_id": "fab_add_prod_reset_product_errors_json",
+                                  "type": "set_variable",
+                                  "variable_name": "product.errors_json",
+                                  "value": {
+                                    "type": "string",
+                                    "value": ""
+                                  }
+                                },
+                                {
+                                  "log_id": "fab_add_prod_reset_product_dirty",
+                                  "type": "set_variable",
+                                  "variable_name": "product.dirty",
+                                  "value": {
+                                    "type": "boolean",
+                                    "value": false
+                                  }
+                                },
+                                {
+                                  "log_id": "fab_add_prod_reset_product_valid",
+                                  "type": "set_variable",
+                                  "variable_name": "product.valid",
+                                  "value": {
+                                    "type": "boolean",
+                                    "value": true
+                                  }
                                 },
                                 {
                                   "log_id": "open_product_modal",
@@ -2310,6 +2805,43 @@
                                 {
                                   "log_id": "tab_inventory",
                                   "url": "nav://push?id=owner_inventory"
+                                },
+                                {
+                                  "log_id": "load_inventory",
+                                  "url": "local-db://op/db.query",
+                                  "payload": {
+                                    "table": "inventory",
+                                    "filter": {
+                                      "$or": [
+                                        {
+                                          "name": {
+                                            "$contains": "@{owner.inv_query}"
+                                          }
+                                        },
+                                        {
+                                          "sku": {
+                                            "$contains": "@{owner.inv_query}"
+                                          }
+                                        },
+                                        {
+                                          "barcode": {
+                                            "$contains": "@{owner.inv_query}"
+                                          }
+                                        },
+                                        {
+                                          "code": {
+                                            "$contains": "@{owner.inv_query}"
+                                          }
+                                        }
+                                      ]
+                                    },
+                                    "order_by": "name",
+                                    "limit": 100,
+                                    "json_list_var": "owner.inv_items",
+                                    "output": {
+                                      "_count": "owner.inv_count"
+                                    }
+                                  }
                                 }
                               ]
                             }
@@ -3034,14 +3566,6 @@
                                     },
                                     {
                                       "type": "input",
-                                      "focus": {
-                                        "on_blur": [
-                                          {
-                                            "log_id": "fmt_price",
-                                            "url": "local-db://op/inventory.format_price"
-                                          }
-                                        ]
-                                      },
                                       "font_size": 16,
                                       "hint_color": "#5B6070",
                                       "hint_text": "0.00",
@@ -3123,14 +3647,6 @@
                                   "items": [
                                     {
                                       "type": "input",
-                                      "focus": {
-                                        "on_blur": [
-                                          {
-                                            "log_id": "check_dup_code",
-                                            "url": "local-db://op/inventory.check_code?code=%40%7Bproduct.code%7D&exclude_sku=%40%7Bproduct.sku%7D"
-                                          }
-                                        ]
-                                      },
                                       "font_size": 16,
                                       "hint_color": "#5B6070",
                                       "hint_text": "Barcode or QR value",
@@ -3260,19 +3776,19 @@
                               "background": [
                                 {
                                   "type": "solid",
-                                  "color": "#FEF3C7"
+                                  "color": "#FEE2E2"
                                 }
                               ],
                               "border": {
                                 "corner_radius": 12
                               },
-                              "id": "dup_code_banner",
+                              "id": "save_error_banner",
                               "items": [
                                 {
                                   "type": "text",
                                   "font_size": 13,
                                   "line_height": 18,
-                                  "text": "@{product.code_dup_warning}",
+                                  "text": "@{product.errors_json}",
                                   "text_color": "#111319"
                                 },
                                 {
@@ -3282,38 +3798,8 @@
                                       "type": "container",
                                       "actions": [
                                         {
-                                          "log_id": "view_dup_code",
-                                          "url": "local-db://op/inventory.open_form?mode=edit&sku=%40%7Bproduct.code_dup_sku%7D"
-                                        },
-                                        {
-                                          "log_id": "open_dup_product",
-                                          "url": "nav://push?id=product_modal"
-                                        }
-                                      ],
-                                      "content_alignment_vertical": "center",
-                                      "height": {
-                                        "type": "fixed",
-                                        "value": 48
-                                      },
-                                      "items": [
-                                        {
-                                          "type": "text",
-                                          "font_size": 13,
-                                          "font_weight": "bold",
-                                          "text": "View",
-                                          "text_color": "#92400E"
-                                        }
-                                      ],
-                                      "paddings": {
-                                        "right": 16
-                                      }
-                                    },
-                                    {
-                                      "type": "container",
-                                      "actions": [
-                                        {
-                                          "log_id": "dismiss_dup_code",
-                                          "url": "div-action://set_variable?name=product.code_dup_warning&value="
+                                          "log_id": "dismiss_save_error",
+                                          "url": "div-action://set_variable?name=product.errors_json&value="
                                         }
                                       ],
                                       "content_alignment_vertical": "center",
@@ -3326,7 +3812,7 @@
                                           "type": "text",
                                           "font_size": 13,
                                           "font_weight": "medium",
-                                          "text": "Use anyway",
+                                          "text": "Dismiss",
                                           "text_color": "#5B6070"
                                         }
                                       ]
@@ -3345,7 +3831,7 @@
                                 "top": 12,
                                 "bottom": 12
                               },
-                              "visibility": "@{product.code_dup_warning != '' ? 'visible' : 'gone'}",
+                              "visibility": "@{product.errors_json != '' ? 'visible' : 'gone'}",
                               "width": {
                                 "type": "match_parent"
                               }
@@ -3384,14 +3870,6 @@
                                   "items": [
                                     {
                                       "type": "input",
-                                      "focus": {
-                                        "on_blur": [
-                                          {
-                                            "log_id": "upper_sku",
-                                            "url": "local-db://op/inventory.normalize_sku"
-                                          }
-                                        ]
-                                      },
                                       "font_size": 16,
                                       "hint_color": "#5B6070",
                                       "hint_text": "LAT-01",
@@ -3403,34 +3881,6 @@
                                       "width": {
                                         "type": "match_parent",
                                         "weight": 1
-                                      }
-                                    },
-                                    {
-                                      "type": "container",
-                                      "actions": [
-                                        {
-                                          "log_id": "suggest_sku",
-                                          "url": "local-db://op/inventory.suggest_sku?name=%40%7Bproduct.name%7D"
-                                        }
-                                      ],
-                                      "content_alignment_horizontal": "center",
-                                      "content_alignment_vertical": "center",
-                                      "height": {
-                                        "type": "fixed",
-                                        "value": 48
-                                      },
-                                      "items": [
-                                        {
-                                          "type": "text",
-                                          "font_size": 14,
-                                          "font_weight": "medium",
-                                          "text": "✨",
-                                          "text_color": "#5A3BE0"
-                                        }
-                                      ],
-                                      "paddings": {
-                                        "left": 10,
-                                        "right": 10
                                       }
                                     }
                                   ],
@@ -3551,7 +4001,7 @@
                               "actions": [
                                 {
                                   "log_id": "confirm_delete_prod",
-                                  "url": "sheet://present?card_id=confirm_delete_product"
+                                  "url": "nav://push?id=confirm_delete_product"
                                 }
                               ],
                               "content_alignment_horizontal": "center",
@@ -3594,7 +4044,65 @@
                         "actions": [
                           {
                             "log_id": "save_product_form",
-                            "url": "local-db://op/inventory.upsert"
+                            "url": "local-db://op/db.upsert",
+                            "payload": {
+                              "table": "inventory",
+                              "data": {
+                                "name": "@{product.name}",
+                                "sku": "@{product.sku}",
+                                "price": "@{product.price}",
+                                "code": "@{product.code}",
+                                "barcode": "@{product.code}",
+                                "description": "@{product.description}",
+                                "photo_url": "@{product.photo_url}",
+                                "stock": "@{product.is_edit ? product.stock : 0}"
+                              },
+                              "id": "@{product.id}",
+                              "output": {
+                                "errors_json": "product.errors_json"
+                              }
+                            }
+                          },
+                          {
+                            "log_id": "reload_after_save",
+                            "url": "local-db://op/db.query",
+                            "payload": {
+                              "table": "inventory",
+                              "filter": {
+                                "$or": [
+                                  {
+                                    "name": {
+                                      "$contains": "@{owner.inv_query}"
+                                    }
+                                  },
+                                  {
+                                    "sku": {
+                                      "$contains": "@{owner.inv_query}"
+                                    }
+                                  },
+                                  {
+                                    "barcode": {
+                                      "$contains": "@{owner.inv_query}"
+                                    }
+                                  },
+                                  {
+                                    "code": {
+                                      "$contains": "@{owner.inv_query}"
+                                    }
+                                  }
+                                ]
+                              },
+                              "order_by": "name",
+                              "limit": 100,
+                              "json_list_var": "owner.inv_items",
+                              "output": {
+                                "_count": "owner.inv_count"
+                              }
+                            }
+                          },
+                          {
+                            "log_id": "close_product_form",
+                            "url": "nav://pop"
                           }
                         ]
                       },
@@ -3603,7 +4111,7 @@
                         "actions": [
                           {
                             "log_id": "cancel_product_form",
-                            "url": "local-db://op/inventory.cancel_form"
+                            "url": "nav://pop"
                           }
                         ]
                       },
@@ -3683,6 +4191,52 @@
                                         "type": "match_parent",
                                         "weight": 1
                                       }
+                                    },
+                                    {
+                                      "type": "container",
+                                      "actions": [
+                                        {
+                                          "log_id": "use_scanned_code_product_code",
+                                          "type": "set_variable",
+                                          "variable_name": "product.code",
+                                          "value": {
+                                            "type": "string",
+                                            "value": "@{product.scan_pending_code}"
+                                          }
+                                        },
+                                        {
+                                          "log_id": "use_scanned_code_product_code_scanned",
+                                          "type": "set_variable",
+                                          "variable_name": "product.code_scanned",
+                                          "value": {
+                                            "type": "boolean",
+                                            "value": true
+                                          }
+                                        },
+                                        {
+                                          "log_id": "pop_scan_sheet",
+                                          "url": "nav://pop"
+                                        }
+                                      ],
+                                      "content_alignment_horizontal": "center",
+                                      "content_alignment_vertical": "center",
+                                      "height": {
+                                        "type": "fixed",
+                                        "value": 48
+                                      },
+                                      "items": [
+                                        {
+                                          "type": "text",
+                                          "font_size": 14,
+                                          "font_weight": "medium",
+                                          "text": "Use",
+                                          "text_color": "#5A3BE0"
+                                        }
+                                      ],
+                                      "paddings": {
+                                        "left": 10,
+                                        "right": 10
+                                      }
                                     }
                                   ],
                                   "margins": {
@@ -3712,43 +4266,6 @@
                           "margins": {
                             "top": 20
                           },
-                          "width": {
-                            "type": "match_parent"
-                          }
-                        },
-                        {
-                          "type": "container",
-                          "actions": [
-                            {
-                              "log_id": "use_scanned_code",
-                              "url": "local-db://op/inventory.accept_scanned_code"
-                            }
-                          ],
-                          "alpha": "@{product.scan_pending_code != '' ? 1.0 : 0.4}",
-                          "background": [
-                            {
-                              "type": "solid",
-                              "color": "#5A3BE0"
-                            }
-                          ],
-                          "border": {
-                            "corner_radius": 12
-                          },
-                          "content_alignment_horizontal": "center",
-                          "content_alignment_vertical": "center",
-                          "height": {
-                            "type": "fixed",
-                            "value": 56
-                          },
-                          "items": [
-                            {
-                              "type": "text",
-                              "font_size": 16,
-                              "font_weight": "bold",
-                              "text": "Use this code",
-                              "text_color": "#FFFFFF"
-                            }
-                          ],
                           "width": {
                             "type": "match_parent"
                           }
@@ -4821,13 +5338,13 @@
                                     "type": "text",
                                     "font_size": 16,
                                     "font_weight": "bold",
-                                    "text": {},
+                                    "text": "@{item.name}",
                                     "text_color": "#111319"
                                   },
                                   {
                                     "type": "text",
                                     "font_size": 12,
-                                    "text": {},
+                                    "text": "@{item.sku}",
                                     "text_color": "#5B6070"
                                   }
                                 ],
@@ -4841,7 +5358,7 @@
                                 "type": "text",
                                 "font_size": 14,
                                 "font_weight": "bold",
-                                "text": {},
+                                "text": "@{item.price}",
                                 "text_color": "#5A3BE0"
                               }
                             ],
@@ -4930,10 +5447,55 @@
                               "actions": [
                                 {
                                   "log_id": "delete_product",
-                                  "url": "local-db://op/inventory.delete?id=%40%7Bproduct.form_id%7D"
+                                  "url": "local-db://op/db.delete",
+                                  "payload": {
+                                    "table": "inventory",
+                                    "id": "@{product.id}"
+                                  }
+                                },
+                                {
+                                  "log_id": "reload_after_delete",
+                                  "url": "local-db://op/db.query",
+                                  "payload": {
+                                    "table": "inventory",
+                                    "filter": {
+                                      "$or": [
+                                        {
+                                          "name": {
+                                            "$contains": "@{owner.inv_query}"
+                                          }
+                                        },
+                                        {
+                                          "sku": {
+                                            "$contains": "@{owner.inv_query}"
+                                          }
+                                        },
+                                        {
+                                          "barcode": {
+                                            "$contains": "@{owner.inv_query}"
+                                          }
+                                        },
+                                        {
+                                          "code": {
+                                            "$contains": "@{owner.inv_query}"
+                                          }
+                                        }
+                                      ]
+                                    },
+                                    "order_by": "name",
+                                    "limit": 100,
+                                    "json_list_var": "owner.inv_items",
+                                    "output": {
+                                      "_count": "owner.inv_count"
+                                    }
+                                  }
                                 },
                                 {
                                   "log_id": "pop_after_delete",
+                                  "url": "nav://pop"
+                                },
+                                {
+                                  "log_id": "pop_after_delete_form",
                                   "url": "nav://pop"
                                 }
                               ],
@@ -4981,7 +5543,7 @@
                         "actions": [
                           {
                             "log_id": "sheet_dismiss",
-                            "url": "sheet://dismiss"
+                            "url": "nav://pop"
                           }
                         ]
                       }
@@ -5525,6 +6087,43 @@
                     {
                       "log_id": "nav_owner_inventory",
                       "url": "nav://push?id=owner_inventory"
+                    },
+                    {
+                      "log_id": "load_inventory",
+                      "url": "local-db://op/db.query",
+                      "payload": {
+                        "table": "inventory",
+                        "filter": {
+                          "$or": [
+                            {
+                              "name": {
+                                "$contains": "@{owner.inv_query}"
+                              }
+                            },
+                            {
+                              "sku": {
+                                "$contains": "@{owner.inv_query}"
+                              }
+                            },
+                            {
+                              "barcode": {
+                                "$contains": "@{owner.inv_query}"
+                              }
+                            },
+                            {
+                              "code": {
+                                "$contains": "@{owner.inv_query}"
+                              }
+                            }
+                          ]
+                        },
+                        "order_by": "name",
+                        "limit": 100,
+                        "json_list_var": "owner.inv_items",
+                        "output": {
+                          "_count": "owner.inv_count"
+                        }
+                      }
                     }
                   ],
                   "content_alignment_vertical": "center",
@@ -6541,7 +7140,7 @@
                             "type": "text",
                             "font_size": 16,
                             "font_weight": "bold",
-                            "text": {},
+                            "text": "@{item.qty}",
                             "text_color": "#111319"
                           },
                           {
@@ -6759,6 +7358,43 @@
                   {
                     "log_id": "tab_inventory",
                     "url": "nav://push?id=owner_inventory"
+                  },
+                  {
+                    "log_id": "load_inventory",
+                    "url": "local-db://op/db.query",
+                    "payload": {
+                      "table": "inventory",
+                      "filter": {
+                        "$or": [
+                          {
+                            "name": {
+                              "$contains": "@{owner.inv_query}"
+                            }
+                          },
+                          {
+                            "sku": {
+                              "$contains": "@{owner.inv_query}"
+                            }
+                          },
+                          {
+                            "barcode": {
+                              "$contains": "@{owner.inv_query}"
+                            }
+                          },
+                          {
+                            "code": {
+                              "$contains": "@{owner.inv_query}"
+                            }
+                          }
+                        ]
+                      },
+                      "order_by": "name",
+                      "limit": 100,
+                      "json_list_var": "owner.inv_items",
+                      "output": {
+                        "_count": "owner.inv_count"
+                      }
+                    }
                   }
                 ]
               }
@@ -6794,8 +7430,13 @@
             "dwell_ms": 4000,
             "actions": [
               {
-                "log_id": "inv_toast_act",
-                "url": "local-db://op/inventory.toast_action"
+                "log_id": "inv_toast_dismiss_owner_toast_visible",
+                "type": "set_variable",
+                "variable_name": "owner.toast_visible",
+                "value": {
+                  "type": "boolean",
+                  "value": false
+                }
               }
             ]
           }
@@ -6828,14 +7469,6 @@
                       "type": "container",
                       "items": [
                         {
-                          "type": "text",
-                          "font_size": 13,
-                          "font_weight": "medium",
-                          "line_height": 18,
-                          "text": "",
-                          "text_color": "#111319"
-                        },
-                        {
                           "type": "container",
                           "alignment_vertical": "center",
                           "background": [
@@ -6862,7 +7495,40 @@
                                 "on_blur": [
                                   {
                                     "log_id": "search_inv",
-                                    "url": "local-db://op/inventory.list?filter=%40%7Bowner.inv_query%7D"
+                                    "url": "local-db://op/db.query",
+                                    "payload": {
+                                      "table": "inventory",
+                                      "filter": {
+                                        "$or": [
+                                          {
+                                            "name": {
+                                              "$contains": "@{owner.inv_query}"
+                                            }
+                                          },
+                                          {
+                                            "sku": {
+                                              "$contains": "@{owner.inv_query}"
+                                            }
+                                          },
+                                          {
+                                            "barcode": {
+                                              "$contains": "@{owner.inv_query}"
+                                            }
+                                          },
+                                          {
+                                            "code": {
+                                              "$contains": "@{owner.inv_query}"
+                                            }
+                                          }
+                                        ]
+                                      },
+                                      "order_by": "name",
+                                      "limit": 100,
+                                      "json_list_var": "owner.inv_items",
+                                      "output": {
+                                        "_count": "owner.inv_count"
+                                      }
+                                    }
                                   }
                                 ]
                               },
@@ -6877,6 +7543,67 @@
                               "width": {
                                 "type": "match_parent",
                                 "weight": 1
+                              }
+                            },
+                            {
+                              "type": "container",
+                              "actions": [
+                                {
+                                  "log_id": "search_inv",
+                                  "url": "local-db://op/db.query",
+                                  "payload": {
+                                    "table": "inventory",
+                                    "filter": {
+                                      "$or": [
+                                        {
+                                          "name": {
+                                            "$contains": "@{owner.inv_query}"
+                                          }
+                                        },
+                                        {
+                                          "sku": {
+                                            "$contains": "@{owner.inv_query}"
+                                          }
+                                        },
+                                        {
+                                          "barcode": {
+                                            "$contains": "@{owner.inv_query}"
+                                          }
+                                        },
+                                        {
+                                          "code": {
+                                            "$contains": "@{owner.inv_query}"
+                                          }
+                                        }
+                                      ]
+                                    },
+                                    "order_by": "name",
+                                    "limit": 100,
+                                    "json_list_var": "owner.inv_items",
+                                    "output": {
+                                      "_count": "owner.inv_count"
+                                    }
+                                  }
+                                }
+                              ],
+                              "content_alignment_horizontal": "center",
+                              "content_alignment_vertical": "center",
+                              "height": {
+                                "type": "fixed",
+                                "value": 48
+                              },
+                              "items": [
+                                {
+                                  "type": "text",
+                                  "font_size": 14,
+                                  "font_weight": "medium",
+                                  "text": "Search",
+                                  "text_color": "#5A3BE0"
+                                }
+                              ],
+                              "paddings": {
+                                "left": 10,
+                                "right": 10
                               }
                             }
                           ],
@@ -6939,8 +7666,112 @@
                       "type": "container",
                       "actions": [
                         {
-                          "log_id": "empty_add_prod",
-                          "url": "local-db://op/inventory.open_form?mode=new"
+                          "log_id": "empty_add_prod_product_id",
+                          "type": "set_variable",
+                          "variable_name": "product.id",
+                          "value": {
+                            "type": "string",
+                            "value": ""
+                          }
+                        },
+                        {
+                          "log_id": "empty_add_prod_product_name",
+                          "type": "set_variable",
+                          "variable_name": "product.name",
+                          "value": {
+                            "type": "string",
+                            "value": ""
+                          }
+                        },
+                        {
+                          "log_id": "empty_add_prod_product_sku",
+                          "type": "set_variable",
+                          "variable_name": "product.sku",
+                          "value": {
+                            "type": "string",
+                            "value": ""
+                          }
+                        },
+                        {
+                          "log_id": "empty_add_prod_product_price",
+                          "type": "set_variable",
+                          "variable_name": "product.price",
+                          "value": {
+                            "type": "string",
+                            "value": ""
+                          }
+                        },
+                        {
+                          "log_id": "empty_add_prod_product_stock",
+                          "type": "set_variable",
+                          "variable_name": "product.stock",
+                          "value": {
+                            "type": "integer",
+                            "value": "0"
+                          }
+                        },
+                        {
+                          "log_id": "empty_add_prod_product_code",
+                          "type": "set_variable",
+                          "variable_name": "product.code",
+                          "value": {
+                            "type": "string",
+                            "value": ""
+                          }
+                        },
+                        {
+                          "log_id": "empty_add_prod_product_photo_url",
+                          "type": "set_variable",
+                          "variable_name": "product.photo_url",
+                          "value": {
+                            "type": "string",
+                            "value": ""
+                          }
+                        },
+                        {
+                          "log_id": "empty_add_prod_product_description",
+                          "type": "set_variable",
+                          "variable_name": "product.description",
+                          "value": {
+                            "type": "string",
+                            "value": ""
+                          }
+                        },
+                        {
+                          "log_id": "empty_add_prod_product_is_edit",
+                          "type": "set_variable",
+                          "variable_name": "product.is_edit",
+                          "value": {
+                            "type": "boolean",
+                            "value": false
+                          }
+                        },
+                        {
+                          "log_id": "empty_add_prod_reset_product_errors_json",
+                          "type": "set_variable",
+                          "variable_name": "product.errors_json",
+                          "value": {
+                            "type": "string",
+                            "value": ""
+                          }
+                        },
+                        {
+                          "log_id": "empty_add_prod_reset_product_dirty",
+                          "type": "set_variable",
+                          "variable_name": "product.dirty",
+                          "value": {
+                            "type": "boolean",
+                            "value": false
+                          }
+                        },
+                        {
+                          "log_id": "empty_add_prod_reset_product_valid",
+                          "type": "set_variable",
+                          "variable_name": "product.valid",
+                          "value": {
+                            "type": "boolean",
+                            "value": true
+                          }
                         },
                         {
                           "log_id": "open_product_modal",
@@ -6992,14 +7823,118 @@
                 {
                   "type": "json_list",
                   "data_var": "owner.inv_items",
-                  "empty_text": "No records",
+                  "empty_text": "",
                   "item_spacing": 12,
                   "row_card": {
                     "type": "container",
                     "actions": [
                       {
-                        "log_id": "edit_prod",
-                        "url": "local-db://op/inventory.open_form?mode=edit&id=%24item.id"
+                        "log_id": "edit_prod_product_id",
+                        "type": "set_variable",
+                        "variable_name": "product.id",
+                        "value": {
+                          "type": "string",
+                          "value": "@{item.id}"
+                        }
+                      },
+                      {
+                        "log_id": "edit_prod_product_name",
+                        "type": "set_variable",
+                        "variable_name": "product.name",
+                        "value": {
+                          "type": "string",
+                          "value": "@{item.name}"
+                        }
+                      },
+                      {
+                        "log_id": "edit_prod_product_sku",
+                        "type": "set_variable",
+                        "variable_name": "product.sku",
+                        "value": {
+                          "type": "string",
+                          "value": "@{item.sku}"
+                        }
+                      },
+                      {
+                        "log_id": "edit_prod_product_price",
+                        "type": "set_variable",
+                        "variable_name": "product.price",
+                        "value": {
+                          "type": "string",
+                          "value": "@{item.price}"
+                        }
+                      },
+                      {
+                        "log_id": "edit_prod_product_stock",
+                        "type": "set_variable",
+                        "variable_name": "product.stock",
+                        "value": {
+                          "type": "string",
+                          "value": "@{item.stock}"
+                        }
+                      },
+                      {
+                        "log_id": "edit_prod_product_code",
+                        "type": "set_variable",
+                        "variable_name": "product.code",
+                        "value": {
+                          "type": "string",
+                          "value": "@{item.barcode != '' ? item.barcode : item.code}"
+                        }
+                      },
+                      {
+                        "log_id": "edit_prod_product_photo_url",
+                        "type": "set_variable",
+                        "variable_name": "product.photo_url",
+                        "value": {
+                          "type": "string",
+                          "value": "@{item.photo_url}"
+                        }
+                      },
+                      {
+                        "log_id": "edit_prod_product_description",
+                        "type": "set_variable",
+                        "variable_name": "product.description",
+                        "value": {
+                          "type": "string",
+                          "value": "@{item.description}"
+                        }
+                      },
+                      {
+                        "log_id": "edit_prod_product_is_edit",
+                        "type": "set_variable",
+                        "variable_name": "product.is_edit",
+                        "value": {
+                          "type": "boolean",
+                          "value": true
+                        }
+                      },
+                      {
+                        "log_id": "edit_prod_reset_product_errors_json",
+                        "type": "set_variable",
+                        "variable_name": "product.errors_json",
+                        "value": {
+                          "type": "string",
+                          "value": ""
+                        }
+                      },
+                      {
+                        "log_id": "edit_prod_reset_product_dirty",
+                        "type": "set_variable",
+                        "variable_name": "product.dirty",
+                        "value": {
+                          "type": "boolean",
+                          "value": false
+                        }
+                      },
+                      {
+                        "log_id": "edit_prod_reset_product_valid",
+                        "type": "set_variable",
+                        "variable_name": "product.valid",
+                        "value": {
+                          "type": "boolean",
+                          "value": true
+                        }
                       },
                       {
                         "log_id": "open_product_modal",
@@ -7015,6 +7950,10 @@
                     ],
                     "border": {
                       "corner_radius": 16
+                    },
+                    "height": {
+                      "type": "fixed",
+                      "value": 76
                     },
                     "items": [
                       {
@@ -7064,7 +8003,7 @@
                                 "font_size": 13,
                                 "font_weight": "medium",
                                 "line_height": 18,
-                                "text": "@{item.code_display}",
+                                "text": "@{item.barcode != '' ? item.barcode : item.code}",
                                 "text_color": "#5B6070"
                               },
                               {
@@ -7088,7 +8027,7 @@
                                 "paddings": {
                                   "left": 8
                                 },
-                                "visibility": {}
+                                "visibility": "@{item.barcode == '' && item.code == '' ? 'visible' : 'gone'}"
                               }
                             ],
                             "orientation": "horizontal"
@@ -7110,7 +8049,7 @@
                             "font_size": 22,
                             "font_weight": "bold",
                             "line_height": 28,
-                            "text": "@{item.price_display}",
+                            "text": "@{'$' + item.price + (item.price * 1 == round(item.price * 1) ? '.00' : item.price * 10 == round(item.price * 10) ? '0' : '')}",
                             "text_color": "#111319"
                           },
                           {
@@ -7129,7 +8068,7 @@
                                 "type": "text",
                                 "font_size": 11,
                                 "font_weight": "bold",
-                                "text": "@{item.stock == 0 ? 'Out' : 'Low'}",
+                                "text": "@{item.stock == 0 ? 'Out of stock' : item.stock + ' in stock'}",
                                 "text_color": "#92400E"
                               }
                             ],
@@ -7148,8 +8087,8 @@
                     "paddings": {
                       "left": 16,
                       "right": 16,
-                      "top": 14,
-                      "bottom": 14
+                      "top": 10,
+                      "bottom": 10
                     },
                     "width": {
                       "type": "match_parent"
@@ -7175,8 +8114,112 @@
                 "icon": "add",
                 "actions": [
                   {
-                    "log_id": "fab_add_prod",
-                    "url": "local-db://op/inventory.open_form?mode=new"
+                    "log_id": "fab_add_prod_product_id",
+                    "type": "set_variable",
+                    "variable_name": "product.id",
+                    "value": {
+                      "type": "string",
+                      "value": ""
+                    }
+                  },
+                  {
+                    "log_id": "fab_add_prod_product_name",
+                    "type": "set_variable",
+                    "variable_name": "product.name",
+                    "value": {
+                      "type": "string",
+                      "value": ""
+                    }
+                  },
+                  {
+                    "log_id": "fab_add_prod_product_sku",
+                    "type": "set_variable",
+                    "variable_name": "product.sku",
+                    "value": {
+                      "type": "string",
+                      "value": ""
+                    }
+                  },
+                  {
+                    "log_id": "fab_add_prod_product_price",
+                    "type": "set_variable",
+                    "variable_name": "product.price",
+                    "value": {
+                      "type": "string",
+                      "value": ""
+                    }
+                  },
+                  {
+                    "log_id": "fab_add_prod_product_stock",
+                    "type": "set_variable",
+                    "variable_name": "product.stock",
+                    "value": {
+                      "type": "integer",
+                      "value": "0"
+                    }
+                  },
+                  {
+                    "log_id": "fab_add_prod_product_code",
+                    "type": "set_variable",
+                    "variable_name": "product.code",
+                    "value": {
+                      "type": "string",
+                      "value": ""
+                    }
+                  },
+                  {
+                    "log_id": "fab_add_prod_product_photo_url",
+                    "type": "set_variable",
+                    "variable_name": "product.photo_url",
+                    "value": {
+                      "type": "string",
+                      "value": ""
+                    }
+                  },
+                  {
+                    "log_id": "fab_add_prod_product_description",
+                    "type": "set_variable",
+                    "variable_name": "product.description",
+                    "value": {
+                      "type": "string",
+                      "value": ""
+                    }
+                  },
+                  {
+                    "log_id": "fab_add_prod_product_is_edit",
+                    "type": "set_variable",
+                    "variable_name": "product.is_edit",
+                    "value": {
+                      "type": "boolean",
+                      "value": false
+                    }
+                  },
+                  {
+                    "log_id": "fab_add_prod_reset_product_errors_json",
+                    "type": "set_variable",
+                    "variable_name": "product.errors_json",
+                    "value": {
+                      "type": "string",
+                      "value": ""
+                    }
+                  },
+                  {
+                    "log_id": "fab_add_prod_reset_product_dirty",
+                    "type": "set_variable",
+                    "variable_name": "product.dirty",
+                    "value": {
+                      "type": "boolean",
+                      "value": false
+                    }
+                  },
+                  {
+                    "log_id": "fab_add_prod_reset_product_valid",
+                    "type": "set_variable",
+                    "variable_name": "product.valid",
+                    "value": {
+                      "type": "boolean",
+                      "value": true
+                    }
                   },
                   {
                     "log_id": "open_product_modal",
@@ -7215,6 +8258,43 @@
                   {
                     "log_id": "tab_inventory",
                     "url": "nav://push?id=owner_inventory"
+                  },
+                  {
+                    "log_id": "load_inventory",
+                    "url": "local-db://op/db.query",
+                    "payload": {
+                      "table": "inventory",
+                      "filter": {
+                        "$or": [
+                          {
+                            "name": {
+                              "$contains": "@{owner.inv_query}"
+                            }
+                          },
+                          {
+                            "sku": {
+                              "$contains": "@{owner.inv_query}"
+                            }
+                          },
+                          {
+                            "barcode": {
+                              "$contains": "@{owner.inv_query}"
+                            }
+                          },
+                          {
+                            "code": {
+                              "$contains": "@{owner.inv_query}"
+                            }
+                          }
+                        ]
+                      },
+                      "order_by": "name",
+                      "limit": 100,
+                      "json_list_var": "owner.inv_items",
+                      "output": {
+                        "_count": "owner.inv_count"
+                      }
+                    }
                   }
                 ]
               }
@@ -7930,14 +9010,6 @@
                       },
                       {
                         "type": "input",
-                        "focus": {
-                          "on_blur": [
-                            {
-                              "log_id": "fmt_price",
-                              "url": "local-db://op/inventory.format_price"
-                            }
-                          ]
-                        },
                         "font_size": 16,
                         "hint_color": "#5B6070",
                         "hint_text": "0.00",
@@ -8019,14 +9091,6 @@
                     "items": [
                       {
                         "type": "input",
-                        "focus": {
-                          "on_blur": [
-                            {
-                              "log_id": "check_dup_code",
-                              "url": "local-db://op/inventory.check_code?code=%40%7Bproduct.code%7D&exclude_sku=%40%7Bproduct.sku%7D"
-                            }
-                          ]
-                        },
                         "font_size": 16,
                         "hint_color": "#5B6070",
                         "hint_text": "Barcode or QR value",
@@ -8156,19 +9220,19 @@
                 "background": [
                   {
                     "type": "solid",
-                    "color": "#FEF3C7"
+                    "color": "#FEE2E2"
                   }
                 ],
                 "border": {
                   "corner_radius": 12
                 },
-                "id": "dup_code_banner",
+                "id": "save_error_banner",
                 "items": [
                   {
                     "type": "text",
                     "font_size": 13,
                     "line_height": 18,
-                    "text": "@{product.code_dup_warning}",
+                    "text": "@{product.errors_json}",
                     "text_color": "#111319"
                   },
                   {
@@ -8178,38 +9242,8 @@
                         "type": "container",
                         "actions": [
                           {
-                            "log_id": "view_dup_code",
-                            "url": "local-db://op/inventory.open_form?mode=edit&sku=%40%7Bproduct.code_dup_sku%7D"
-                          },
-                          {
-                            "log_id": "open_dup_product",
-                            "url": "nav://push?id=product_modal"
-                          }
-                        ],
-                        "content_alignment_vertical": "center",
-                        "height": {
-                          "type": "fixed",
-                          "value": 48
-                        },
-                        "items": [
-                          {
-                            "type": "text",
-                            "font_size": 13,
-                            "font_weight": "bold",
-                            "text": "View",
-                            "text_color": "#92400E"
-                          }
-                        ],
-                        "paddings": {
-                          "right": 16
-                        }
-                      },
-                      {
-                        "type": "container",
-                        "actions": [
-                          {
-                            "log_id": "dismiss_dup_code",
-                            "url": "div-action://set_variable?name=product.code_dup_warning&value="
+                            "log_id": "dismiss_save_error",
+                            "url": "div-action://set_variable?name=product.errors_json&value="
                           }
                         ],
                         "content_alignment_vertical": "center",
@@ -8222,7 +9256,7 @@
                             "type": "text",
                             "font_size": 13,
                             "font_weight": "medium",
-                            "text": "Use anyway",
+                            "text": "Dismiss",
                             "text_color": "#5B6070"
                           }
                         ]
@@ -8241,7 +9275,7 @@
                   "top": 12,
                   "bottom": 12
                 },
-                "visibility": "@{product.code_dup_warning != '' ? 'visible' : 'gone'}",
+                "visibility": "@{product.errors_json != '' ? 'visible' : 'gone'}",
                 "width": {
                   "type": "match_parent"
                 }
@@ -8280,14 +9314,6 @@
                     "items": [
                       {
                         "type": "input",
-                        "focus": {
-                          "on_blur": [
-                            {
-                              "log_id": "upper_sku",
-                              "url": "local-db://op/inventory.normalize_sku"
-                            }
-                          ]
-                        },
                         "font_size": 16,
                         "hint_color": "#5B6070",
                         "hint_text": "LAT-01",
@@ -8299,34 +9325,6 @@
                         "width": {
                           "type": "match_parent",
                           "weight": 1
-                        }
-                      },
-                      {
-                        "type": "container",
-                        "actions": [
-                          {
-                            "log_id": "suggest_sku",
-                            "url": "local-db://op/inventory.suggest_sku?name=%40%7Bproduct.name%7D"
-                          }
-                        ],
-                        "content_alignment_horizontal": "center",
-                        "content_alignment_vertical": "center",
-                        "height": {
-                          "type": "fixed",
-                          "value": 48
-                        },
-                        "items": [
-                          {
-                            "type": "text",
-                            "font_size": 14,
-                            "font_weight": "medium",
-                            "text": "✨",
-                            "text_color": "#5A3BE0"
-                          }
-                        ],
-                        "paddings": {
-                          "left": 10,
-                          "right": 10
                         }
                       }
                     ],
@@ -8447,7 +9445,7 @@
                 "actions": [
                   {
                     "log_id": "confirm_delete_prod",
-                    "url": "sheet://present?card_id=confirm_delete_product"
+                    "url": "nav://push?id=confirm_delete_product"
                   }
                 ],
                 "content_alignment_horizontal": "center",
@@ -8490,7 +9488,65 @@
           "actions": [
             {
               "log_id": "save_product_form",
-              "url": "local-db://op/inventory.upsert"
+              "url": "local-db://op/db.upsert",
+              "payload": {
+                "table": "inventory",
+                "data": {
+                  "name": "@{product.name}",
+                  "sku": "@{product.sku}",
+                  "price": "@{product.price}",
+                  "code": "@{product.code}",
+                  "barcode": "@{product.code}",
+                  "description": "@{product.description}",
+                  "photo_url": "@{product.photo_url}",
+                  "stock": "@{product.is_edit ? product.stock : 0}"
+                },
+                "id": "@{product.id}",
+                "output": {
+                  "errors_json": "product.errors_json"
+                }
+              }
+            },
+            {
+              "log_id": "reload_after_save",
+              "url": "local-db://op/db.query",
+              "payload": {
+                "table": "inventory",
+                "filter": {
+                  "$or": [
+                    {
+                      "name": {
+                        "$contains": "@{owner.inv_query}"
+                      }
+                    },
+                    {
+                      "sku": {
+                        "$contains": "@{owner.inv_query}"
+                      }
+                    },
+                    {
+                      "barcode": {
+                        "$contains": "@{owner.inv_query}"
+                      }
+                    },
+                    {
+                      "code": {
+                        "$contains": "@{owner.inv_query}"
+                      }
+                    }
+                  ]
+                },
+                "order_by": "name",
+                "limit": 100,
+                "json_list_var": "owner.inv_items",
+                "output": {
+                  "_count": "owner.inv_count"
+                }
+              }
+            },
+            {
+              "log_id": "close_product_form",
+              "url": "nav://pop"
             }
           ]
         },
@@ -8499,7 +9555,7 @@
           "actions": [
             {
               "log_id": "cancel_product_form",
-              "url": "local-db://op/inventory.cancel_form"
+              "url": "nav://pop"
             }
           ]
         },
@@ -8576,6 +9632,52 @@
                           "type": "match_parent",
                           "weight": 1
                         }
+                      },
+                      {
+                        "type": "container",
+                        "actions": [
+                          {
+                            "log_id": "use_scanned_code_product_code",
+                            "type": "set_variable",
+                            "variable_name": "product.code",
+                            "value": {
+                              "type": "string",
+                              "value": "@{product.scan_pending_code}"
+                            }
+                          },
+                          {
+                            "log_id": "use_scanned_code_product_code_scanned",
+                            "type": "set_variable",
+                            "variable_name": "product.code_scanned",
+                            "value": {
+                              "type": "boolean",
+                              "value": true
+                            }
+                          },
+                          {
+                            "log_id": "pop_scan_sheet",
+                            "url": "nav://pop"
+                          }
+                        ],
+                        "content_alignment_horizontal": "center",
+                        "content_alignment_vertical": "center",
+                        "height": {
+                          "type": "fixed",
+                          "value": 48
+                        },
+                        "items": [
+                          {
+                            "type": "text",
+                            "font_size": 14,
+                            "font_weight": "medium",
+                            "text": "Use",
+                            "text_color": "#5A3BE0"
+                          }
+                        ],
+                        "paddings": {
+                          "left": 10,
+                          "right": 10
+                        }
                       }
                     ],
                     "margins": {
@@ -8605,43 +9707,6 @@
             "margins": {
               "top": 20
             },
-            "width": {
-              "type": "match_parent"
-            }
-          },
-          {
-            "type": "container",
-            "actions": [
-              {
-                "log_id": "use_scanned_code",
-                "url": "local-db://op/inventory.accept_scanned_code"
-              }
-            ],
-            "alpha": "@{product.scan_pending_code != '' ? 1.0 : 0.4}",
-            "background": [
-              {
-                "type": "solid",
-                "color": "#5A3BE0"
-              }
-            ],
-            "border": {
-              "corner_radius": 12
-            },
-            "content_alignment_horizontal": "center",
-            "content_alignment_vertical": "center",
-            "height": {
-              "type": "fixed",
-              "value": 56
-            },
-            "items": [
-              {
-                "type": "text",
-                "font_size": 16,
-                "font_weight": "bold",
-                "text": "Use this code",
-                "text_color": "#FFFFFF"
-              }
-            ],
             "width": {
               "type": "match_parent"
             }
@@ -9702,13 +10767,13 @@
                       "type": "text",
                       "font_size": 16,
                       "font_weight": "bold",
-                      "text": {},
+                      "text": "@{item.name}",
                       "text_color": "#111319"
                     },
                     {
                       "type": "text",
                       "font_size": 12,
-                      "text": {},
+                      "text": "@{item.sku}",
                       "text_color": "#5B6070"
                     }
                   ],
@@ -9722,7 +10787,7 @@
                   "type": "text",
                   "font_size": 14,
                   "font_weight": "bold",
-                  "text": {},
+                  "text": "@{item.price}",
                   "text_color": "#5A3BE0"
                 }
               ],
@@ -9808,10 +10873,55 @@
                 "actions": [
                   {
                     "log_id": "delete_product",
-                    "url": "local-db://op/inventory.delete?id=%40%7Bproduct.form_id%7D"
+                    "url": "local-db://op/db.delete",
+                    "payload": {
+                      "table": "inventory",
+                      "id": "@{product.id}"
+                    }
+                  },
+                  {
+                    "log_id": "reload_after_delete",
+                    "url": "local-db://op/db.query",
+                    "payload": {
+                      "table": "inventory",
+                      "filter": {
+                        "$or": [
+                          {
+                            "name": {
+                              "$contains": "@{owner.inv_query}"
+                            }
+                          },
+                          {
+                            "sku": {
+                              "$contains": "@{owner.inv_query}"
+                            }
+                          },
+                          {
+                            "barcode": {
+                              "$contains": "@{owner.inv_query}"
+                            }
+                          },
+                          {
+                            "code": {
+                              "$contains": "@{owner.inv_query}"
+                            }
+                          }
+                        ]
+                      },
+                      "order_by": "name",
+                      "limit": 100,
+                      "json_list_var": "owner.inv_items",
+                      "output": {
+                        "_count": "owner.inv_count"
+                      }
+                    }
                   },
                   {
                     "log_id": "pop_after_delete",
+                    "url": "nav://pop"
+                  },
+                  {
+                    "log_id": "pop_after_delete_form",
                     "url": "nav://pop"
                   }
                 ],
@@ -9859,7 +10969,7 @@
           "actions": [
             {
               "log_id": "sheet_dismiss",
-              "url": "sheet://dismiss"
+              "url": "nav://pop"
             }
           ]
         }

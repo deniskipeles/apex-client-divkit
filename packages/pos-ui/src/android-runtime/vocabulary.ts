@@ -83,10 +83,31 @@ export const URL_SCHEMES = [
 
 /** Props each node type reads, for the authoring validator's typo check. */
 export const NODE_PROPS: Record<string, string[]> = {
-  container: ['orientation', 'items', 'item_spacing', 'weight'],
-  gallery: ['items', 'item_spacing'],
+  container: [
+    'orientation',
+    'items',
+    'item_spacing',
+    'weight',
+    'alpha',
+    'content_alignment_horizontal',
+    'content_alignment_vertical',
+    'alignment_horizontal',
+    'alignment_vertical',
+  ],
+  gallery: ['items', 'item_spacing', 'orientation'],
   grid: ['items', 'column_count', 'item_spacing'],
-  text: ['text', 'font_size', 'font_weight', 'text_color', 'alignment_horizontal', 'font_family', 'max_lines'],
+  text: [
+    'text',
+    'font_size',
+    'font_weight',
+    'text_color',
+    'alignment_horizontal',
+    'text_alignment_horizontal',
+    'line_height',
+    'font_feature_settings',
+    'font_family',
+    'max_lines',
+  ],
   button: [
     'text',
     'subtitle',
@@ -99,10 +120,21 @@ export const NODE_PROPS: Record<string, string[]> = {
     'actions',
     'action',
   ],
-  input: ['text_variable', 'hint_text'],
+  input: [
+    'text_variable',
+    'hint_text',
+    'hint_color',
+    'placeholder_color',
+    'text_color',
+    'font_size',
+    'keyboard_type',
+    'max_visible_lines',
+    'focus',
+    'on_change',
+  ],
   separator: [],
   image: ['image_url', 'icon', 'width', 'height', 'size', 'tint', 'text_color', 'alignment_horizontal', 'content_description'],
-  json_list: ['data_var', 'empty_text', 'row_card'],
+  json_list: ['data_var', 'empty_text', 'row_card', 'item_spacing'],
   state: ['states', 'state_id_variable', 'default_state_id'],
   custom: ['custom_type', 'custom_props'],
   sticky_footer: ['body', 'footer'],
@@ -142,6 +174,8 @@ export const COMMON_PROPS = [
   'font_weight',
   'content_description',
   'log_id',
+  // Card-level metadata carried on the root container.
+  'variables',
   // Host directive, not a renderer prop: `DemoCardRepository` splices the tool
   // catalog into the hub container that carries it.
   'tool_catalog_after',

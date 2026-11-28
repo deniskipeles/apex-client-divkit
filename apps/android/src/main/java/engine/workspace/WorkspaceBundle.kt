@@ -150,6 +150,43 @@ object WorkspaceBundleCodec {
         )
     }
 
+    /**
+     * Decodes either the bundle document or the dev-server `index.json` shape
+     * (`manifest` + `hub.card` + `cards` + `collections` + `order`), which is what the
+     * authoring gateway publishes for each workspace.
+     */
+    fun decodeAny(text: String): WorkspaceBundle {
+        val root = runCatching { Json.parseToJsonElement(text).jsonObject }
+            .getOrElse { throw WorkspaceFormatException("not a JSON object") }
+        val format = root.str("format")
+        if (format == FORMAT || root["cards"] is kotlinx.serialization.json.JsonArray) {
+            return decode(text)
+        }
+        val manifest = root["manifest"]?.jsonObject
+            ?: throw WorkspaceFormatException("missing manifest")
+        validateManifest(manifest)
+        val hub = root["hub"]?.jsonObject?.get("card")?.jsonObject
+            ?: throw WorkspaceFormatException("missing hub card")
+        val order = root["order"]?.jsonArray?.mapNotNull { it.jsonPrimitive.contentOrNull }.orEmpty()
+        val cardsObject = root["cards"]?.jsonObject ?: JsonObject(emptyMap())
+        val cards = order.mapNotNull { name ->
+            (cardsObject[name] as? JsonObject)?.let { WorkspaceCard(name, it, it.str("title")) }
+        }
+        val collections = root["collections"]?.jsonObject?.values
+            ?.mapNotNull { it as? JsonObject }.orEmpty()
+        val icons = root["icons"]?.jsonObject
+            ?.mapValues { it.value.jsonPrimitive.contentOrNull.orEmpty() }.orEmpty()
+        return WorkspaceBundle(
+            manifest = manifest,
+            hub = hub,
+            catalog = root["catalog"] as? JsonObject,
+            cards = cards,
+            collections = collections,
+            icons = icons,
+            origin = "gateway"
+        )
+    }
+
     /** Loads a workspace folder: `workspace.json` plus the files it names. */
     fun fromDirectory(source: WorkspaceSource, dir: String): WorkspaceBundle {
         val manifestText = source.read("$dir/workspace.json")

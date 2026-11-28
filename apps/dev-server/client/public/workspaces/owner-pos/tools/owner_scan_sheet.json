@@ -67,6 +67,52 @@
                       "type": "match_parent",
                       "weight": 1
                     }
+                  },
+                  {
+                    "type": "container",
+                    "actions": [
+                      {
+                        "log_id": "use_scanned_code_product_code",
+                        "type": "set_variable",
+                        "variable_name": "product.code",
+                        "value": {
+                          "type": "string",
+                          "value": "@{product.scan_pending_code}"
+                        }
+                      },
+                      {
+                        "log_id": "use_scanned_code_product_code_scanned",
+                        "type": "set_variable",
+                        "variable_name": "product.code_scanned",
+                        "value": {
+                          "type": "boolean",
+                          "value": true
+                        }
+                      },
+                      {
+                        "log_id": "pop_scan_sheet",
+                        "url": "nav://pop"
+                      }
+                    ],
+                    "content_alignment_horizontal": "center",
+                    "content_alignment_vertical": "center",
+                    "height": {
+                      "type": "fixed",
+                      "value": 48
+                    },
+                    "items": [
+                      {
+                        "type": "text",
+                        "font_size": 14,
+                        "font_weight": "medium",
+                        "text": "Use",
+                        "text_color": "#5A3BE0"
+                      }
+                    ],
+                    "paddings": {
+                      "left": 10,
+                      "right": 10
+                    }
                   }
                 ],
                 "margins": {
@@ -96,43 +142,6 @@
         "margins": {
           "top": 20
         },
-        "width": {
-          "type": "match_parent"
-        }
-      },
-      {
-        "type": "container",
-        "actions": [
-          {
-            "log_id": "use_scanned_code",
-            "url": "local-db://op/inventory.accept_scanned_code"
-          }
-        ],
-        "alpha": "@{product.scan_pending_code != '' ? 1.0 : 0.4}",
-        "background": [
-          {
-            "type": "solid",
-            "color": "#5A3BE0"
-          }
-        ],
-        "border": {
-          "corner_radius": 12
-        },
-        "content_alignment_horizontal": "center",
-        "content_alignment_vertical": "center",
-        "height": {
-          "type": "fixed",
-          "value": 56
-        },
-        "items": [
-          {
-            "type": "text",
-            "font_size": 16,
-            "font_weight": "bold",
-            "text": "Use this code",
-            "text_color": "#FFFFFF"
-          }
-        ],
         "width": {
           "type": "match_parent"
         }

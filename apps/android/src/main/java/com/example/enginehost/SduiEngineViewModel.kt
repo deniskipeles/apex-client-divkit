@@ -113,6 +113,8 @@ data class SduiEngineUiState(
     val schemaVersions: List<CachedSchemaVersion> = emptyList(),
     /** True while a cached schema version is being activated, so the ledger can disable actions. */
     val isRollingBack: Boolean = false,
+    /** True while the gateway workspace update is downloading, so the menu can show progress. */
+    val isWorkspaceUpdating: Boolean = false,
     /** Last rollback failure, shown in the ledger instead of a silent no-op. */
     val rollbackError: String = "",
     val tenantCachedBadgeMap: Map<String, String> = emptyMap(),
@@ -329,7 +331,11 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
             // re-cache only when it actually differs, so edits reach existing workspaces without
             // a version constant that can be forgotten.
             val fresh = WorkspaceProvisioner.buildDefaultDivKitCardJson(spec)
-            if (needsDemoCardRefresh(existingVersions, fresh)) {
+            // An applied gateway update is the tenant's source of truth: re-seeding the packaged
+            // demo card here would silently roll it back on the next launch.
+            val updatedFromGateway = engine.workspace.WorkspaceUpdate
+                .appliedVersion(spec.tenantId, context.filesDir) != null
+            if (!updatedFromGateway && needsDemoCardRefresh(existingVersions, fresh)) {
                 val jti = UUID.randomUUID().toString()
                 val env = PayloadVerifier.createSignedEnvelope(
                     tenant = spec.tenantId,
@@ -946,6 +952,12 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
     private fun handleNavigation(url: String): Boolean {
         val nav = navigator ?: return false
         val op = NavigationUrlParser.parse(url) ?: return false
+        // A presented sheet is the topmost surface even though it never joins the stack: its own
+        // `nav://pop` (Cancel, post-delete close) must dismiss the sheet, not the card under it.
+        if (op is NavOp.Pop && _uiState.value.presentedSheetCardId != null) {
+            _uiState.update { it.copy(presentedSheetCardId = null) }
+            return true
+        }
         val before = nav.current?.id
         when (op) {
             is NavOp.Push -> CardRegistry.card(op.cardId)?.let {
@@ -1330,6 +1342,108 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
 
     fun updateDraftDivKitJson(newDraft: String) {
         _uiState.update { it.copy(draftDivKitJson = newDraft) }
+    }
+
+    /**
+     * Pulls the newest workspace binaries from the gateway and makes them live.
+     *
+     * The payload is the encrypted bundle in prod (`GATEWAY_URL` / manifest `urls.updates`), so
+     * AES-GCM authenticates it before anything is replaced. Dev falls back to the same gateway's
+     * plaintext `index.json`. The hub card of the fetched bundle is re-signed, verified and
+     * cached as a new schema version, so the card, the `v…` chip and the rollback ledger all
+     * move together; the workspace specs are then rebuilt from the applied bundle.
+     */
+    fun updateWorkspaceFromGateway(gatewayBase: String? = null) {
+        val spec = _uiState.value.activeWorkspace
+        if (_uiState.value.isWorkspaceUpdating) return
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(isWorkspaceUpdating = true, statusBannerMessage = "Checking ${spec.displayName} for updates…")
+            }
+            val outcome = withContext(Dispatchers.IO) {
+                runCatching {
+                    val bundle = engine.workspace.WorkspaceRepository
+                        .loadAll(filesDir = context.filesDir).bundles
+                        .firstOrNull { it.id == spec.tenantId }
+                        ?: return@runCatching engine.workspace.WorkspaceUpdate.Outcome(
+                            false,
+                            "${spec.displayName} is not loaded, so it cannot be updated"
+                        )
+                    engine.workspace.WorkspaceUpdate.apply(bundle, context.filesDir, gatewayBase)
+                }.getOrElse {
+                    engine.workspace.WorkspaceUpdate.Outcome(
+                        false,
+                        it.message ?: it::class.java.simpleName
+                    )
+                }
+            }
+            android.util.Log.i("WorkspaceUpdate", "outcome ok=${outcome.ok} ${outcome.message}")
+            val payload = outcome.cardJson
+            if (!outcome.ok || payload == null) {
+                _uiState.update {
+                    it.copy(
+                        isWorkspaceUpdating = false,
+                        statusBannerMessage = "Update failed: ${outcome.message}",
+                        lastVerificationStatus = "Workspace update failed — ${outcome.message}"
+                    )
+                }
+                logSecurityEvent(
+                    title = "Workspace update rejected (${spec.tenantId})",
+                    detail = outcome.message,
+                    passed = false
+                )
+                toast("Update failed: ${outcome.message}")
+                return@launch
+            }
+
+            val schemaVersion = outcome.version ?: DEMO_CARD_REVISION
+            val jti = UUID.randomUUID().toString()
+            val envelope = PayloadVerifier.createSignedEnvelope(
+                tenant = spec.tenantId,
+                schemaVersion = schemaVersion,
+                payloadJson = payload,
+                keyPair = keyPair,
+                jtiOverride = jti
+            )
+            val verified = getVerifier(spec.tenantId).verify(envelope)
+            var versions: List<CachedSchemaVersion> = emptyList()
+            var active: CachedSchemaVersion? = null
+            withContext(Dispatchers.IO) {
+                workspaceManager.useDatabase(spec.tenantId) { db ->
+                    db.workspaceQueries.cacheAndActivateSchemaVersion(
+                        schemaVersion = schemaVersion,
+                        jti = jti,
+                        signedEnvelope = envelope,
+                        verifiedPayload = verified,
+                        receivedAt = currentTimeMillis(),
+                        summary = "v$schemaVersion • Gateway update from ${outcome.source ?: "gateway"}"
+                    )
+                    versions = db.workspaceQueries.selectAllSchemaVersions()
+                    active = db.workspaceQueries.selectActiveSchemaVersion()
+                }
+                refreshTenantCachedBadges()
+                reloadWorkspacePackages()
+            }
+            _uiState.update {
+                it.copy(
+                    isWorkspaceUpdating = false,
+                    verifiedDivKitJson = verified,
+                    lastSignedEnvelopeJson = envelope,
+                    activeSchemaVersion = active,
+                    schemaVersions = versions,
+                    isEnvelopeVerified = true,
+                    lastVerificationStatus = "Workspace updated to v$schemaVersion • Ed25519 verified",
+                    statusBannerMessage = "Updated ${spec.displayName} to v$schemaVersion"
+                )
+            }
+            logSecurityEvent(
+                title = "Workspace updated to v$schemaVersion (${spec.tenantId})",
+                detail = outcome.message,
+                passed = true
+            )
+            toast("${spec.displayName} updated to v$schemaVersion")
+            registerCards(_uiState.value.activeWorkspace)
+        }
     }
 
     /**
@@ -2046,6 +2160,10 @@ class SduiEngineViewModel(appContext: Context) : ViewModel() {
                 }
             }
         }
+    }
+
+    private fun toast(message: String) {
+        android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_LONG).show()
     }
 
     private fun logSecurityEvent(title: String, detail: String, passed: Boolean) {

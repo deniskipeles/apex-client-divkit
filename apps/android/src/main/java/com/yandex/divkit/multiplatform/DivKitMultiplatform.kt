@@ -7,6 +7,8 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
@@ -18,14 +20,20 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import engine.ui.SduiLayoutBlocks
@@ -43,6 +51,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.*
 
@@ -296,7 +306,12 @@ private fun RenderDivNode(
     val cornerRadius = node["corner_radius"]?.jsonPrimitive?.intOrNull ?: 0
     val bgHex = node["background_color"]?.jsonPrimitive?.contentOrNull
         ?: node["background"]?.jsonArray?.firstOrNull()?.jsonObject?.get("color")?.jsonPrimitive?.contentOrNull
-    val resolvedSurface = bgHex?.let { evalExpr(it, variables, rowContext) } ?: surfaceHex
+    // A fully transparent fill is not a surface: inheriting it turns the light-theme text
+    // adaptation into white-on-transparent (inactive chip labels over a light track).
+    val resolvedSurface = bgHex
+        ?.let { evalExpr(it, variables, rowContext) }
+        ?.takeIf { !isTransparentFill(it) }
+        ?: surfaceHex
     val borderHex = node["border"]?.jsonObject?.get("stroke")?.jsonObject?.get("color")?.jsonPrimitive?.contentOrNull
     val borderWidth = node["border"]?.jsonObject?.get("stroke")?.jsonObject?.get("width")?.jsonPrimitive?.intOrNull ?: 0
     val borderRadius = node["border"]?.jsonObject?.get("corner_radius")?.jsonPrimitive?.intOrNull ?: cornerRadius
@@ -341,6 +356,19 @@ private fun RenderDivNode(
         )
     }
 
+    node["alpha"]?.jsonPrimitive?.contentOrNull?.let { raw ->
+        evalExpr(raw, variables, rowContext).toFloatOrNull()?.let { boxModifier = boxModifier.alpha(it) }
+    }
+
+    // Layout nodes carry actions too (a hub row or card is a `container`). Attaching the click
+    // here keeps every node type dispatchable; `text` wires its own to avoid double dispatch.
+    val nodeActions = extractActions(node)
+    if (nodeActions.isNotEmpty() && type != "text") {
+        boxModifier = boxModifier.clickable {
+            scope.launch { dispatchAllActions(nodeActions, variables, rowContext, onDispatchAction) }
+        }
+    }
+
     when (type) {
         "state" -> {
             val states = node["states"]?.jsonArray ?: JsonArray(emptyList())
@@ -353,7 +381,7 @@ private fun RenderDivNode(
             } ?: states.firstOrNull()
             val activeDiv = active?.jsonObject?.get("div")?.jsonObject
             if (activeDiv != null) {
-                Box(modifier = Modifier.fillMaxWidth().then(boxModifier)) {
+                Box(modifier = divSizeModifier(node, fillWidth).then(boxModifier)) {
                     RenderDivNode(
                         node = activeDiv,
                         variables = variables,
@@ -385,15 +413,16 @@ private fun RenderDivNode(
             val orientation = node["orientation"]?.jsonPrimitive?.contentOrNull ?: "vertical"
             val items = node["items"]?.jsonArray ?: JsonArray(emptyList())
             val spacing = (node["item_spacing"]?.jsonPrimitive?.intOrNull ?: 8).dp
+            val sizeMod = divSizeModifier(node, fillWidth).then(boxModifier)
             if (orientation == "horizontal") {
                 Row(
-                    modifier = Modifier.fillMaxWidth().then(boxModifier),
-                    horizontalArrangement = Arrangement.spacedBy(spacing),
-                    verticalAlignment = Alignment.CenterVertically
+                    modifier = sizeMod,
+                    horizontalArrangement = Arrangement.spacedBy(spacing, divHAlign(node)),
+                    verticalAlignment = divVAlign(node)
                 ) {
                     for (child in items) {
                         val childObj = child.jsonObject
-                        val weight = childObj["weight"]?.jsonPrimitive?.floatOrNull
+                        val weight = childObj.divWeight("width")
                         Box(modifier = if (weight != null && weight > 0f) Modifier.weight(weight) else Modifier) {
                             RenderDivNode(
                                 childObj, variables, rowContext, isDark, scope, onDispatchAction,
@@ -403,15 +432,28 @@ private fun RenderDivNode(
                     }
                 }
             } else {
+                // Vertical weights only resolve against a bounded height. Cards are hosted in a
+                // scrolling column, so a `match_parent`-height page would collapse its weighted
+                // children to zero; only a fixed-height container can distribute weight.
+                val distributesHeight =
+                    node["height"]?.jsonObject?.get("type")?.jsonPrimitive?.contentOrNull == "fixed"
                 Column(
-                    modifier = Modifier.fillMaxWidth().then(boxModifier),
-                    verticalArrangement = Arrangement.spacedBy(spacing)
+                    modifier = sizeMod,
+                    verticalArrangement = Arrangement.spacedBy(spacing, divVAlign(node)),
+                    horizontalAlignment = divHAlign(node)
                 ) {
                     for (child in items) {
-                        RenderDivNode(
-                            child.jsonObject, variables, rowContext, isDark, scope, onDispatchAction,
-                            surfaceHex = resolvedSurface
-                        )
+                        val childObj = child.jsonObject
+                        val weight = childObj.divWeight("height")?.takeIf { distributesHeight }
+                        Box(modifier = if (weight != null && weight > 0f) Modifier.weight(weight) else Modifier) {
+                            RenderDivNode(
+                                childObj, variables, rowContext, isDark, scope, onDispatchAction,
+                                // A child only spans the parent when the parent itself spans:
+                                // inside a hugging container a full-width child would stretch the
+                                // container to the whole row (a status pill became a full bar).
+                                fillWidth = fillWidth, surfaceHex = resolvedSurface
+                            )
+                        }
                     }
                 }
             }
@@ -420,18 +462,37 @@ private fun RenderDivNode(
         "gallery" -> {
             val items = node["items"]?.jsonArray ?: JsonArray(emptyList())
             val spacing = (node["item_spacing"]?.jsonPrimitive?.intOrNull ?: 10).dp
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
-                    .then(boxModifier),
-                horizontalArrangement = Arrangement.spacedBy(spacing)
-            ) {
-                for (child in items) {
-                    RenderDivNode(
-                        child.jsonObject, variables, rowContext, isDark, scope, onDispatchAction,
-                        surfaceHex = resolvedSurface
-                    )
+            val vertical = node["orientation"]?.jsonPrimitive?.contentOrNull == "vertical"
+            // Gallery children are full pages: inside a scroller the width constraint is
+            // unbounded, so `match_parent` would fall back to content width and two pages would
+            // share the screen. Pin each child to the gallery's own width instead.
+            BoxWithConstraints(modifier = divSizeModifier(node, fillWidth).then(boxModifier)) {
+                val pageWidth = maxWidth
+                if (vertical) {
+                    Column(verticalArrangement = Arrangement.spacedBy(spacing)) {
+                        for (child in items) {
+                            Box(modifier = Modifier.width(pageWidth)) {
+                                RenderDivNode(
+                                    child.jsonObject, variables, rowContext, isDark, scope,
+                                    onDispatchAction, surfaceHex = resolvedSurface
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    Row(
+                        modifier = Modifier.horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(spacing)
+                    ) {
+                        for (child in items) {
+                            Box(modifier = Modifier.width(pageWidth)) {
+                                RenderDivNode(
+                                    child.jsonObject, variables, rowContext, isDark, scope,
+                                    onDispatchAction, surfaceHex = resolvedSurface
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -442,7 +503,7 @@ private fun RenderDivNode(
             val spacing = (node["item_spacing"]?.jsonPrimitive?.intOrNull ?: 10).dp
             val rows = items.chunked(columnCount)
             Column(
-                modifier = Modifier.fillMaxWidth().then(boxModifier),
+                modifier = divSizeModifier(node, fillWidth).then(boxModifier),
                 verticalArrangement = Arrangement.spacedBy(spacing)
             ) {
                 for (rowItems in rows) {
@@ -477,8 +538,13 @@ private fun RenderDivNode(
                 "light" -> FontWeight.Light
                 else -> FontWeight.Normal
             }
-            val colorHex = node["text_color"]?.jsonPrimitive?.contentOrNull ?: "#F8FAFC"
-            val alignStr = node["alignment_horizontal"]?.jsonPrimitive?.contentOrNull ?: "left"
+            val colorHex = evalExpr(
+                node["text_color"]?.jsonPrimitive?.contentOrNull ?: "#F8FAFC",
+                variables,
+                rowContext
+            )
+            val alignStr = node["text_alignment_horizontal"]?.jsonPrimitive?.contentOrNull
+                ?: node["alignment_horizontal"]?.jsonPrimitive?.contentOrNull ?: "left"
             val textAlign = when (alignStr) {
                 "center" -> TextAlign.Center
                 "right" -> TextAlign.End
@@ -493,9 +559,13 @@ private fun RenderDivNode(
                 }
             } else Modifier
 
+            val tabular = node["font_feature_settings"]?.jsonPrimitive?.contentOrNull
+                ?.contains("tnum") == true
             Text(
                 text = resolvedText,
                 fontSize = fontSize,
+                lineHeight = node["line_height"]?.jsonPrimitive?.intOrNull?.sp ?: TextUnit.Unspecified,
+                style = if (tabular) TextStyle(fontFeatureSettings = "tnum") else LocalTextStyle.current,
                 fontWeight = fontWeight,
                 fontFamily = if (monospace) FontFamily.Monospace else FontFamily.Default,
                 color = adaptTextColorForTheme(
@@ -598,28 +668,71 @@ private fun RenderDivNode(
             val varName = node["text_variable"]?.jsonPrimitive?.contentOrNull ?: "user.input_text"
             val hint = node["hint_text"]?.jsonPrimitive?.contentOrNull ?: "Enter value..."
             val currentVal = variables[varName]?.asDisplayString() ?: ""
-            OutlinedTextField(
-                value = currentVal,
-                onValueChange = { newValue ->
-                    if (WorkspaceVariableScope.isValid(varName)) {
-                        EngineStateBridge.pushUpdate(varName, DivVariableValue.Str(newValue))
-                    }
-                },
-                label = { Text(hint, fontSize = 12.sp) },
-                singleLine = true,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-                    focusedLabelColor = MaterialTheme.colorScheme.primary,
-                    unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .then(boxModifier)
-                    .testTag("div_input_${varName.replace('.', '_')}")
-            )
+            val inputFontSize = (node["font_size"]?.jsonPrimitive?.intOrNull ?: 14).sp
+            val inputTextColor = node["text_color"]?.jsonPrimitive?.contentOrNull
+                ?.let { adaptTextColorForTheme(evalExpr(it, variables, rowContext), isDark) }
+            val inputHintColor = (node["hint_color"] ?: node["placeholder_color"])
+                ?.jsonPrimitive?.contentOrNull
+                ?.let { adaptTextColorForTheme(evalExpr(it, variables, rowContext), isDark) }
+            val inputKeyboard = node["keyboard_type"]?.jsonPrimitive?.contentOrNull
+            val inputMultiLine = inputKeyboard == "multi_line_text"
+            val maxVisibleLines = node["max_visible_lines"]?.jsonPrimitive?.intOrNull
+            val focusNode = node["focus"]?.jsonObject
+            val onFocusActions = focusNode?.get("on_focus")?.jsonArray?.mapNotNull { it as? JsonObject }
+                ?: emptyList()
+            val onBlurActions = focusNode?.get("on_blur")?.jsonArray?.mapNotNull { it as? JsonObject }
+                ?: emptyList()
+            val onChangeActions = node["on_change"]?.jsonArray?.mapNotNull { it as? JsonObject }
+                ?: emptyList()
+            var hadFocus by remember { mutableStateOf(false) }
+            // The card draws the field's frame, background and prefix, so the entry surface must
+            // not add a second outline (nor a floating label that eats the value on a 36dp row).
+            Box(
+                modifier = divSizeModifier(node, fillWidth).then(boxModifier),
+                contentAlignment = Alignment.CenterStart
+            ) {
+                if (currentVal.isEmpty() && hint.isNotBlank()) {
+                    Text(
+                        text = hint,
+                        fontSize = inputFontSize,
+                        color = inputHintColor ?: MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                BasicTextField(
+                    value = currentVal,
+                    onValueChange = { newValue ->
+                        if (WorkspaceVariableScope.isValid(varName)) {
+                            EngineStateBridge.pushUpdate(varName, DivVariableValue.Str(newValue))
+                        }
+                        if (onChangeActions.isNotEmpty()) {
+                            val withEdit = variables + (varName to DivVariableValue.Str(newValue))
+                            scope.launch { dispatchAllActions(onChangeActions, withEdit, rowContext, onDispatchAction) }
+                        }
+                    },
+                    singleLine = !inputMultiLine,
+                    maxLines = if (inputMultiLine) (maxVisibleLines ?: 4) else 1,
+                    textStyle = TextStyle(
+                        fontSize = inputFontSize,
+                        color = inputTextColor ?: MaterialTheme.colorScheme.onSurface
+                    ),
+                    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = if (inputKeyboard == "number") KeyboardType.Number else KeyboardType.Text
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onFocusChanged { state ->
+                            val actions = if (state.isFocused) onFocusActions else if (hadFocus) onBlurActions else emptyList()
+                            hadFocus = state.isFocused
+                            if (actions.isNotEmpty()) {
+                                scope.launch { dispatchAllActions(actions, variables, rowContext, onDispatchAction) }
+                            }
+                        }
+                        .testTag("div_input_${varName.replace('.', '_')}")
+                )
+            }
         }
 
         "separator" -> {
@@ -660,7 +773,7 @@ private fun RenderDivNode(
                     else -> Alignment.Center
                 }
                 Box(
-                    modifier = Modifier.fillMaxWidth().then(boxModifier),
+                    modifier = divSizeModifier(node, fillWidth).then(boxModifier),
                     contentAlignment = horizontal
                 ) {
                     Icon(
@@ -698,6 +811,7 @@ private fun RenderDivNode(
             } else if (customType == "json_list" || type == "json_list") {
                 val props = node["custom_props"]?.jsonObject ?: node
                 val dataVar = props["data_var"]?.jsonPrimitive?.contentOrNull ?: "user.items"
+                // A blank `empty_text` means the card designs its own empty state.
                 val emptyText = props["empty_text"]?.jsonPrimitive?.contentOrNull ?: "No records"
                 val rowCard = props["row_card"]?.jsonObject
 
@@ -706,12 +820,11 @@ private fun RenderDivNode(
                 }
 
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
+                    modifier = divSizeModifier(node, fillWidth)
                         .then(boxModifier)
                         .testTag("div_json_list_${dataVar.replace('.', '_')}")
                 ) {
-                    if (itemsList.isEmpty()) {
+                    if (itemsList.isEmpty() && emptyText.isNotBlank()) {
                         Surface(
                             color = MaterialTheme.colorScheme.surfaceVariant,
                             shape = RoundedCornerShape(10.dp),
@@ -738,7 +851,8 @@ private fun RenderDivNode(
                             }
                         }
                     } else if (rowCard != null) {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        val rowSpacing = (node["item_spacing"]?.jsonPrimitive?.intOrNull ?: 8).dp
+                        Column(verticalArrangement = Arrangement.spacedBy(rowSpacing)) {
                             itemsList.forEachIndexed { idx, itemMap ->
                                 key(itemMap["id"] ?: idx) {
                                     RenderDivNode(
@@ -747,7 +861,8 @@ private fun RenderDivNode(
                                         rowContext = itemMap,
                                         isDark = isDark,
                                         scope = scope,
-                                        onDispatchAction = onDispatchAction
+                                        onDispatchAction = onDispatchAction,
+                                        fillWidth = fillWidth
                                     )
                                 }
                             }
@@ -803,6 +918,12 @@ private fun RenderDivNode(
             }
         }
     }
+}
+
+/** True for `#00000000`-style fills, which paint nothing and must not set the surface tone. */
+internal fun isTransparentFill(hex: String): Boolean {
+    val clean = hex.trim().removePrefix("#")
+    return clean.length == 8 && clean.startsWith("00")
 }
 
 internal fun adaptSurfaceColorForTheme(hexStr: String, isDark: Boolean): Color {
@@ -945,6 +1066,46 @@ private fun parseJsonListVariable(valObj: DivVariableValue?): List<Map<String, A
     }
 }
 
+/** DivKit width/height sizing: `fixed` sets the box, `match_parent` fills, `wrap_content` hugs content. */
+private fun divSizeModifier(node: JsonObject, fillWidth: Boolean): Modifier {
+    var m: Modifier = Modifier
+    val width = node["width"]?.jsonObject
+    when (width?.get("type")?.jsonPrimitive?.contentOrNull) {
+        "fixed" -> width["value"]?.jsonPrimitive?.intOrNull?.let { m = m.width(it.dp) }
+        "match_parent" -> m = m.fillMaxWidth()
+        null -> if (fillWidth) m = m.fillMaxWidth()
+        else -> Unit
+    }
+    val height = node["height"]?.jsonObject
+    when (height?.get("type")?.jsonPrimitive?.contentOrNull) {
+        "fixed" -> height["value"]?.jsonPrimitive?.intOrNull?.let { m = m.height(it.dp) }
+        // `match_parent` height is intentionally ignored: cards are hosted in a scrolling
+        // column, and filling an unbounded max height crashes the scroll modifier's measurement.
+        else -> Unit
+    }
+    return m
+}
+
+/** DivKit weights live on the size object (`"width": {"type": "match_parent", "weight": 1}`). */
+private fun JsonObject.divWeight(axis: String): Float? =
+    this[axis]?.jsonObject?.get("weight")?.jsonPrimitive?.floatOrNull
+
+private fun divHAlign(node: JsonObject): Alignment.Horizontal =
+    when (node["content_alignment_horizontal"]?.jsonPrimitive?.contentOrNull
+        ?: node["alignment_horizontal"]?.jsonPrimitive?.contentOrNull) {
+        "center" -> Alignment.CenterHorizontally
+        "right", "end" -> Alignment.End
+        else -> Alignment.Start
+    }
+
+private fun divVAlign(node: JsonObject): Alignment.Vertical =
+    when (node["content_alignment_vertical"]?.jsonPrimitive?.contentOrNull
+        ?: node["alignment_vertical"]?.jsonPrimitive?.contentOrNull) {
+        "center" -> Alignment.CenterVertically
+        "bottom", "end" -> Alignment.Bottom
+        else -> Alignment.Top
+    }
+
 private fun extractActions(node: JsonObject): List<JsonObject> {
     val list = mutableListOf<JsonObject>()
     node["action"]?.jsonObject?.let { list.add(it) }
@@ -955,6 +1116,19 @@ private fun extractActions(node: JsonObject): List<JsonObject> {
 }
 
 private suspend fun dispatchAllActions(
+    actions: List<JsonObject>,
+    variables: Map<String, DivVariableValue>,
+    rowContext: Map<String, Any?>,
+    onDispatchAction: suspend (url: String, payload: String?) -> Unit
+) {
+    // A chain that dismisses the surface it was launched from (a sheet's Delete → pop → pop)
+    // must finish: disposal of that composition would otherwise cancel the remaining actions.
+    withContext(NonCancellable) {
+        runActionChain(actions, variables, rowContext, onDispatchAction)
+    }
+}
+
+private suspend fun runActionChain(
     actions: List<JsonObject>,
     variables: Map<String, DivVariableValue>,
     rowContext: Map<String, Any?>,

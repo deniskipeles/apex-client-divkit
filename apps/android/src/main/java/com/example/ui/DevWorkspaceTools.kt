@@ -15,6 +15,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -56,6 +57,11 @@ fun DevWorkspaceToolsDialog(
     var selected by remember(workspaces) { mutableStateOf(workspaces.firstOrNull()?.tenantId.orEmpty()) }
     var status by remember { mutableStateOf("") }
     var imported by remember { mutableStateOf(WorkspaceRepository.importedIds(filesDir)) }
+    // The emulator reaches the authoring gateway on the host through 10.0.2.2.
+    var gateway by remember {
+        mutableStateOf(com.example.BuildConfig.GATEWAY_URL.ifBlank { "http://10.0.2.2:12000/workspaces" })
+    }
+    var catalogue by remember { mutableStateOf<List<DevWorkspaceImport.GatewayWorkspace>>(emptyList()) }
 
     val jsonPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
@@ -119,6 +125,34 @@ fun DevWorkspaceToolsDialog(
         }
     }
 
+    fun fetchWorkspace(url: String) {
+        scope.launch {
+            status = "Fetching $url …"
+            val outcome = withContext(Dispatchers.IO) {
+                DevWorkspaceImport.importFromUrl(selected, url, filesDir)
+            }
+            status = outcome.message
+            imported = withContext(Dispatchers.IO) { WorkspaceRepository.importedIds(filesDir) }
+            if (outcome.ok) onReload()
+        }
+    }
+
+    fun loadCatalogue() {
+        scope.launch {
+            status = "Loading catalogue …"
+            val workspaces = withContext(Dispatchers.IO) {
+                val index = gateway.trimEnd('/') + "/index.json"
+                runCatching {
+                    DevWorkspaceImport.parseCatalogue(
+                        java.net.URL(index).openStream().use { it.readBytes().toString(Charsets.UTF_8) }
+                    )
+                }.getOrElse { emptyList() }
+            }
+            catalogue = workspaces
+            status = if (workspaces.isEmpty()) "Catalogue empty or unreachable: $gateway" else "${workspaces.size} workspace(s)"
+        }
+    }
+
     Dialog(onDismissRequest = onClose) {
         Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surface) {
             Column(
@@ -146,6 +180,32 @@ fun DevWorkspaceToolsDialog(
                                 Text(spec.displayName)
                             }
                         }
+                    }
+                }
+
+                Text("Authoring gateway", style = MaterialTheme.typography.labelLarge)
+                OutlinedTextField(
+                    value = gateway,
+                    onValueChange = { gateway = it },
+                    label = { Text("Gateway base URL") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick = { loadCatalogue() }, modifier = Modifier.weight(1f)) {
+                        Text("Browse")
+                    }
+                    Button(
+                        onClick = { fetchWorkspace(gateway.trimEnd('/') + "/" + selected + "/index.json") },
+                        modifier = Modifier.weight(1f)
+                    ) { Text("Fetch $selected") }
+                }
+                catalogue.forEach { entry ->
+                    TextButton(
+                        onClick = { fetchWorkspace(gateway.trimEnd('/') + "/" + entry.slug + "/index.json") },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("${entry.title.ifBlank { entry.slug }} · ${entry.slug}", maxLines = 1)
                     }
                 }
 

@@ -322,51 +322,6 @@ export function createOperationRegistry(db: Storage, existing: ExistingOps) {
       return { ok: true, id }
     },
 
-    'inventory.list': (args: { filter?: string }) => db.listProducts(args.filter),
-
-    'inventory.upsert': async (args: { product: ProductRecord }) => {
-      const errors: { sku?: string; price?: string; code?: string; name?: string } = {}
-      const sku = args.product.sku?.trim().toUpperCase()
-      if (!args.product.name || args.product.name.trim().length > 60) {
-        errors.name = 'Enter a name between 1 and 60 characters.'
-      }
-      if (!/^\d+(\.\d{1,2})?$/.test(args.product.price?.trim() ?? '')) {
-        errors.price = 'Enter a valid decimal price (for example, 4.50).'
-      }
-      if (!sku) errors.sku = 'Enter a SKU.'
-      const existingSku = sku ? await db.findProductByBarcodeOrSku(sku) : null
-      if (existingSku && existingSku.id !== args.product.id) {
-        const nextNum = `${sku.replace(/-\d+$/, '')}-02`
-        errors.sku = `SKU already in use — try ${nextNum}`
-      }
-      if (Object.keys(errors).length > 0) return { ok: false, errors }
-      const priceCents = Math.round(Number(args.product.price) * 100)
-      const saved = await db.upsertProduct({ ...args.product, sku, priceCents })
-      return { ok: true, product: saved, errors: {} }
-    },
-
-    'inventory.check_code': async (args: { code: string; exclude_sku?: string }) => {
-      if (!args.code.trim()) return { ok: true }
-      const conflict = await db.findProductByCodeExcludingSku(args.code.trim(), args.exclude_sku)
-      return conflict ? { ok: false, conflict: { sku: conflict.sku, name: conflict.name } } : { ok: true }
-    },
-
-    'inventory.suggest_sku': async (args: { name: string }) => {
-      const prefix = (args.name.replace(/[^A-Za-z]/g, '').toUpperCase().slice(0, 3) || 'ITM').padEnd(3, 'X')
-      return { sku: `${prefix}-01` }
-    },
-
-    'inventory.delete': async (args: { id: string }) => {
-      if (await db.isProductReferencedInOrders(args.id)) {
-        return {
-          ok: false,
-          reason: "This product is on past orders and can't be deleted. Edit it instead to set stock to 0.",
-        }
-      }
-      await db.deleteProduct(args.id)
-      return { ok: true }
-    },
-
     'inventory.scan_resolve': async (args: { raw: string }) => {
       const hit = await db.findProductByBarcodeOrSku(args.raw.trim())
       return hit

@@ -70,6 +70,58 @@ class ExampleUnitTest {
         assertTrue("scanner" in cfg.capabilities)
     }
 
+    @Test
+    fun workspaceUpdateDecryptsTheBinaryItDownloadedAndRejectsAnotherKey() {
+        val key = engine.workspace.WorkspaceCipher.keyFrom("2b".repeat(32))
+        val bundle = engine.workspace.WorkspaceBundle(
+            manifest = kotlinx.serialization.json.Json.parseToJsonElement(
+                """{"format":"apex.workspace/1","id":"owner_pos","title":"APEX Owner",
+                    "schemaVersion":"1.6","hub":"card.json","catalog":"tool_catalog.json",
+                    "collections":{"dir":"collections","files":[]},
+                    "cards":{"dir":"tools","order":["home"]}}"""
+            ).jsonObject,
+            hub = kotlinx.serialization.json.Json.parseToJsonElement(
+                """{"type":"container","items":[]}"""
+            ).jsonObject,
+            catalog = null,
+            cards = listOf(
+                engine.workspace.WorkspaceCard(
+                    "home",
+                    kotlinx.serialization.json.Json.parseToJsonElement("""{"type":"container","items":[]}""").jsonObject,
+                    "Home"
+                )
+            ),
+            collections = emptyList(),
+            icons = emptyMap(),
+            origin = "gateway"
+        )
+        val encrypted = engine.workspace.WorkspaceCipher.encrypt(
+            engine.workspace.WorkspaceBundleCodec.encode(bundle).toByteArray(),
+            key
+        )
+        val root = java.nio.file.Files.createTempDirectory("apex-update").toFile()
+        val dir = java.io.File(engine.workspace.WorkspaceUpdate.directory(root), "owner_pos")
+        dir.mkdirs()
+        java.io.File(dir, "workspace.bin").writeBytes(encrypted)
+        java.io.File(dir, "update.json").writeText("""{"version":"1.6","appliedAt":"1"}""")
+
+        val applied = engine.workspace.WorkspaceUpdate.updatedBundle("owner_pos", root, key)
+        assertEquals("owner_pos", applied?.id)
+        assertEquals("1.6", applied?.manifest?.get("schemaVersion")?.jsonPrimitive?.content)
+        assertEquals(1, applied?.cards?.size)
+        assertEquals("update", applied?.origin)
+        assertEquals("1.6", engine.workspace.WorkspaceUpdate.appliedVersion("owner_pos", root))
+        // AES-GCM authenticates the payload: another key must not yield a bundle.
+        assertNull(
+            engine.workspace.WorkspaceUpdate.updatedBundle(
+                "owner_pos",
+                root,
+                engine.workspace.WorkspaceCipher.keyFrom("ff".repeat(32))
+            )
+        )
+        root.deleteRecursively()
+    }
+
     @Test(expected = IllegalArgumentException::class)
     fun engineStateBridge_rejectsNonUserNamespace() {
         EngineStateBridge.pushUpdate("engine.error", DivVariableValue.Str("compromised"))

@@ -37,7 +37,7 @@ const pages = [
 
 const meta: WorkspaceMeta = {
   title: 'APEX Owner',
-  subtitle: 'Owner POS, inventory and customer handoff',
+  subtitle: 'Owner POS, inventory and customer handoff · v1.5 live',
   terminal: 'POS-001',
   accent: '#6D4AFF',
   mode: 'HYBRID',
@@ -55,7 +55,9 @@ const meta: WorkspaceMeta = {
     tunnel: 'https://apex-owner.local/',
     lan: 'http://192.168.1.21:8089',
     client_id: 'pk_live_bdbc75560c43b6605370bf4a',
+    updates: { slug: 'owner-pos' },
   },
+  schemaVersion: '1.5',
   unread: 0,
 }
 
